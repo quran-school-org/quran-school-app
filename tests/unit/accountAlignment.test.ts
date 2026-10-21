@@ -37,3 +37,18 @@ describe("alignement explicite des comptes", () => {
     expect(linkedStudentIdsOf(base("t_S-1", "مدرس"))).toEqual([]);
   });
 });
+
+describe("revue de sécurité C-03 : pas d'escalade de rôle par la fiche du personnel", () => {
+  it("un إداري qui modifie sa propre fiche (« مكتب تنفيذي », « رئيس ») ne devient pas مدير à la synchronisation", () => {
+    // Le bureau peut écrire les fiches du personnel ; la synchronisation est lancée par le directeur.
+    const teachers = [{ id: "t2", fullName: "x", category: "عضو مكتب تنفيذي / مسير", roleTitle: "رئيس الجمعية", isArchived: false } as unknown as Teacher];
+    const changed = computeAccountAlignment([base("t_t2", "إداري", { linkedTeacherId: "t2" })], teachers, []);
+    expect(changed.find((u) => u.role === "مدير")).toBeUndefined();
+  });
+
+  it("un enseignant dont la fiche indique « مدير » n'est pas promu non plus", () => {
+    const teachers = [{ id: "t1", fullName: "x", category: "عضو مكتب تنفيذي / مسير", roleTitle: "مدير", isArchived: false } as unknown as Teacher];
+    const [changed] = computeAccountAlignment([base("t_t1", "مدرس")], teachers, []);
+    expect(changed?.role ?? "مدرس").not.toBe("مدير");
+  });
+});

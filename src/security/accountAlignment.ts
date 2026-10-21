@@ -39,7 +39,10 @@ export function computeAccountAlignment(users: AppUser[], teachers: Teacher[], s
     const teacher = teacherId ? teacherById.get(teacherId) : undefined;
     if (teacher && user.role !== "طالب" && user.role !== "ولي أمر") {
       const defaults = getRoleAndPermissionsForStaff(teacher);
-      const role = user.role === "مدير" ? "مدير" : defaults.role;
+      // Jamais de promotion au rôle de directeur par la fiche : le bureau peut
+      // écrire les fiches (intitulé « رئيس », « مدير »…) ; seul un directeur
+      // nomme un directeur, explicitement (revue de sécurité, C-03).
+      const role = user.role === "مدير" ? "مدير" : defaults.role === "مدير" ? user.role : defaults.role;
       const archived = Boolean(teacher.isArchived);
       next = {
         ...next,
