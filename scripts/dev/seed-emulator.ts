@@ -1,20 +1,24 @@
 #!/usr/bin/env tsx
 /**
- * Peuple les ÉMULATEURS avec le jeu de données fictif, dans la structure
- * historique, puis applique le provisionnement du Lot 0 (comptes Auth + liens).
+ * Peuple les ÉMULATEURS avec des données FICTIVES, dans les conditions de la
+ * production : données historiques à la racine, provisionnement Auth (Lot 0),
+ * migration vers schools/alfajr, puis une seconde école (annour).
  *
- *   npm run emulators            # dans un terminal
- *   npm run seed:emulator        # dans un autre
+ *   npm run emulators            # terminal 1
+ *   npm run seed:emulator        # terminal 2
  *
  * Comptes de démonstration (mots de passe FICTIFS, émulateurs uniquement) :
- *   admin_alfajr / demo-directeur-2026 (مدير), khalid_tazi / 123 (إداري),
- *   youssef_baqali / 123 (مدرس), mohammed_alami / 123 (ولي أمر), ali_rebati / 123 (طالب)…
- * Tous doivent changer leur mot de passe à la première connexion.
+ *   admin_alfajr / demo-directeur-2026 (مدير d'alfajr + super-admin de la plateforme)
+ *   khalid_tazi / 123 (إداري à alfajr, مدرس à annour), youssef_baqali / 123 (مدرس),
+ *   mohammed_alami / 123 (ولي أمر), ali_rebati / 123 (طالب),
+ *   dir_annour / demo-annour-2026 (مدير d'annour).
+ * Les comptes migrés doivent changer leur mot de passe à la première connexion.
  */
 import { initAdmin } from "../admin/lib/cli";
-import { runLot0Provision } from "../admin/lot0-provision-auth";
+import { runMigration } from "../migration/migrate-to-tenants";
 import { legacyFixture } from "./fixtures/legacy-alfajr";
 import { assertEmulatorDemo, seedLegacyFixture } from "./lib/seed";
+import { seedSecondSchool } from "./lib/seedTenants";
 
 const projectId = process.env.GCLOUD_PROJECT || "demo-quran-school";
 process.env.FIRESTORE_EMULATOR_HOST ||= "127.0.0.1:8080";
@@ -25,13 +29,14 @@ async function main() {
   const admin = initAdmin(projectId, "(default)", true, "seed");
   try {
     await seedLegacyFixture(admin.db, admin.auth, legacyFixture());
-    const { summary } = await runLot0Provision(admin.db, admin.auth, {
+    const { summary } = await runMigration(admin.db, admin.auth, {
+      schoolId: "alfajr",
       apply: true,
-      syncExistingPasswords: true,
-      acceptCritical: false,
+      superAdminUsername: "admin_alfajr",
       outDir: null,
     });
-    console.log("[seed] Données fictives écrites et comptes provisionnés :", JSON.stringify(summary, null, 2));
+    await seedSecondSchool(admin.db, admin.auth);
+    console.log("[seed] Données fictives migrées vers schools/alfajr + école annour :", JSON.stringify(summary.accounts));
   } finally {
     await admin.close();
   }

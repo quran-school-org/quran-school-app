@@ -61,6 +61,8 @@ export function legacyFixture(): LegacyFixture {
     "S-108": student("حسن السوسي", "2015-06-06", "عبد الله السوسي", "", "c1"),
     "S-109": student("علي الرباطي", "2009-09-09", "إبراهيم الرباطي", "+212 665 000 005", "c2"),
     "S-110": student("عثمان الفيلالي", "2010-10-10", "مصطفى الفيلالي", "0666000006", "c2", { isArchived: true }),
+    // Halaqa supprimée entre-temps (classId orphelin) et photo très lourde (~ 950 Ko de base64, proche de la limite d’un document).
+    "S-111": student("زكرياء الحسني", "2013-12-12", "رشيد الحسني", "0667000007", "c9", { photo: `data:image/jpeg;base64,${"A".repeat(950_000)}` }),
   };
 
   const legacyUser = (username: string, fullName: string, role: string, extra: Doc = {}): Doc => ({
@@ -100,6 +102,8 @@ export function legacyFixture(): LegacyFixture {
   const grades: Record<string, Doc> = {};
   const payments: Record<string, Doc> = {};
   const dailyProgress: Record<string, Doc> = {};
+  // Présence d'un élève supprimé depuis (référence orpheline).
+  attendance["a_2026-10-17_S-999"] = { date: "2026-10-17", studentId: "S-999", status: "غائب" };
   for (const id of Object.keys(students)) {
     attendance[`a_2026-10-17_${id}`] = { date: "2026-10-17", studentId: id, status: "حاضر" };
     grades[`g_${id}`] = { studentId: id, examDate: "2026-10-01", testedPortion: "الحزب 1", memorizationGrade: 16, tajweedGrade: 15, overallGrade: "جيد", examinerId: "t1" };
