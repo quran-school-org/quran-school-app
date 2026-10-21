@@ -1,14 +1,5 @@
 import React, { useState, useMemo } from "react";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend
-} from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 import { Student, Teacher, Class, Grade } from "../types";
 import { Award, Users, BookOpen, Star, CheckCircle2 } from "lucide-react";
 

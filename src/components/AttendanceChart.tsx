@@ -1,18 +1,7 @@
 import React, { useState, useMemo } from "react";
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  BarChart,
-  Bar
-} from "recharts";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar } from "recharts";
 import { Student, Class, Attendance } from "../types";
-import { Calendar, Filter, TrendingUp, TrendingDown, Users, BarChart3, LineChart } from "lucide-react";
+import { Filter, TrendingUp, TrendingDown, BarChart3, LineChart } from "lucide-react";
 
 interface AttendanceChartProps {
   students: Student[];

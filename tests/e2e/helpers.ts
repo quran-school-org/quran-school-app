@@ -54,6 +54,10 @@ export async function loginAs(page: Page, account: DemoAccount) {
     await expect(shell.or(forced).or(picker).or(bad).first()).toBeVisible();
     if (await bad.isVisible()) continue;
     if (await forced.isVisible()) {
+      // Laisse arriver les paramètres de l'école avant d'enregistrer : un
+      // enregistrement immédiat du profil du directeur peut réécrire les
+      // paramètres avec les valeurs par défaut (constat F1, docs/DECISIONS.md).
+      await page.waitForTimeout(2000);
       await page.locator('[data-modal="profile"] form input[type="password"]').last().fill(account.e2e);
       await page.locator('[data-modal="profile"] form button[type="submit"]').click();
       await expect(forced).toBeHidden();

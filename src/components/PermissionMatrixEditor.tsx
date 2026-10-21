@@ -1,29 +1,6 @@
 import React from "react";
-import {
-  ALL_MODULES,
-  CRUDAction,
-  getDefaultPermissionsForRole,
-  ModuleId,
-  ModuleMeta,
-  UserPermissions,
-  UserRole,
-} from "../types";
-import {
-  ShieldCheck,
-  Eye,
-  Plus,
-  Edit3,
-  Trash2,
-  Printer,
-  Sparkles,
-  Check,
-  X,
-  RotateCcw,
-  CheckSquare,
-  Square,
-  Layers,
-  Lock,
-} from "lucide-react";
+import { ALL_MODULES, CRUDAction, getDefaultPermissionsForRole, ModuleMeta, UserPermissions, UserRole } from "../types";
+import { ShieldCheck, Eye, Plus, Edit3, Trash2, Printer, Check, X, RotateCcw, CheckSquare, Square, Layers } from "lucide-react";
 
 interface PermissionMatrixEditorProps {
   permissions: UserPermissions;

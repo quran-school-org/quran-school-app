@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import { Student, Class } from "../types";
 import { RealmSimDB } from "../db";
 import { StudentAvatar } from "../utils/studentAvatar";
-import { Printer, MapPin, Phone, Globe, Facebook, Check, Award } from "lucide-react";
+import { Printer, MapPin, Phone, Globe, Facebook, Check } from "lucide-react";
 
 interface StudentCardProps {
   student: Student;

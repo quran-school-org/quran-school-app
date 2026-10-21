@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Class, Teacher, Student } from "../types";
-import {
-  Plus, Edit2, Archive, Calendar, Users, Search, AlertCircle, X, Check, Trash2, ShieldAlert
-} from "lucide-react";
+import { Plus, Edit2, Archive, Calendar, Users, Search, AlertCircle, X, Trash2 } from "lucide-react";
 
 const parseScheduleString = (scheduleStr: string) => {
   const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
