@@ -1,0 +1,62 @@
+/**
+ * Revue de sécurité, constat C-01 : XSS stockée dans les fenêtres d'impression.
+ * Les fenêtres `window.open("")` partagent l'origine de l'application : toute
+ * donnée insérée dans leur HTML doit être échappée. Ce test vérifie la
+ * fonction d'échappement et interdit toute interpolation brute dans les
+ * gabarits d'impression (garde-fou contre une régression).
+ * La démonstration de bout en bout est dans tests/e2e/smoke.spec.ts (C-01).
+ */
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+import { escapeHtml } from "../../src/security/html";
+
+// Valeurs déjà sûres : HTML produit par React (innerHTML), lignes déjà échappées,
+// constantes du code.
+const ALLOWED = new Set(["tableRows", "printContent.innerHTML", "reportElement.innerHTML", "printContent", "tailwindCdn", "labScale", "sideSuffix"]);
+const FILES = ["src/App.tsx", "src/components/StudentCard.tsx", "src/components/FinanceManagement.tsx"];
+
+function printBlocks(source: string): string[][] {
+  const lines = source.split("\n");
+  const blocks: string[][] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const isWrite = lines[i].includes("document.write(`");
+    const isRows = /const tableRows = .*\.map\(/.test(lines[i]);
+    if (!isWrite && !isRows) continue;
+    const end = isWrite ? /^\s*`\);\s*$/ : /^\s*\}\)\.join\(""\);\s*$/;
+    let j = i;
+    while (j < lines.length && !end.test(lines[j])) j++;
+    blocks.push(lines.slice(i, j + 1));
+    i = j;
+  }
+  return blocks;
+}
+
+describe("échappement HTML des impressions", () => {
+  it("neutralise balises, attributs et entités", () => {
+    expect(escapeHtml(`<img src=x onerror="alert(1)">`)).toBe("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    expect(escapeHtml(`</title><script>x</script>`)).not.toContain("<");
+    expect(escapeHtml("a & b ' `")).toBe("a &amp; b &#39; &#96;");
+    expect(escapeHtml(null)).toBe("");
+    expect(escapeHtml(undefined)).toBe("");
+    expect(escapeHtml(42)).toBe("42");
+    expect(escapeHtml("محمد العلمي")).toBe("محمد العلمي");
+  });
+
+  for (const file of FILES) {
+    it(`${file} : aucune donnée insérée sans échappement dans un gabarit d'impression`, () => {
+      const blocks = printBlocks(readFileSync(file, "utf8"));
+      expect(blocks.length).toBeGreaterThan(0);
+      const raw: string[] = [];
+      for (const block of blocks) {
+        for (const line of block) {
+          for (const m of line.matchAll(/\$\{([^{}`]*)\}/g)) {
+            const expr = m[1].trim();
+            if (!ALLOWED.has(expr) && !expr.startsWith("escapeHtml(")) raw.push(expr);
+          }
+        }
+      }
+      expect(raw).toEqual([]);
+    });
+  }
+});
