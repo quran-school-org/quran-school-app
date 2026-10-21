@@ -54,7 +54,10 @@ export STAMP=$(date +%Y%m%d-%H%M)
    d'AI Studio (rapport §1.5, Q2). Après le Lot 0, l'ancien front (AI Studio)
    **ne permet plus de se connecter** : prévoir de rediriger tout le monde vers
    l'URL Hosting, et **geler les déploiements AI Studio** (accord avec l'autre
-   développeur).
+   développeur). **Revue de sécurité** : le service Cloud Run d'AI Studio expose
+   aussi `/api/gemini/analyze` **sans authentification** avec la clé Gemini
+   (S7) ; après la fenêtre, l'arrêter (ou en retirer l'accès public) et faire
+   tourner la clé Gemini qu'il utilise, sans attendre le nettoyage J+30.
 7. **Plan Blaze** actif (obligatoire pour les Cloud Functions).
 8. **Annoncer la maintenance** : tout le monde ferme l'application (y compris
    les onglets oubliés sur les PC de l'école) pendant la fenêtre.
