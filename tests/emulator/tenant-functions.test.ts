@@ -107,3 +107,38 @@ describe("fonction api (HTTP)", () => {
     expect(json.errorInfo).toBeUndefined();
   });
 });
+
+// Ignoré quand l'émulateur ne peut pas enregistrer les triggers (voir
+// functions/src/index.ts) ; la logique est alors couverte par functions/test.
+const triggersDisabled = process.env.EMULATOR_SKIP_FIRESTORE_TRIGGERS === "true";
+
+describe.skipIf(triggersDisabled)("archivage = compte suspendu (triggers, de bout en bout)", () => {
+  async function waitFor(check: () => Promise<boolean>, timeoutMs = 20_000) {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      if (await check()) return;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    throw new Error("Délai dépassé en attendant le trigger");
+  }
+
+  it("archiver une fiche suspend le membre lié dans cette école seulement", async () => {
+    const youssef = (await admin.db.doc("usernames/youssef_baqali").get()).data()!.uid;
+    const member = () => admin.db.doc(`schools/alfajr/members/${youssef}`).get().then((d) => d.data()!);
+    await admin.db.doc("schools/alfajr/teachers/t1").update({ isArchived: true });
+    await waitFor(async () => (await member()).isActive === false);
+    await waitFor(async () => (await admin.auth.getUser(youssef)).disabled === true);
+
+    await admin.db.doc("schools/alfajr/teachers/t1").update({ isArchived: false });
+    await waitFor(async () => (await member()).isActive === true);
+    expect((await admin.auth.getUser(youssef)).disabled).toBe(false);
+  });
+
+  it("un compte actif dans une autre école garde son accès Firebase Auth", async () => {
+    const khalid = (await admin.db.doc("usernames/khalid_tazi").get()).data()!.uid;
+    await admin.db.doc("schools/alfajr/teachers/t2").update({ isArchived: true });
+    await waitFor(async () => (await admin.db.doc(`schools/alfajr/members/${khalid}`).get()).data()!.isActive === false);
+    expect((await admin.auth.getUser(khalid)).disabled).toBe(false);
+    expect((await admin.db.doc(`schools/annour/members/${khalid}`).get()).data()!.isActive).toBe(true);
+  });
+});
