@@ -456,7 +456,8 @@ export interface AppUser {
   id: string;
   username: string;
   fullName: string;
-  password?: string;
+  // Plus AUCUN mot de passe n'est stocké côté application (Lot 0) :
+  // l'authentification est entièrement confiée à Firebase Auth.
   role: UserRole;
   roleTitle?: string;
   category?: StaffCategory;
@@ -487,6 +488,29 @@ export interface AppUser {
 
   // Odoo-Style CRUD Matrix Permissions per module
   permissions?: UserPermissions;
+
+  // Lien avec Firebase Auth et liens explicites (Lot 0)
+  authUid?: string; // uid Firebase Auth du compte
+  authEmail?: string; // email technique ({username}@alfajr.local)
+  mustChangePassword?: boolean; // changement de mot de passe obligatoire à la prochaine connexion
+  passwordChangedAt?: string;
+  linkedTeacherId?: string; // fiche du personnel liée (rôles du personnel)
+  linkedStudentIds?: string[]; // élèves liés (élève : lui-même ; parent : ses enfants)
+}
+
+/**
+ * Lien d'autorisation `authLinks/{uid}` lu par les règles Firestore.
+ * Écrit uniquement par le script Admin SDK, les Cloud Functions ou un directeur.
+ */
+export interface AuthLink {
+  appUserId: string;
+  role: UserRole;
+  isActive: boolean;
+  username?: string;
+  linkedStudentIds?: string[];
+  linkedTeacherId?: string | null;
+  updatedAt?: string;
+  updatedBy?: string;
 }
 
 export interface DailyProgress {

@@ -96,7 +96,7 @@ beforeEach(async () => {
   });
 });
 
-const dbAs = (uid: string): Firestore => env.authenticatedContext(uid).firestore();
+const dbAs = (uid: string): Firestore => env.authenticatedContext(uid).firestore() as unknown as Firestore;
 const dbRole = (role: Role): Firestore => dbAs(uidFor(role));
 
 const ALL_COLLECTIONS = [
