@@ -58,3 +58,15 @@ describe("F-03 réinitialisation par un authUid détourné", () => {
     await expect(accounts.resetUserPasswordCore(co, "u_leurre", "prise-de-compte-2026")).rejects.toMatchObject({ code: "permission-denied" });
   });
 });
+
+describe("hypothèse réfutée : course à la création de comptes", () => {
+  it("deux créations simultanées du même identifiant : un seul compte Auth et un seul appUsers", async () => {
+    const dir = await account("u1", "admin_alfajr", "مدير");
+    const input = accounts.parseCreateInput({ username: "meme_nom", password: "motdepasse-2026", fullName: "x", role: "مدرس" });
+    const results = await Promise.allSettled([accounts.createUserAccountCore(dir, input), accounts.createUserAccountCore(dir, input), accounts.createUserAccountCore(dir, input)]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const users = (await admin.adminAuth().listUsers(100)).users.filter((u) => u.email === "meme_nom@alfajr.local");
+    expect(users).toHaveLength(1);
+    expect((await admin.adminDb().collection("appUsers").where("username", "==", "meme_nom").get()).size).toBe(1);
+  });
+});
