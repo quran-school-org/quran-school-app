@@ -90,14 +90,24 @@ personnelles : ne pas diffuser**) :
 
 | Fichier | À vérifier |
 |---|---|
-| `resume.json` | `critical` doit valoir `false`. Nombre de comptes, de comptes Auth existants / à créer |
-| `anomalies.csv` | `U1_NOT_DIRECTOR`, `U1_INACTIVE`, `U1_MISSING` (**critiques** : corriger le document `appUsers/u1` dans la console avant de continuer), doublons, identifiants invalides, comptes sans mot de passe |
+| `resume.json` | `critical` doit valoir `false`. Nombre de comptes, de comptes Auth existants / à créer ; `passwordsRotated` = nombre de mots de passe qui seront remplacés (tous, par défaut) |
+| `anomalies.csv` | `U1_NOT_DIRECTOR`, `U1_INACTIVE`, `U1_MISSING` (**critiques** : corriger le document `appUsers/u1` dans la console avant de continuer), doublons, identifiants invalides, comptes sans mot de passe. **Revue de sécurité** : `UNTRUSTED_AUTH_UID` (**critique** : un `authUid` figure dans `appUsers` sans lien `authLinks` ; l'ancienne application n'écrivait jamais ce champ → falsification probable : noter l'uid, l'examiner dans Console › Authentication, puis supprimer le champ du document ou relancer avec `--accept-critical`, le script l'ignore), `PRIVILEGED_ACCOUNT` (chaque compte مدير / إداري autre que u1 : **le faire confirmer par l'école**, sinon le désactiver avant l'application — `appUsers` était modifiable par tous), `UNEXPECTED_LINK_FIELDS` (liens présents avant tout provisionnement : ignorés) |
 | `identifiants-renommes.csv` | Personnes dont l'identifiant de connexion va changer (doublons, caractères arabes) : **les prévenir** |
 | `liens-a-valider.csv` | Rattachements parent/enfant douteux. Par défaut le script **n'accorde pas** l'accès en cas de doute (statut « NON LIÉ ») : l'école décidera ensuite, depuis Paramètres › المستخدمين |
 | `comptes.csv` | Vue d'ensemble compte par compte |
 
 Ne passer à la suite que si le résumé est compris et qu'aucune anomalie
 critique ne reste.
+
+**Mots de passe (revue de sécurité, R-01 / R-08)** : avant le Lot 0, les mots
+de passe de `appUsers` étaient lisibles **et modifiables** par n'importe qui
+(S1, S2) et celui du directeur figurait dans le code public (S4). Par défaut,
+l'application **remplace donc tous les mots de passe** par des mots de passe
+temporaires aléatoires (`--rotate-passwords=all`), à remettre à chacun avec
+son identifiant ; le changement reste imposé à la première connexion.
+`--rotate-passwords=weak` (seulement les mots de passe faibles et les comptes du
+bureau) est possible mais laisse ouverts les comptes dont le mot de passe a pu
+être relevé ou planté : décision à prendre et à consigner par le responsable.
 
 ## 3. Déploiement des Cloud Functions (sans impact utilisateur)
 
@@ -123,9 +133,14 @@ npx firebase deploy --only functions --project prod
    ```bash
    npx tsx scripts/admin/lot0-provision-auth.ts --project=$PROJECT --database=$DB --apply --confirm-prod=$PROJECT
    ```
-   Contrôler `resume.json` : `linksWritten` = nombre de comptes,
-   `authCreated + authExisting` = nombre de comptes, aucune ligne
-   « IMPOSSIBLE » dans `comptes.csv`.
+   Contrôler `resume.json` : `failures` = 0 (sinon le script sort avec le code 2 :
+   lire `anomalies.csv` › `ACCOUNT_FAILED`, corriger, **relancer la même
+   commande** — seuls les comptes restants sont traités), `linksWritten` =
+   nombre de comptes, `authCreated + authExisting` = nombre de comptes, aucune
+   ligne « IMPOSSIBLE » ni « ÉCHEC » dans `comptes.csv`.
+   Le fichier **SECRET** `mots-de-passe-temporaires.csv` (droits 600) contient
+   les nouveaux mots de passe : le déplacer immédiatement hors du dépôt (support
+   chiffré), ne jamais l'envoyer par messagerie de groupe.
 2. **Règles Firestore** (immédiatement après : les anciens clients pourraient
    sinon réécrire des mots de passe) :
    ```bash
@@ -188,9 +203,12 @@ npx firebase deploy --only functions --project prod
 3. **Restreindre la clé API web** (référents HTTP : domaine Hosting) et prévoir
    App Check (lot ultérieur).
 4. **La connexion se fait désormais uniquement par nom d'utilisateur** (plus
-   par nom complet ni téléphone, décision D2). Communiquer à chacun son
-   identifiant (colonne `identifiant` de `comptes.csv`), en priorité aux
-   parents qui se connectaient avec leur téléphone.
+   par nom complet ni téléphone, décision D2). Communiquer à chacun, **en
+   personne ou individuellement**, son identifiant et son mot de passe
+   temporaire (`mots-de-passe-temporaires.csv`), en priorité au bureau et aux
+   parents qui se connectaient avec leur téléphone. Supprimer ce fichier une
+   fois les remises faites (les mots de passe non remis se réinitialisent
+   depuis Paramètres › المستخدمين).
 5. **Communiquer** les identifiants renommés et faire valider
    `liens-a-valider.csv` par l'école ; corriger les liens dans Paramètres ›
    المستخدمين (« الأبناء المرتبطون بهذا الحساب »).
@@ -218,8 +236,17 @@ corriger.
    ```bash
    gcloud firestore import $BUCKET/lot0-$STAMP --collection-ids=appUsers --database=$DB --project=$PROJECT
    ```
-   (Les documents `authLinks` et les comptes Auth créés restent ; ils sont
-   sans effet avec les anciennes règles.)
+   (Les documents `authLinks` restent ; ils sont sans effet avec les anciennes
+   règles.)
+   **Mots de passe Firebase Auth** : le script les a remplacés ; l'ancien front
+   ne pourrait plus ouvrir de session Firebase (il ne lirait plus rien). Supprimer
+   les comptes Auth **créés** par le script (colonne `auth` = « créé » de
+   `comptes.csv` ; l'ancien client les recréera) puis réimporter l'export Auth
+   (paramètres de hachage : Console › Authentication › ⋮ › Paramètres de hachage) :
+   ```bash
+   npx firebase auth:import auth-avant-lot0-$STAMP.json --hash-algo=SCRYPT --hash-key=<clé> \
+     --salt-separator=<séparateur> --rounds=<rounds> --mem-cost=<mem-cost> --project prod
+   ```
 4. **Functions** (facultatif) :
    ```bash
    npx firebase functions:delete createUserAccount resetUserPassword api --region europe-west1 --project prod
