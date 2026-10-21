@@ -251,3 +251,63 @@ les suivantes ont été prises en cours de route.
 ### D33. Retrait d'un membre
 - `setMemberRole(remove)` supprime l'appartenance ; si la personne n'a plus
   aucune école, son compte Auth est désactivé (pas supprimé, pour l'historique).
+
+## Lot 2 — découpage d'App.tsx (branche `refactor/decoupage-app`)
+
+### D34. Un contrôleur unique composé de hooks successifs, lu par contexte
+- **Contexte** : `App.tsx` (~8 500 lignes) contenait ~180 états, ~120 fonctions et
+  10 effets dans une seule portée ; les écrans en dépendaient directement.
+- **Décision** : l'état et la logique sont déplacés **tels quels** dans des hooks
+  appelés dans le même ordre que dans l'ancien composant (`src/app/useAppController.ts`) :
+  états (`src/data/useSchoolDataState`, `src/session/useSessionState`,
+  `src/app/state/useUiState`) → règles de l'école et cache (`useCore`) → effets
+  (`useQuotaFallback`, `useSessionActions`, `useSchoolSync`) → valeurs dérivées
+  (`useDerived`) → actions par domaine (`src/app/actions/*`). Chaque étage reçoit la
+  portée des précédents (types `src/app/scope.ts`). Les écrans (`src/screens`), les
+  fenêtres (`src/screens/modals`) et le cadre (`src/shell`) lisent le contrôleur par
+  `useApp()` (`src/app/AppContext.tsx`) ; la session est aussi exposée par
+  `SessionContext` (`src/session/SessionContext.tsx`), l'école par `SchoolContext`.
+- **Raison** : zéro changement de comportement. L'état reste à la racine, donc les
+  filtres, recherches et sélections survivent toujours aux changements d'onglet ; les
+  effets gardent leur ordre d'exécution ; le JSX est copié à l'identique (même DOM).
+  Le découpage a été fait par des scripts (tranches de lignes + analyse des noms
+  utilisés), vérifié par `tsc`, par les tests e2e et par comparaison pixel à pixel des
+  captures avant / après (seules différences : animations en cours, ordre aléatoire
+  des comptes dans la liste des membres).
+- **Gabarits d'impression** : `src/print/*` (reçu, certificat, rapports, cartes,
+  relevé mensuel), fonctions pures qui renvoient le HTML ; les fonctions de
+  `usePrintActions` ouvrent la fenêtre comme avant.
+- **Retour arrière** : `git revert` des commits du Lot 2 (aucune donnée touchée).
+
+### D35. Modules extraits volumineux : état → hook + contexte, JSX → sections
+- `FinanceManagement`, `ActivitiesManagement`, `TeacherManagement`,
+  `SettingsManagement` (1 700 à 3 000 lignes) gardent leur interface (props) et leur
+  fichier ; leur état part dans `src/components/{finance,activities,staff,settings}/use*State`
+  (éventuellement scindé en hooks successifs), exposé par un contexte local, et leur
+  JSX en sections (en-tête, filtres, onglets, fenêtres). Constantes de module dans
+  `shared.tsx` (ré-exportées, ex. `STAFF_CATEGORIES_CONFIG`).
+- **Résultat** : plus aucun fichier au-delà de 800 lignes (le plus long :
+  `src/db.ts`, 758 lignes, non modifié).
+
+### D36. Repères de test `data-*`
+- `data-tab` (boutons du menu), `data-nav` (menu bureau / mobile), `data-screen`
+  (racine de chaque écran), `data-modal` (fenêtres), `data-action` (boutons qui
+  ouvrent une fenêtre), `data-subtab`, `data-app-shell`. Sans effet visible ;
+  servent aux tests e2e et aux captures, et survivent au changement de design.
+
+### D37. Constats faits pendant le découpage (non corrigés : hors périmètre « sans changement »)
+- **F1 — écrasement possible des paramètres de l'école** : à la première connexion
+  du directeur historique, l'enregistrement du profil (`handleSaveProfile`) recopie
+  `systemSettings` en changeant `directorName`. Si les paramètres n'ont pas encore été
+  reçus de Firestore (enregistrement très rapide), ce sont les **valeurs par défaut**
+  (cotisation 0, téléphone vide…) qui sont écrites dans `settings/system`. Observé en
+  e2e (captures). Les tests attendent désormais 2 s avant d'enregistrer. Correctif
+  proposé : ne synchroniser `directorName` que si les paramètres viennent du serveur.
+  Logique de session : à traiter avec la revue de sécurité.
+- **F2** — le portail enseignant (`teacher-dashboard`) n'apparaît dans le menu que si
+  le compte a aussi le droit `dashboard` ; l'enseignant fictif (droits explicites) ne
+  le voit donc pas.
+- **F3** — l'onglet des présences n'a pas de rendu pour `إداري`, `مؤطر`, les parents
+  et les élèves (condition `مدير` / `مدرس` dans le routage) : page vide.
+- **F4** — le bandeau « quota Firestore » affiche en dur l'identifiant du projet et de
+  la base de production.

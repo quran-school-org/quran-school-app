@@ -35,6 +35,7 @@ import MonthlyReportModal from "./screens/modals/MonthlyReportModal";
 import ProfileModal from "./screens/modals/ProfileModal";
 import { useAppController } from "./app/useAppController";
 import { AppContext } from "./app/AppContext";
+import { SessionContext, type SessionContextValue } from "./session/SessionContext";
 
 export default function App() {
   const s = useAppController();
@@ -118,8 +119,25 @@ export default function App() {
     openSchoolPicker: handleOpenSchoolPicker,
   };
 
+  const sessionContextValue: SessionContextValue = {
+    currentUser,
+    currentRole,
+    authUid: s.authUid,
+    userProfile,
+    isSuperAdmin,
+    schools,
+    activeSchoolId,
+    mustChangePassword: s.mustChangePassword,
+    accountOwnerName: s.accountOwnerName,
+    logout: s.handleLogout,
+    selectSchool: handleSelectSchool,
+    openSchoolPicker: handleOpenSchoolPicker,
+    openProfile: s.handleOpenProfileModal,
+  };
+
   return (
     <AppContext.Provider value={s}>
+    <SessionContext.Provider value={sessionContextValue}>
     <SchoolContext.Provider value={schoolContextValue}>
     <div data-app-shell className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col antialiased selection:bg-emerald-500 selection:text-white" dir="rtl">
       
@@ -209,6 +227,7 @@ export default function App() {
 
     </div>
     </SchoolContext.Provider>
+    </SessionContext.Provider>
     </AppContext.Provider>
   );
 }
