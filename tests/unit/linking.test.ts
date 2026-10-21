@@ -24,9 +24,11 @@ describe("liens explicites", () => {
   it("aucune correspondance par inclusion (« علي » ne voit pas « علي بن محمد »)", () => {
     const r = computeParentLinks({ id: "p_S-1", role: "ولي أمر", fullName: "علي" }, students);
     expect(r.studentIds.sort()).toEqual(["S-1", "S-2"]);
-    const manual = computeParentLinks({ id: "u_x", role: "ولي أمر", fullName: "علي" }, students);
+    const manual = computeParentLinks({ id: "u_x", role: "ولي أمر", fullName: "علي", phone: "0661000001" }, students);
     expect(manual.studentIds.sort()).toEqual(["S-1", "S-2"]);
     expect(manual.studentIds).not.toContain("S-3");
+    // Nom seul, sans téléphone : rien n'est lié automatiquement.
+    expect(computeParentLinks({ id: "u_y", role: "ولي أمر", fullName: "علي" }, students).studentIds).toEqual([]);
   });
   it("élève : uniquement son dossier", () => {
     expect(computeStudentSelfLink({ id: "s_S-3" }, students).studentIds).toEqual(["S-3"]);

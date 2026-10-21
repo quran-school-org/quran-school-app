@@ -83,16 +83,22 @@ describe("plan de provisionnement (pur)", () => {
     expect(acc("p_S-104").linkedStudentIds).toEqual(["S-104"]);
   });
 
-  it("signale le téléphone partagé par deux parents de noms différents", () => {
-    expect(acc("p_S-105").linkedStudentIds.sort()).toEqual(["S-105", "S-106"]);
-    expect(acc("p_S-105").linkIssues.map((i) => i.code)).toContain("SHARED_PHONE_DIFFERENT_NAME");
+  it("téléphone partagé par deux parents de noms différents : l'autre enfant n'est PAS lié, il est signalé", () => {
+    expect(acc("p_S-105").linkedStudentIds).toEqual(["S-105"]);
+    const issue = acc("p_S-105").linkIssues.find((i) => i.code === "SHARED_PHONE_DIFFERENT_NAME");
+    expect(issue).toMatchObject({ studentId: "S-106", included: false });
   });
 
-  it("signale les rattachements par le seul nom et les comptes sans élève d'origine", () => {
-    expect(acc("p_S-107").linkedStudentIds.sort()).toEqual(["S-107", "S-108"]);
-    expect(acc("p_S-107").linkIssues.map((i) => i.code)).toContain("NAME_ONLY_MATCH");
-    expect(acc("u_manual_parent").linkIssues.map((i) => i.code)).toContain("NO_ANCHOR_PHONE_MATCH");
-    expect(acc("u_manual_parent").linkIssues.map((i) => i.code)).toContain("STUDENT_IN_SEVERAL_PARENT_ACCOUNTS");
+  it("rattachement par le seul nom (sans téléphone) : exclu et signalé", () => {
+    expect(acc("p_S-107").linkedStudentIds).toEqual(["S-107"]);
+    expect(acc("p_S-107").linkIssues.find((i) => i.code === "NAME_ONLY_MATCH")).toMatchObject({ studentId: "S-108", included: false });
+  });
+
+  it("compte parent saisi à la main : seul l'enfant dont téléphone ET nom concordent est lié", () => {
+    expect(acc("u_manual_parent").linkedStudentIds).toEqual(["S-106"]);
+    const codes = acc("u_manual_parent").linkIssues.map((i) => `${i.code}:${i.studentId}:${i.included}`);
+    expect(codes).toContain("NO_ANCHOR_MATCH:S-106:true");
+    expect(codes).toContain("SHARED_PHONE_DIFFERENT_NAME:S-105:false");
   });
 
   it("lie l'élève à son seul dossier et le personnel à sa fiche", () => {
@@ -133,7 +139,9 @@ describe("exécution sur les émulateurs", () => {
     // Rapports produits
     const dir = summary.reportDir!;
     expect(readdirSync(dir).sort()).toEqual(["anomalies.csv", "comptes.csv", "identifiants-renommes.csv", "liens-a-valider.csv", "resume.json"]);
-    expect(readFileSync(join(dir, "liens-a-valider.csv"), "utf8")).toContain("SHARED_PHONE_DIFFERENT_NAME");
+    const review = readFileSync(join(dir, "liens-a-valider.csv"), "utf8");
+    expect(review).toContain("SHARED_PHONE_DIFFERENT_NAME");
+    expect(review).toContain("NON LIÉ — à ajouter si confirmé");
   });
 
   it("refuse d'appliquer en présence d'anomalie critique sans --accept-critical", async () => {

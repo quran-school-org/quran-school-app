@@ -223,7 +223,7 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     if (parents.length > 1) {
       for (const pid of parents) {
         const acc = accounts.find((a) => a.appUserId === pid)!;
-        acc.linkIssues.push({ code: "STUDENT_IN_SEVERAL_PARENT_ACCOUNTS", studentId: sid, detail: `élève rattaché à ${parents.length} comptes parents (${parents.join(", ")})` });
+        acc.linkIssues.push({ code: "STUDENT_IN_SEVERAL_PARENT_ACCOUNTS", studentId: sid, included: true, detail: `élève rattaché à ${parents.length} comptes parents (${parents.join(", ")})` });
       }
     }
   }
@@ -408,11 +408,12 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
         eleveId: i.studentId ?? "",
         eleve: i.studentId ? studentNames.get(i.studentId) ?? "" : "",
         detail: i.detail,
+        statut: i.included === true ? "LIÉ — à retirer si erroné" : i.included === false ? "NON LIÉ — à ajouter si confirmé" : "",
         elevesLies: a.linkedStudentIds,
         decisionEcole: "",
       }))
     );
-    writeFileSync(join(dir, "liens-a-valider.csv"), toCsv(review, ["appUserId", "compte", "role", "identifiant", "code", "eleveId", "eleve", "detail", "elevesLies", "decisionEcole"]));
+    writeFileSync(join(dir, "liens-a-valider.csv"), toCsv(review, ["appUserId", "compte", "role", "identifiant", "code", "eleveId", "eleve", "statut", "detail", "elevesLies", "decisionEcole"]));
     writeFileSync(join(dir, "identifiants-renommes.csv"), toCsv(plan.accounts.filter((a) => a.renamed).map((a) => ({ appUserId: a.appUserId, compte: a.fullName, ancien: a.originalUsername, nouveau: a.username }))));
   }
   return { summary, plan };

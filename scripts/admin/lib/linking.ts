@@ -52,6 +52,8 @@ export interface LinkIssue {
   code: string;
   studentId?: string;
   detail: string;
+  /** true : l'élève EST lié (à retirer si erroné) ; false : il est EXCLU (à ajouter si confirmé). */
+  included?: boolean;
 }
 
 export interface StudentLinkResult {
@@ -60,7 +62,12 @@ export interface StudentLinkResult {
   issues: LinkIssue[];
 }
 
-/** Enfants d'un compte parent (ولي أمر). */
+/**
+ * Enfants d'un compte parent (ولي أمر), par moindre privilège :
+ * un enfant n'est lié automatiquement que si le téléphone ET le nom du parent
+ * concordent (ou s'il est l'élève d'origine `p_{id}`). Toute correspondance
+ * partielle est EXCLUE et listée pour validation par l'école.
+ */
 export function computeParentLinks(account: AccountLike, students: StudentLike[]): StudentLinkResult {
   const byId = new Map(students.map((s) => [s.id, s]));
   const issues: LinkIssue[] = [];
@@ -70,54 +77,34 @@ export function computeParentLinks(account: AccountLike, students: StudentLike[]
     issues.push({ code: "ANCHOR_MISSING", detail: `élève ${account.id.slice(2)} introuvable` });
   }
 
-  if (anchor) {
-    const phone = normalizePhone(anchor.parentPhone);
-    const anchorName = normalizeName(anchor.parentName);
-    let children: StudentLike[];
-    let method: LinkMethod;
-    if (phone) {
-      children = students.filter((s) => normalizePhone(s.parentPhone) === phone);
-      method = "phone";
-      for (const c of children) {
-        if (normalizeName(c.parentName) !== anchorName) {
-          issues.push({ code: "SHARED_PHONE_DIFFERENT_NAME", studentId: c.id, detail: `même téléphone, nom du parent différent (« ${c.parentName} » / « ${anchor.parentName} »)` });
-        }
-      }
-    } else if (anchorName) {
-      children = students.filter((s) => !normalizePhone(s.parentPhone) && normalizeName(s.parentName) === anchorName);
-      method = "name";
-      if (children.length > 1) {
-        for (const c of children) {
-          if (c.id !== anchor.id) issues.push({ code: "NAME_ONLY_MATCH", studentId: c.id, detail: `rattaché par le seul nom du parent « ${c.parentName} » (homonyme possible)` });
-        }
-      }
-    } else {
-      children = [anchor];
-      method = "id";
+  const refPhone = normalizePhone(anchor ? anchor.parentPhone : account.phone);
+  const refName = normalizeName(anchor ? anchor.parentName : account.fullName);
+  const linked = new Set<string>(anchor ? [anchor.id] : []);
+  let method: LinkMethod = anchor ? "id" : "none";
+
+  for (const s of students) {
+    if (linked.has(s.id)) continue;
+    const phone = normalizePhone(s.parentPhone);
+    const name = normalizeName(s.parentName);
+    const phoneMatch = !!refPhone && phone === refPhone;
+    const nameMatch = !!refName && name === refName;
+    if (phoneMatch && nameMatch) {
+      linked.add(s.id);
+      method = anchor ? "phone" : "account-phone";
+      if (!anchor) issues.push({ code: "NO_ANCHOR_MATCH", studentId: s.id, included: true, detail: `compte sans élève d'origine : rattaché (téléphone et nom concordent)` });
+    } else if (phoneMatch) {
+      issues.push({ code: "SHARED_PHONE_DIFFERENT_NAME", studentId: s.id, included: false, detail: `même téléphone mais nom du parent différent (« ${s.parentName} ») : NON rattaché` });
+    } else if (nameMatch && !phone && !refPhone) {
+      issues.push({ code: "NAME_ONLY_MATCH", studentId: s.id, included: false, detail: `même nom de parent « ${s.parentName} », sans téléphone (homonyme possible) : NON rattaché` });
+    } else if (nameMatch && (!phone || !refPhone)) {
+      issues.push({ code: "NAME_MATCH_PHONE_MISSING", studentId: s.id, included: false, detail: `même nom de parent, un des téléphones manque : NON rattaché` });
     }
-    if (!children.some((c) => c.id === anchor.id)) children.unshift(anchor);
-    return { studentIds: Array.from(new Set(children.map((c) => c.id))), method, issues };
   }
 
-  // Compte sans élève d'ancrage (créé à la main) : correspondances exactes, toutes à valider.
-  const phone = normalizePhone(account.phone);
-  if (phone) {
-    const children = students.filter((s) => normalizePhone(s.parentPhone) === phone);
-    if (children.length > 0) {
-      children.forEach((c) => issues.push({ code: "NO_ANCHOR_PHONE_MATCH", studentId: c.id, detail: `compte sans élève d'origine, rattaché par le téléphone ${phone}` }));
-      return { studentIds: children.map((c) => c.id), method: "account-phone", issues };
-    }
+  if (linked.size === 0) {
+    issues.push({ code: "NO_CHILD_FOUND", detail: "aucun élève rattaché : le compte ne verra aucun dossier" });
   }
-  const name = normalizeName(account.fullName);
-  if (name) {
-    const children = students.filter((s) => normalizeName(s.parentName) === name);
-    if (children.length > 0) {
-      children.forEach((c) => issues.push({ code: "NO_ANCHOR_NAME_MATCH", studentId: c.id, detail: `compte sans élève d'origine, rattaché par le nom « ${account.fullName} »` }));
-      return { studentIds: children.map((c) => c.id), method: "account-name", issues };
-    }
-  }
-  issues.push({ code: "NO_CHILD_FOUND", detail: "aucun élève rattaché : le compte ne verra aucun dossier" });
-  return { studentIds: [], method: "none", issues };
+  return { studentIds: Array.from(linked), method: linked.size === 0 ? "none" : method, issues };
 }
 
 /** Dossier d'un compte élève (طالب). */
@@ -129,7 +116,7 @@ export function computeStudentSelfLink(account: AccountLike, students: StudentLi
   const name = normalizeName(account.fullName);
   const matches = name ? students.filter((s) => normalizeName(s.fullName) === name) : [];
   if (matches.length === 1) {
-    return { studentIds: [matches[0].id], method: "name", issues: [{ code: "STUDENT_NAME_MATCH", studentId: matches[0].id, detail: "dossier rattaché par le seul nom de l'élève" }] };
+    return { studentIds: [], method: "none", issues: [{ code: "STUDENT_NAME_MATCH", studentId: matches[0].id, included: false, detail: "un seul dossier porte ce nom : NON rattaché automatiquement (à confirmer)" }] };
   }
   return {
     studentIds: [],
@@ -148,7 +135,7 @@ export function computeTeacherLink(account: AccountLike, teachers: TeacherLike[]
   const name = normalizeName(account.fullName);
   const matches = name ? teachers.filter((t) => normalizeName(t.fullName) === name) : [];
   if (matches.length === 1) {
-    return { teacherId: matches[0].id, method: "name", issues: [{ code: "TEACHER_NAME_MATCH", detail: `fiche ${matches[0].id} rattachée par le seul nom` }] };
+    return { teacherId: matches[0].id, method: "name", issues: [{ code: "TEACHER_NAME_MATCH", included: true, detail: `fiche ${matches[0].id} rattachée par le seul nom (sans incidence sur les droits)` }] };
   }
   return { teacherId: null, method: "none", issues: matches.length > 1 ? [{ code: "TEACHER_NAME_AMBIGUOUS", detail: `${matches.length} fiches portent ce nom` }] : [] };
 }
