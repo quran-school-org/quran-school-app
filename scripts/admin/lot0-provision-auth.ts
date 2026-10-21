@@ -29,8 +29,9 @@
  *   --accept-critical       passe outre les anomalies critiques (compte u1)
  *   --no-sync-passwords     ne réaligne pas le mot de passe des comptes Auth existants
  *   --rotate-passwords=<p>  remplace les mots de passe exposés par des mots de passe
- *                           temporaires aléatoires : weak (défaut : faibles + bureau),
- *                           all (tous), none (historique, démonstration uniquement).
+ *                           temporaires aléatoires : all (défaut, tous les comptes),
+ *                           weak (faibles + bureau seulement), none (historique,
+ *                           données de démonstration uniquement).
  *                           Les nouveaux mots de passe sont dans le rapport SECRET
  *                           mots-de-passe-temporaires.csv (application seulement).
  *   --out=<dossier>         dossier des rapports (défaut scripts/admin/out, ignoré par git)
@@ -120,8 +121,16 @@ function compareDuplicates(a: RawUser, b: RawUser): number {
   return pa[3] < pb[3] ? -1 : 1;
 }
 
-/** Étape pure : audit, noms d'utilisateur, liens. Aucune E/S. */
-export function computeProvisionPlan(users: RawUser[], students: StudentLike[], teachers: TeacherLike[], rotation: RotationPolicy = "weak"): ProvisionPlan {
+/**
+ * Étape pure : audit, noms d'utilisateur, liens. Aucune E/S.
+ *
+ * `trustedLinks` (uid → appUserId) provient de `authLinks`, collection que
+ * l'ancienne application ne pouvait pas écrire : seul un `authUid` confirmé
+ * par un lien vaut provisionnement antérieur. Avant le Lot 0, `appUsers` était
+ * modifiable par tout compte connecté (S2) : un `authUid`, des liens ou un
+ * mot de passe qui y figurent peuvent avoir été plantés (constat R-08).
+ */
+export function computeProvisionPlan(users: RawUser[], students: StudentLike[], teachers: TeacherLike[], rotation: RotationPolicy = "all", trustedLinks: Map<string, string> = new Map()): ProvisionPlan {
   const anomalies: Anomaly[] = [];
   const add = (severity: Anomaly["severity"], code: string, u: RawUser, detail: string) =>
     anomalies.push({ severity, code, appUserId: u.id, username: String(u.username ?? ""), detail });
@@ -177,7 +186,17 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     let linkedTeacherId: string | null = null;
     let linkIssues: LinkIssue[] = [];
     const accountLike = { id: u.id, role, fullName: u.fullName, phone: u.phone };
-    const alreadyProvisioned = typeof u.authUid === "string" && u.authUid.length > 0;
+    const claimedUid = typeof u.authUid === "string" && u.authUid.length > 0 ? u.authUid : null;
+    const alreadyProvisioned = claimedUid !== null && trustedLinks.get(claimedUid) === u.id;
+    if (claimedUid && !alreadyProvisioned) {
+      add("critique", "UNTRUSTED_AUTH_UID", u, `authUid ${claimedUid} présent dans appUsers sans lien authLinks correspondant (écriture par l'ancienne application impossible : falsification probable) : ignoré, à examiner`);
+    }
+    if (!alreadyProvisioned && (Array.isArray(u.linkedStudentIds) && u.linkedStudentIds.length > 0 || (typeof u.linkedTeacherId === "string" && u.linkedTeacherId))) {
+      add("avertissement", "UNEXPECTED_LINK_FIELDS", u, `liens déjà présents avant tout provisionnement (élèves : ${Array.isArray(u.linkedStudentIds) ? u.linkedStudentIds.join(" ") : "—"} ; fiche : ${u.linkedTeacherId || "—"}) : ignorés, seuls les liens calculés sont accordés`);
+    }
+    if (!alreadyProvisioned && (role === "مدير" || role === "إداري") && u.id !== "u1") {
+      add("avertissement", "PRIVILEGED_ACCOUNT", u, `compte du bureau (${role}) : à faire confirmer par l'école avant application (finances, comptes)`);
+    }
     if (alreadyProvisioned) {
       // Compte déjà provisionné : les liens enregistrés font foi (l'école a pu
       // retirer un lien « à retirer si erroné ») ; aucun recalcul heuristique.
@@ -196,10 +215,6 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
       linkedTeacherId = r.teacherId;
       linkIssues = r.issues;
     }
-    if (!alreadyProvisioned && Array.isArray(u.linkedStudentIds) && u.linkedStudentIds.length > 0) {
-      linkedStudentIds = Array.from(new Set([...u.linkedStudentIds, ...linkedStudentIds]));
-    }
-    if (!alreadyProvisioned && typeof u.linkedTeacherId === "string" && u.linkedTeacherId) linkedTeacherId = u.linkedTeacherId;
     if (linkedStudentIds.length > 30) {
       linkIssues.push({ code: "TOO_MANY_STUDENTS", detail: `${linkedStudentIds.length} élèves liés (30 maximum) : liste tronquée` });
       linkedStudentIds = linkedStudentIds.slice(0, 30);
@@ -232,7 +247,7 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
       rotatePassword: shouldRotate(rotation, { role, username: fu.username, phone: u.phone, knownPassword }),
       hadPasswordField: hasPassword,
       passwordIsLegacyDefault: !hasPassword && !alreadyProvisioned,
-      existingAuthUid: alreadyProvisioned ? u.authUid : null,
+      existingAuthUid: alreadyProvisioned ? claimedUid : null,
       linkedStudentIds,
       linkedTeacherId,
       linkIssues,
@@ -254,7 +269,7 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
 export interface ProvisionOptions {
   apply: boolean;
   syncExistingPasswords: boolean;
-  /** Remplacement des mots de passe exposés (défaut : "weak"). Voir lib/passwords.ts. */
+  /** Remplacement des mots de passe exposés (défaut : "all"). Voir lib/passwords.ts. */
   rotatePasswords?: RotationPolicy;
   acceptCritical: boolean;
   outDir: string | null;
@@ -302,16 +317,19 @@ async function findAuthUser(auth: Auth, acc: PlannedAccount): Promise<UserRecord
 /** Exécute le provisionnement (simulation par défaut). */
 export async function runLot0Provision(db: Firestore, auth: Auth, opts: ProvisionOptions): Promise<{ summary: ProvisionSummary; plan: ProvisionPlan }> {
   const log = opts.log ?? (() => undefined);
-  const rotation = opts.rotatePasswords ?? "weak";
-  const [usersSnap, studentsSnap, teachersSnap] = await Promise.all([
+  const rotation = opts.rotatePasswords ?? "all";
+  const [usersSnap, studentsSnap, teachersSnap, linksSnap] = await Promise.all([
     db.collection("appUsers").get(),
     db.collection("students").get(),
     db.collection("teachers").get(),
+    db.collection("authLinks").get(),
   ]);
+  const trustedLinks = new Map<string, string>();
+  linksSnap.forEach((d) => { if (typeof d.data().appUserId === "string") trustedLinks.set(d.id, d.data().appUserId); });
   const users: RawUser[] = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const students: StudentLike[] = studentsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
   const teachers: TeacherLike[] = teachersSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-  const plan = computeProvisionPlan(users, students, teachers, rotation);
+  const plan = computeProvisionPlan(users, students, teachers, rotation, trustedLinks);
   const toRotate = plan.accounts.filter((a) => a.rotatePassword).length;
 
   const summary: ProvisionSummary = {

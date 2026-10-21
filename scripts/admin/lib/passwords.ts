@@ -7,11 +7,15 @@
  * ces comptes ouverts à quiconque les a relevés ; `mustChangePassword` n'est
  * qu'un rappel affiché par l'interface, pas une protection.
  *
+ * De plus, `appUsers` était MODIFIABLE par tout compte connecté (S2) : un
+ * tiers a pu y écrire le mot de passe de son choix pour n'importe quel compte
+ * (constat R-08). Aucun mot de passe de `appUsers` n'est donc digne de
+ * confiance, d'où la politique par défaut `all`.
+ *
  * Politiques (`--rotate-passwords=`) :
- *   - `weak` (défaut) : mots de passe faibles ou notoirement exposés, et TOUS
- *     les comptes du bureau (مدير, إداري), qui ouvrent les finances et la
- *     gestion des comptes ;
- *   - `all`  : tous les comptes (recommandé si une collecte de `appUsers` est suspectée) ;
+ *   - `all` (défaut) : tous les comptes reçoivent un mot de passe temporaire ;
+ *   - `weak` : mots de passe faibles ou notoirement exposés, et TOUS les comptes
+ *     du bureau (مدير, إداري) — choix humain explicite, risque résiduel documenté ;
  *   - `none` : comportement historique (données de démonstration uniquement).
  * Les mots de passe temporaires ne sont écrits que dans le rapport secret
  * `mots-de-passe-temporaires.csv` (jamais dans Firestore ni dans les journaux).
@@ -28,7 +32,7 @@ export const KNOWN_EXPOSED_PASSWORDS = ["123", "FajrAcademy@2026!"];
 const OFFICE_ROLES = ["مدير", "إداري"];
 
 export function parseRotationPolicy(value: unknown): RotationPolicy {
-  if (value === undefined) return "weak";
+  if (value === undefined) return "all";
   if (typeof value === "string" && (ROTATION_POLICIES as string[]).includes(value)) return value as RotationPolicy;
   throw new Error(`--rotate-passwords doit valoir ${ROTATION_POLICIES.join(", ")}.`);
 }
@@ -39,7 +43,8 @@ export function isWeakPassword(password: string, username: string, phone?: strin
   if (p.length < 8) return true;
   if (KNOWN_EXPOSED_PASSWORDS.includes(p)) return true;
   const lower = p.toLowerCase();
-  if (lower === username.toLowerCase() || lower.includes(username.toLowerCase())) return true;
+  const user = username.toLowerCase();
+  if (lower === user || (user.length >= 4 && lower.includes(user))) return true;
   const digits = p.replace(/\D/g, "");
   const phoneDigits = (phone || "").replace(/\D/g, "");
   if (phoneDigits.length >= 8 && digits.length >= 8 && (phoneDigits.endsWith(digits) || digits.endsWith(phoneDigits.slice(-8)))) return true;

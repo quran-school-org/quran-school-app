@@ -128,7 +128,7 @@ beforeEach(async () => {
 });
 
 describe("R-01 mots de passe exposés encore valables après le provisionnement", () => {
-  it("par défaut, les mots de passe faibles et ceux du bureau sont remplacés par des mots de passe temporaires aléatoires", async () => {
+  it("par défaut, tous les mots de passe exposés sont remplacés par des mots de passe temporaires aléatoires", async () => {
     const out = mkdtempSync(join(tmpdir(), "revue-rot-"));
     const { summary } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: out });
 
@@ -137,6 +137,8 @@ describe("R-01 mots de passe exposés encore valables après le provisionnement"
     expect(await signIn("youssef_baqali@alfajr.local", normalizeAuthPassword("123"))).toBeNull();
     expect(await signIn("admin_alfajr@alfajr.local", DEMO_PASSWORDS.director)).toBeNull();
     expect(await signIn("sans_mdp@alfajr.local", normalizeAuthPassword("123"))).toBeNull();
+    // Même un mot de passe solide de appUsers était lisible (S1) et modifiable (S2) par tous.
+    expect(await signIn("parent_manuel@alfajr.local", DEMO_PASSWORDS.manualParent)).toBeNull();
 
     // Les mots de passe temporaires (rapport secret) fonctionnent et le changement est imposé.
     const rows = readCsv(join(summary.reportDir!, "mots-de-passe-temporaires.csv"));
@@ -168,6 +170,13 @@ describe("R-01 mots de passe exposés encore valables après le provisionnement"
     const second = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null });
     expect(second.summary.passwordsRotated).toBe(0);
     expect(await signIn("admin_alfajr@alfajr.local", temp)).not.toBeNull();
+  });
+
+  it("option explicite --rotate-passwords=weak : faibles et bureau remplacés, mot de passe solide d'une famille conservé", async () => {
+    await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: mkdtempSync(join(tmpdir(), "revue-weak-")), rotatePasswords: "weak" });
+    expect(await signIn("mohammed_alami@alfajr.local", normalizeAuthPassword("123"))).toBeNull();
+    expect(await signIn("admin_alfajr@alfajr.local", DEMO_PASSWORDS.director)).toBeNull();
+    expect(await signIn("parent_manuel@alfajr.local", DEMO_PASSWORDS.manualParent)).not.toBeNull();
   });
 
   it("option explicite --rotate-passwords=none : comportement historique (données de démonstration)", async () => {
@@ -260,5 +269,43 @@ describe("R-05 relance de la migration pendant que la nouvelle application écri
     expect(after.status).toBe("غائب");
     expect(after.editedAfterSwitch).toBe(true);
     expect(summary.anomalies.WRITE_FAILED ?? 0).toBe(0);
+  });
+});
+
+describe("R-08 comptes falsifiés avant le Lot 0 (appUsers était modifiable par tout compte connecté)", () => {
+  it("un authUid planté dans appUsers ne rattache pas le compte d'un tiers au rôle de directeur", async () => {
+    // Le tiers crée son compte (inscription libre) puis écrit son uid dans appUsers/u1.
+    const pirate = await admin.auth.createUser({ email: "pirate@example.invalid", password: "pirate-2026" });
+    await admin.db.collection("appUsers").doc("u1").update({ authUid: pirate.uid });
+    const out = mkdtempSync(join(tmpdir(), "revue-planted-"));
+    const dry = await runLot0Provision(admin.db, admin.auth, { apply: false, syncExistingPasswords: true, acceptCritical: false, outDir: out });
+    expect(dry.plan.anomalies.find((a) => a.code === "UNTRUSTED_AUTH_UID")).toMatchObject({ severity: "critique", appUserId: "u1" });
+    await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: true, outDir: out });
+    expect((await admin.db.collection("authLinks").doc(pirate.uid).get()).exists).toBe(false);
+    const u1 = await appUser("u1");
+    expect(u1.authUid).not.toBe(pirate.uid);
+    expect(u1.authEmail).toBe("admin_alfajr@alfajr.local");
+  });
+
+  it("des liens plantés dans appUsers avant le premier provisionnement sont ignorés et signalés", async () => {
+    await admin.db.collection("appUsers").doc("p_S-101").update({ linkedStudentIds: ["S-103", "S-104", "S-105"], linkedTeacherId: "t1" });
+    const { plan } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: mkdtempSync(join(tmpdir(), "revue-links-")) });
+    const p = await appUser("p_S-101");
+    expect(p.linkedStudentIds.sort()).toEqual(["S-101", "S-102"]);
+    expect((await admin.db.collection("authLinks").doc(p.authUid).get()).data()?.linkedStudentIds.sort()).toEqual(["S-101", "S-102"]);
+    expect(plan.anomalies.find((a) => a.code === "UNEXPECTED_LINK_FIELDS")?.appUserId).toBe("p_S-101");
+  });
+
+  it("un mot de passe planté (non faible) dans un compte enseignant ne devient pas son mot de passe", async () => {
+    await admin.db.collection("appUsers").doc("t_t1").update({ password: "Mot-de-passe-pirate-2026" });
+    await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: mkdtempSync(join(tmpdir(), "revue-pw-")) });
+    expect(await signIn("youssef_baqali@alfajr.local", "Mot-de-passe-pirate-2026")).toBeNull();
+  });
+
+  it("tout compte du bureau autre que u1 est listé pour vérification par l'école", async () => {
+    await admin.db.collection("appUsers").doc("u_intrus").set({ username: "gestion", fullName: "إدارة", role: "مدير", password: "Intrus-2026-xyz", isActive: true });
+    const { plan } = await runLot0Provision(admin.db, admin.auth, { apply: false, syncExistingPasswords: true, acceptCritical: false, outDir: null });
+    const review = plan.anomalies.filter((a) => a.code === "PRIVILEGED_ACCOUNT").map((a) => a.appUserId).sort();
+    expect(review).toEqual(["t_t2", "u_intrus"]);
   });
 });
