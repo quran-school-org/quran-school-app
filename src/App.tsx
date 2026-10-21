@@ -797,6 +797,12 @@ export default function App() {
     }
   }, [currentUser?.mustChangePassword]);
 
+  // Les paramètres de l'école arrivent parfois après les paiements : on masque
+  // alors les mois antérieurs à l'ouverture dès qu'ils sont connus.
+  useEffect(() => {
+    if (systemSettings) setPayments((prev) => keepBillable(prev));
+  }, [systemSettings?.openingYear, systemSettings?.openingMonth]);
+
   // Titre de l'onglet : nom de l'école active.
   useEffect(() => {
     if (typeof document !== "undefined" && activeSchoolId && systemSettings?.associationName) {
