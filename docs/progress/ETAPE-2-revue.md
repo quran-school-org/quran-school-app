@@ -18,8 +18,9 @@ Commande locale des tests sur émulateurs (conteneur à proxy, D21) :
 - hypothèses réfutées sur les règles (tests/emulator/revue-rules.test.ts) ;
 - runbooks mis à jour.
 
-## En cours
-- Portage sur `fix/revue-securite-lot0` (R-01..R-04, R-08, R-09, C-01..C-03, F-02 équivalent).
+- Portage sur `fix/revue-securite-lot0` (R-01..R-04, R-08, R-09, C-01..C-03, F-02, F-03) ;
+- DECISIONS.md (D34–D41), rapport `docs/revues/REVUE-SECURITE-ETAPE-2.md` et verdict.
 
-## Suivant
-- DECISIONS.md (D34+), rapport `docs/revues/REVUE-SECURITE-ETAPE-2.md`, verdict.
+## Statut
+Revue terminée ; les deux branches sont poussées. Restent les actions humaines
+du §8 du rapport (relecture, fusion, runbooks).
