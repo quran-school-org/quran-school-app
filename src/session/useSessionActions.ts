@@ -4,7 +4,7 @@
 import React, { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { clearLocalCache, ensureCacheOwner, purgeLegacySensitiveStorage, setActiveSchool } from "../db";
-import { signInWithUsername, signOutUser, fetchUserProfile, fetchMember, fetchSchool, listAllSchools, isCurrentUserSuperAdmin, updateOwnUserFields, updateOwnMemberFields, createSchoolRemote, describeFirebaseError, getIdToken, auth } from "../firebase";
+import { signInWithUsername, signOutUser, fetchUserProfile, fetchMember, fetchSchool, listAllSchools, isCurrentUserSuperAdmin, updateOwnUserFields, updateOwnMemberFields, createSchoolRemote, describeFirebaseError, auth } from "../firebase";
 import { UserProfile, SchoolInfo } from "../types";
 import { clearSchoolCache, readLastSchool, rememberLastSchool } from "../cache/localCache";
 import { mergeSessionProfile } from "../app/helpers";

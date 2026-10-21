@@ -2,7 +2,6 @@
  * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
  */
 import { Info, Database } from "lucide-react";
-import { useApp } from "../app/AppContext";
 
 export default function QuotaBanner() {
   return (
