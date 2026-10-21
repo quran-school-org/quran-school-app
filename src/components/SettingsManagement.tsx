@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { SystemSettings, AppUser, UserRole, UserPermissions, getDefaultPermissionsForRole, Teacher, Student } from "../types";
 import { MIN_NEW_PASSWORD_LENGTH } from "../security/accounts";
+import { MONTHS_AR } from "../school/businessRules";
+import type { FeeOverride } from "../types";
+
+/** Compte du directeur historique (ancien identifiant u1) : protégé. */
+const isPrimaryDirector = (u: AppUser | null | undefined) => !!u && (u.id === "u1" || u.legacyAppUserId === "u1" || u.username === "admin_alfajr");
 import { PermissionMatrixEditor } from "./PermissionMatrixEditor";
 import { generateUniqueUsername } from "../db";
 import { 
@@ -67,6 +72,8 @@ export default function SettingsManagement({
   const [userViewMode, setUserViewMode] = useState<"table" | "cards">("table");
   const [showFormPassword, setShowFormPassword] = useState(false);
   const [userFormSaving, setUserFormSaving] = useState(false);
+  // Rattacher un compte existant (même personne dans plusieurs écoles) au lieu d'en créer un.
+  const [formAttachExisting, setFormAttachExisting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccessMsg, setSyncSuccessMsg] = useState("");
 
@@ -140,6 +147,10 @@ export default function SettingsManagement({
   const [directorName, setDirectorName] = useState(settings.directorName);
   const [subscriptionFee, setSubscriptionFee] = useState(settings.subscriptionFee);
   const [currency, setCurrency] = useState(settings.currency);
+  // Paramètres métier de l'école (multi-écoles)
+  const [openingYear, setOpeningYear] = useState<number | "">(settings.openingYear ?? "");
+  const [openingMonth, setOpeningMonth] = useState<string>(settings.openingMonth || "");
+  const [feeOverrides, setFeeOverrides] = useState<FeeOverride[]>(settings.feeOverrides || []);
   const [allowSelfRegistration, setAllowSelfRegistration] = useState(settings.allowSelfRegistration);
   const [showStampOnReceipts, setShowStampOnReceipts] = useState(settings.showStampOnReceipts);
   const [stampText, setStampText] = useState(settings.stampText);
@@ -250,6 +261,11 @@ export default function SettingsManagement({
       directorName,
       subscriptionFee: Number(subscriptionFee),
       currency,
+      openingYear: openingYear === "" ? undefined : Number(openingYear),
+      openingMonth: openingMonth || undefined,
+      feeOverrides: feeOverrides
+        .filter((o) => Number(o.year) > 0 && o.month && Number.isFinite(Number(o.amount)))
+        .map((o) => ({ year: Number(o.year), month: o.month, amount: Number(o.amount) })),
       allowSelfRegistration,
       showStampOnReceipts,
       stampText,
@@ -293,7 +309,7 @@ export default function SettingsManagement({
     if (user) {
       setEditingUser(user);
       setFormUsername(user.username);
-      setFormFullName((user.id === "u1" || user.username === "admin_alfajr") && directorName ? directorName : user.fullName);
+      setFormFullName(isPrimaryDirector(user) && directorName ? directorName : user.fullName);
       setFormPassword("");
       setFormLinkedTeacherId(user.linkedTeacherId || (user.id.startsWith("t_") ? user.id.slice(2) : ""));
       setFormLinkedStudentIds(
@@ -335,6 +351,7 @@ export default function SettingsManagement({
       setFormLinkedTeacherId("");
       setFormLinkedStudentIds([]);
       setLinkedStudentSearch("");
+      setFormAttachExisting(false);
       setFormRole("مدرس");
       setFormIsActive(true);
       setFormCanEditStudents(true);
@@ -370,7 +387,7 @@ export default function SettingsManagement({
       alert("الرجاء ملء الاسم الكامل.");
       return;
     }
-    if (!editingUser && formPassword.length < MIN_NEW_PASSWORD_LENGTH) {
+    if (!editingUser && !formAttachExisting && formPassword.length < MIN_NEW_PASSWORD_LENGTH) {
       alert(`يجب أن تتكون كلمة المرور من ${MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل.`);
       return;
     }
@@ -384,6 +401,11 @@ export default function SettingsManagement({
     if (editingUser) {
       // Le nom d'utilisateur d'un compte existant ne change pas (il porte l'email de connexion).
       finalUsername = editingUser.username;
+    } else if (formAttachExisting) {
+      if (!finalUsername) {
+        alert("يرجى إدخال اسم المستخدم للحساب الموجود.");
+        return;
+      }
     } else if (!finalUsername || existingUsernames.includes(finalUsername)) {
       finalUsername = generateUniqueUsername(formFullName, existingUsernames);
     }
@@ -423,7 +445,7 @@ export default function SettingsManagement({
       permissions: formPermissions,
     };
 
-    if ((userToSave.id === "u1" || userToSave.username === "admin_alfajr") && formFullName.trim()) {
+    if (isPrimaryDirector(userToSave) && formFullName.trim()) {
       setDirectorName(formFullName.trim());
     }
 
@@ -433,7 +455,7 @@ export default function SettingsManagement({
         await onSaveAppUser(userToSave);
         setShowUserModal(false);
       } else if (onCreateAppUser) {
-        const ok = await onCreateAppUser(userToSave, formPassword);
+        const ok = await onCreateAppUser(userToSave, formAttachExisting ? "" : formPassword);
         if (ok) setShowUserModal(false);
       }
     } finally {
@@ -710,6 +732,73 @@ export default function SettingsManagement({
                       className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none bg-white font-bold"
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">سنة الافتتاح الرسمي (بداية الفوترة)</label>
+                    <input
+                      type="number"
+                      value={openingYear}
+                      onChange={(e) => setOpeningYear(e.target.value === "" ? "" : Number(e.target.value))}
+                      placeholder="مثال: 2026"
+                      className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none bg-white font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">شهر الافتتاح الرسمي</label>
+                    <select
+                      value={openingMonth}
+                      onChange={(e) => setOpeningMonth(e.target.value)}
+                      className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none bg-white font-bold"
+                    >
+                      <option value="">—</option>
+                      {MONTHS_AR.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700">تعريفات خاصة لبعض الأشهر (عروض وتخفيضات)</label>
+                  {feeOverrides.map((o, i) => (
+                    <div key={i} className="grid grid-cols-7 gap-2 items-center">
+                      <input
+                        type="number"
+                        value={o.year}
+                        onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, year: Number(e.target.value) } : x)))}
+                        className="col-span-2 p-2 border border-slate-300 rounded-xl text-xs bg-white font-bold"
+                      />
+                      <select
+                        value={o.month}
+                        onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, month: e.target.value } : x)))}
+                        className="col-span-2 p-2 border border-slate-300 rounded-xl text-xs bg-white font-bold"
+                      >
+                        {MONTHS_AR.map((m) => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                      <input
+                        type="number"
+                        value={o.amount}
+                        onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, amount: Number(e.target.value) } : x)))}
+                        className="col-span-2 p-2 border border-slate-300 rounded-xl text-xs bg-white font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setFeeOverrides((prev) => prev.filter((_, j) => j !== i))}
+                        className="p-2 text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-xl transition cursor-pointer flex items-center justify-center"
+                        title="حذف"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setFeeOverrides((prev) => [...prev, { year: new Date().getFullYear(), month: MONTHS_AR[new Date().getMonth()], amount: Number(subscriptionFee) || 0 }])}
+                    className="text-[10px] text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3" />
+                    <span>إضافة تعريفة خاصة</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1070,7 +1159,7 @@ export default function SettingsManagement({
                   <tbody className="divide-y divide-slate-100 font-sans">
                     {filteredUsers.map((user) => {
                       const isAutoSynced = user.id.startsWith("t_") || user.id.startsWith("p_") || user.id.startsWith("s_");
-                      const displayFullName = (user.id === "u1" || user.username === "admin_alfajr") && directorName ? directorName : user.fullName;
+                      const displayFullName = isPrimaryDirector(user) && directorName ? directorName : user.fullName;
                       return (
                         <tr
                           key={user.id}
@@ -1130,7 +1219,7 @@ export default function SettingsManagement({
                                 <span className={`font-bold tracking-wider ${user.mustChangePassword ? "text-amber-700" : "text-slate-600"}`} title={user.mustChangePassword ? "يجب على المستخدم تغيير كلمة المرور عند الدخول" : "كلمة المرور محفوظة بشكل آمن ولا يمكن عرضها"}>
                                   {user.mustChangePassword ? "تغيير إلزامي" : "••••••••"}
                                 </span>
-                                {canUpdateAccounts && onResetUserPassword && user.authUid && (
+                                {canUpdateAccounts && onResetUserPassword && (
                                   <button
                                     type="button"
                                     onClick={() => handleResetPassword(user)}
@@ -1247,7 +1336,7 @@ export default function SettingsManagement({
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                              {canDeleteAccounts && user.id !== "u1" && user.username !== "admin_alfajr" && (
+                              {canDeleteAccounts && !isPrimaryDirector(user) && (
                                 <button
                                   onClick={() => {
                                     if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
@@ -1316,7 +1405,7 @@ export default function SettingsManagement({
                     </div>
 
                     <h4 className={`font-bold text-sm mb-0.5 ${user.isArchived ? "line-through text-slate-400" : "text-slate-800"}`}>
-                      {(user.id === "u1" || user.username === "admin_alfajr") && directorName ? directorName : user.fullName}
+                      {isPrimaryDirector(user) && directorName ? directorName : user.fullName}
                     </h4>
                     {user.roleTitle && user.roleTitle !== user.role && (
                       <p className="text-[11px] text-slate-500 font-medium mb-1">{user.roleTitle}</p>
@@ -1327,7 +1416,7 @@ export default function SettingsManagement({
                         <span className={`font-bold ${user.mustChangePassword ? "text-amber-700" : "text-slate-700"}`}>
                           {user.mustChangePassword ? "تغيير إلزامي" : "••••••••"}
                         </span>
-                        {canUpdateAccounts && onResetUserPassword && user.authUid && (
+                        {canUpdateAccounts && onResetUserPassword && (
                           <button
                             type="button"
                             onClick={() => handleResetPassword(user)}
@@ -1384,7 +1473,7 @@ export default function SettingsManagement({
                         <Edit2 className="w-4 h-4" />
                       </button>
                     )}
-                    {canDeleteAccounts && user.id !== "u1" && user.username !== "admin_alfajr" && (
+                    {canDeleteAccounts && !isPrimaryDirector(user) && (
                       <button
                         onClick={() => {
                           if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
@@ -1465,12 +1554,17 @@ export default function SettingsManagement({
 
                 {!editingUser ? (
                 <div className="space-y-1">
+                  <label className="flex items-center gap-1.5 text-[10px] text-slate-600 font-bold cursor-pointer mb-1">
+                    <input type="checkbox" checked={formAttachExisting} onChange={(e) => setFormAttachExisting(e.target.checked)} />
+                    <span>إضافة حساب موجود في مدرسة أخرى (نفس اسم المستخدم)</span>
+                  </label>
+                  {!formAttachExisting && (<>
                   <label className="block text-xs font-bold text-slate-700">كلمة المرور المؤقتة <span className="text-rose-500">*</span></label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-slate-400 pointer-events-none"><Lock className="w-3.5 h-3.5" /></span>
                     <input
                       type={showFormPassword ? "text" : "password"}
-                      required
+                      required={!formAttachExisting}
                       minLength={MIN_NEW_PASSWORD_LENGTH}
                       autoComplete="new-password"
                       value={formPassword}
@@ -1488,13 +1582,14 @@ export default function SettingsManagement({
                     </button>
                   </div>
                   <p className="text-[10px] text-slate-500">{MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل. سيُطلب من المستخدم تغييرها عند أول دخول.</p>
+                  </>)}
                 </div>
                 ) : (
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
                   <div className="p-2.5 border border-slate-200 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-center justify-between gap-2">
                     <span>لا تُخزَّن كلمات المرور في المنظومة ولا يمكن عرضها.</span>
-                    {onResetUserPassword && editingUser.authUid && (
+                    {onResetUserPassword && (
                       <button
                         type="button"
                         onClick={() => handleResetPassword(editingUser)}
@@ -1514,7 +1609,7 @@ export default function SettingsManagement({
                   <label className="block text-xs font-bold text-slate-700">نوع الصلاحية الافتراضية</label>
                   <select
                     value={formRole}
-                    disabled={editingUser?.username === "admin_alfajr"}
+                    disabled={isPrimaryDirector(editingUser)}
                     onChange={(e) => {
                       const newRole = e.target.value as UserRole;
                       setFormRole(newRole);
@@ -1663,7 +1758,7 @@ export default function SettingsManagement({
                   <label className="block text-xs font-bold text-slate-700">حالة الحساب</label>
                   <select
                     value={formIsActive ? "active" : "blocked"}
-                    disabled={editingUser?.username === "admin_alfajr"}
+                    disabled={isPrimaryDirector(editingUser)}
                     onChange={(e) => setFormIsActive(e.target.value === "active")}
                     className="w-full p-2.5 border border-slate-300 rounded-xl text-xs"
                   >
@@ -1739,11 +1834,11 @@ export default function SettingsManagement({
                   permissions={formPermissions}
                   onChange={setFormPermissions}
                   role={formRole}
-                  disabled={editingUser?.username === "admin_alfajr"}
+                  disabled={isPrimaryDirector(editingUser)}
                 />
               </div>
 
-              {editingUser?.username === "admin_alfajr" && (
+              {isPrimaryDirector(editingUser) && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl flex items-start gap-2 text-[10px]">
                   <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p>حساب المدير الأساسي (@admin_alfajr) له الصلاحيات المطلقة دائماً ولا يمكن تعديل نوع حسابه أو حظره لضمان عدم انقطاع الوصول إلى النظام.</p>

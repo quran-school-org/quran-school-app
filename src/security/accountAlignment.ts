@@ -32,7 +32,7 @@ export function computeAccountAlignment(users: AppUser[], teachers: Teacher[], s
   const changed: AppUser[] = [];
 
   for (const user of users) {
-    if (user.id === "u1") continue; // le compte directeur principal n'est jamais modifié automatiquement
+    if (user.id === "u1" || user.legacyAppUserId === "u1") continue; // le compte directeur principal n'est jamais modifié automatiquement
     let next: AppUser = { ...user };
 
     const teacherId = linkedTeacherIdOf(user);

@@ -10,6 +10,7 @@ interface ImportMetaEnv {
   readonly VITE_FIRESTORE_DATABASE_ID?: string;
   readonly VITE_USE_EMULATORS?: string;
   readonly VITE_EMULATOR_HOST?: string;
+  readonly VITE_API_BASE_URL?: string;
 }
 
 interface ImportMeta {

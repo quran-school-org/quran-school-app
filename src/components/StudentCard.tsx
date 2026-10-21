@@ -284,7 +284,7 @@ export default function StudentCard({ student, studentClass, canPrint = true }: 
 
             <div className="text-left">
               <p className="text-[7px] text-slate-400 font-bold leading-none">الموسم الدراسي لسنة:</p>
-              <p className="text-[9px] text-teal-800 font-extrabold font-mono mt-0.5">2026-2027 / 1448</p>
+              <p className="text-[9px] text-teal-800 font-extrabold font-mono mt-0.5">{(systemSettings?.activeAcademicSeason || "").replace("/", "-")}</p>
             </div>
           </div>
 

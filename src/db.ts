@@ -4,33 +4,41 @@ import {
   Expense, UserRole, ActivityTrip, ActivityParticipant, ActivityExpense,
   getDefaultPermissionsForRole
 } from "./types";
-import { saveToFirestore, deleteFromFirestore, saveAppUserDoc, saveAuthLink, deleteAuthLink, stripPassword } from "./firebase";
+import { saveToFirestore, deleteFromFirestore, setMemberRoleRemote, stripPassword } from "./firebase";
+import { clearAllCaches, getCacheScope, hasCacheScope, purgeLegacyAlfajrKeys, scopedKey, setCacheScope } from "./cache/localCache";
 
 export { getRoleAndPermissionsForStaff } from "./security/staffRoles";
 
+/** Drapeaux de droits hérités transmis tels quels aux Cloud Functions. */
+export const ACCOUNT_FLAG_KEYS = [
+  "canEditStudents", "canEditTeachers", "canEditGrades", "canEditPayments",
+  "teacherTakeAttendance", "teacherRecordGrades", "teacherWriteBehaviorReports", "teacherEditOwnStudents", "teacherSendAlertsToParents",
+  "parentViewOwnStats", "parentViewOwnAttendance", "parentViewCertificates", "parentViewOwnPayments", "parentUpdateContactInfo", "parentRegisterInActivities",
+] as const;
+
 // Key definitions for LocalStorage
 const STORAGE_KEYS = {
-  STUDENTS: "alfajr_students",
-  TEACHERS: "alfajr_teachers",
-  CLASSES: "alfajr_classes",
-  ATTENDANCE: "alfajr_attendance",
-  GRADES: "alfajr_grades",
-  PAYMENTS: "alfajr_payments",
-  NOTIFICATIONS: "alfajr_notifications",
-  SETTINGS_SYSTEM: "alfajr_settings_system",
-  SETTINGS_USERS: "alfajr_settings_users",
-  DAILY_PROGRESS: "alfajr_daily_progress",
-  OTHER_INCOMES: "alfajr_other_incomes",
-  SALARY_PAYMENTS: "alfajr_salary_payments",
-  EXPENSES: "alfajr_expenses",
-  ACTIVITIES: "alfajr_activities",
-  ACTIVITY_PARTICIPANTS: "alfajr_activity_participants",
-  ACTIVITY_EXPENSES: "alfajr_activity_expenses",
+  STUDENTS: "students",
+  TEACHERS: "teachers",
+  CLASSES: "classes",
+  ATTENDANCE: "attendance",
+  GRADES: "grades",
+  PAYMENTS: "payments",
+  NOTIFICATIONS: "notifications",
+  SETTINGS_SYSTEM: "settings_system",
+  SETTINGS_USERS: "settings_users",
+  DAILY_PROGRESS: "daily_progress",
+  OTHER_INCOMES: "other_incomes",
+  SALARY_PAYMENTS: "salary_payments",
+  EXPENSES: "expenses",
+  ACTIVITIES: "activities",
+  ACTIVITY_PARTICIPANTS: "activity_participants",
+  ACTIVITY_EXPENSES: "activity_expenses",
 };
 
 const INITIAL_SETTINGS_SYSTEM: SystemSettings = {
-  associationName: "جمعية الفجر الجديد",
-  associationPhone: "06.74.633.108",
+  associationName: "",
+  associationPhone: "",
   associationEmail: "",
   associationAddress: "",
   associationLogo: "",
@@ -73,143 +81,11 @@ const INITIAL_ATTENDANCE: Attendance[] = [];
 const INITIAL_GRADES: Grade[] = [];
 const INITIAL_PAYMENTS: Payment[] = [];
 const INITIAL_NOTIFICATIONS: Notification[] = [];
-const INITIAL_ACTIVITIES: ActivityTrip[] = [
-  {
-    id: "act_1",
-    title: "رحلة استكشافية وترفيهية إلى شلالات أوزود ومغارة سيدي مجبر",
-    type: "رحلة استكشافية",
-    startDate: "2026-08-30",
-    endDate: "2026-08-30",
-    location: "شلالات أوزود - إقليم أزيلال",
-    leaderIds: ["t1", "t2"],
-    leaderNames: ["الأستاذ المشرف التربوي", "المؤطر العام"],
-    contributionFee: 120,
-    maxCapacity: 45,
-    status: "قيد التسجيل",
-    targetAudience: "الطلاب والعاملين",
-    description: "رحلة تربوية استكشافية لفائدة حفظة القرآن الكريم وأطر الجمعية للترويح والتعرف على المعالم الطبيعية والتاريخية للمنطقة.",
-    programDetails: "07:00 انطلاق الحافلة من مقر الجمعية - 10:30 الوصول واستراحة شاي - 11:30 جولة استكشافية للشلالات ومسابقة قرآنية وثقافية - 14:00 وجبة غداء جماعية - 16:30 ألعاب حركية ومسابقات - 18:30 العودة إلى المقر.",
-    meetingPoint: "مقر الجمعية الرئيسي (أمام المسجد)",
-    createdAt: "2026-08-10",
-    syncedToFinance: false
-  },
-  {
-    id: "act_2",
-    title: "المخيم القرآني والتربوي الصيفي لحفظ وتثبيت القرآن الكريم",
-    type: "مخيم قرآني صيفي/ربيعي",
-    startDate: "2026-09-05",
-    endDate: "2026-09-08",
-    location: "فضاء التخييم والأنشطة - غابة المعمورة",
-    leaderIds: ["t1"],
-    leaderNames: ["مدير الأنشطة والمخيمات"],
-    contributionFee: 250,
-    maxCapacity: 60,
-    status: "مخطط له",
-    targetAudience: "الطلاب فقط",
-    description: "مخيم تدريبي مكثف يهدف إلى مراجعة وتثبيت 5 أحزاب من القرآن الكريم مع ورشات تجويد وسلوكيات وأنشطة رياضية وفنية هادفة.",
-    programDetails: "برنامج يومي يبدأ بصلاة الفجر وحلقة الحفظ الصباحي، ثم ورشات مهارية ورياضية بعد الظهر، وجلسات سمر وإنشاد ومسابقات مسائية.",
-    meetingPoint: "مركز الجمعية",
-    createdAt: "2026-08-12",
-    syncedToFinance: false
-  }
-];
-
-const INITIAL_ACTIVITY_PARTICIPANTS: ActivityParticipant[] = [
-  {
-    id: "part_1",
-    activityId: "act_1",
-    participantType: "طالب",
-    fullName: "محمد بن عبد الله العلوي",
-    phone: "0661234567",
-    gender: "ذكر",
-    fee: 120,
-    paidAmount: 120,
-    paymentStatus: "مدفوع",
-    paymentDate: "2026-08-15",
-    paymentMethod: "نقداً",
-    receiptNo: "REC-ACT-001",
-    hasParentApproval: true,
-    medicalNotes: "لا توجد أي حساسية",
-    registeredAt: "2026-08-15"
-  },
-  {
-    id: "part_2",
-    activityId: "act_1",
-    participantType: "طالب",
-    fullName: "فاطمة الزهراء الإدريسي",
-    phone: "0662345678",
-    gender: "أنثى",
-    fee: 120,
-    paidAmount: 120,
-    paymentStatus: "مدفوع",
-    paymentDate: "2026-08-16",
-    paymentMethod: "نقداً",
-    receiptNo: "REC-ACT-002",
-    hasParentApproval: true,
-    notes: "موافقة موقعة من ولي الأمر",
-    registeredAt: "2026-08-16"
-  },
-  {
-    id: "part_3",
-    activityId: "act_1",
-    participantType: "طالب",
-    fullName: "ياسين المرابطي",
-    phone: "0663456789",
-    gender: "ذكر",
-    fee: 120,
-    paidAmount: 60,
-    paymentStatus: "مدفوع جزئياً",
-    paymentDate: "2026-08-17",
-    paymentMethod: "نقداً",
-    receiptNo: "REC-ACT-003",
-    hasParentApproval: true,
-    notes: "دفع نصف المبلغ والباقي يوم الانطلاق",
-    registeredAt: "2026-08-17"
-  },
-  {
-    id: "part_4",
-    activityId: "act_1",
-    participantType: "أستاذ / محفظ",
-    fullName: "الأستاذ المشرف التربوي",
-    phone: "0674633108",
-    gender: "ذكر",
-    fee: 0,
-    paidAmount: 0,
-    paymentStatus: "معفى",
-    notes: "مؤطر مرافق مسؤول عن الفوج",
-    registeredAt: "2026-08-12"
-  }
-];
-
-const INITIAL_ACTIVITY_EXPENSES: ActivityExpense[] = [
-  {
-    id: "exp_act_1",
-    activityId: "act_1",
-    title: "كراء حافلة نقل ممتازة مكيفة سعة 48 مقعداً مع السائق",
-    category: "كراء حافلة وتنقل",
-    amount: 2200,
-    date: "2026-08-16",
-    paymentMethod: "تحويل بنكي",
-    paidBy: "أمين المال",
-    receiptOrInvoiceNo: "FAC-TRANS-2026-99",
-    supplier: "شركة الأطلس للنقل السياحي",
-    notes: "تسبيق تم دفعه للحجز والباقي بعد انتهاء الرحلة",
-    createdAt: "2026-08-16"
-  },
-  {
-    id: "exp_act_2",
-    activityId: "act_1",
-    title: "شراء وجبات ومشروبات خفيفة وفواكه للمشاركين",
-    category: "تغذية ومأكولات ومشروبات",
-    amount: 650,
-    date: "2026-08-17",
-    paymentMethod: "نقداً",
-    paidBy: "المؤطر المسؤول",
-    receiptOrInvoiceNo: "BON-ALIM-884",
-    supplier: "ممون الحفلات والتموين السريع",
-    createdAt: "2026-08-17"
-  }
-];
+// Plus aucune donnée de démonstration n'est injectée (multi-écoles) : une
+// école vide reste vide.
+const INITIAL_ACTIVITIES: ActivityTrip[] = [];
+const INITIAL_ACTIVITY_PARTICIPANTS: ActivityParticipant[] = [];
+const INITIAL_ACTIVITY_EXPENSES: ActivityExpense[] = [];
 
 // Helper to sanitize data stored in LocalStorage to prevent quota errors
 function sanitizeForLocalStorage(key: string, data: any): any {
@@ -222,28 +98,25 @@ function sanitizeForLocalStorage(key: string, data: any): any {
   return data;
 }
 
-// Helper to safely get data from LocalStorage or initialize it if absent
+// Lecture / écriture du cache local, cloisonné par école (kuttab:{schoolId}:{nom}).
+// Une clé absente renvoie la valeur par défaut SANS l'écrire.
 function getStoredData<T>(key: string, seed: T[]): T[] {
   if (typeof window === "undefined") return seed;
-  const data = localStorage.getItem(key);
-  if (!data) {
-    const sanitizedSeed = sanitizeForLocalStorage(key, seed);
-    localStorage.setItem(key, JSON.stringify(sanitizedSeed));
-    return seed;
-  }
+  const data = localStorage.getItem(scopedKey(key));
+  if (!data) return [...seed];
   try {
     return JSON.parse(data);
   } catch (e) {
     console.error(`Error parsing key ${key}`, e);
-    return seed;
+    return [...seed];
   }
 }
 
 function setStoredData<T>(key: string, data: T[]): void {
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && hasCacheScope()) {
     try {
       const sanitizedData = sanitizeForLocalStorage(key, data);
-      localStorage.setItem(key, JSON.stringify(sanitizedData));
+      localStorage.setItem(scopedKey(key), JSON.stringify(sanitizedData));
     } catch (e) {
       console.error(`Error saving to LocalStorage key ${key}:`, e);
     }
@@ -252,29 +125,40 @@ function setStoredData<T>(key: string, data: T[]): void {
 
 function getStoredItem<T>(key: string, seed: T): T {
   if (typeof window === "undefined") return seed;
-  const data = localStorage.getItem(key);
-  if (!data) {
-    const sanitizedSeed = sanitizeForLocalStorage(key, seed);
-    localStorage.setItem(key, JSON.stringify(sanitizedSeed));
-    return seed;
-  }
+  const data = localStorage.getItem(scopedKey(key));
+  if (!data) return { ...(seed as any) };
   try {
     return JSON.parse(data);
   } catch (e) {
     console.error(`Error parsing key ${key}`, e);
-    return seed;
+    return { ...(seed as any) };
   }
 }
 
 function setStoredItem<T>(key: string, data: T): void {
-  if (typeof window !== "undefined") {
+  if (typeof window !== "undefined" && hasCacheScope()) {
     try {
       const sanitizedData = sanitizeForLocalStorage(key, data);
-      localStorage.setItem(key, JSON.stringify(sanitizedData));
+      localStorage.setItem(scopedKey(key), JSON.stringify(sanitizedData));
     } catch (e) {
       console.error(`Error saving to LocalStorage key ${key}:`, e);
     }
   }
+}
+
+/** École active : préfixe des chemins Firestore et du cache local. */
+export function setActiveSchool(schoolId: string | null): void {
+  setCacheScope(schoolId);
+}
+
+export function getActiveSchool(): string | null {
+  return getCacheScope();
+}
+
+function sid(): string {
+  const schoolId = getCacheScope();
+  if (!schoolId) throw new Error("Aucune école sélectionnée.");
+  return schoolId;
 }
 
 // Les utilitaires de noms d'utilisateur sont purs (sans Firebase) pour être
@@ -302,7 +186,7 @@ export const RealmSimDB = {
       students.push(student);
     }
     setStoredData(STORAGE_KEYS.STUDENTS, students);
-    saveToFirestore("students", student.id, student);
+    saveToFirestore(sid(), "students", student.id, student);
     // Lot 0 : plus aucune création automatique de compte (parent / élève) depuis
     // le navigateur. Les comptes sont créés explicitement par un directeur
     // (Paramètres > المستخدمين) via la Cloud Function createUserAccount.
@@ -310,7 +194,7 @@ export const RealmSimDB = {
   deleteStudent(id: string): void {
     const students = this.getStudents().filter((s) => s.id !== id);
     setStoredData(STORAGE_KEYS.STUDENTS, students);
-    deleteFromFirestore("students", id);
+    deleteFromFirestore(sid(), "students", id);
     // Les comptes liés ne sont plus supprimés implicitement (action du directeur).
   },
 
@@ -327,7 +211,7 @@ export const RealmSimDB = {
       teachers.push(teacher);
     }
     setStoredData(STORAGE_KEYS.TEACHERS, teachers);
-    saveToFirestore("teachers", teacher.id, teacher);
+    saveToFirestore(sid(), "teachers", teacher.id, teacher);
     // Lot 0 : le compte lié n'est plus créé ni réécrit automatiquement. La
     // suspension à l'archivage est faite par la Cloud Function
     // syncAccountsOnArchive (et par le directeur depuis l'interface).
@@ -335,7 +219,7 @@ export const RealmSimDB = {
   deleteTeacher(id: string): void {
     const teachers = this.getTeachers().filter((t) => t.id !== id);
     setStoredData(STORAGE_KEYS.TEACHERS, teachers);
-    deleteFromFirestore("teachers", id);
+    deleteFromFirestore(sid(), "teachers", id);
   },
 
   // --- Classes ---
@@ -351,12 +235,12 @@ export const RealmSimDB = {
       classes.push(cls);
     }
     setStoredData(STORAGE_KEYS.CLASSES, classes);
-    saveToFirestore("classes", cls.id, cls);
+    saveToFirestore(sid(), "classes", cls.id, cls);
   },
   deleteClass(id: string): void {
     const classes = this.getClasses().filter((c) => c.id !== id);
     setStoredData(STORAGE_KEYS.CLASSES, classes);
-    deleteFromFirestore("classes", id);
+    deleteFromFirestore(sid(), "classes", id);
   },
 
   // --- Attendance ---
@@ -374,7 +258,7 @@ export const RealmSimDB = {
       records.push(attendance);
     }
     setStoredData(STORAGE_KEYS.ATTENDANCE, records);
-    saveToFirestore("attendance", attendance.id, attendance);
+    saveToFirestore(sid(), "attendance", attendance.id, attendance);
   },
   saveMultipleAttendance(attendanceList: Attendance[]): void {
     const records = this.getAttendance();
@@ -385,7 +269,7 @@ export const RealmSimDB = {
       } else {
         records.push(att);
       }
-      saveToFirestore("attendance", att.id, att);
+      saveToFirestore(sid(), "attendance", att.id, att);
     });
     setStoredData(STORAGE_KEYS.ATTENDANCE, records);
   },
@@ -403,12 +287,12 @@ export const RealmSimDB = {
       grades.push(grade);
     }
     setStoredData(STORAGE_KEYS.GRADES, grades);
-    saveToFirestore("grades", grade.id, grade);
+    saveToFirestore(sid(), "grades", grade.id, grade);
   },
   deleteGrade(id: string): void {
     const grades = this.getGrades().filter((g) => g.id !== id);
     setStoredData(STORAGE_KEYS.GRADES, grades);
-    deleteFromFirestore("grades", id);
+    deleteFromFirestore(sid(), "grades", id);
   },
 
   // --- Payments ---
@@ -424,12 +308,12 @@ export const RealmSimDB = {
       payments.push(payment);
     }
     setStoredData(STORAGE_KEYS.PAYMENTS, payments);
-    saveToFirestore("payments", payment.id, payment);
+    saveToFirestore(sid(), "payments", payment.id, payment);
   },
   deletePayment(id: string): void {
     const payments = this.getPayments().filter((p) => p.id !== id);
     setStoredData(STORAGE_KEYS.PAYMENTS, payments);
-    deleteFromFirestore("payments", id);
+    deleteFromFirestore(sid(), "payments", id);
   },
   saveMultiplePayments(paymentsList: Payment[]): void {
     const payments = this.getPayments();
@@ -440,7 +324,7 @@ export const RealmSimDB = {
       } else {
         payments.push(pay);
       }
-      saveToFirestore("payments", pay.id, pay);
+      saveToFirestore(sid(), "payments", pay.id, pay);
     });
     setStoredData(STORAGE_KEYS.PAYMENTS, payments);
   },
@@ -453,13 +337,13 @@ export const RealmSimDB = {
     const list = this.getNotifications();
     list.unshift(notification); // add to the beginning
     setStoredData(STORAGE_KEYS.NOTIFICATIONS, list);
-    saveToFirestore("notifications", notification.id, notification);
+    saveToFirestore(sid(), "notifications", notification.id, notification);
   },
   markNotificationAsRead(id: string): void {
     const list = this.getNotifications().map((n) => {
       if (n.id === id) {
         const updated = { ...n, isRead: true };
-        saveToFirestore("notifications", id, updated);
+        saveToFirestore(sid(), "notifications", id, updated);
         return updated;
       }
       return n;
@@ -468,7 +352,7 @@ export const RealmSimDB = {
   },
   clearAllNotifications(): void {
     const list = this.getNotifications();
-    list.forEach(n => deleteFromFirestore("notifications", n.id));
+    list.forEach(n => deleteFromFirestore(sid(), "notifications", n.id));
     setStoredData(STORAGE_KEYS.NOTIFICATIONS, []);
   },
   restoreBackup(backupData: any): void {
@@ -538,24 +422,12 @@ export const RealmSimDB = {
     }
   },
   getSystemSettings(): SystemSettings {
-    const settings = getStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, INITIAL_SETTINGS_SYSTEM);
-    let modified = false;
-    if (settings.associationAddress && settings.associationAddress.includes("طنجة")) {
-      settings.associationAddress = settings.associationAddress.replace(/طنجة/g, "سلا");
-      modified = true;
-    }
-    if (settings.stampText && settings.stampText.includes("طنجة")) {
-      settings.stampText = settings.stampText.replace(/طنجة/g, "سلا");
-      modified = true;
-    }
-    if (modified) {
-      setStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, settings);
-    }
-    return settings;
+    // (L'ancien remplacement automatique « طنجة → سلا », propre à Al Fajr, est supprimé.)
+    return getStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, INITIAL_SETTINGS_SYSTEM);
   },
   saveSystemSettings(settings: SystemSettings): void {
     setStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, settings);
-    saveToFirestore("settings", "system", settings);
+    saveToFirestore(sid(), "settings", "system", settings);
   },
   getAppUsers(): AppUser[] {
     // Lot 0 : liste telle que synchronisée depuis Firestore (bureau uniquement),
@@ -569,15 +441,11 @@ export const RealmSimDB = {
     return cleaned;
   },
   /**
-   * Enregistre un compte existant (directeur uniquement, imposé par les règles).
-   * Met aussi à jour le lien d'autorisation `authLinks/{authUid}` lu par les
-   * règles Firestore : rôle, statut et liens explicites.
+   * Enregistre un compte existant de l'école (membre). Passe par la Cloud
+   * Function setMemberRole (directeur de l'école ou super-admin) : rôle,
+   * statut, droits et liens explicites. Aucun mot de passe.
    */
   async saveAppUser(user: AppUser): Promise<void> {
-    // Permanent guard: u1 must always remain a "مدير"
-    if (user.id === "u1") {
-      user.role = "مدير";
-    }
     const clean = stripPassword(user);
     const list = this.getAppUsers();
     const idx = list.findIndex(u => u.id === clean.id);
@@ -587,32 +455,31 @@ export const RealmSimDB = {
       list.push(clean);
     }
     setStoredData(STORAGE_KEYS.SETTINGS_USERS, list);
-    await saveAppUserDoc(clean);
-    if (clean.authUid) {
-      await saveAuthLink(clean.authUid, {
-        appUserId: clean.id,
-        role: clean.role,
-        isActive: clean.isActive !== false,
-        username: clean.username,
-        linkedStudentIds: clean.linkedStudentIds || [],
-        linkedTeacherId: clean.linkedTeacherId || null,
-        updatedAt: new Date().toISOString(),
-      });
+    const flags: Record<string, boolean> = {};
+    for (const k of ACCOUNT_FLAG_KEYS) {
+      const v = (clean as any)[k];
+      if (typeof v === "boolean") flags[k] = v;
     }
+    await setMemberRoleRemote(sid(), clean.id, {
+      fullName: clean.fullName,
+      role: clean.role,
+      isActive: clean.isActive !== false,
+      isArchived: Boolean(clean.isArchived),
+      phone: clean.phone,
+      email: clean.email,
+      permissions: clean.permissions,
+      linkedTeacherId: clean.linkedTeacherId || null,
+      linkedStudentIds: clean.linkedStudentIds || [],
+      roleTitle: clean.roleTitle || null,
+      category: clean.category || null,
+      flags,
+    });
   },
+  /** Retire un compte de l'école (le compte global n'est pas supprimé). */
   async deleteAppUser(userId: string): Promise<void> {
-    if (userId === "u1") {
-      console.warn("Attempt to delete primary administrator u1 blocked.");
-      return;
-    }
     const all = this.getAppUsers();
-    const target = all.find(u => u.id === userId);
     setStoredData(STORAGE_KEYS.SETTINGS_USERS, all.filter(u => u.id !== userId));
-    // Sans lien d'autorisation, le compte Auth restant n'ouvre plus aucun accès.
-    if (target?.authUid) {
-      await deleteAuthLink(target.authUid);
-    }
-    deleteFromFirestore("appUsers", userId);
+    await setMemberRoleRemote(sid(), userId, {}, true);
   },
   /** Remplace le cache local des comptes (après création via Cloud Function). */
   setCachedAppUsers(users: AppUser[]): void {
@@ -630,12 +497,12 @@ export const RealmSimDB = {
       list.push(progress);
     }
     setStoredData(STORAGE_KEYS.DAILY_PROGRESS, list);
-    saveToFirestore("dailyProgress", progress.id, progress);
+    saveToFirestore(sid(), "dailyProgress", progress.id, progress);
   },
   deleteDailyProgress(id: string): void {
     const list = this.getDailyProgress().filter(p => p.id !== id);
     setStoredData(STORAGE_KEYS.DAILY_PROGRESS, list);
-    deleteFromFirestore("dailyProgress", id);
+    deleteFromFirestore(sid(), "dailyProgress", id);
   },
 
   // --- Other Incomes ---
@@ -651,12 +518,12 @@ export const RealmSimDB = {
       list.push(income);
     }
     setStoredData(STORAGE_KEYS.OTHER_INCOMES, list);
-    saveToFirestore("otherIncomes", income.id, income);
+    saveToFirestore(sid(), "otherIncomes", income.id, income);
   },
   deleteOtherIncome(id: string): void {
     const list = this.getOtherIncomes().filter(item => item.id !== id);
     setStoredData(STORAGE_KEYS.OTHER_INCOMES, list);
-    deleteFromFirestore("otherIncomes", id);
+    deleteFromFirestore(sid(), "otherIncomes", id);
   },
 
   // --- Salary Payments ---
@@ -672,12 +539,12 @@ export const RealmSimDB = {
       list.push(salary);
     }
     setStoredData(STORAGE_KEYS.SALARY_PAYMENTS, list);
-    saveToFirestore("salaryPayments", salary.id, salary);
+    saveToFirestore(sid(), "salaryPayments", salary.id, salary);
   },
   deleteSalaryPayment(id: string): void {
     const list = this.getSalaryPayments().filter(item => item.id !== id);
     setStoredData(STORAGE_KEYS.SALARY_PAYMENTS, list);
-    deleteFromFirestore("salaryPayments", id);
+    deleteFromFirestore(sid(), "salaryPayments", id);
   },
 
   // --- Operational Expenses ---
@@ -693,12 +560,12 @@ export const RealmSimDB = {
       list.push(expense);
     }
     setStoredData(STORAGE_KEYS.EXPENSES, list);
-    saveToFirestore("expenses", expense.id, expense);
+    saveToFirestore(sid(), "expenses", expense.id, expense);
   },
   deleteExpense(id: string): void {
     const list = this.getExpenses().filter(item => item.id !== id);
     setStoredData(STORAGE_KEYS.EXPENSES, list);
-    deleteFromFirestore("expenses", id);
+    deleteFromFirestore(sid(), "expenses", id);
   },
 
   // --- Activities & Trips Management (إدارة الأنشطة والرحلات) ---
@@ -714,13 +581,13 @@ export const RealmSimDB = {
       list.push(activity);
     }
     setStoredData(STORAGE_KEYS.ACTIVITIES, list);
-    saveToFirestore("activities", activity.id, activity);
+    saveToFirestore(sid(), "activities", activity.id, activity);
     this.syncAllActivitiesToFinance();
   },
   deleteActivity(id: string): void {
     const list = this.getActivities().filter(item => item.id !== id);
     setStoredData(STORAGE_KEYS.ACTIVITIES, list);
-    deleteFromFirestore("activities", id);
+    deleteFromFirestore(sid(), "activities", id);
 
     // Also delete associated participants and expenses
     const participants = this.getActivityParticipants().filter(p => p.activityId === id);
@@ -749,13 +616,13 @@ export const RealmSimDB = {
       list.push(participant);
     }
     setStoredData(STORAGE_KEYS.ACTIVITY_PARTICIPANTS, list);
-    saveToFirestore("activityParticipants", participant.id, participant);
+    saveToFirestore(sid(), "activityParticipants", participant.id, participant);
     this.syncAllActivitiesToFinance();
   },
   deleteActivityParticipant(id: string): void {
     const list = getStoredData<ActivityParticipant>(STORAGE_KEYS.ACTIVITY_PARTICIPANTS, INITIAL_ACTIVITY_PARTICIPANTS).filter(item => item.id !== id);
     setStoredData(STORAGE_KEYS.ACTIVITY_PARTICIPANTS, list);
-    deleteFromFirestore("activityParticipants", id);
+    deleteFromFirestore(sid(), "activityParticipants", id);
     this.syncAllActivitiesToFinance();
   },
 
@@ -776,13 +643,13 @@ export const RealmSimDB = {
       list.push(expense);
     }
     setStoredData(STORAGE_KEYS.ACTIVITY_EXPENSES, list);
-    saveToFirestore("activityExpenses", expense.id, expense);
+    saveToFirestore(sid(), "activityExpenses", expense.id, expense);
     this.syncAllActivitiesToFinance();
   },
   deleteActivityExpense(id: string): void {
     const list = getStoredData<ActivityExpense>(STORAGE_KEYS.ACTIVITY_EXPENSES, INITIAL_ACTIVITY_EXPENSES).filter(item => item.id !== id);
     setStoredData(STORAGE_KEYS.ACTIVITY_EXPENSES, list);
-    deleteFromFirestore("activityExpenses", id);
+    deleteFromFirestore(sid(), "activityExpenses", id);
     this.syncAllActivitiesToFinance();
   },
 
@@ -805,7 +672,7 @@ export const RealmSimDB = {
     const prevIncomesCount = otherIncomes.length;
     otherIncomes = otherIncomes.filter(inc => {
       if (inc.id.startsWith("inc_act_")) {
-        deleteFromFirestore("otherIncomes", inc.id);
+        deleteFromFirestore(sid(), "otherIncomes", inc.id);
         return false;
       }
       return true;
@@ -815,7 +682,7 @@ export const RealmSimDB = {
     const prevExpensesCount = expenses.length;
     expenses = expenses.filter(exp => {
       if (exp.id.startsWith("exp_sync_act_")) {
-        deleteFromFirestore("expenses", exp.id);
+        deleteFromFirestore(sid(), "expenses", exp.id);
         return false;
       }
       return true;
@@ -852,20 +719,17 @@ export const RealmSimDB = {
 };
 
 // ---------------------------------------------------------------------------
-// Hygiène du cache local (Lot 0, faille S6)
+// Hygiène du cache local (faille S6)
 // ---------------------------------------------------------------------------
-const LEGACY_SESSION_KEY = "alfajr_logged_user";
-const CACHE_OWNER_KEY = "alfajr_cache_owner";
+const CACHE_OWNER_KEY = "kuttab:owner";
 
-/** Vide tout le cache local des données (à la déconnexion, au changement de compte). */
+/** Vide tout le cache local (déconnexion). */
 export function clearLocalCache(): void {
-  if (typeof window === "undefined") return;
+  clearAllCaches();
   try {
-    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
-    localStorage.removeItem(LEGACY_SESSION_KEY);
     localStorage.removeItem(CACHE_OWNER_KEY);
-  } catch (e) {
-    console.error("Error clearing local cache:", e);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -876,9 +740,8 @@ export function clearLocalCache(): void {
 export function ensureCacheOwner(uid: string): void {
   if (typeof window === "undefined") return;
   try {
-    const owner = localStorage.getItem(CACHE_OWNER_KEY);
-    if (owner !== uid) {
-      clearLocalCache();
+    if (localStorage.getItem(CACHE_OWNER_KEY) !== uid) {
+      clearAllCaches();
       localStorage.setItem(CACHE_OWNER_KEY, uid);
     }
   } catch (e) {
@@ -887,19 +750,9 @@ export function ensureCacheOwner(uid: string): void {
 }
 
 /**
- * Supprime au démarrage les traces sensibles laissées par les anciennes
- * versions : session complète avec mot de passe, et cache des comptes
- * contenant des mots de passe en clair.
+ * Supprime au démarrage les clés de la version mono-école (`alfajr_*`), dont la
+ * session complète avec mot de passe et le cache des comptes en clair.
  */
 export function purgeLegacySensitiveStorage(): void {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(LEGACY_SESSION_KEY);
-    const rawUsers = localStorage.getItem(STORAGE_KEYS.SETTINGS_USERS);
-    if (rawUsers && rawUsers.includes('"password"')) {
-      localStorage.removeItem(STORAGE_KEYS.SETTINGS_USERS);
-    }
-  } catch (e) {
-    console.error("Error purging legacy storage:", e);
-  }
+  purgeLegacyAlfajrKeys();
 }

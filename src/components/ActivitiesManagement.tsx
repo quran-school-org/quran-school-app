@@ -2625,7 +2625,7 @@ export default function ActivitiesManagement({
                   <div className="text-right space-y-1">
                     <div className="text-xs font-bold text-slate-500 tracking-wider">المملكة المغربية</div>
                     <h2 className="text-base font-extrabold text-slate-900 leading-snug">
-                      {systemSettings?.associationName || "جمعية الفجر الجديد لتحفيظ القرآن الكريم"}
+                      {systemSettings?.associationName || ""}
                     </h2>
                     <p className="text-[11px] text-slate-600 font-medium">
                       {systemSettings?.associationAddress || "مقر الجمعية الرئيسي"}
@@ -2663,7 +2663,7 @@ export default function ActivitiesManagement({
                       التاريخ: <span className="font-mono font-bold">{new Date().toLocaleDateString('ar-MA')}</span>
                     </div>
                     <div className="text-xs text-slate-700 font-medium">
-                      الموسم: <span className="font-bold">{systemSettings?.activeAcademicSeason || "2026/2027"}</span>
+                      الموسم: <span className="font-bold">{systemSettings?.activeAcademicSeason || ""}</span>
                     </div>
                     <div className="text-[11px] text-slate-500 font-mono">
                       المرجع: ACT-{currentActivity.id.slice(-6).toUpperCase()}
@@ -2986,7 +2986,7 @@ export default function ActivitiesManagement({
 
               {/* 5. Document Micro Footer */}
               <div className="pt-3 border-t border-slate-200 text-center text-[10px] text-slate-500 break-inside-avoid">
-                وثيقة إدارية ومحاسبية رسمية صادرة عن منظومة الجمعية • {systemSettings?.associationName || "جمعية الفجر الجديد لتحفيظ القرآن الكريم"} • صفحة معتمدة
+                وثيقة إدارية ومحاسبية رسمية صادرة عن منظومة الجمعية • {systemSettings?.associationName || ""} • صفحة معتمدة
               </div>
             </div>
 

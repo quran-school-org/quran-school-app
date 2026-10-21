@@ -47,3 +47,10 @@ export const emulatorConfig = {
   firestorePort: 8080,
   functionsPort: 5001,
 };
+
+/**
+ * Base de la fonction HTTP `api` (proxy Gemini). Vide en production : le
+ * rewrite Hosting `/api/**` la sert sur la même origine. En développement :
+ * URL de l'émulateur Functions (voir .env.development).
+ */
+export const apiBaseUrl: string = (env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");

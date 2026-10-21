@@ -6,9 +6,9 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  deleteField,
   onSnapshot,
   getDoc,
+  getDocs,
   query,
   where,
   type DocumentData,
@@ -21,11 +21,13 @@ import {
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
+  type UserCredential,
 } from "firebase/auth";
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from "firebase/functions";
-import { SystemSettings, AppUser, AuthLink } from "./types";
-import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig } from "./config/env";
-import { normalizeAuthPassword, normalizeUsername, usernameToEmail } from "./security/accounts";
+import type { SystemSettings, AppUser, UserProfile, SchoolInfo } from "./types";
+import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, apiBaseUrl } from "./config/env";
+import { loginEmailCandidates, normalizeAuthPassword, normalizeUsername } from "./security/accounts";
+import { getCacheScope, scopedKey } from "./cache/localCache";
 
 /** Région des Cloud Functions (identique à functions/src/config.ts). */
 export const FUNCTIONS_REGION = "europe-west1";
@@ -38,7 +40,6 @@ export const db = firestoreDatabaseId === "(default)"
   ? getFirestore(app)
   : getFirestore(app, firestoreDatabaseId);
 
-// Initialize Firebase Auth
 export const auth = getAuth(app);
 
 export const functions = getFunctions(app, FUNCTIONS_REGION);
@@ -52,36 +53,66 @@ if (emulatorConfig.enabled) {
 }
 
 // ---------------------------------------------------------------------------
-// Authentification (Lot 0)
+// Chemins multi-écoles : toutes les données métier vivent sous schools/{schoolId}/…
 // ---------------------------------------------------------------------------
-// La connexion se fait TOUJOURS par Firebase Auth, avant toute lecture de
-// données. Aucun mot de passe n'est comparé ni stocké côté client, et aucun
-// compte n'est plus créé automatiquement à la connexion.
+
+function assertSchoolId(schoolId: string): string {
+  if (!schoolId || !/^[a-z0-9][a-z0-9-]{1,39}$/.test(schoolId)) {
+    throw new Error(`Identifiant d'école invalide : « ${schoolId} »`);
+  }
+  return schoolId;
+}
+
+export function schoolCollection(schoolId: string, collectionName: string) {
+  return collection(db, "schools", assertSchoolId(schoolId), collectionName);
+}
+
+export function schoolDocRef(schoolId: string, collectionName: string, id: string) {
+  return doc(db, "schools", assertSchoolId(schoolId), collectionName, id);
+}
+
+// ---------------------------------------------------------------------------
+// Authentification
+// ---------------------------------------------------------------------------
+// La connexion se fait TOUJOURS par Firebase Auth, avant toute lecture. Aucun
+// mot de passe n'est comparé ni stocké côté client, aucun compte n'est créé à
+// la connexion.
 
 /**
- * Connexion par nom d'utilisateur : email technique `{username}@alfajr.local`,
- * mot de passe complété par `_secure_fajr` s'il fait moins de 6 caractères
- * (compatibilité avec les comptes existants).
+ * Connexion par nom d'utilisateur (unique sur la plateforme) : essai du domaine
+ * historique `@alfajr.local`, puis du domaine des nouveaux comptes ; mot de
+ * passe complété par `_secure_fajr` s'il fait moins de 6 caractères.
  */
-export async function signInWithUsername(username: string, password: string) {
-  const email = usernameToEmail(normalizeUsername(username));
-  const candidates = Array.from(new Set([password, password.trim()])).filter((p) => p.length > 0);
+export async function signInWithUsername(username: string, password: string): Promise<UserCredential> {
+  const emails = loginEmailCandidates(normalizeUsername(username));
+  const passwords = Array.from(new Set([password, password.trim()])).filter((p) => p.length > 0);
   let lastError: unknown = null;
-  for (const candidate of candidates) {
-    try {
-      return await signInWithEmailAndPassword(auth, email, normalizeAuthPassword(candidate));
-    } catch (error: any) {
-      lastError = error;
-      // Seule une erreur d'identifiants justifie d'essayer la variante suivante.
-      if (error?.code !== "auth/invalid-credential" && error?.code !== "auth/wrong-password") break;
+  for (const email of emails) {
+    for (const candidate of passwords) {
+      try {
+        return await signInWithEmailAndPassword(auth, email, normalizeAuthPassword(candidate));
+      } catch (error: any) {
+        lastError = error;
+        const code = error?.code;
+        if (code !== "auth/invalid-credential" && code !== "auth/wrong-password" && code !== "auth/user-not-found") {
+          throw error;
+        }
+      }
     }
   }
   throw lastError;
 }
 
-/** Déconnexion réelle de Firebase Auth. */
 export async function signOutUser() {
   await firebaseSignOut(auth);
+}
+
+/** Le compte connecté porte-t-il le claim super-admin de la plateforme ? */
+export async function isCurrentUserSuperAdmin(): Promise<boolean> {
+  const user = auth.currentUser;
+  if (!user) return false;
+  const token = await user.getIdTokenResult();
+  return token.claims.superAdmin === true;
 }
 
 /**
@@ -104,18 +135,6 @@ export async function changeOwnPassword(newPassword: string, currentPassword?: s
   }
 }
 
-/** Lien d'autorisation du compte connecté (lisible par son propriétaire). */
-export async function fetchAuthLink(uid: string): Promise<AuthLink | null> {
-  const snap = await getDoc(doc(db, "authLinks", uid));
-  return snap.exists() ? (snap.data() as AuthLink) : null;
-}
-
-/** Compte applicatif (profil) par identifiant. */
-export async function fetchAppUser(appUserId: string): Promise<AppUser | null> {
-  const snap = await getDoc(doc(db, "appUsers", appUserId));
-  return snap.exists() ? stripPassword({ id: snap.id, ...snap.data() } as AppUser) : null;
-}
-
 /** Retire tout champ `password` hérité d'un objet compte. */
 export function stripPassword<T extends Record<string, any>>(user: T): T {
   if (user && "password" in user) {
@@ -125,37 +144,58 @@ export function stripPassword<T extends Record<string, any>>(user: T): T {
   return user;
 }
 
-/**
- * Écrit un compte applicatif SANS mot de passe (le champ hérité est supprimé
- * explicitement). Réservé au directeur par les règles, sauf champs anodins de
- * son propre compte.
- */
-export async function saveAppUserDoc(user: AppUser) {
-  const data = sanitizeForFirestore(stripPassword(user));
-  await setDoc(doc(db, "appUsers", user.id), { ...data, password: deleteField() }, { merge: true });
+/** Profil global `users/{uid}` (lisible par son propriétaire). */
+export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
+  const snap = await getDoc(doc(db, "users", uid));
+  return snap.exists() ? ({ uid: snap.id, ...snap.data() } as UserProfile) : null;
 }
 
-/** Met à jour des champs anodins de son propre compte (lastLogin, mustChangePassword…). */
-export async function updateOwnAppUserFields(appUserId: string, fields: Partial<Pick<AppUser, "lastLogin" | "mustChangePassword" | "fullName" | "phone" | "passwordChangedAt">>) {
-  await setDoc(doc(db, "appUsers", appUserId), sanitizeForFirestore(fields), { merge: true });
+/** Appartenance `schools/{schoolId}/members/{uid}`. */
+export async function fetchMember(schoolId: string, uid: string): Promise<AppUser | null> {
+  const snap = await getDoc(schoolDocRef(schoolId, "members", uid));
+  return snap.exists() ? stripPassword({ id: snap.id, ...snap.data() } as AppUser) : null;
 }
 
-/** Écrit le lien d'autorisation d'un compte (directeur uniquement). */
-export async function saveAuthLink(uid: string, link: AuthLink) {
-  await setDoc(doc(db, "authLinks", uid), sanitizeForFirestore(link), { merge: true });
+export async function fetchSchool(schoolId: string): Promise<SchoolInfo | null> {
+  const snap = await getDoc(doc(db, "schools", assertSchoolId(schoolId)));
+  return snap.exists() ? ({ id: snap.id, ...snap.data() } as SchoolInfo) : null;
 }
 
-export async function deleteAuthLink(uid: string) {
-  await deleteDoc(doc(db, "authLinks", uid));
+/** Toutes les écoles (super-admin uniquement, imposé par les règles). */
+export async function listAllSchools(): Promise<SchoolInfo[]> {
+  const snap = await getDocs(collection(db, "schools"));
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as SchoolInfo));
+}
+
+/** Champs anodins de son profil global (école mémorisée, mot de passe changé…). */
+export async function updateOwnUserFields(uid: string, fields: Partial<Pick<UserProfile, "lastSchoolId" | "mustChangePassword" | "passwordChangedAt" | "lastLogin">>) {
+  await setDoc(doc(db, "users", uid), sanitizeForFirestore(fields), { merge: true });
+}
+
+/** Champs anodins de son appartenance à une école (nom affiché, dernière connexion). */
+export async function updateOwnMemberFields(schoolId: string, uid: string, fields: Partial<Pick<AppUser, "lastLogin" | "fullName" | "phone">>) {
+  await setDoc(schoolDocRef(schoolId, "members", uid), sanitizeForFirestore(fields), { merge: true });
+}
+
+/** ID token de l'utilisateur connecté (appels authentifiés à la fonction `api`). */
+export async function getIdToken(): Promise<string | null> {
+  return auth.currentUser ? auth.currentUser.getIdToken() : null;
+}
+
+/** URL de base de la fonction HTTP `api` (même origine en prod via le rewrite Hosting). */
+export function apiUrl(path: string): string {
+  return `${apiBaseUrl}${path}`;
 }
 
 // ---------------------------------------------------------------------------
-// Cloud Functions callables (gestion des comptes, directeur uniquement)
+// Cloud Functions callables (gestion des écoles et des comptes)
 // ---------------------------------------------------------------------------
 
-export interface CreateUserAccountInput {
+export interface CreateSchoolUserInput {
+  schoolId: string;
   username: string;
-  password: string;
+  password?: string;
+  attachExisting?: boolean;
   fullName: string;
   role: AppUser["role"];
   isActive?: boolean;
@@ -167,23 +207,46 @@ export interface CreateUserAccountInput {
   flags?: Record<string, boolean>;
 }
 
-export async function createUserAccountRemote(input: CreateUserAccountInput): Promise<{ appUserId: string; uid: string }> {
-  const callable = httpsCallable<CreateUserAccountInput, { appUserId: string; uid: string }>(functions, "createUserAccount");
+export interface MemberPatch {
+  fullName?: string;
+  role?: AppUser["role"];
+  isActive?: boolean;
+  phone?: string;
+  email?: string;
+  permissions?: AppUser["permissions"];
+  linkedTeacherId?: string | null;
+  linkedStudentIds?: string[];
+  roleTitle?: string | null;
+  category?: string | null;
+  isArchived?: boolean;
+  flags?: Record<string, boolean>;
+}
+
+async function call<I, O>(name: string, input: I): Promise<O> {
+  const callable = httpsCallable<I, O>(functions, name);
   const res = await callable(input);
   return res.data;
 }
 
-export async function resetUserPasswordRemote(appUserId: string, newPassword: string): Promise<void> {
-  const callable = httpsCallable<{ appUserId: string; newPassword: string }, { ok: boolean }>(functions, "resetUserPassword");
-  await callable({ appUserId, newPassword });
-}
+export const createSchoolRemote = (input: { schoolId: string; name: string; makeMeDirector?: boolean }) =>
+  call<typeof input, { schoolId: string }>("createSchool", input);
+
+export const createSchoolUserRemote = (input: CreateSchoolUserInput) =>
+  call<CreateSchoolUserInput, { uid: string; username: string }>("createSchoolUser", input);
+
+export const resetUserPasswordRemote = (schoolId: string, uid: string, newPassword: string) =>
+  call<{ schoolId: string; uid: string; newPassword: string }, { ok: boolean }>("resetUserPassword", { schoolId, uid, newPassword });
+
+export const setMemberRoleRemote = (schoolId: string, uid: string, patch: MemberPatch, remove = false) =>
+  call<{ schoolId: string; uid: string; patch: MemberPatch; remove: boolean }, { ok: boolean }>("setMemberRole", { schoolId, uid, patch, remove });
 
 /** Traduit une erreur Firebase (Auth, Functions) en message arabe lisible. */
 export function describeFirebaseError(error: any): string {
   const code: string = error?.code || "";
   if (code.includes("already-exists") || code === "auth/email-already-exists") return "اسم المستخدم مستعمل من قبل حساب آخر.";
-  if (code.includes("permission-denied")) return "ليست لديك صلاحية تنفيذ هذه العملية.";
-  if (code.includes("invalid-argument")) return error?.message || "بيانات غير صالحة.";
+  if (code.includes("permission-denied")) return error?.message && /[؀-ۿ]/.test(error.message) ? error.message : "ليست لديك صلاحية تنفيذ هذه العملية.";
+  if (code.includes("invalid-argument") || code.includes("failed-precondition")) return error?.message || "بيانات غير صالحة.";
+  if (code.includes("not-found")) return "العنصر المطلوب غير موجود.";
   if (code.includes("unauthenticated")) return "يجب تسجيل الدخول أولاً.";
   if (code === "auth/weak-password") return "كلمة المرور ضعيفة جداً.";
   if (code === "auth/requires-recent-login") return "يرجى إدخال كلمة المرور الحالية لتأكيد العملية.";
@@ -249,61 +312,61 @@ export function sanitizeForFirestore(obj: any): any {
   return obj;
 }
 
-// Generic function to save/update a document in Firestore
-export async function saveToFirestore(collectionName: string, id: string, data: any) {
+/**
+ * Enregistre un document dans `schools/{schoolId}/{collection}/{id}`.
+ * Le champ `schoolId` est dénormalisé dans chaque document (vérifié par les règles).
+ */
+export async function saveToFirestore(schoolId: string, collectionName: string, id: string, data: any) {
   try {
-    const docRef = doc(db, collectionName, id);
-    const sanitizedData = sanitizeForFirestore(collectionName === "appUsers" ? stripPassword(data) : data);
-    await setDoc(docRef, sanitizedData, { merge: true });
+    const sanitizedData = sanitizeForFirestore(stripPassword({ ...data }));
+    await setDoc(schoolDocRef(schoolId, collectionName, id), { ...sanitizedData, schoolId }, { merge: true });
   } catch (error) {
-    console.error(`Error saving to Firestore collection ${collectionName} with ID ${id}:`, error);
+    console.error(`Error saving to Firestore ${schoolId}/${collectionName}/${id}:`, error);
     checkAndHandleQuotaError(error);
   }
 }
 
-// Generic function to delete a document from Firestore
-export async function deleteFromFirestore(collectionName: string, id: string) {
+/** Supprime `schools/{schoolId}/{collection}/{id}`. */
+export async function deleteFromFirestore(schoolId: string, collectionName: string, id: string) {
   try {
-    const docRef = doc(db, collectionName, id);
-    await deleteDoc(docRef);
+    await deleteDoc(schoolDocRef(schoolId, collectionName, id));
   } catch (error) {
-    console.error(`Error deleting from Firestore collection ${collectionName} with ID ${id}:`, error);
+    console.error(`Error deleting from Firestore ${schoolId}/${collectionName}/${id}:`, error);
     checkAndHandleQuotaError(error);
   }
 }
 
-function writeCache(localStorageKey: string, items: unknown) {
+function writeCache(schoolId: string, cacheName: string, items: unknown) {
+  // Seule l'école ACTIVE écrit son cache : après déconnexion ou changement
+  // d'école, un dernier instantané de l'école quittée est ignoré.
+  if (getCacheScope() !== schoolId) return;
   try {
     let sanitizedItems: any = items;
-    if (localStorageKey === "alfajr_notifications" && Array.isArray(items)) {
+    if (cacheName.replace(/^alfajr_/, "") === "notifications" && Array.isArray(items)) {
       sanitizedItems = items.slice(-20);
     }
-    localStorage.setItem(localStorageKey, JSON.stringify(sanitizedItems));
+    localStorage.setItem(scopedKey(cacheName), JSON.stringify(sanitizedItems));
   } catch (e) {
-    console.error(`Error saving synced data to LocalStorage (${localStorageKey}):`, e);
+    console.error(`Error saving synced data to LocalStorage (${cacheName}):`, e);
   }
 }
 
-// Sync helper that listens to Firestore changes in real-time
+/** Abonnement temps réel à toute une collection de l'école (rôles autorisés). */
 export function subscribeToCollection<T extends { id: string }>(
+  schoolId: string,
   collectionName: string,
   onUpdate: (data: T[]) => void,
-  localStorageKey: string
+  cacheName: string
 ) {
-  const colRef = collection(db, collectionName);
-
-  return onSnapshot(colRef, (snapshot) => {
+  return onSnapshot(schoolCollection(schoolId, collectionName), (snapshot) => {
     const items: T[] = [];
-    snapshot.forEach((doc) => {
-      const data = { id: doc.id, ...doc.data() } as T;
-      items.push(collectionName === "appUsers" ? stripPassword(data as any) : data);
+    snapshot.forEach((d) => {
+      items.push(stripPassword({ id: d.id, ...d.data() } as T & Record<string, any>));
     });
-
-    // Save to localStorage so it works offline and during loading
-    writeCache(localStorageKey, items);
+    writeCache(schoolId, cacheName, items);
     onUpdate(items);
   }, (error) => {
-    console.error(`Error in real-time sync for ${collectionName}:`, error);
+    console.error(`Error in real-time sync for ${schoolId}/${collectionName}:`, error);
     checkAndHandleQuotaError(error);
   });
 }
@@ -313,15 +376,16 @@ export function subscribeToCollection<T extends { id: string }>(
  * Les règles n'autorisent que la lecture document par document.
  */
 export function subscribeToDocumentsByIds<T extends { id: string }>(
+  schoolId: string,
   collectionName: string,
   ids: string[],
   onUpdate: (data: T[]) => void,
-  localStorageKey: string
+  cacheName: string
 ) {
   const current = new Map<string, T>();
   const emit = () => {
     const items = ids.map((id) => current.get(id)).filter((x): x is T => !!x);
-    writeCache(localStorageKey, items);
+    writeCache(schoolId, cacheName, items);
     onUpdate(items);
   };
   if (ids.length === 0) {
@@ -329,12 +393,12 @@ export function subscribeToDocumentsByIds<T extends { id: string }>(
     return () => {};
   }
   const unsubs = ids.map((id) =>
-    onSnapshot(doc(db, collectionName, id), (snap) => {
+    onSnapshot(schoolDocRef(schoolId, collectionName, id), (snap) => {
       if (snap.exists()) current.set(id, { id: snap.id, ...(snap.data() as DocumentData) } as T);
       else current.delete(id);
       emit();
     }, (error) => {
-      console.error(`Error in real-time sync for ${collectionName}/${id}:`, error);
+      console.error(`Error in real-time sync for ${schoolId}/${collectionName}/${id}:`, error);
       checkAndHandleQuotaError(error);
     })
   );
@@ -342,19 +406,19 @@ export function subscribeToDocumentsByIds<T extends { id: string }>(
 }
 
 /**
- * Abonnement filtré `where(field, "in", values)` (comptes famille : présences,
- * notes, suivi des élèves liés). Firestore limite `in` à 30 valeurs : la liste
- * est découpée en paquets.
+ * Abonnement filtré `where(field, "in", values)` (comptes famille). Firestore
+ * limite `in` à 30 valeurs : la liste est découpée en paquets.
  */
 export function subscribeToQueryIn<T extends { id: string }>(
+  schoolId: string,
   collectionName: string,
   field: string,
   values: string[],
   onUpdate: (data: T[]) => void,
-  localStorageKey: string
+  cacheName: string
 ) {
   if (values.length === 0) {
-    writeCache(localStorageKey, []);
+    writeCache(schoolId, cacheName, []);
     onUpdate([]);
     return () => {};
   }
@@ -362,54 +426,50 @@ export function subscribeToQueryIn<T extends { id: string }>(
   for (let i = 0; i < values.length; i += 30) chunks.push(values.slice(i, i + 30));
   const parts = new Map<number, T[]>();
   const unsubs = chunks.map((chunk, index) =>
-    onSnapshot(query(collection(db, collectionName), where(field, "in", chunk)), (snapshot) => {
+    onSnapshot(query(schoolCollection(schoolId, collectionName), where(field, "in", chunk)), (snapshot) => {
       const items: T[] = [];
       snapshot.forEach((d) => items.push({ id: d.id, ...d.data() } as T));
       parts.set(index, items);
       const all = Array.from(parts.values()).flat();
-      writeCache(localStorageKey, all);
+      writeCache(schoolId, cacheName, all);
       onUpdate(all);
     }, (error) => {
-      console.error(`Error in filtered sync for ${collectionName}:`, error);
+      console.error(`Error in filtered sync for ${schoolId}/${collectionName}:`, error);
       checkAndHandleQuotaError(error);
     })
   );
   return () => unsubs.forEach((u) => u());
 }
 
-/** Abonnement à un document unique (profil, lien d'autorisation). */
-export function subscribeToDocument<T>(
-  collectionName: string,
-  id: string,
-  onUpdate: (data: T | null) => void
-) {
-  return onSnapshot(doc(db, collectionName, id), (snap) => {
+/** Abonnement à un document unique (chemin libre : profil, appartenance…). */
+export function subscribeToDocument<T>(pathSegments: string[], onUpdate: (data: T | null) => void) {
+  const [first, ...rest] = pathSegments;
+  return onSnapshot(doc(db, first, ...rest), (snap) => {
     onUpdate(snap.exists() ? ({ id: snap.id, ...snap.data() } as T) : null);
   }, (error) => {
-    console.error(`Error in real-time sync for ${collectionName}/${id}:`, error);
+    console.error(`Error in real-time sync for ${pathSegments.join("/")}:`, error);
     checkAndHandleQuotaError(error);
   });
 }
 
-// Sync helper for system settings
+/** Paramètres de l'école : `schools/{schoolId}/settings/system`. */
 export function subscribeToSettings(
+  schoolId: string,
   onUpdate: (settings: SystemSettings) => void,
-  localStorageKey: string
+  cacheName: string
 ) {
-  const docRef = doc(db, "settings", "system");
-
-  return onSnapshot(docRef, (docSnap) => {
+  return onSnapshot(schoolDocRef(schoolId, "settings", "system"), (docSnap) => {
     if (docSnap.exists()) {
       const data = docSnap.data() as SystemSettings;
       try {
-        localStorage.setItem(localStorageKey, JSON.stringify(data));
+        if (getCacheScope() === schoolId) localStorage.setItem(scopedKey(cacheName), JSON.stringify(data));
       } catch (e) {
         console.error("Error saving synced settings to LocalStorage:", e);
       }
       onUpdate(data);
     }
   }, (error) => {
-    console.error("Error in real-time sync for settings:", error);
+    console.error(`Error in real-time sync for ${schoolId}/settings:`, error);
     checkAndHandleQuotaError(error);
   });
 }

@@ -74,7 +74,7 @@ export default function FinanceManagement({
   const [activeSubTab, setActiveSubTab] = useState<"revenues" | "salaries" | "expenses" | "report">("revenues");
 
   // Filters
-  const [selectedYear, setSelectedYear] = useState<string>("2026");
+  const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>("all");
   const [selectedIncomeCategory, setSelectedIncomeCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -174,7 +174,7 @@ export default function FinanceManagement({
   const [salaryRoleTitle, setSalaryRoleTitle] = useState<string>("");
   const [salaryAmount, setSalaryAmount] = useState<number>(2500);
   const [salaryMonth, setSalaryMonth] = useState<string>("يوليوز");
-  const [salaryYear, setSalaryYear] = useState<number>(2026);
+  const [salaryYear, setSalaryYear] = useState<number>(new Date().getFullYear());
   const [salaryPaymentDate, setSalaryPaymentDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [salaryPaymentMethod, setSalaryPaymentMethod] = useState<SalaryPayment["paymentMethod"]>("نقداً");
   const [salaryPaymentSource, setSalaryPaymentSource] = useState<SalaryPayment["paymentSource"]>("الصندوق");
@@ -277,7 +277,7 @@ export default function FinanceManagement({
         setSalaryPersonType("أستاذ / محفظ");
       }
       setSalaryMonth("يوليوز");
-      setSalaryYear(2026);
+      setSalaryYear(new Date().getFullYear());
       setSalaryPaymentDate(new Date().toISOString().split("T")[0]);
       setSalaryPaymentMethod("نقداً");
       setSalaryPaymentSource("الصندوق");
@@ -932,8 +932,10 @@ export default function FinanceManagement({
             onChange={(e) => setSelectedYear(e.target.value)}
             className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 font-bold text-slate-700 focus:outline-none"
           >
-            <option value="2026">السنة المالية 2026</option>
-            <option value="2025">السنة المالية 2025</option>
+            {[0, 1, 2].map((d) => {
+              const y = new Date().getFullYear() - d;
+              return <option key={y} value={String(y)}>السنة المالية {y}</option>;
+            })}
             <option value="all">جميع السنوات</option>
           </select>
         </div>
@@ -2479,13 +2481,13 @@ export default function FinanceManagement({
                     />
                   ) : (
                     <div className="w-20 h-20 bg-emerald-800 text-amber-300 rounded-2xl flex items-center justify-center mx-auto mb-1 border-2 border-amber-400 font-bold text-2xl shadow-inner">
-                      الفجر
+                      {(() => { const w = (systemSettings?.associationName || "").split(" ").filter(Boolean); return w[1] || w[0] || ""; })()}
                     </div>
                   )}
                   <span className="text-[10px] text-slate-500 block font-sans font-medium">
                     {systemSettings?.foundingDate
                       ? `تأسست سنة ${systemSettings.foundingDate.includes("-") ? systemSettings.foundingDate.split("-")[0] : systemSettings.foundingDate}`
-                      : "تأسست سنة 2018"}
+                      : ""}
                   </span>
                 </div>
 
