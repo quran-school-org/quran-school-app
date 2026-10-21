@@ -1,14 +1,22 @@
 {
-  "name": "react-example",
+  "name": "quran-school-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
+    "emulators": "npm run build:functions && firebase emulators:start --project demo-quran-school",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build:dev": "vite build --mode development",
+    "build:functions": "npm --prefix functions run build",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "lint:functions": "npm --prefix functions run lint",
+    "test": "vitest run --dir tests/unit",
+    "test:rules": "firebase emulators:exec --only firestore,auth --project demo-quran-school \"vitest run --dir tests/emulator\"",
+    "test:all": "npm run test && npm run test:rules",
+    "emulators:persist": "npm run build:functions && firebase emulators:start --project demo-quran-school --import=./emulator-data --export-on-exit=./emulator-data"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
@@ -26,13 +34,20 @@
     "vite": "^6.2.3"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
     "esbuild": "^0.25.0",
+    "firebase-admin": "^14.5.0",
+    "firebase-tools": "^15.34.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
