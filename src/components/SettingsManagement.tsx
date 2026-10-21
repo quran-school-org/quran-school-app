@@ -464,10 +464,11 @@ export default function SettingsManagement({
   };
 
   return (
-    <div className="space-y-6" id="settings-management-panel">
+    <div data-screen="settings" className="space-y-6" id="settings-management-panel">
       {/* Tab Navigation */}
       <div className="flex border-b border-slate-200">
         <button
+          data-subtab="general"
           onClick={() => setSubTab("general")}
           className={`pb-3 px-6 text-sm font-bold border-b-2 transition ${
             subTab === "general"
@@ -482,6 +483,7 @@ export default function SettingsManagement({
           </div>
         </button>
         <button
+          data-subtab="users"
           onClick={() => setSubTab("users")}
           className={`pb-3 px-6 text-sm font-bold border-b-2 transition ${
             subTab === "users"
@@ -959,6 +961,7 @@ export default function SettingsManagement({
             </div>
             {canCreateAccounts && (
               <button
+                data-action="open-user-form"
                 onClick={() => openUserModal()}
                 className="bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white font-bold text-xs px-5 py-3 rounded-2xl flex items-center justify-center gap-2 transition shadow-md hover:shadow-emerald-900/20 active:scale-95 cursor-pointer shrink-0"
                 id="btn-add-new-user"

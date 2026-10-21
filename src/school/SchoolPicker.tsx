@@ -43,7 +43,7 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8" dir="rtl">
+    <div data-screen="school-picker" className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8" dir="rtl">
       <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-emerald-600 via-amber-500 to-emerald-700"></div>
         <div className="p-6 md:p-8 space-y-5">

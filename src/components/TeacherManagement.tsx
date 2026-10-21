@@ -476,7 +476,7 @@ export default function TeacherManagement({
   };
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div data-screen="teachers" className="space-y-6" dir="rtl">
       {/* Title Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
         <div>
@@ -505,6 +505,7 @@ export default function TeacherManagement({
 
           {canCreate && (
             <button
+              data-action="open-staff-form"
               onClick={() => handleOpenForm(undefined, categoryFilter !== "all" ? (categoryFilter as StaffCategory) : undefined)}
               className="bg-emerald-800 hover:bg-emerald-900 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-md"
             >

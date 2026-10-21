@@ -3478,7 +3478,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 relative overflow-hidden animate-fade-in" dir="rtl">
+      <div data-screen="login" className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8 relative overflow-hidden animate-fade-in" dir="rtl">
         {/* Subtle decorative background shapes */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-50 rounded-full blur-3xl -z-10 opacity-70"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-amber-50 rounded-full blur-3xl -z-10 opacity-70"></div>
@@ -3613,7 +3613,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
   return (
     <SchoolContext.Provider value={schoolContextValue}>
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col antialiased selection:bg-emerald-500 selection:text-white" dir="rtl">
+    <div data-app-shell className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col antialiased selection:bg-emerald-500 selection:text-white" dir="rtl">
       
       {/* HEADER NAVBAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
@@ -3721,6 +3721,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
             {/* Live Interactive Profile representation */}
             <div 
+              data-action="open-profile"
               onClick={handleOpenProfileModal}
               className="flex items-center gap-2 border-r border-slate-200 pr-2 sm:pr-3 mr-0.5 sm:mr-1 pl-1 sm:pl-2 py-1 rounded-xl hover:bg-emerald-50/80 active:bg-emerald-100/70 border border-transparent hover:border-emerald-200 transition-all cursor-pointer group select-none relative"
               title="تعديل بيانات ملفك الشخصي"
@@ -3831,7 +3832,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
             onClick={() => setIsMobileMenuOpen(false)}
           ></div>
-          <aside className="relative w-72 max-w-[85vw] bg-emerald-950 text-emerald-100 flex flex-col p-4 shrink-0 shadow-2xl overflow-y-auto z-10 border-l border-emerald-900 h-full">
+          <aside data-nav="mobile" className="relative w-72 max-w-[85vw] bg-emerald-950 text-emerald-100 flex flex-col p-4 shrink-0 shadow-2xl overflow-y-auto z-10 border-l border-emerald-900 h-full">
             <div className="flex justify-between items-center pb-3 mb-3 border-b border-emerald-900">
               <span className="font-bold text-sm text-amber-400 flex items-center gap-2">
                 <Menu className="w-4 h-4" />
@@ -3926,6 +3927,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                 <nav className="space-y-1 flex-1">
                   {canReadDashboard && currentRole !== "مدرس" && (
                     <button
+                      data-tab="dashboard"
                       onClick={() => { setActiveTab("dashboard"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "dashboard" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -3938,6 +3940,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {currentRole === "مدرس" && canReadDashboard && (
                     <button
+                      data-tab="teacher-dashboard"
                       onClick={() => { setActiveTab("teacher-dashboard"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "teacher-dashboard" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -3950,6 +3953,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadStudents && (
                     <button
+                      data-tab="students"
                       onClick={() => { setActiveTab("students"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "students" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -3970,6 +3974,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadTeachers && (
                     <button
+                      data-tab="teachers"
                       onClick={() => { setActiveTab("teachers"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "teachers" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -3982,6 +3987,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadAttendance && (
                     <button
+                      data-tab="attendance"
                       onClick={() => { setActiveTab("attendance"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "attendance" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -3998,6 +4004,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadGrades && (
                     <button
+                      data-tab="grades"
                       onClick={() => { setActiveTab("grades"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "grades" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4014,6 +4021,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadPayments && (
                     <button
+                      data-tab="payments"
                       onClick={() => { setActiveTab("payments"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "payments" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4030,6 +4038,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadFinance && (
                     <button
+                      data-tab="finance"
                       onClick={() => { setActiveTab("finance"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "finance" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4042,6 +4051,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadActivities && (
                     <button
+                      data-tab="activities"
                       onClick={() => { setActiveTab("activities"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "activities" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4054,6 +4064,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadClasses && (
                     <button
+                      data-tab="classes"
                       onClick={() => { setActiveTab("classes"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "classes" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4066,6 +4077,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadNotifications && (
                     <button
+                      data-tab="notifications"
                       onClick={() => { setActiveTab("notifications"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm justify-between ${
                         activeTab === "notifications" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4085,6 +4097,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadIdCards && (
                     <button
+                      data-tab="id-cards-lab"
                       onClick={() => { setActiveTab("id-cards-lab"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "id-cards-lab" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4097,6 +4110,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {canReadSettings && (
                     <button
+                      data-tab="settings"
                       onClick={() => { setActiveTab("settings"); setIsMobileMenuOpen(false); }}
                       className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                         activeTab === "settings" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4117,7 +4131,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
         {/* DESKTOP SIDEBAR NAVIGATION */}
-        <aside className="hidden md:flex w-64 bg-emerald-950 text-emerald-100 flex-col p-4 shrink-0 border-l border-emerald-900">
+        <aside data-nav="desktop" className="hidden md:flex w-64 bg-emerald-950 text-emerald-100 flex-col p-4 shrink-0 border-l border-emerald-900">
           
           {/* Instant stats card adapted per role */}
           <div 
@@ -4197,6 +4211,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               <nav className="space-y-1 flex-1">
                 {canReadDashboard && currentRole !== "مدرس" && (
                   <button
+                    data-tab="dashboard"
                     onClick={() => setActiveTab("dashboard")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "dashboard" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4209,6 +4224,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {currentRole === "مدرس" && canReadDashboard && (
                   <button
+                    data-tab="teacher-dashboard"
                     onClick={() => setActiveTab("teacher-dashboard")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "teacher-dashboard" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4222,6 +4238,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                 {/* Students tab for all permitted roles */}
                 {canReadStudents && (
                   <button
+                    data-tab="students"
                     onClick={() => setActiveTab("students")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "students" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4242,6 +4259,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {canReadTeachers && (
                   <button
+                    data-tab="teachers"
                     onClick={() => setActiveTab("teachers")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "teachers" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4255,6 +4273,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                 {/* Attendance tab */}
                 {canReadAttendance && (
                   <button
+                    data-tab="attendance"
                     onClick={() => setActiveTab("attendance")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "attendance" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4272,6 +4291,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                 {/* Grades & Exams tab */}
                 {canReadGrades && (
                   <button
+                    data-tab="grades"
                     onClick={() => setActiveTab("grades")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "grades" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4289,6 +4309,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                 {/* Payments tab */}
                 {canReadPayments && (
                   <button
+                    data-tab="payments"
                     onClick={() => setActiveTab("payments")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "payments" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4305,6 +4326,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {canReadFinance && (
                   <button
+                    data-tab="finance"
                     onClick={() => setActiveTab("finance")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "finance" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4318,6 +4340,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {canReadActivities && (
                   <button
+                    data-tab="activities"
                     onClick={() => setActiveTab("activities")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "activities" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4331,6 +4354,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {canReadClasses && (
                   <button
+                    data-tab="classes"
                     onClick={() => setActiveTab("classes")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "classes" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4343,6 +4367,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {canReadNotifications && (
                   <button
+                    data-tab="notifications"
                     onClick={() => setActiveTab("notifications")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm justify-between ${
                       activeTab === "notifications" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4362,6 +4387,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {canReadIdCards && (
                   <button
+                    data-tab="id-cards-lab"
                     onClick={() => setActiveTab("id-cards-lab")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "id-cards-lab" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4375,6 +4401,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {canReadSettings && (
                   <button
+                    data-tab="settings"
                     onClick={() => setActiveTab("settings")}
                     className={`w-full text-right p-3 rounded-xl flex items-center gap-3 transition font-medium text-sm ${
                       activeTab === "settings" ? "bg-emerald-800 text-white shadow-md border-r-4 border-amber-400" : "hover:bg-emerald-900/50 opacity-80"
@@ -4410,7 +4437,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
           
           {/* TAB: TEACHER DASHBOARD */}
           {activeTab === "teacher-dashboard" && currentRole === "مدرس" && (
-            <div className="space-y-6 animate-fade-in" dir="rtl">
+            <div data-screen="teacher-dashboard" className="space-y-6 animate-fade-in" dir="rtl">
               {/* Header Welcome Banner */}
               <div className="bg-gradient-to-l from-emerald-800 to-teal-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
@@ -4590,6 +4617,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                                 </td>
                                 <td className="py-3 px-2 text-center">
                                   <button
+                                    data-action="open-teacher-student-file"
                                     onClick={() => {
                                       setTeacherSelectedStudent(student);
                                       setProgressMemorization("");
@@ -4619,7 +4647,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
           {/* TAB 1: DASHBOARD & ANALYTICS */}
           {activeTab === "dashboard" && checkUserPermission(currentUser, currentRole, "dashboard", "read") && (
-            <div className="space-y-6">
+            <div data-screen="dashboard" className="space-y-6">
               
               {/* Header Info Banner */}
               <div className="bg-gradient-to-l from-emerald-800 to-teal-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
@@ -4831,7 +4859,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
           {/* TAB 2: STUDENTS DIRECTORY & DOSSIERS */}
           {activeTab === "students" && (
-            <div className="space-y-6">
+            <div data-screen="students" className="space-y-6">
               
               {/* Header Action Row */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -4906,6 +4934,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {checkUserPermission(currentUser, currentRole, "students", "create") && (
                     <button
+                      data-action="open-student-form"
                       onClick={() => handleOpenStudentForm()}
                       className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1 shrink-0"
                     >
@@ -5286,7 +5315,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
           {/* TAB 3: ATTENDANCE MONITORING */}
           {activeTab === "attendance" && (currentRole === "مدير" || currentRole === "مدرس") && (
-            <div className="space-y-6">
+            <div data-screen="attendance" className="space-y-6">
               
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -5679,6 +5708,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                               <div>
                                 <div className="flex flex-wrap items-center gap-2">
                                   <button
+                                    data-action="open-monthly-report"
                                     onClick={() => {
                                       setSelectedStudentForReport(st);
                                       setShowMonthlyReportModal(true);
@@ -5783,7 +5813,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
           {/* TAB 4: EXAM GRADES & CERTIFICATES */}
           {activeTab === "grades" && (
-            <div className="space-y-6">
+            <div data-screen="grades" className="space-y-6">
               
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -5793,6 +5823,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                 {checkUserPermission(currentUser, currentRole, "grades", "create") && (
                   <button
+                    data-action="open-grade-form"
                     onClick={() => {
                       if (students.length > 0) {
                         handleOpenGradeForm(students[0].id);
@@ -5907,7 +5938,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
           {/* TAB 5: PAYMENTS & ADMINISTRATIVE FEES */}
           {activeTab === "payments" && (
-            <div className="space-y-6">
+            <div data-screen="payments" className="space-y-6">
               
               {/* PAGE HEADER */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
@@ -5944,6 +5975,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                   {checkUserPermission(currentUser, currentRole, "payments", "create") && (
                     <button
+                      data-action="open-payment-form"
                       onClick={() => handleOpenPaymentForm()}
                       className="bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
                     >
@@ -6458,7 +6490,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
           {/* TAB 7: NOTIFICATIONS BOX */}
           {activeTab === "notifications" && (
-            <div className="space-y-6">
+            <div data-screen="notifications" className="space-y-6">
               
               <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                 <div>
@@ -6929,7 +6961,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             const renderBack = idCardLabTab === "student-card" ? renderOfficialBackSide : renderBackSide;
 
             return (
-              <div className="space-y-6" style={{ direction: "rtl" }}>
+              <div data-screen="id-cards-lab" className="space-y-6" style={{ direction: "rtl" }}>
                 <div className="bg-gradient-to-l from-emerald-800 to-teal-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
                   <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
                   <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -7494,7 +7526,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
       {/* TEACHER STUDENT FILE & DOSSIER MODAL */}
       {showTeacherStudentFileModal && teacherSelectedStudent && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
+        <div data-modal="teacher-student-file" className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
           <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
             <div className="p-5 bg-emerald-800 text-white flex justify-between items-center shrink-0">
               <div className="flex items-center gap-3">
@@ -7770,7 +7802,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
       {/* STUDENT REGISTRATION / EDIT MODAL */}
       {showStudentModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
+        <div data-modal="student-form" className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
           <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden my-8">
             <div className="p-5 bg-emerald-800 text-white flex justify-between items-center">
               <h3 className="font-bold text-base">{editingStudent ? "تعديل ملف الطالب" : "تسجيل طالب جديد في النادي"}</h3>
@@ -8106,7 +8138,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
       {/* GRADE REPORT ENTRY MODAL */}
       {showGradeModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
+        <div data-modal="grade-form" className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
             <div className="p-4 bg-emerald-800 text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-sm">رصد نتيجة اختبار وشهادة</h3>
@@ -8219,7 +8251,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
       {/* ADD/EDIT PAYMENT MODAL */}
       {showPaymentModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
+        <div data-modal="payment-form" className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-100 my-8 max-h-[90vh] flex flex-col">
             <div className="p-4 bg-emerald-800 text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-sm">
@@ -8488,7 +8520,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
         };
 
         return (
-          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
+          <div data-modal="monthly-report" className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto" style={{ direction: "rtl" }}>
             <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden my-8 border border-slate-100">
               {/* Modal Header */}
               <div className="p-5 bg-slate-800 text-white flex justify-between items-center no-print">
@@ -8735,7 +8767,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
       {/* PROFILE EDIT MODAL */}
       {showProfileEditModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200" dir="rtl">
+        <div data-modal="profile" className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200" dir="rtl">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden">
             <div className="p-5 bg-gradient-to-r from-emerald-900 to-teal-950 text-white flex items-center justify-between">
               <div className="flex items-center gap-3">

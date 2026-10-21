@@ -985,7 +985,7 @@ export default function ActivitiesManagement({
   };
 
   return (
-    <div id="activities-management-module" className="space-y-6">
+    <div id="activities-management-module" data-screen="activities" className="space-y-6">
       {/* Main Dashboard Interactive UI (Hidden during print) */}
       <div className="space-y-6 print:hidden">
         {/* Top Header & Stats */}
@@ -1012,6 +1012,7 @@ export default function ActivitiesManagement({
             {canCreateActivity && (
               <button
                 id="btn-add-new-activity"
+                data-action="open-activity-form"
                 onClick={handleOpenAddActivity}
                 className="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2.5 rounded-xl font-medium shadow-sm hover:shadow transition-all text-sm"
               >
@@ -1193,6 +1194,7 @@ export default function ActivitiesManagement({
                   return (
                     <div
                       key={act.id}
+                      data-action="open-activity"
                       onClick={() => setSelectedActivityId(act.id)}
                       className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
                         isSelected 
