@@ -64,12 +64,12 @@ export default function UserFormModal() {
     <>
       {/* App User Modals */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn" id="app-user-form-modal" style={{ direction: "rtl" }}>
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-4xl lg:max-w-5xl overflow-hidden my-6 animate-scaleIn max-h-[92vh] flex flex-col">
-            <div className="bg-gradient-to-r from-emerald-800 to-emerald-950 p-6 text-white flex justify-between items-center shrink-0">
+        <div className="fixed inset-0 bg-sand-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn" id="app-user-form-modal" style={{ direction: "rtl" }}>
+          <div className="bg-white rounded-3xl border border-sand-200 shadow-2xl w-full max-w-4xl lg:max-w-5xl overflow-hidden my-6 animate-scaleIn max-h-[92vh] flex flex-col">
+            <div className="bg-gradient-to-r from-primary-800 to-primary-950 p-6 text-white flex justify-between items-center shrink-0">
               <div>
                 <h3 className="font-bold text-base">{editingUser ? "تعديل حساب المستخدم" : "إضافة حساب مستخدم جديد"}</h3>
-                <p className="text-[10px] text-emerald-200 mt-1">قم بملء البيانات وتخصيص مستويات الوصول بكل دقة.</p>
+                <p className="text-[10px] text-primary-200 mt-1">قم بملء البيانات وتخصيص مستويات الوصول بكل دقة.</p>
               </div>
               <button
                 onClick={() => setShowUserModal(false)}
@@ -82,28 +82,28 @@ export default function UserFormModal() {
             <form onSubmit={handleUserSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1 col-span-2">
-                  <label className="block text-xs font-bold text-slate-700">الاسم الكامل <span className="text-rose-500">*</span></label>
+                  <label className="block text-xs font-bold text-sand-700">الاسم الكامل <span className="text-danger-500">*</span></label>
                   <input
                     type="text"
                     required
                     value={formFullName}
                     onChange={(e) => handleFullNameChange(e.target.value)}
                     placeholder="مثال: ذ. مصطفى العلوي"
-                    className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 border border-sand-300 rounded-xl text-xs focus:border-primary-600 focus:outline-none"
                   />
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between gap-1 mb-1">
-                    <label className="block text-xs font-bold text-slate-700">اسم المستخدم (Username) <span className="text-rose-500">*</span></label>
+                    <label className="block text-xs font-bold text-sand-700">اسم المستخدم (Username) <span className="text-danger-500">*</span></label>
                     {!editingUser && (
                       <button
                         type="button"
                         onClick={handleAutoGenerateUsername}
-                        className="text-[10px] text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer"
+                        className="text-[10px] text-primary-700 hover:text-primary-900 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer"
                         title="توليد اسم مستخدم فريد تلقائياً بناءً على الاسم الكامل"
                       >
-                        <Sparkles className="w-3 h-3 text-amber-500" />
+                        <Sparkles className="w-3 h-3 text-gold-500" />
                         <span>توليد تلقائي</span>
                       </button>
                     )}
@@ -115,21 +115,21 @@ export default function UserFormModal() {
                     value={formUsername}
                     onChange={(e) => setFormUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                     placeholder="mustafa_alawi"
-                    className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none font-mono text-left"
+                    className="w-full p-2.5 border border-sand-300 rounded-xl text-xs focus:border-primary-600 focus:outline-none font-mono text-left"
                   />
-                  <p className="text-[10px] text-slate-500">{editingUser ? "اسم المستخدم هو معرّف الدخول ولا يمكن تغييره بعد إنشاء الحساب." : "يتم توليده تلقائياً بشكل فريد من الاسم الكامل لمنع التشابه."}</p>
+                  <p className="text-[10px] text-sand-500">{editingUser ? "اسم المستخدم هو معرّف الدخول ولا يمكن تغييره بعد إنشاء الحساب." : "يتم توليده تلقائياً بشكل فريد من الاسم الكامل لمنع التشابه."}</p>
                 </div>
 
                 {!editingUser ? (
                 <div className="space-y-1">
-                  <label className="flex items-center gap-1.5 text-[10px] text-slate-600 font-bold cursor-pointer mb-1">
+                  <label className="flex items-center gap-1.5 text-[10px] text-sand-600 font-bold cursor-pointer mb-1">
                     <input type="checkbox" checked={formAttachExisting} onChange={(e) => setFormAttachExisting(e.target.checked)} />
                     <span>إضافة حساب موجود في مدرسة أخرى (نفس اسم المستخدم)</span>
                   </label>
                   {!formAttachExisting && (<>
-                  <label className="block text-xs font-bold text-slate-700">كلمة المرور المؤقتة <span className="text-rose-500">*</span></label>
+                  <label className="block text-xs font-bold text-sand-700">كلمة المرور المؤقتة <span className="text-danger-500">*</span></label>
                   <div className="relative">
-                    <span className="absolute right-3 top-3 text-slate-400 pointer-events-none"><Lock className="w-3.5 h-3.5" /></span>
+                    <span className="absolute right-3 top-3 text-sand-500 pointer-events-none"><Lock className="w-3.5 h-3.5" /></span>
                     <input
                       type={showFormPassword ? "text" : "password"}
                       required={!formAttachExisting}
@@ -138,30 +138,30 @@ export default function UserFormModal() {
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full pr-9 pl-9 p-2.5 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none font-mono text-left"
+                      className="w-full pr-9 pl-9 p-2.5 border border-sand-300 rounded-xl text-xs focus:border-primary-600 focus:outline-none font-mono text-left"
                     />
                     <button
                       type="button"
                       onClick={() => setShowFormPassword(!showFormPassword)}
-                      className="absolute left-2.5 top-2.5 p-1 text-slate-400 hover:text-emerald-700 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                      className="absolute left-2.5 top-2.5 p-1 text-sand-500 hover:text-primary-700 hover:bg-sand-100 rounded-lg transition cursor-pointer"
                       title={showFormPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
                     >
-                      {showFormPassword ? <EyeOff className="w-4 h-4 text-rose-500" /> : <Eye className="w-4 h-4 text-emerald-600" />}
+                      {showFormPassword ? <EyeOff className="w-4 h-4 text-danger-500" /> : <Eye className="w-4 h-4 text-primary-600" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-slate-500">{MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل. سيُطلب من المستخدم تغييرها عند أول دخول.</p>
+                  <p className="text-[10px] text-sand-500">{MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل. سيُطلب من المستخدم تغييرها عند أول دخول.</p>
                   </>)}
                 </div>
                 ) : (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
-                  <div className="p-2.5 border border-slate-200 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-center justify-between gap-2">
+                  <label className="block text-xs font-bold text-sand-700">كلمة المرور</label>
+                  <div className="p-2.5 border border-sand-200 bg-sand-50 rounded-xl text-[11px] text-sand-600 flex items-center justify-between gap-2">
                     <span>لا تُخزَّن كلمات المرور في المنظومة ولا يمكن عرضها.</span>
                     {onResetUserPassword && (
                       <button
                         type="button"
                         onClick={() => handleResetPassword(editingUser)}
-                        className="text-[10px] text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer shrink-0"
+                        className="text-[10px] text-primary-700 hover:text-primary-900 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer shrink-0"
                       >
                         <KeyRound className="w-3 h-3" />
                         <span>إعادة تعيين</span>
@@ -174,7 +174,7 @@ export default function UserFormModal() {
 
               <div className="grid grid-cols-2 gap-4 border-t pt-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">نوع الصلاحية الافتراضية</label>
+                  <label className="block text-xs font-bold text-sand-700">نوع الصلاحية الافتراضية</label>
                   <select
                     value={formRole}
                     disabled={isPrimaryDirector(editingUser)}
@@ -308,7 +308,7 @@ export default function UserFormModal() {
                       // Update permissions matrix to match new role
                       setFormPermissions(getDefaultPermissionsForRole(newRole));
                     }}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl text-xs"
+                    className="w-full p-2.5 border border-sand-300 rounded-xl text-xs"
                   >
                     <option value="مدير">مدير (Director - كامل الصلاحيات)</option>
                     <option value="إداري">إداري / عضو مكتب تنفيذي (Administrator)</option>
@@ -323,12 +323,12 @@ export default function UserFormModal() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">حالة الحساب</label>
+                  <label className="block text-xs font-bold text-sand-700">حالة الحساب</label>
                   <select
                     value={formIsActive ? "active" : "blocked"}
                     disabled={isPrimaryDirector(editingUser)}
                     onChange={(e) => setFormIsActive(e.target.value === "active")}
-                    className="w-full p-2.5 border border-slate-300 rounded-xl text-xs"
+                    className="w-full p-2.5 border border-sand-300 rounded-xl text-xs"
                   >
                     <option value="active">نشط ومفعل</option>
                     <option value="blocked">موقوف / مجمد</option>
@@ -340,19 +340,19 @@ export default function UserFormModal() {
               <div className="border-t pt-4 space-y-2" dir="rtl">
                 {(formRole === "طالب" || formRole === "ولي أمر") ? (
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-700">
+                    <label className="block text-xs font-bold text-sand-700">
                       {formRole === "طالب" ? "ملف الطالب المرتبط بهذا الحساب" : "الأبناء المرتبطون بهذا الحساب"}
-                      <span className="text-slate-400 font-medium"> ({formLinkedStudentIds.length})</span>
+                      <span className="text-sand-500 font-medium"> ({formLinkedStudentIds.length})</span>
                     </label>
-                    <p className="text-[10px] text-slate-500">لا يرى صاحب الحساب إلا ملفات الطلاب المحددة هنا.</p>
+                    <p className="text-[10px] text-sand-500">لا يرى صاحب الحساب إلا ملفات الطلاب المحددة هنا.</p>
                     <input
                       type="text"
                       value={linkedStudentSearch}
                       onChange={(e) => setLinkedStudentSearch(e.target.value)}
                       placeholder="بحث باسم الطالب أو ولي الأمر..."
-                      className="w-full p-2 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none"
+                      className="w-full p-2 border border-sand-300 rounded-xl text-xs focus:border-primary-600 focus:outline-none"
                     />
-                    <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100">
+                    <div className="max-h-40 overflow-y-auto border border-sand-200 rounded-xl divide-y divide-sand-100">
                       {students
                         .filter((st) => {
                           const q = linkedStudentSearch.trim();
@@ -360,7 +360,7 @@ export default function UserFormModal() {
                         })
                         .slice(0, 50)
                         .map((st) => (
-                          <label key={st.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-slate-50">
+                          <label key={st.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-sand-50">
                             <input
                               type="checkbox"
                               checked={formLinkedStudentIds.includes(st.id)}
@@ -371,27 +371,27 @@ export default function UserFormModal() {
                                 });
                               }}
                             />
-                            <span className="font-bold text-slate-700">{st.fullName}</span>
-                            <span className="text-slate-400">— {st.parentName} {st.parentPhone}</span>
-                            <span className="text-slate-300 font-mono mr-auto">{st.id}</span>
+                            <span className="font-bold text-sand-700">{st.fullName}</span>
+                            <span className="text-sand-500">— {st.parentName} {st.parentPhone}</span>
+                            <span className="text-sand-400 font-mono mr-auto">{st.id}</span>
                           </label>
                         ))}
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700">ملف العامل / المدرس المرتبط</label>
+                    <label className="block text-xs font-bold text-sand-700">ملف العامل / المدرس المرتبط</label>
                     <select
                       value={formLinkedTeacherId}
                       onChange={(e) => setFormLinkedTeacherId(e.target.value)}
-                      className="w-full p-2.5 border border-slate-300 rounded-xl text-xs"
+                      className="w-full p-2.5 border border-sand-300 rounded-xl text-xs"
                     >
                       <option value="">— بدون ربط —</option>
                       {teachers.map((t) => (
                         <option key={t.id} value={t.id}>{t.fullName}{t.roleTitle ? ` (${t.roleTitle})` : ""}</option>
                       ))}
                     </select>
-                    <p className="text-[10px] text-slate-500">يُستعمل لعرض حلقات المدرس وإيقاف الحساب تلقائياً عند أرشفة الملف.</p>
+                    <p className="text-[10px] text-sand-500">يُستعمل لعرض حلقات المدرس وإيقاف الحساب تلقائياً عند أرشفة الملف.</p>
                   </div>
                 )}
               </div>
@@ -407,8 +407,8 @@ export default function UserFormModal() {
               </div>
 
               {isPrimaryDirector(editingUser) && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-xl flex items-start gap-2 text-[10px]">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="bg-gold-50 border border-gold-200 text-gold-800 p-3 rounded-xl flex items-start gap-2 text-[10px]">
+                  <AlertTriangle className="w-4 h-4 text-gold-600 shrink-0 mt-0.5" />
                   <p>حساب المدير الأساسي (@admin_alfajr) له الصلاحيات المطلقة دائماً ولا يمكن تعديل نوع حسابه أو حظره لضمان عدم انقطاع الوصول إلى النظام.</p>
                 </div>
               )}
@@ -417,14 +417,14 @@ export default function UserFormModal() {
                 <button
                   type="button"
                   onClick={() => setShowUserModal(false)}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2.5 rounded-xl transition"
+                  className="bg-sand-100 hover:bg-sand-200 text-sand-600 font-bold text-xs px-4 py-2.5 rounded-xl transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={userFormSaving}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow disabled:bg-emerald-400"
+                  className="bg-primary-700 hover:bg-primary-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow disabled:bg-primary-400"
                   id="btn-confirm-save-user"
                 >
                   {userFormSaving ? "جاري الحفظ..." : "حفظ الحساب"}

@@ -35,11 +35,11 @@ export default function IncomeModal() {
       {/* MODAL 1: ADD / EDIT OTHER INCOME */}
       {/* ========================================================================================= */}
       {showIncomeModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn" style={{ direction: "rtl" }}>
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col">
-            <div className="bg-gradient-to-r from-emerald-800 to-teal-900 p-5 text-white flex justify-between items-center shrink-0">
+        <div className="fixed inset-0 bg-sand-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn" style={{ direction: "rtl" }}>
+          <div className="bg-white rounded-3xl border border-sand-200 shadow-2xl w-full max-w-md overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col">
+            <div className="bg-gradient-to-r from-primary-800 to-primary-900 p-5 text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-base flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-300" />
+                <Coins className="w-5 h-5 text-gold-300" />
                 <span>{editingIncome ? "تعديل سجل دخل / تبرع" : "تسجيل دخل أو تبرع جديد"}</span>
               </h3>
               <button
@@ -50,7 +50,7 @@ export default function IncomeModal() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveIncome} className="p-6 space-y-4 text-xs text-slate-700 overflow-y-auto">
+            <form onSubmit={handleSaveIncome} className="p-6 space-y-4 text-xs text-sand-700 overflow-y-auto">
               <div>
                 <label className="block font-bold mb-1">بيان / عنوان الدخل *</label>
                 <input
@@ -59,7 +59,7 @@ export default function IncomeModal() {
                   placeholder="مثال: تبرع كريم لشراء مصاحف / دعم مجلس الجماعة..."
                   value={incomeTitle}
                   onChange={(e) => setIncomeTitle(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                 />
               </div>
 
@@ -69,7 +69,7 @@ export default function IncomeModal() {
                   <select
                     value={incomeCategory}
                     onChange={(e) => setIncomeCategory(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   >
                     <option value="تبرعات">تبرعات محسنين</option>
                     <option value="دعم حكومي/مؤسساتي">دعم حكومي / مؤسساتي</option>
@@ -87,7 +87,7 @@ export default function IncomeModal() {
                     min={1}
                     value={incomeAmount}
                     onChange={(e) => setIncomeAmount(Number(e.target.value))}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-emerald-800 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl font-bold text-primary-800 focus:bg-white focus:border-primary-600 focus:outline-none"
                   />
                 </div>
               </div>
@@ -98,7 +98,7 @@ export default function IncomeModal() {
                   <select
                     value={incomeSource}
                     onChange={(e) => setIncomeSource(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   >
                     <option value="الصندوق">الصندوق النقدي</option>
                     <option value="حساب الجمعية البنكي">حساب الجمعية البنكي</option>
@@ -111,7 +111,7 @@ export default function IncomeModal() {
                     type="date"
                     value={incomeDate}
                     onChange={(e) => setIncomeDate(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   />
                 </div>
               </div>
@@ -124,7 +124,7 @@ export default function IncomeModal() {
                     placeholder="اختياري (مثال: المحسن حاج إبراهيم)"
                     value={incomeDonorName}
                     onChange={(e) => setIncomeDonorName(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   />
                 </div>
 
@@ -135,7 +135,7 @@ export default function IncomeModal() {
                     placeholder="مثال: REC-2026-05"
                     value={incomeReceiptNo}
                     onChange={(e) => setIncomeReceiptNo(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none font-mono"
                   />
                 </div>
               </div>
@@ -147,21 +147,21 @@ export default function IncomeModal() {
                   placeholder="ملاحظات توضيحية حول طبيعة المداخيل..."
                   value={incomeNotes}
                   onChange={(e) => setIncomeNotes(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none resize-none"
+                  className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none resize-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex justify-end gap-3 pt-3 border-t border-sand-100">
                 <button
                   type="button"
                   onClick={() => setShowIncomeModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition"
+                  className="px-4 py-2 rounded-xl bg-sand-100 hover:bg-sand-200 text-sand-700 font-bold transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold shadow-md transition"
+                  className="px-5 py-2 rounded-xl bg-primary-800 hover:bg-primary-900 text-white font-bold shadow-md transition"
                 >
                   حفظ السجل المالي
                 </button>

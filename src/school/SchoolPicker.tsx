@@ -43,25 +43,25 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
   };
 
   return (
-    <div data-screen="school-picker" className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8" dir="rtl">
-      <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
-        <div className="h-2 bg-gradient-to-r from-emerald-600 via-amber-500 to-emerald-700"></div>
+    <div data-screen="school-picker" className="min-h-screen bg-sand-50 flex items-center justify-center p-4 md:p-8" dir="rtl">
+      <div className="w-full max-w-lg bg-white rounded-2xl border border-sand-200 shadow-xl overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-primary-600 via-gold-500 to-primary-700"></div>
         <div className="p-6 md:p-8 space-y-5">
           <div className="text-center">
-            <h2 className="text-xl font-black text-slate-800">اختيار المدرسة</h2>
-            <p className="text-xs text-slate-400 mt-1 font-medium">مرحباً {userName}، اختر المدرسة التي تريد الدخول إليها.</p>
+            <h2 className="text-xl font-black text-sand-800">اختيار المدرسة</h2>
+            <p className="text-xs text-sand-500 mt-1 font-medium">مرحباً {userName}، اختر المدرسة التي تريد الدخول إليها.</p>
           </div>
 
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+            <div className="p-3 bg-danger-50 border border-danger-200 text-danger-800 rounded-xl text-xs font-bold flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 shrink-0 text-danger-600" />
               <span>{error}</span>
             </div>
           )}
 
           <div className="space-y-2" id="school-picker-list">
             {schools.length === 0 && (
-              <p className="text-xs text-slate-500 text-center py-4">لا توجد مدرسة مرتبطة بحسابك حالياً.</p>
+              <p className="text-xs text-sand-500 text-center py-4">لا توجد مدرسة مرتبطة بحسابك حالياً.</p>
             )}
             {schools.map((school) => {
               const isMember = memberSchoolIds.includes(school.id);
@@ -71,13 +71,13 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
                   type="button"
                   disabled={busy || !isMember}
                   onClick={() => onSelect(school.id)}
-                  className="w-full flex items-center justify-between gap-3 p-3.5 bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition text-right disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full flex items-center justify-between gap-3 p-3.5 bg-sand-50 hover:bg-primary-50 border border-sand-200 hover:border-primary-300 rounded-xl transition text-right disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-emerald-700" />
-                    <span className="text-sm font-bold text-slate-800">{school.name || school.id}</span>
+                    <Building className="w-4 h-4 text-primary-700" />
+                    <span className="text-sm font-bold text-sand-800">{school.name || school.id}</span>
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">
+                  <span className="text-[10px] font-mono text-sand-500">
                     {isMember ? school.id : `${school.id} • لست عضواً`}
                   </span>
                 </button>
@@ -86,19 +86,19 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
           </div>
 
           {isSuperAdmin && (
-            <form onSubmit={handleCreate} className="border-t border-slate-100 pt-4 space-y-3" id="create-school-form">
-              <h3 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5 text-emerald-600" />
+            <form onSubmit={handleCreate} className="border-t border-sand-100 pt-4 space-y-3" id="create-school-form">
+              <h3 className="text-xs font-bold text-sand-700 flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5 text-primary-600" />
                 <span>إنشاء مدرسة جديدة (المشرف العام)</span>
               </h3>
-              {formError && <p className="text-[11px] text-rose-700 font-bold">{formError}</p>}
+              {formError && <p className="text-[11px] text-danger-700 font-bold">{formError}</p>}
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="اسم المدرسة"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
+                  className="w-full p-2.5 bg-sand-50 border border-sand-200 rounded-xl text-xs focus:outline-none focus:border-primary-500"
                 />
                 <input
                   type="text"
@@ -106,13 +106,13 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
                   value={newId}
                   onChange={(e) => setNewId(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
                   placeholder="school-id"
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:border-emerald-500"
+                  className="w-full p-2.5 bg-sand-50 border border-sand-200 rounded-xl text-xs font-mono focus:outline-none focus:border-primary-500"
                 />
               </div>
               <button
                 type="submit"
                 disabled={busy}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 disabled:bg-emerald-400 cursor-pointer"
+                className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-2 disabled:bg-primary-400 cursor-pointer"
               >
                 {busy ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 <span>إنشاء المدرسة (وتعييني مديراً لها)</span>
@@ -123,7 +123,7 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
           <button
             type="button"
             onClick={onLogout}
-            className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl border border-rose-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-2 bg-danger-50 hover:bg-danger-100 text-danger-600 rounded-xl border border-danger-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>خروج</span>

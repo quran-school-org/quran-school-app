@@ -46,11 +46,11 @@ export default function SalaryModal() {
       {/* MODAL 2: ADD / EDIT SALARY PAYMENT */}
       {/* ========================================================================================= */}
       {showSalaryModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn" style={{ direction: "rtl" }}>
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col">
-            <div className="bg-gradient-to-r from-emerald-800 to-slate-900 p-5 text-white flex justify-between items-center shrink-0">
+        <div className="fixed inset-0 bg-sand-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn" style={{ direction: "rtl" }}>
+          <div className="bg-white rounded-3xl border border-sand-200 shadow-2xl w-full max-w-lg overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col">
+            <div className="bg-gradient-to-r from-primary-800 to-sand-900 p-5 text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-base flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-amber-300" />
+                <Briefcase className="w-5 h-5 text-gold-300" />
                 <span>{editingSalary ? "تعديل سجل التعويض والراتب" : "تسجيل وصرف أجر / راتب جديد"}</span>
               </h3>
               <button
@@ -61,14 +61,14 @@ export default function SalaryModal() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveSalary} className="p-6 space-y-4 text-xs text-slate-700 overflow-y-auto">
+            <form onSubmit={handleSaveSalary} className="p-6 space-y-4 text-xs text-sand-700 overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold mb-1">فئة المستفيد</label>
                   <select
                     value={salaryPersonType}
                     onChange={(e) => setSalaryPersonType(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   >
                     <option value="أستاذ / محفظ">أستاذ / محفظ القرآن</option>
                     <option value="إطار إداري">إطار إداري / كاتب</option>
@@ -82,7 +82,7 @@ export default function SalaryModal() {
                   <select
                     value={salaryStatus}
                     onChange={(e) => setSalaryStatus(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none font-bold"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none font-bold"
                   >
                     <option value="تم الصرف">تم الصرف والتأدية</option>
                     <option value="مستحق (قيد الانتظار)">مستحق (قيد الانتظار)</option>
@@ -93,8 +93,8 @@ export default function SalaryModal() {
               {teachers.length > 0 ? (
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block font-bold text-xs text-slate-700">اختر من لائحة الأطر والعاملين المسجلين</label>
-                    <span className="text-[10px] text-emerald-700 font-bold">يتم ملء الصفة والمبلغ تلقائياً</span>
+                    <label className="block font-bold text-xs text-sand-700">اختر من لائحة الأطر والعاملين المسجلين</label>
+                    <span className="text-[10px] text-primary-700 font-bold">يتم ملء الصفة والمبلغ تلقائياً</span>
                   </div>
                   <select
                     value={salaryPersonId}
@@ -106,7 +106,7 @@ export default function SalaryModal() {
                         handleTeacherSelect(e.target.value);
                       }
                     }}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none font-bold text-xs"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none font-bold text-xs"
                   >
                     <option value="">-- اختر كادر / عامل من السجل --</option>
                     {teachers.map(t => (
@@ -127,7 +127,7 @@ export default function SalaryModal() {
                   placeholder="مثال: الأستاذ محمد العلوي / السيد علي الحارس..."
                   value={salaryPersonName}
                   onChange={(e) => setSalaryPersonName(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                 />
               </div>
 
@@ -138,7 +138,7 @@ export default function SalaryModal() {
                   placeholder="مثال: محفظ فصل النور / مسؤول صيانة ونظافة المقر..."
                   value={salaryRoleTitle}
                   onChange={(e) => setSalaryRoleTitle(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                  className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                 />
               </div>
 
@@ -151,7 +151,7 @@ export default function SalaryModal() {
                     min={1}
                     value={salaryAmount}
                     onChange={(e) => setSalaryAmount(Number(e.target.value))}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold text-slate-900 focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl font-bold text-sand-900 focus:bg-white focus:border-primary-600 focus:outline-none"
                   />
                 </div>
 
@@ -160,7 +160,7 @@ export default function SalaryModal() {
                   <select
                     value={salaryMonth}
                     onChange={(e) => setSalaryMonth(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   >
                     {MONTHS_LIST.map(m => (
                       <option key={m} value={m}>{m}</option>
@@ -174,7 +174,7 @@ export default function SalaryModal() {
                     type="number"
                     value={salaryYear}
                     onChange={(e) => setSalaryYear(Number(e.target.value))}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none font-bold"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none font-bold"
                   />
                 </div>
               </div>
@@ -185,7 +185,7 @@ export default function SalaryModal() {
                   <select
                     value={salaryPaymentSource}
                     onChange={(e) => setSalaryPaymentSource(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   >
                     <option value="الصندوق">الصندوق</option>
                     <option value="حساب الجمعية البنكي">حساب الجمعية البنكي</option>
@@ -197,7 +197,7 @@ export default function SalaryModal() {
                   <select
                     value={salaryPaymentMethod}
                     onChange={(e) => setSalaryPaymentMethod(e.target.value as any)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   >
                     <option value="نقداً">نقداً</option>
                     <option value="تحويل بنكي">تحويل بنكي</option>
@@ -211,7 +211,7 @@ export default function SalaryModal() {
                     type="date"
                     value={salaryPaymentDate}
                     onChange={(e) => setSalaryPaymentDate(e.target.value)}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none"
+                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none"
                   />
                 </div>
               </div>
@@ -223,21 +223,21 @@ export default function SalaryModal() {
                   placeholder="مثال: SAL-2026-07-12"
                   value={salaryReceiptNo}
                   onChange={(e) => setSalaryReceiptNo(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:border-emerald-600 focus:outline-none font-mono"
+                  className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-primary-600 focus:outline-none font-mono"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex justify-end gap-3 pt-3 border-t border-sand-100">
                 <button
                   type="button"
                   onClick={() => setShowSalaryModal(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition"
+                  className="px-4 py-2 rounded-xl bg-sand-100 hover:bg-sand-200 text-sand-700 font-bold transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold shadow-md transition"
+                  className="px-5 py-2 rounded-xl bg-primary-800 hover:bg-primary-900 text-white font-bold shadow-md transition"
                 >
                   حفظ أجر المستفيد
                 </button>

@@ -14,14 +14,14 @@ export default function SettingsTabs() {
   return (
     <>
       {/* Tab Navigation */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-sand-200">
         <button
           data-subtab="general"
           onClick={() => setSubTab("general")}
           className={`pb-3 px-6 text-sm font-bold border-b-2 transition ${
             subTab === "general"
-              ? "border-emerald-600 text-emerald-800"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "border-primary-600 text-primary-800"
+              : "border-transparent text-sand-500 hover:text-sand-800"
           }`}
           id="btn-subtab-general"
         >
@@ -35,8 +35,8 @@ export default function SettingsTabs() {
           onClick={() => setSubTab("users")}
           className={`pb-3 px-6 text-sm font-bold border-b-2 transition ${
             subTab === "users"
-              ? "border-emerald-600 text-emerald-800"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "border-primary-600 text-primary-800"
+              : "border-transparent text-sand-500 hover:text-sand-800"
           }`}
           id="btn-subtab-users"
         >

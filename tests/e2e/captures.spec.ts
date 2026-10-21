@@ -13,6 +13,11 @@ import { ACCOUNTS, desktopTabs, loginAs, logout, openTab, type DemoAccount } fro
 const DIR = process.env.CAPTURE_DIR || "";
 const DESKTOP = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
+/** Filtres facultatifs (itérations de design) : CAPTURE_ROLES=directeur,parent CAPTURE_TABS=dashboard CAPTURE_MOBILE=0 */
+const ONLY_ROLES = (process.env.CAPTURE_ROLES || "").split(",").filter(Boolean);
+const ONLY_TABS = (process.env.CAPTURE_TABS || "").split(",").filter(Boolean);
+const WITH_MOBILE = process.env.CAPTURE_MOBILE !== "0";
+const EXTRAS = process.env.CAPTURE_EXTRAS !== "0";
 
 test.skip(!DIR, "CAPTURE_DIR non défini");
 test.setTimeout(240_000);
@@ -21,11 +26,11 @@ async function settle(page: Page) {
   await page.waitForTimeout(700);
 }
 
-async function shot(page: Page, folder: string, name: string, both = true) {
+async function shot(page: Page, folder: string, name: string, both = WITH_MOBILE) {
   mkdirSync(join(DIR, folder), { recursive: true });
   await settle(page);
   await page.screenshot({ path: join(DIR, folder, `${name}-bureau.png`), fullPage: true, animations: "disabled" });
-  if (!both) return;
+  if (!both || !WITH_MOBILE) return;
   await page.setViewportSize(MOBILE);
   await settle(page);
   await page.screenshot({ path: join(DIR, folder, `${name}-mobile.png`), fullPage: true, animations: "disabled" });
@@ -40,6 +45,7 @@ async function shotModal(page: Page, folder: string, name: string, open: () => P
 
 async function allScreens(page: Page, folder: string) {
   for (const tab of await desktopTabs(page)) {
+    if (ONLY_TABS.length && !ONLY_TABS.includes(tab)) continue;
     await openTab(page, tab);
     await shot(page, folder, tab);
   }
@@ -57,6 +63,7 @@ test.describe.serial("captures", () => {
   test.use({ viewport: DESKTOP });
 
   test("connexion et changement de mot de passe imposé", async ({ page }) => {
+    test.skip(!EXTRAS, "extras filtrés");
     await page.goto("/");
     await expect(page.locator('form button[type="submit"]')).toBeVisible();
     await shot(page, "connexion", "connexion");
@@ -70,10 +77,11 @@ test.describe.serial("captures", () => {
 
   for (const [folder, account] of ROLES) {
     test(`écrans : ${folder}`, async ({ page }) => {
+      test.skip(ONLY_ROLES.length > 0 && !ONLY_ROLES.includes(folder), "rôle filtré");
       await loginAs(page, account);
       await allScreens(page, folder);
 
-      if (folder === "directeur") {
+      if (folder === "directeur" && EXTRAS) {
         await openTab(page, "students");
         await shotModal(page, folder, "fenetre-eleve",
           () => page.locator('[data-action="open-student-form"]').click(),
@@ -121,7 +129,7 @@ test.describe.serial("captures", () => {
         await expect(page.locator("[data-app-shell]")).toBeVisible();
       }
 
-      if (folder === "administratif") {
+      if (folder === "administratif" && EXTRAS) {
         // Page de choix d'école (compte présent dans deux écoles).
         await page.locator("#school-switcher").selectOption("__picker__");
         await expect(page.locator('[data-screen="school-picker"]')).toBeVisible();

@@ -7,9 +7,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { ACCOUNTS, desktopTabs, loginAs, logout, openTab } from "./helpers";
 
-const ALL_OFFICE = ["dashboard", "students", "teachers", "attendance", "grades", "payments", "finance", "activities", "classes", "notifications", "id-cards-lab"];
+// Ordre du menu de la charte : التعليم / المالية / الإدارة.
+const ALL_OFFICE = ["dashboard", "students", "classes", "grades", "attendance", "payments", "finance", "activities", "teachers", "id-cards-lab", "notifications"];
 
-/** Onglets dont l'écran n'a pas de rendu pour ce rôle (comportement existant). */
+/** emptyTabs : onglets sans écran de saisie pour ce rôle (état vide explicatif, constat F3). */
 type RoleCase = {
   name: string;
   account: (typeof ACCOUNTS)[keyof typeof ACCOUNTS];
@@ -57,8 +58,10 @@ const CASES: RoleCase[] = [
   {
     name: "enseignant",
     account: ACCOUNTS.enseignant,
-    tabs: ["students", "attendance", "grades", "activities", "classes", "notifications", "id-cards-lab"],
+    tabs: ["teacher-dashboard", "students", "classes", "grades", "attendance", "activities", "id-cards-lab", "notifications"],
     checks: async (page) => {
+      await openTab(page, "teacher-dashboard");
+      await expect(page.locator('[data-screen="teacher-dashboard"]').getByText("ياسين العلمي").first()).toBeVisible();
       await openTab(page, "attendance");
       await expect(page.locator('[data-screen="attendance"]').getByText("ياسين العلمي").first()).toBeVisible();
       await openTab(page, "grades");
@@ -68,7 +71,7 @@ const CASES: RoleCase[] = [
   {
     name: "parent",
     account: ACCOUNTS.parent,
-    tabs: ["students", "attendance", "grades", "payments", "activities", "classes", "notifications"],
+    tabs: ["students", "classes", "grades", "attendance", "payments", "activities", "notifications"],
     emptyTabs: ["attendance"],
     checks: async (page) => {
       for (const tab of ["students", "grades", "payments"]) {
@@ -85,7 +88,7 @@ const CASES: RoleCase[] = [
   {
     name: "élève",
     account: ACCOUNTS.eleve,
-    tabs: ["students", "attendance", "grades", "activities", "classes", "notifications"],
+    tabs: ["students", "classes", "grades", "attendance", "activities", "notifications"],
     emptyTabs: ["attendance"],
     checks: async (page) => {
       for (const tab of ["students", "grades"]) {
@@ -99,7 +102,7 @@ const CASES: RoleCase[] = [
   {
     name: "encadrant",
     account: ACCOUNTS.encadrant,
-    tabs: ["dashboard", "students", "attendance", "grades", "activities", "classes", "notifications", "id-cards-lab"],
+    tabs: ["dashboard", "students", "classes", "grades", "attendance", "activities", "id-cards-lab", "notifications"],
     emptyTabs: ["attendance"],
   },
 ];
@@ -109,11 +112,13 @@ test.describe.serial("écrans par rôle", () => {
     test(`${c.name} : menu, écrans et périmètre des données`, async ({ page }) => {
       await loginAs(page, c.account);
       expect(await desktopTabs(page)).toEqual(c.tabs);
+      // Écran d'accueil : le premier onglet du menu, jamais une page vide.
+      await expectScreen(page, c.tabs[0]);
       for (const tab of c.tabs) {
         await openTab(page, tab);
         await expect(page.locator(`[data-nav="desktop"] [data-tab="${tab}"]`)).toBeVisible();
         if (c.emptyTabs?.includes(tab)) {
-          await expect(page.locator("main [data-screen]")).toHaveCount(0);
+          await expect(page.locator('[data-screen="attendance-unavailable"]')).toBeVisible();
         } else {
           await expectScreen(page, tab);
         }

@@ -16,7 +16,7 @@ test.describe.serial("parcours par rôle", () => {
 
   test("directeur : changement de mot de passe imposé, accès aux finances", async ({ page }) => {
     await loginAs(page, ACCOUNTS.directeur);
-    await expect(page.locator("header").getByText(SCHOOL_1).first()).toBeVisible();
+    await expect(page.locator("[data-active-school]").getByText(SCHOOL_1)).toBeVisible();
     await expect(page.locator('[data-nav="desktop"] [data-tab="finance"]')).toBeVisible();
     await openTab(page, "students");
     await expect(page.getByText("ياسين العلمي").first()).toBeVisible();
@@ -52,24 +52,24 @@ test.describe.serial("parcours par rôle", () => {
 
   test("compte présent dans deux écoles : changement d'école sans fuite de données", async ({ page }) => {
     await loginAs(page, ACCOUNTS.administratif);
-    await expect(page.locator("header").getByText(SCHOOL_1).first()).toBeVisible();
+    await expect(page.locator("[data-active-school]").getByText(SCHOOL_1)).toBeVisible();
     await openTab(page, "students");
     await expect(page.getByText("ياسين العلمي").first()).toBeVisible();
 
     await page.locator("#school-switcher").selectOption("annour");
-    await expect(page.locator("header").getByText(SCHOOL_2).first()).toBeVisible();
+    await expect(page.locator("[data-active-school]").getByText(SCHOOL_2)).toBeVisible();
     await expect(page.getByText("ياسين العلمي")).toHaveCount(0);
     const keys = await page.evaluate(() => Object.keys(localStorage));
     expect(keys.filter((k) => k.startsWith("kuttab:alfajr:"))).toEqual([]);
 
     await page.locator("#school-switcher").selectOption("alfajr");
-    await expect(page.locator("header").getByText(SCHOOL_1).first()).toBeVisible();
+    await expect(page.locator("[data-active-school]").getByText(SCHOOL_1)).toBeVisible();
     await logout(page);
   });
 
   test("directeur de la seconde école : ne voit que la sienne", async ({ page }) => {
     await loginAs(page, ACCOUNTS.directeurAnnour);
-    await expect(page.locator("header").getByText(SCHOOL_2).first()).toBeVisible();
+    await expect(page.locator("[data-active-school]").getByText(SCHOOL_2)).toBeVisible();
     await openTab(page, "students");
     await expect(page.getByText("إلياس البركاني").first()).toBeVisible();
     await expect(page.getByText("ياسين العلمي")).toHaveCount(0);

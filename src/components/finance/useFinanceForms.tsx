@@ -92,7 +92,7 @@ export function useFinanceForms(props: FinanceManagementProps) {
     return (
       <th
         onClick={() => onSort(key)}
-        className={`p-3 cursor-pointer select-none hover:bg-slate-200/80 transition rounded-lg ${
+        className={`p-3 cursor-pointer select-none hover:bg-sand-200/80 transition rounded-lg ${
           align === "center" ? "text-center" : "text-right"
         }`}
         title={`ترتيب حسب ${label} (من الأصغر للأكبر أو العكس)`}
@@ -101,12 +101,12 @@ export function useFinanceForms(props: FinanceManagementProps) {
           <span>{label}</span>
           {isActive ? (
             currentDir === "asc" ? (
-              <ArrowUp className="w-3.5 h-3.5 text-emerald-800 font-bold shrink-0" />
+              <ArrowUp className="w-3.5 h-3.5 text-primary-800 font-bold shrink-0" />
             ) : (
-              <ArrowDown className="w-3.5 h-3.5 text-emerald-800 font-bold shrink-0" />
+              <ArrowDown className="w-3.5 h-3.5 text-primary-800 font-bold shrink-0" />
             )
           ) : (
-            <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 opacity-60 hover:opacity-100 shrink-0" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-sand-500 opacity-60 hover:opacity-100 shrink-0" />
           )}
         </div>
       </th>

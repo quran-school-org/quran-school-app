@@ -18,13 +18,13 @@ export default function StaffCategoryTabs() {
   return (
     <>
       {/* Categories Tabs Selector */}
-      <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-1.5 overflow-x-auto">
+      <div className="bg-white p-2 rounded-2xl border border-sand-200 shadow-2xs flex items-center gap-1.5 overflow-x-auto">
         <button
           onClick={() => setCategoryFilter("all")}
           className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
             categoryFilter === "all"
-              ? "bg-slate-800 text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-100"
+              ? "bg-sand-800 text-white shadow-xs"
+              : "text-sand-600 hover:bg-sand-100"
           }`}
         >
           <Users className="w-3.5 h-3.5" />
@@ -43,12 +43,12 @@ export default function StaffCategoryTabs() {
               className={`px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
                 isSelected
                   ? `${cfg.badgeBg} shadow-xs`
-                  : "text-slate-600 hover:bg-slate-100"
+                  : "text-sand-600 hover:bg-sand-100"
               }`}
             >
               <span>{cfg.icon}</span>
               <span>{cfg.label}</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${isSelected ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"}`}>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${isSelected ? "bg-white/20 text-white" : "bg-sand-200 text-sand-700"}`}>
                 {count}
               </span>
             </button>

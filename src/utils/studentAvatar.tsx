@@ -144,7 +144,7 @@ export const StudentAvatar: React.FC<StudentAvatarProps> = ({
   return (
     <div
       className={`w-full h-full flex items-center justify-center font-bold text-xs ${
-        isGirl ? "bg-pink-100 text-pink-700" : "bg-teal-100 text-teal-800"
+        isGirl ? "bg-danger-100 text-danger-700" : "bg-primary-100 text-primary-800"
       }`}
     >
       <svg className="w-3/5 h-3/5 opacity-80" viewBox="0 0 24 24" fill="currentColor">

@@ -201,8 +201,8 @@ export function useActivitiesData(s: ReturnType<typeof useActivitiesForms>) {
         label: "معفى",
         shortLabel: "معفى",
         status: "معفى" as ParticipantPaymentStatus,
-        colorClass: "text-blue-800",
-        badgeClass: "bg-blue-100 text-blue-800 border-blue-200"
+        colorClass: "text-primary-800",
+        badgeClass: "bg-primary-100 text-primary-800 border-primary-200"
       };
     }
 
@@ -211,8 +211,8 @@ export function useActivitiesData(s: ReturnType<typeof useActivitiesForms>) {
         label: "مدفوع",
         shortLabel: "مدفوع",
         status: "مدفوع" as ParticipantPaymentStatus,
-        colorClass: "text-emerald-800",
-        badgeClass: "bg-emerald-100 text-emerald-800 border-emerald-200"
+        colorClass: "text-primary-800",
+        badgeClass: "bg-primary-100 text-primary-800 border-primary-200"
       };
     }
 
@@ -221,8 +221,8 @@ export function useActivitiesData(s: ReturnType<typeof useActivitiesForms>) {
         label: "مدفوع جزئياً",
         shortLabel: "مدفوع جزئياً",
         status: "مدفوع جزئياً" as ParticipantPaymentStatus,
-        colorClass: "text-amber-800",
-        badgeClass: "bg-amber-100 text-amber-800 border-amber-200"
+        colorClass: "text-gold-800",
+        badgeClass: "bg-gold-100 text-gold-800 border-gold-200"
       };
     }
 
@@ -230,32 +230,32 @@ export function useActivitiesData(s: ReturnType<typeof useActivitiesForms>) {
       label: "غير مدفوع",
       shortLabel: "غير مدفوع",
       status: "غير مدفوع" as ParticipantPaymentStatus,
-      colorClass: "text-rose-800",
-      badgeClass: "bg-rose-100 text-rose-800 border-rose-200"
+      colorClass: "text-danger-800",
+      badgeClass: "bg-danger-100 text-danger-800 border-danger-200"
     };
   };
   const getRoleBadgeStyle = (role: string) => {
     const rank = getRoleRank(role);
     switch (rank) {
       case 1: // طالب
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-primary-100 text-primary-800 border-primary-200";
       case 2: // محفظ / أستاذ
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
+        return "bg-primary-100 text-primary-800 border-primary-200";
       case 3: // مدير المدرسة المسؤول (المدير التنفيذي)
-        return "bg-purple-100 text-purple-900 border-purple-200";
+        return "bg-primary-100 text-primary-900 border-primary-200";
       case 4: // رئيس الجمعية
-        return "bg-amber-100 text-amber-900 border-amber-200";
+        return "bg-gold-100 text-gold-900 border-gold-200";
       case 5: // الكاتب العام للجمعية
-        return "bg-indigo-100 text-indigo-900 border-indigo-200";
+        return "bg-primary-100 text-primary-900 border-primary-200";
       case 6: // أمين مال الجمعية
-        return "bg-teal-100 text-teal-900 border-teal-200";
+        return "bg-primary-100 text-primary-900 border-primary-200";
       case 7: // مؤطر
-        return "bg-cyan-100 text-cyan-900 border-cyan-200";
+        return "bg-primary-100 text-primary-900 border-primary-200";
       case 8: // متطوع
-        return "bg-orange-100 text-orange-900 border-orange-200";
+        return "bg-gold-100 text-gold-900 border-gold-200";
       case 9: // مشارك خارجي
       default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
+        return "bg-sand-100 text-sand-700 border-sand-200";
     }
   };
 
