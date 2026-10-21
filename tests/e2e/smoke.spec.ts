@@ -97,3 +97,41 @@ test.describe.serial("parcours par rôle", () => {
     await logout(page);
   });
 });
+
+/**
+ * Revue de sécurité (étape 2) : démonstrations de bout en bout, après les
+ * parcours ci-dessus (mots de passe déjà changés). Voir
+ * docs/revues/REVUE-SECURITE-ETAPE-2.md.
+ */
+test.describe.serial("revue de sécurité", () => {
+  test("C-01 : un nom d'élève piégé par un enseignant n'exécute aucun script à l'impression du directeur", async ({ page }) => {
+    // L'enseignant (droits d'écriture sur les élèves) modifie un nom via l'API.
+    const { initializeApp, deleteApp } = await import("firebase/app");
+    const { getAuth, connectAuthEmulator, signInWithEmailAndPassword } = await import("firebase/auth");
+    const { getFirestore, connectFirestoreEmulator, doc, updateDoc } = await import("firebase/firestore");
+    const app = initializeApp({ projectId: "demo-quran-school", apiKey: "demo-api-key" }, `e2e-xss-${Date.now()}`);
+    const auth = getAuth(app);
+    connectAuthEmulator(auth, `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9099"}`, { disableWarnings: true });
+    const db = getFirestore(app);
+    const [host, port] = String(process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080").split(":");
+    connectFirestoreEmulator(db, host, Number(port));
+    await signInWithEmailAndPassword(auth, "youssef_baqali@alfajr.local", "e2e-enseignant-2026");
+    await updateDoc(doc(db, "schools", "alfajr", "students", "S-103"), {
+      fullName: `أيوب<img src=x onerror="window.opener.__xss='C-01'">`,
+      parentName: `<svg onload="window.opener.__xss='C-01'"></svg>`,
+    });
+    await deleteApp(app);
+
+    await login(page, "admin_alfajr", "e2e-directeur-2026");
+    await page.locator("aside").getByText("إدارة ملفات الطلاب").click();
+    await expect(page.getByText("ياسين العلمي").first()).toBeVisible();
+    const popupPromise = page.context().waitForEvent("page");
+    await page.locator("#export-students-pdf-btn").dispatchEvent("click");
+    const popup = await popupPromise;
+    await popup.waitForLoadState("domcontentloaded").catch(() => undefined);
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate(() => (window as any).__xss ?? null)).toBeNull();
+    await popup.close().catch(() => undefined);
+    await logout(page);
+  });
+});
