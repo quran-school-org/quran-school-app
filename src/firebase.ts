@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
+  connectFirestoreEmulator,
   collection, 
   doc, 
   setDoc, 
@@ -12,29 +13,31 @@ import {
 } from "firebase/firestore";
 import { 
   getAuth, 
+  connectAuthEmulator,
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut
 } from "firebase/auth";
 import { Student, Teacher, Class, Attendance, Grade, Payment, Notification, SystemSettings, AppUser } from "./types";
+import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig } from "./config/env";
 
-// Firebase configuration from firebase-applet-config.json
-const firebaseConfig = {
-  apiKey: "AIzaSyBNF7NMj9WxW_1Ud6YWRHLk5D4noFiRryI",
-  authDomain: "gen-lang-client-0481880143.firebaseapp.com",
-  projectId: "gen-lang-client-0481880143",
-  storageBucket: "gen-lang-client-0481880143.firebasestorage.app",
-  messagingSenderId: "806522370204",
-  appId: "1:806522370204:web:3da3acc4def8a8fa129559"
-};
+// Configuration web Firebase lue depuis les variables VITE_* (voir .env.example).
+const app = initializeApp(firebaseWebConfig);
 
-const app = initializeApp(firebaseConfig);
-
-// Using the custom database ID provided by Google AI Studio
-export const db = getFirestore(app, "ai-studio-a6572431-c7db-4071-82bf-a922d18511ec");
+// Base Firestore (base nommée en prod, "(default)" sur les émulateurs).
+export const db = firestoreDatabaseId === "(default)"
+  ? getFirestore(app)
+  : getFirestore(app, firestoreDatabaseId);
 
 // Initialize Firebase Auth
 export const auth = getAuth(app);
+
+// Connexion automatique aux émulateurs locaux (VITE_USE_EMULATORS=true).
+if (emulatorConfig.enabled) {
+  connectFirestoreEmulator(db, emulatorConfig.host, emulatorConfig.firestorePort);
+  connectAuthEmulator(auth, `http://${emulatorConfig.host}:${emulatorConfig.authPort}`, { disableWarnings: true });
+  console.info(`[firebase] Émulateurs actifs (projet ${firebaseWebConfig.projectId}).`);
+}
 
 // Helper function to sign in or create a user in Firebase Auth
 export async function loginWithFirebaseAuth(username: string, password: string) {

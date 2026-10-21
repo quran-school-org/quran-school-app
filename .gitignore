@@ -4,5 +4,21 @@ dist/
 coverage/
 .DS_Store
 *.log
+
+# Variables d'environnement : seuls les modèles et les configs PUBLIQUES
+# (sans secret) sont versionnés.
 .env*
 !.env.example
+!.env.development
+!.env.production
+
+# Émulateurs Firebase et tests
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+emulator-data/
+test-results/
+playwright-report/
+# Rapports produits par les scripts d'administration (peuvent contenir des données réelles)
+scripts/**/out/
