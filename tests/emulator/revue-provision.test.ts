@@ -309,3 +309,21 @@ describe("R-08 comptes falsifiés avant le Lot 0 (appUsers était modifiable par
     expect(review).toEqual(["t_t2", "u_intrus"]);
   });
 });
+
+describe("R-09 divergence appUsers / authLinks (le lien fait foi, D12)", () => {
+  it("un compte suspendu dans son lien n'est pas réactivé par la relance ni par la migration", async () => {
+    await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
+    const parent = await appUser("p_S-101");
+    // Suspension appliquée au lien (règles), mais l'écriture d'appUsers a échoué.
+    await admin.db.collection("authLinks").doc(parent.authUid).update({ isActive: false });
+    await admin.auth.updateUser(parent.authUid, { disabled: true });
+
+    const { plan } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
+    expect(plan.anomalies.find((a) => a.code === "AUTHLINK_MISMATCH")?.appUserId).toBe("p_S-101");
+    expect((await admin.db.collection("authLinks").doc(parent.authUid).get()).data()?.isActive).toBe(false);
+    expect((await admin.auth.getUser(parent.authUid)).disabled).toBe(true);
+
+    await runMigration(admin.db, admin.auth, { schoolId: "alfajr", apply: true, outDir: null, rotatePasswords: "none" });
+    expect((await admin.db.doc(`schools/alfajr/members/${parent.authUid}`).get()).data()?.isActive).toBe(false);
+  });
+});

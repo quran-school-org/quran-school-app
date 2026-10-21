@@ -102,6 +102,15 @@ export interface ProvisionPlan {
   critical: boolean;
 }
 
+/** Lien d'autorisation existant (authLinks/{uid}), source de confiance (D12). */
+export interface TrustedLink {
+  appUserId: string;
+  role?: string;
+  isActive?: boolean;
+  linkedStudentIds?: string[];
+  linkedTeacherId?: string | null;
+}
+
 interface RawUser {
   id: string;
   [key: string]: any;
@@ -124,13 +133,15 @@ function compareDuplicates(a: RawUser, b: RawUser): number {
 /**
  * Étape pure : audit, noms d'utilisateur, liens. Aucune E/S.
  *
- * `trustedLinks` (uid → appUserId) provient de `authLinks`, collection que
+ * `trustedLinks` (uid → lien) provient de `authLinks`, collection que
  * l'ancienne application ne pouvait pas écrire : seul un `authUid` confirmé
  * par un lien vaut provisionnement antérieur. Avant le Lot 0, `appUsers` était
  * modifiable par tout compte connecté (S2) : un `authUid`, des liens ou un
  * mot de passe qui y figurent peuvent avoir été plantés (constat R-08).
+ * Pour un compte déjà provisionné, le lien fait foi (D12) : rôle, liens, et
+ * statut le plus restrictif des deux (constat R-09).
  */
-export function computeProvisionPlan(users: RawUser[], students: StudentLike[], teachers: TeacherLike[], rotation: RotationPolicy = "all", trustedLinks: Map<string, string> = new Map()): ProvisionPlan {
+export function computeProvisionPlan(users: RawUser[], students: StudentLike[], teachers: TeacherLike[], rotation: RotationPolicy = "all", trustedLinks: Map<string, TrustedLink> = new Map()): ProvisionPlan {
   const anomalies: Anomaly[] = [];
   const add = (severity: Anomaly["severity"], code: string, u: RawUser, detail: string) =>
     anomalies.push({ severity, code, appUserId: u.id, username: String(u.username ?? ""), detail });
@@ -176,7 +187,22 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
   const accounts: PlannedAccount[] = [];
   const studentToParents = new Map<string, string[]>();
   for (const u of users) {
-    const role = String(u.role ?? "");
+    const claimedUid = typeof u.authUid === "string" && u.authUid.length > 0 ? u.authUid : null;
+    const link = claimedUid ? trustedLinks.get(claimedUid) : undefined;
+    const alreadyProvisioned = claimedUid !== null && link?.appUserId === u.id;
+    let role = String(u.role ?? "");
+    let isActive = u.isActive !== false;
+    if (alreadyProvisioned && link) {
+      const linkRole = typeof link.role === "string" && link.role ? link.role : role;
+      const linkActive = link.isActive === true;
+      const linkStudents = Array.isArray(link.linkedStudentIds) ? [...link.linkedStudentIds].sort().join(",") : null;
+      const userStudents = Array.isArray(u.linkedStudentIds) ? [...u.linkedStudentIds].sort().join(",") : "";
+      if (linkRole !== role || linkActive !== isActive || (linkStudents !== null && linkStudents !== userStudents) || (link.linkedTeacherId ?? null) !== (u.linkedTeacherId ?? null)) {
+        add("avertissement", "AUTHLINK_MISMATCH", u, `appUsers (rôle ${role}, actif ${isActive}) et authLinks (rôle ${linkRole}, actif ${linkActive}) divergent : le lien fait foi, statut le plus restrictif retenu`);
+      }
+      role = linkRole;
+      isActive = isActive && linkActive;
+    }
     if (!ROLES.includes(role)) add("critique", "UNKNOWN_ROLE", u, `rôle inconnu « ${role} »`);
     if (u.id.startsWith("t_") && FAMILY.includes(role)) add("avertissement", "ROLE_PREFIX_MISMATCH", u, `compte du personnel avec le rôle « ${role} »`);
     if (u.id.startsWith("p_") && role !== "ولي أمر") add("avertissement", "ROLE_PREFIX_MISMATCH", u, `compte parent avec le rôle « ${role} »`);
@@ -186,8 +212,6 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     let linkedTeacherId: string | null = null;
     let linkIssues: LinkIssue[] = [];
     const accountLike = { id: u.id, role, fullName: u.fullName, phone: u.phone };
-    const claimedUid = typeof u.authUid === "string" && u.authUid.length > 0 ? u.authUid : null;
-    const alreadyProvisioned = claimedUid !== null && trustedLinks.get(claimedUid) === u.id;
     if (claimedUid && !alreadyProvisioned) {
       add("critique", "UNTRUSTED_AUTH_UID", u, `authUid ${claimedUid} présent dans appUsers sans lien authLinks correspondant (écriture par l'ancienne application impossible : falsification probable) : ignoré, à examiner`);
     }
@@ -200,8 +224,10 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     if (alreadyProvisioned) {
       // Compte déjà provisionné : les liens enregistrés font foi (l'école a pu
       // retirer un lien « à retirer si erroné ») ; aucun recalcul heuristique.
-      linkedStudentIds = Array.isArray(u.linkedStudentIds) ? u.linkedStudentIds.filter((x: unknown): x is string => typeof x === "string") : [];
-      linkedTeacherId = typeof u.linkedTeacherId === "string" && u.linkedTeacherId ? u.linkedTeacherId : null;
+      const src = Array.isArray(link?.linkedStudentIds) ? link!.linkedStudentIds : u.linkedStudentIds;
+      linkedStudentIds = Array.isArray(src) ? src.filter((x: unknown): x is string => typeof x === "string") : [];
+      const teacher = link && "linkedTeacherId" in link ? link.linkedTeacherId : u.linkedTeacherId;
+      linkedTeacherId = typeof teacher === "string" && teacher ? teacher : null;
     } else if (role === "ولي أمر") {
       const r = computeParentLinks(accountLike, students);
       linkedStudentIds = r.studentIds;
@@ -238,7 +264,7 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
       appUserId: u.id,
       fullName: String(u.fullName ?? ""),
       role,
-      isActive: u.isActive !== false,
+      isActive,
       originalUsername: String(u.username ?? ""),
       username: fu.username,
       renamed: fu.renamed,
@@ -324,8 +350,8 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
     db.collection("teachers").get(),
     db.collection("authLinks").get(),
   ]);
-  const trustedLinks = new Map<string, string>();
-  linksSnap.forEach((d) => { if (typeof d.data().appUserId === "string") trustedLinks.set(d.id, d.data().appUserId); });
+  const trustedLinks = new Map<string, TrustedLink>();
+  linksSnap.forEach((d) => { if (typeof d.data().appUserId === "string") trustedLinks.set(d.id, d.data() as TrustedLink); });
   const users: RawUser[] = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const students: StudentLike[] = studentsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
   const teachers: TeacherLike[] = teachersSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
@@ -435,6 +461,8 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
             authUid: uid,
             authEmail: acc.email,
             username: acc.username,
+            role: acc.role,
+            isActive: acc.isActive,
             linkedStudentIds: acc.linkedStudentIds,
             linkedTeacherId: acc.linkedTeacherId,
             provisionedAt: nowIso,
