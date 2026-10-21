@@ -22,6 +22,7 @@ interface SettingsManagementProps {
   onDeleteAppUser: (userId: string) => void;
   onSaveTeacher?: (teacher: Teacher, assignedClassIds?: string[]) => void;
   onNavigateToStaff?: () => void;
+  onHarmonizeUsers?: () => void;
 }
 
 export default function SettingsManagement({
@@ -35,7 +36,8 @@ export default function SettingsManagement({
   onSaveAppUser,
   onDeleteAppUser,
   onSaveTeacher,
-  onNavigateToStaff
+  onNavigateToStaff,
+  onHarmonizeUsers
 }: SettingsManagementProps) {
   const canCreate = canCreateSettings ?? true;
   const canUpdate = canUpdateSettings ?? true;
@@ -51,6 +53,20 @@ export default function SettingsManagement({
   const [userViewMode, setUserViewMode] = useState<"table" | "cards">("table");
   const [showFormPassword, setShowFormPassword] = useState(false);
   const [revealedUserPasswords, setRevealedUserPasswords] = useState<Record<string, boolean>>({});
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncSuccessMsg, setSyncSuccessMsg] = useState("");
+
+  const handleTriggerSync = () => {
+    setIsSyncing(true);
+    if (onHarmonizeUsers) {
+      onHarmonizeUsers();
+    }
+    setTimeout(() => {
+      setIsSyncing(false);
+      setSyncSuccessMsg("تمت مطابقة وتحديث أدوار جميع المستخدمين مع شؤون العاملين وإيقاف حسابات المؤرشفين بنجاح!");
+      setTimeout(() => setSyncSuccessMsg(""), 4500);
+    }, 600);
+  };
 
   const toggleRevealPassword = (userId: string) => {
     setRevealedUserPasswords((prev) => ({
@@ -854,16 +870,35 @@ export default function SettingsManagement({
             </div>
           </div>
 
-          {/* Sync Notice Banner */}
-          <div className="bg-emerald-50/80 border border-emerald-200/80 text-emerald-900 p-3.5 rounded-2xl flex items-start gap-3 text-xs shadow-xs">
-            <span className="p-1.5 bg-emerald-100 text-emerald-800 rounded-xl font-bold flex items-center justify-center w-7 h-7 shrink-0">⚙️</span>
-            <div>
-              <p className="font-bold text-emerald-950">المزامنة التلقائية والذكية لحسابات المؤسسة والأدوار:</p>
-              <p className="text-slate-600 mt-0.5 leading-relaxed">
-                يقوم النظام تلقائياً بمزامنة حسابات <strong>المكتب التنفيذي والمسيرين</strong> (مدير / إداري)، <strong>المؤطرين</strong>، <strong>المحفظين والأساتذة</strong>، <strong>أولياء الأمور</strong>، و<strong>الطلاب (15+ سنة)</strong> مع تعيين الأدوار والصلاحيات المناسبة لكل فئة مهنية. كلمة المرور الافتراضية للجميع هي <span className="font-mono bg-white border border-emerald-200 px-2 py-0.5 rounded-md text-emerald-800 font-bold">123</span>.
-              </p>
+          {/* Sync Notice Banner & Action */}
+          <div className="bg-emerald-50/80 border border-emerald-200/80 text-emerald-900 p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-xs">
+            <div className="flex items-start gap-3">
+              <span className="p-1.5 bg-emerald-100 text-emerald-800 rounded-xl font-bold flex items-center justify-center w-7 h-7 shrink-0">⚙️</span>
+              <div>
+                <p className="font-bold text-emerald-950">المزامنة التلقائية والذكية لحسابات المؤسسة والأدوار:</p>
+                <p className="text-slate-600 mt-0.5 leading-relaxed">
+                  يقوم النظام تلقائياً بمزامنة حسابات <strong>المكتب التنفيذي والمسيرين</strong>، <strong>المؤطرين</strong>، <strong>المحفظين والأساتذة</strong>، <strong>المتطوعين</strong>، <strong>عمال النظافة والصيانة</strong>، <strong>أولياء الأمور</strong>، و<strong>الطلاب</strong> بدقة مع مطابقة الأدوار والمسميات الوظيفية المسندة لهم في شؤون العاملين، مع <strong>الإيقاف التلقائي لحساب أي شخص يتم أرشفته</strong>. كلمة المرور الافتراضية: <span className="font-mono bg-white border border-emerald-200 px-1.5 py-0.2 rounded text-emerald-800 font-bold">123</span>.
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={handleTriggerSync}
+              disabled={isSyncing}
+              className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition shadow-xs active:scale-95 cursor-pointer shrink-0 disabled:opacity-50"
+              title="مزامنة فورية وتحديث الأدوار مع شؤون العاملين والطلاب"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+              <span>{isSyncing ? "جاري المزامنة..." : "مزامنة فورية للأدوار"}</span>
+            </button>
           </div>
+
+          {syncSuccessMsg && (
+            <div className="bg-emerald-100/80 border border-emerald-300 text-emerald-900 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 animate-fade-in shadow-xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span>{syncSuccessMsg}</span>
+            </div>
+          )}
 
           {/* Search, Filters & View Mode Switcher Control Bar */}
           <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
@@ -904,8 +939,11 @@ export default function SettingsManagement({
                   <option value="إداري">إداريون وأعضاء المكتب التنفيذي</option>
                   <option value="مؤطر">مؤطرون ومشرفون تربويون</option>
                   <option value="مدرس">أساتذة ومحفظون (حلقات التحفيظ)</option>
+                  <option value="متطوع">متطوعون بالأنشطة والفعاليات 🤝</option>
+                  <option value="عامل نظافة / صيانة">عمال نظافة وصيانة 🧹</option>
                   <option value="ولي أمر">أولياء أمور</option>
                   <option value="طالب">طلاب (15+ سنة)</option>
+                  <option value="أخرى">أخرى</option>
                 </select>
               </div>
 
@@ -999,18 +1037,29 @@ export default function SettingsManagement({
                                   ? "bg-orange-100 text-orange-800 border border-orange-200"
                                   : user.role === "مدرس"
                                   ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  : user.role === "متطوع"
+                                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                                  : user.role === "عامل نظافة / صيانة"
+                                  ? "bg-teal-100 text-teal-800 border border-teal-200"
                                   : user.role === "ولي أمر"
                                   ? "bg-sky-100 text-sky-800 border border-sky-200"
-                                  : "bg-purple-100 text-purple-800 border border-purple-200"
+                                  : user.role === "طالب"
+                                  ? "bg-purple-100 text-purple-800 border border-purple-200"
+                                  : "bg-slate-100 text-slate-800 border border-slate-200"
                               }`}>
                                 {displayFullName.substring(0, 1)}
                               </div>
                               <div>
-                                <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                                  <span>{displayFullName}</span>
+                                <div className="font-bold text-slate-800 text-xs flex items-center gap-1.5 flex-wrap">
+                                  <span className={user.isArchived ? "line-through text-slate-400" : ""}>{displayFullName}</span>
                                   {isAutoSynced && (
                                     <span className="text-[9px] bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.2 rounded-md font-normal" title="حساب مزامن تلقائياً">
                                       مزامنة
+                                    </span>
+                                  )}
+                                  {user.isArchived && (
+                                    <span className="text-[9px] bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.2 rounded-md font-bold" title="شخص مؤرشف في المنظومة">
+                                      مؤرشف
                                     </span>
                                   )}
                                 </div>
@@ -1042,21 +1091,42 @@ export default function SettingsManagement({
 
                           {/* Role */}
                           <td className="py-3.5 px-4">
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                              user.role === "مدير"
-                                ? "bg-amber-50 text-amber-800 border-amber-200"
-                                : user.role === "إداري"
-                                ? "bg-blue-50 text-blue-800 border-blue-200"
-                                : user.role === "مؤطر"
-                                ? "bg-orange-50 text-orange-800 border-orange-200"
-                                : user.role === "مدرس"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                : user.role === "ولي أمر"
-                                ? "bg-sky-50 text-sky-800 border-sky-200"
-                                : "bg-purple-50 text-purple-800 border-purple-200"
-                            }`}>
-                              {user.role}
-                            </span>
+                            <div className="flex flex-col items-start gap-1">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                                user.role === "مدير"
+                                  ? "bg-amber-50 text-amber-800 border-amber-200"
+                                  : user.role === "إداري"
+                                  ? "bg-blue-50 text-blue-800 border-blue-200"
+                                  : user.role === "مؤطر"
+                                  ? "bg-orange-50 text-orange-800 border-orange-200"
+                                  : user.role === "مدرس"
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : user.role === "متطوع"
+                                  ? "bg-amber-50 text-amber-800 border-amber-200"
+                                  : user.role === "عامل نظافة / صيانة"
+                                  ? "bg-teal-50 text-teal-800 border-teal-200"
+                                  : user.role === "ولي أمر"
+                                  ? "bg-sky-50 text-sky-800 border-sky-200"
+                                  : user.role === "طالب"
+                                  ? "bg-purple-50 text-purple-800 border-purple-200"
+                                  : "bg-slate-50 text-slate-800 border-slate-200"
+                              }`}>
+                                {user.role === "متطوع" && "🤝 "}
+                                {user.role === "عامل نظافة / صيانة" && "🧹 "}
+                                {user.role === "مدرس" && "👨‍🏫 "}
+                                {user.role === "مؤطر" && "🌟 "}
+                                {user.role === "إداري" && "📋 "}
+                                {user.role === "مدير" && "👑 "}
+                                {user.role === "ولي أمر" && "👨‍👧‍👦 "}
+                                {user.role === "طالب" && "🎓 "}
+                                <span>{user.role}</span>
+                              </span>
+                              {user.roleTitle && user.roleTitle !== user.role && (
+                                <span className="text-[10px] text-slate-500 font-medium" title="المسمى الوظيفي المسند في شؤون العاملين">
+                                  {user.roleTitle}
+                                </span>
+                              )}
+                            </div>
                           </td>
 
                           {/* Last Login Date */}
@@ -1079,7 +1149,7 @@ export default function SettingsManagement({
                             ) : (
                               <span className="inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full text-[10px] font-bold">
                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                <span>موقوف</span>
+                                <span>{user.isArchived ? "موقوف (مؤرشف)" : "موقوف"}</span>
                               </span>
                             )}
                           </td>
@@ -1151,7 +1221,7 @@ export default function SettingsManagement({
                 <div
                   key={user.id}
                   className={`bg-white border rounded-2xl p-4 shadow-xs relative transition hover:border-slate-300 flex flex-col justify-between ${
-                    !user.isActive ? "opacity-60 border-slate-200 bg-slate-50/50" : "border-slate-200/90"
+                    !user.isActive ? "opacity-75 border-rose-200/80 bg-rose-50/20" : "border-slate-200/90"
                   }`}
                 >
                   <div>
@@ -1165,22 +1235,37 @@ export default function SettingsManagement({
                           ? "bg-orange-100 text-orange-800 border-orange-200"
                           : user.role === "مدرس"
                           ? "bg-emerald-100 text-emerald-800 border-emerald-200"
+                          : user.role === "متطوع"
+                          ? "bg-amber-100 text-amber-800 border-amber-200"
+                          : user.role === "عامل نظافة / صيانة"
+                          ? "bg-teal-100 text-teal-800 border-teal-200"
                           : user.role === "ولي أمر"
                           ? "bg-sky-100 text-sky-800 border-sky-200"
-                          : "bg-purple-100 text-purple-800 border-purple-200"
+                          : user.role === "طالب"
+                          ? "bg-purple-100 text-purple-800 border-purple-200"
+                          : "bg-slate-100 text-slate-800 border-slate-200"
                       }`}>
+                        {user.role === "متطوع" && "🤝 "}
+                        {user.role === "عامل نظافة / صيانة" && "🧹 "}
+                        {user.role === "مدرس" && "👨‍🏫 "}
+                        {user.role === "مؤطر" && "🌟 "}
+                        {user.role === "إداري" && "📋 "}
+                        {user.role === "مدير" && "👑 "}
                         {user.role}
                       </span>
                       <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${
                         user.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-rose-50 text-rose-600 border-rose-200"
                       }`}>
-                        {user.isActive ? "نشط" : "موقوف"}
+                        {user.isActive ? "نشط" : user.isArchived ? "موقوف (مؤرشف)" : "موقوف"}
                       </span>
                     </div>
 
-                    <h4 className="font-bold text-slate-800 text-sm mb-0.5">
+                    <h4 className={`font-bold text-sm mb-0.5 ${user.isArchived ? "line-through text-slate-400" : "text-slate-800"}`}>
                       {(user.id === "u1" || user.username === "admin_alfajr") && directorName ? directorName : user.fullName}
                     </h4>
+                    {user.roleTitle && user.roleTitle !== user.role && (
+                      <p className="text-[11px] text-slate-500 font-medium mb-1">{user.roleTitle}</p>
+                    )}
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-xs text-slate-500 font-mono">@{user.username}</p>
                       <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md font-mono text-[10px]">
@@ -1435,6 +1520,26 @@ export default function SettingsManagement({
                         setFormParentViewOwnPayments(false);
                         setFormParentUpdateContactInfo(false);
                         setFormParentRegisterInActivities(false);
+                      } else if (newRole === "متطوع" || newRole === "عامل نظافة / صيانة" || newRole === "أخرى") {
+                        setFormCanEditStudents(false);
+                        setFormCanEditTeachers(false);
+                        setFormCanEditGrades(false);
+                        setFormCanEditPayments(false);
+
+                        // Teachers
+                        setFormTeacherTakeAttendance(false);
+                        setFormTeacherRecordGrades(false);
+                        setFormTeacherWriteBehaviorReports(false);
+                        setFormTeacherEditOwnStudents(false);
+                        setFormTeacherSendAlertsToParents(false);
+
+                        // Parents/Students
+                        setFormParentViewOwnStats(false);
+                        setFormParentViewOwnAttendance(false);
+                        setFormParentViewCertificates(false);
+                        setFormParentViewOwnPayments(false);
+                        setFormParentUpdateContactInfo(false);
+                        setFormParentRegisterInActivities(newRole === "متطوع");
                       } else {
                         // Student or Parent
                         setFormCanEditStudents(false);
@@ -1467,8 +1572,11 @@ export default function SettingsManagement({
                     <option value="إداري">إداري / عضو مكتب تنفيذي (Administrator)</option>
                     <option value="مؤطر">مؤطر / مشرف تربوي (Mentor / Supervisor)</option>
                     <option value="مدرس">أستاذ / محفظ (Teacher)</option>
+                    <option value="متطوع">متطوع بالأنشطة والفعاليات (Volunteer)</option>
+                    <option value="عامل نظافة / صيانة">عامل نظافة وصيانة (Maintenance / Cleaning)</option>
                     <option value="ولي أمر">ولي أمر (Parent Portal)</option>
                     <option value="طالب">طالب (Student Portal - 15+ سنة)</option>
+                    <option value="أخرى">أخرى (Other)</option>
                   </select>
                 </div>
 

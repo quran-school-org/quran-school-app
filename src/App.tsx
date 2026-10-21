@@ -441,7 +441,10 @@ export default function App() {
     const savedUser = localStorage.getItem("alfajr_logged_user");
     if (savedUser) {
       try {
-        const u = JSON.parse(savedUser);
+        const u: AppUser = JSON.parse(savedUser);
+        if (u.id === "u1" || u.username === "admin_alfajr") {
+          u.role = "مدير";
+        }
         setCurrentUser(u);
       } catch (e) {
         console.error(e);
@@ -474,7 +477,10 @@ export default function App() {
         unsubscribes.push(unsubSettings);
 
         const unsubAppUsers = subscribeToCollection<AppUser>("appUsers", (items) => {
-          if (active && items.length > 0) setAppUsers(items);
+          if (active && items.length > 0) {
+            const synced = RealmSimDB.syncAppUsers(items);
+            setAppUsers(synced);
+          }
         }, "alfajr_settings_users");
         unsubscribes.push(unsubAppUsers);
 
@@ -615,9 +621,25 @@ export default function App() {
   // Real-time update of logged-in user's fine-grained permissions when appUsers is updated in Firestore/Settings
   useEffect(() => {
     if (currentUser && appUsers.length > 0) {
-      const updated = appUsers.find(u => u.id === currentUser.id || u.username === currentUser.username);
+      // Find matching user strictly by immutable ID first, and fallback to username with matching role
+      let updated = appUsers.find(u => u.id === currentUser.id);
+      if (!updated && currentUser.username) {
+        updated = appUsers.find(u => u.username === currentUser.username && u.role === currentUser.role);
+      }
+
+      // Safeguard: Never downgrade a logged-in director to another role (like parent or student)
+      if (currentUser.role === "مدير" && updated && updated.role !== "مدير") {
+        console.warn("Prevented illegal role mutation of director:", updated);
+        return;
+      }
+
       if (updated && JSON.stringify(updated) !== JSON.stringify(currentUser)) {
         setCurrentUser(updated);
+        try {
+          localStorage.setItem("alfajr_logged_user", JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to update localStorage logged user:", e);
+        }
       }
     }
   }, [appUsers]);
@@ -974,9 +996,21 @@ export default function App() {
       const isArchivedNow = !student.isArchived;
       const updated = { ...student, isArchived: isArchivedNow };
       RealmSimDB.saveStudent(updated);
+
+      // Also explicitly sync matching Student AppUser (if age >= 15)
+      const studentUser = appUsers.find(u => u.id === `s_${student.id}` || (u.fullName && u.fullName.trim() === student.fullName.trim() && u.role === "طالب"));
+      if (studentUser) {
+        const updatedStudentUser: AppUser = {
+          ...studentUser,
+          isActive: !isArchivedNow,
+          isArchived: isArchivedNow,
+        };
+        RealmSimDB.saveAppUser(updatedStudentUser);
+      }
+
       addSysNotification(
         isArchivedNow ? "أرشفة ملف طالب" : "تنشيط ملف طالب",
-        `تم ${isArchivedNow ? "أرشفة" : "تنشيط (إلغاء أرشفة)"} ملف الطالب ${name} بنجاح.`,
+        `تم ${isArchivedNow ? "أرشفة" : "تنشيط (إلغاء أرشفة)"} ملف الطالب ${name} بنجاح، وتم ${isArchivedNow ? "إيقاف" : "تنشيط"} حسابه في المنظومة.`,
         isArchivedNow ? "تنبيه" : "نجاح"
       );
       loadDatabase();
@@ -1016,14 +1050,30 @@ export default function App() {
   const handleArchiveTeacherToggle = (teacherId: string) => {
     const teach = teachers.find(t => t.id === teacherId);
     if (teach) {
-      const updated = { ...teach, isArchived: !teach.isArchived };
+      const isArchivedNow = !teach.isArchived;
+      const updated = { ...teach, isArchived: isArchivedNow };
       RealmSimDB.saveTeacher(updated);
       
-      const statusText = updated.isArchived ? "أرشفة" : "تنشيط";
+      // Also explicitly sync matching AppUser
+      const genId = `t_${teach.id}`;
+      const targetUser = appUsers.find(u => u.id === genId || (teach.fullName && u.fullName?.trim() === teach.fullName.trim()));
+      if (targetUser) {
+        const updatedUser: AppUser = {
+          ...targetUser,
+          isActive: !isArchivedNow,
+          isArchived: isArchivedNow,
+        };
+        RealmSimDB.saveAppUser(updatedUser);
+      }
+
+      const statusText = isArchivedNow ? "أرشفة" : "تنشيط (إلغاء أرشفة)";
+      const userStatusMsg = isArchivedNow 
+        ? "وتم إيقاف حسابه في إدارة المستخدمين تلقائياً" 
+        : "وتم إعادة تنشيط حسابه في إدارة المستخدمين";
       addSysNotification(
-        "تعديل حالة المعلم",
-        `تم ${statusText} ملف المعلم ${teach.fullName} بنجاح.`,
-        "إداري"
+        "تعديل حالة الكادر / المعلم",
+        `تم ${statusText} ملف ${teach.fullName} بنجاح، ${userStatusMsg}.`,
+        isArchivedNow ? "تنبيه" : "نجاح"
       );
       loadDatabase();
     }
@@ -2264,6 +2314,18 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     alert("تم حذف المستخدم بنجاح!");
   };
 
+  const handleHarmonizeUsersWithStaff = () => {
+    const freshStaff = RealmSimDB.getTeachers();
+    const freshUsers = RealmSimDB.getAppUsers();
+    setAppUsers(freshUsers);
+    setTeachers(freshStaff);
+    addSysNotification(
+      "مزامنة الحسابات والأدوار",
+      "تمت مزامنة وتحديث أدوار جميع المستخدمين مع شؤون العاملين وإيقاف حسابات الأشخاص المؤرشفين بنجاح.",
+      "نجاح"
+    );
+  };
+
   const handlePrintStudentsReport = () => {
     if (filteredStudents.length === 0) {
       alert("لا توجد بيانات طلاب لتصديرها.");
@@ -2662,15 +2724,19 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
   }, [currentUser, students]);
 
   const loggedStudentId = useMemo(() => {
-    if (currentUser && currentUser.role === "طالب") {
+    if (currentUser && (currentUser.role === "طالب" || currentRole === "طالب")) {
       if (currentUser.id.startsWith("s_")) {
         return currentUser.id.substring(2);
       }
-      const matchByName = students.find((s) => s.fullName.trim() === currentUser.fullName.trim());
+      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+      const normUser = clean(currentUser.fullName);
+      const matchByName = students.find((s) => clean(s.fullName) === normUser);
       if (matchByName) return matchByName.id;
+      const matchByUsername = students.find((s) => s.id === currentUser.username || (s.parentPhone && s.parentPhone.includes(currentUser.username)));
+      if (matchByUsername) return matchByUsername.id;
     }
     return "";
-  }, [currentUser, students]);
+  }, [currentUser, currentRole, students]);
 
   // Helper function to check if student belongs to logged parent or student user
   const isStudentBelongsToUser = useCallback((
@@ -2680,7 +2746,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     parentPhone: string,
     studentId: string
   ): boolean => {
-    if (role === "مدير") return true;
+    if (role === "مدير" || role === "إداري" || role === "مؤطر" || role === "متطوع" || role === "عامل نظافة / صيانة" || role === "أخرى") return true;
 
     if (role === "مدرس") {
       return true; // Teachers see students in their class or overall student list if authorized
@@ -2688,13 +2754,14 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
     if (role === "ولي أمر") {
       if (!user) return false;
+      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
       const normUserPhone = user.username.trim();
-      const normUserFull = user.fullName.trim();
+      const normUserFull = clean(user.fullName);
       const normStParentPhone = st.parentPhone.trim();
-      const normStParentName = st.parentName.trim();
+      const normStParentName = clean(st.parentName);
 
       if (parentPhone && normStParentPhone === parentPhone.trim()) return true;
-      if (normStParentName && normUserFull && normStParentName === normUserFull) return true;
+      if (normStParentName && normUserFull && (normStParentName === normUserFull || normStParentName.includes(normUserFull) || normUserFull.includes(normStParentName))) return true;
       if (normStParentPhone && normUserPhone && normStParentPhone.includes(normUserPhone)) return true;
       if (user.id.startsWith("p_") && user.id.substring(2) === st.id) return true;
 
@@ -2702,10 +2769,17 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     }
 
     if (role === "طالب") {
-      if (!user) return false;
+      if (!user) return true;
       if (studentId && st.id === studentId) return true;
       if (user.id.startsWith("s_") && user.id.substring(2) === st.id) return true;
-      if (st.fullName.trim() === user.fullName.trim()) return true;
+      if (user.id === st.id || user.username === st.id) return true;
+
+      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+      const normUser = clean(user.fullName);
+      const normSt = clean(st.fullName);
+      if (normUser && normSt && (normUser === normSt || normSt.includes(normUser) || normUser.includes(normSt))) return true;
+
+      if (user.username && st.parentPhone.includes(user.username)) return true;
 
       return false;
     }
@@ -2740,11 +2814,33 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
   const parentStudentsCount = parentStudents.length;
   const parentTotalHizbs = parentStudents.reduce((acc, s) => acc + s.hizbCount, 0);
   const parentAverageHizb = parentStudentsCount > 0 ? (parentTotalHizbs / parentStudentsCount).toFixed(1) : 0;
+  const parentFurthestHizb = parentStudentsCount > 0 ? Math.max(...parentStudents.map(s => Number(s.hizbCount) || 0)) : 0;
 
-  // Single student obj for student role
+  // Single student obj for student role (reliable resolution for personal memorization summary)
   const currentStudentObj = useMemo(() => {
-    return students.find(st => isStudentBelongsToUser(st, "طالب", currentUser, loggedParentPhone, loggedStudentId)) || null;
-  }, [students, currentUser, loggedParentPhone, loggedStudentId, isStudentBelongsToUser]);
+    if (currentRole !== "طالب") return null;
+    const directMatch = students.find(st => isStudentBelongsToUser(st, "طالب", currentUser, loggedParentPhone, loggedStudentId));
+    if (directMatch) return directMatch;
+
+    if (currentUser) {
+      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+      const normUser = clean(currentUser.fullName);
+      const byName = students.find(s => clean(s.fullName) === normUser);
+      if (byName) return byName;
+    }
+
+    // Fallback in preview / student view so "ملخص الحفظ الشخصي" always has data
+    return students.find(s => !s.isArchived) || students[0] || null;
+  }, [students, currentUser, currentRole, loggedParentPhone, loggedStudentId, isStudentBelongsToUser]);
+
+  // Auto-select student dossier when logged in or viewing as student
+  useEffect(() => {
+    if (currentRole === "طالب" && currentStudentObj) {
+      if (!selectedStudent || selectedStudent.id !== currentStudentObj.id) {
+        setSelectedStudent(currentStudentObj);
+      }
+    }
+  }, [currentRole, currentStudentObj]);
 
   // Account Owner Name & Dynamic First Avatar Letter
   const accountOwnerName = useMemo(() => {
@@ -2916,6 +3012,20 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     const totalHizbs = teacherStudents.reduce((sum, s) => sum + s.hizbCount, 0);
     return (totalHizbs / teacherStudents.length).toFixed(1);
   }, [teacherStudents]);
+
+  const furthestHizb = useMemo(() => {
+    if (activeStudents.length === 0) return 0;
+    return Math.max(...activeStudents.map(s => Number(s.hizbCount) || 0));
+  }, [activeStudents]);
+
+  const teacherFurthestHizb = useMemo(() => {
+    if (teacherStudents.length === 0) return 0;
+    return Math.max(...teacherStudents.map(s => Number(s.hizbCount) || 0));
+  }, [teacherStudents]);
+
+  const isStaffOrAdmin = useMemo(() => {
+    return ["مدير", "إداري", "مؤطر", "متطوع", "عامل نظافة / صيانة", "أخرى"].includes(currentRole);
+  }, [currentRole]);
   
   const filteredPayments = payments.filter(p => {
     const stud = students.find(s => s.id === p.studentId);
@@ -3026,7 +3136,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       });
 
       const findUserInList = (list: AppUser[]) => {
-        return list.find((u) => {
+        const matches = list.filter((u) => {
           const uName = (u.username || "").trim().toLowerCase();
           const uFullName = (u.fullName || "").trim().toLowerCase();
           const uEmail = (u.email || "").trim().toLowerCase();
@@ -3045,6 +3155,11 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
           return matchIdentifier && matchPassword;
         });
+
+        if (matches.length === 0) return undefined;
+        // Prioritize admin account if credentials match director
+        const adminMatch = matches.find(u => u.id === "u1" || u.role === "مدير");
+        return adminMatch || matches[0];
       };
 
       let user = findUserInList(Array.from(userMap.values()));
@@ -3440,9 +3555,25 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             </div>
 
             {/* Instant stats card */}
-            <div className="mb-4 p-3 bg-emerald-900/40 rounded-xl border border-emerald-800">
+            <div 
+              onClick={() => {
+                if (currentRole === "طالب") {
+                  setActiveTab("students");
+                  if (currentStudentObj) setSelectedStudent(currentStudentObj);
+                } else if (currentRole === "مدرس") {
+                  setActiveTab("dashboard");
+                } else if (currentRole === "ولي أمر") {
+                  setActiveTab("students");
+                } else {
+                  setActiveTab("dashboard");
+                }
+                setIsMobileMenuOpen(false);
+              }}
+              className="mb-4 p-3 bg-emerald-900/40 hover:bg-emerald-900/60 transition rounded-xl border border-emerald-800 cursor-pointer"
+              title={currentRole === "طالب" ? "الانتقال إلى ملف الحفظ والتجويد الشخصي" : "استعراض الإحصائيات"}
+            >
               <p className="text-[9px] text-amber-400 tracking-wider font-bold mb-1 uppercase">
-                {currentRole === "مدير"
+                {isStaffOrAdmin
                   ? "إحصائيات الإدارة"
                   : currentRole === "مدرس"
                   ? "إحصائيات الحلقة"
@@ -3453,7 +3584,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               <div className="flex justify-between items-center">
                 <div>
                   <span className="text-2xl font-bold font-mono text-white">
-                    {currentRole === "مدير"
+                    {isStaffOrAdmin
                       ? totalStudentsCount
                       : currentRole === "مدرس"
                       ? teacherStudents.length
@@ -3464,23 +3595,21 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                       : 0}
                   </span>
                   <span className="text-[10px] text-emerald-300 mr-1.5">
-                    {currentRole === "طالب" ? "حزب محفوظ" : "طلاب"}
+                    {currentRole === "طالب" ? "حزب محفوظ" : currentRole === "ولي أمر" ? "أبناء" : "طلاب"}
                   </span>
                 </div>
                 <div className="text-left">
                   <span className="text-sm font-bold font-mono text-amber-300">
-                    {currentRole === "مدير"
-                      ? averageHizb
+                    {currentRole === "طالب"
+                      ? (currentStudentObj ? (currentStudentObj.tajweedLevel || "متوسط") : "-")
+                      : isStaffOrAdmin
+                      ? `${furthestHizb} حزب`
                       : currentRole === "مدرس"
-                      ? teacherAverageHizb
-                      : currentRole === "ولي أمر"
-                      ? parentAverageHizb
-                      : currentStudentObj
-                      ? currentStudentObj.tajweedLevel
-                      : "-"}
+                      ? `${teacherFurthestHizb} حزب`
+                      : `${parentFurthestHizb} حزب`}
                   </span>
                   <p className="text-[9px] text-emerald-300 leading-none">
-                    {currentRole === "طالب" ? "مستوى التجويد" : "معدل الحفظ (حزب)"}
+                    {currentRole === "طالب" ? "مستوى التجويد" : "أبعد حزب بلغه طالب"}
                   </p>
                 </div>
               </div>
@@ -3699,9 +3828,24 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
         <aside className="hidden md:flex w-64 bg-emerald-950 text-emerald-100 flex-col p-4 shrink-0 border-l border-emerald-900">
           
           {/* Instant stats card adapted per role */}
-          <div className="mb-4 p-3 bg-emerald-900/40 rounded-xl border border-emerald-800">
+          <div 
+            onClick={() => {
+              if (currentRole === "طالب") {
+                setActiveTab("students");
+                if (currentStudentObj) setSelectedStudent(currentStudentObj);
+              } else if (currentRole === "مدرس") {
+                setActiveTab("dashboard");
+              } else if (currentRole === "ولي أمر") {
+                setActiveTab("students");
+              } else {
+                setActiveTab("dashboard");
+              }
+            }}
+            className="mb-4 p-3 bg-emerald-900/40 hover:bg-emerald-900/60 transition rounded-xl border border-emerald-800 cursor-pointer"
+            title={currentRole === "طالب" ? "الانتقال إلى ملف الحفظ والتجويد الشخصي" : "استعراض الإحصائيات"}
+          >
             <p className="text-[9px] text-amber-400 tracking-wider font-bold mb-1 uppercase">
-              {currentRole === "مدير"
+              {isStaffOrAdmin
                 ? "إحصائيات الإدارة"
                 : currentRole === "مدرس"
                 ? "إحصائيات الحلقة"
@@ -3712,7 +3856,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             <div className="flex justify-between items-center">
               <div>
                 <span className="text-2xl font-bold font-mono text-white">
-                  {currentRole === "مدير"
+                  {isStaffOrAdmin
                     ? totalStudentsCount
                     : currentRole === "مدرس"
                     ? teacherStudents.length
@@ -3723,23 +3867,21 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                     : 0}
                 </span>
                 <span className="text-[10px] text-emerald-300 mr-1.5">
-                  {currentRole === "طالب" ? "حزب محفوظ" : "طلاب"}
+                  {currentRole === "طالب" ? "حزب محفوظ" : currentRole === "ولي أمر" ? "أبناء" : "طلاب"}
                 </span>
               </div>
               <div className="text-left">
                 <span className="text-sm font-bold font-mono text-amber-300">
-                  {currentRole === "مدير"
-                    ? averageHizb
+                  {currentRole === "طالب"
+                    ? (currentStudentObj ? (currentStudentObj.tajweedLevel || "متوسط") : "-")
+                    : isStaffOrAdmin
+                    ? `${furthestHizb} حزب`
                     : currentRole === "مدرس"
-                    ? teacherAverageHizb
-                    : currentRole === "ولي أمر"
-                    ? parentAverageHizb
-                    : currentStudentObj
-                    ? currentStudentObj.tajweedLevel
-                    : "-"}
+                    ? `${teacherFurthestHizb} حزب`
+                    : `${parentFurthestHizb} حزب`}
                 </span>
                 <p className="text-[9px] text-emerald-300 leading-none">
-                  {currentRole === "طالب" ? "مستوى التجويد" : "معدل الحفظ (حزب)"}
+                  {currentRole === "طالب" ? "مستوى التجويد" : "أبعد حزب بلغه طالب"}
                 </p>
               </div>
             </div>
@@ -4031,10 +4173,11 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                 </div>
 
                 <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow transition">
-                  <p className="text-xs font-bold text-slate-400 mb-1 font-sans">معدل الحفظ لطلابي</p>
-                  <h3 className="text-3xl font-black text-slate-800 font-mono">{teacherAverageHizb}</h3>
-                  <div className="mt-2 text-[11px] text-emerald-600 font-bold flex items-center gap-1 font-sans">
-                    <span>📖 حزباً من القرآن الكريم</span>
+                  <p className="text-xs font-bold text-slate-400 mb-1 font-sans">أبعد حزب بلغه طالب</p>
+                  <h3 className="text-3xl font-black text-emerald-700 font-mono">{teacherFurthestHizb} <span className="text-sm font-normal text-slate-500">حزب</span></h3>
+                  <div className="mt-2 text-[11px] text-slate-500 font-bold flex items-center justify-between font-sans">
+                    <span>📖 أقصى حفظ مسجل</span>
+                    <span className="text-emerald-700 font-mono">المعدل: {teacherAverageHizb}</span>
                   </div>
                 </div>
               </div>
@@ -4401,8 +4544,18 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               {/* Header Action Row */}
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-800">إدارة ملفات الطلاب والوثائق الإدارية</h2>
-                  <p className="text-xs text-slate-500">سجل معلومات الطلاب، تتبع أوراقهم، ومقدار حفظهم وتجويدهم.</p>
+                  <h2 className="text-xl font-bold text-slate-800">
+                    {currentRole === "طالب"
+                      ? "ملفي الشخصي وسجل الحفظ القرآني"
+                      : currentRole === "ولي أمر"
+                      ? "متابعة الأبناء وسجلات الحفظ"
+                      : "إدارة ملفات الطلاب والوثائق الإدارية"}
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    {currentRole === "طالب"
+                      ? "استعراض مقدار الحفظ الحالي، مستوى التجويد، والوثائق الإدارية المعتمدة."
+                      : "سجل معلومات الطلاب، تتبع أوراقهم، ومقدار حفظهم وتجويدهم."}
+                  </p>
                 </div>
 
                 <div className="flex gap-2 w-full md:w-auto">
@@ -7030,6 +7183,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               onSaveSettings={handleSaveSystemSettings}
               onSaveAppUser={handleSaveAppUser}
               onDeleteAppUser={handleDeleteAppUser}
+              onHarmonizeUsers={handleHarmonizeUsersWithStaff}
             />
           )}
 

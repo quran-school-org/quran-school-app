@@ -1,7 +1,8 @@
 import { 
   Student, Teacher, Class, Attendance, Grade, Payment, Notification, 
   SystemSettings, AppUser, DailyProgress, OtherIncome, SalaryPayment, 
-  Expense, UserRole, ActivityTrip, ActivityParticipant, ActivityExpense 
+  Expense, UserRole, ActivityTrip, ActivityParticipant, ActivityExpense,
+  getDefaultPermissionsForRole
 } from "./types";
 import { saveToFirestore, deleteFromFirestore } from "./firebase";
 
@@ -69,7 +70,7 @@ export function getRoleAndPermissionsForStaff(teacher: Teacher): {
   }
 
   // 2. Administrative & Clerical Staff (إداري / كاتب)
-  if (cat.includes("إداري") || cat.includes("كاتب")) {
+  if (cat.includes("إداري") || cat.includes("كاتب") || title.includes("إداري") || title.includes("كاتب") || spec.includes("إداري") || spec.includes("سكرتار")) {
     return {
       role: "إداري",
       canEditStudents: true,
@@ -85,7 +86,7 @@ export function getRoleAndPermissionsForStaff(teacher: Teacher): {
   }
 
   // 3. Mentors & Activity Supervisors (مؤطر / مشرف تربوي)
-  if (cat.includes("مؤطر") || cat.includes("مشرف")) {
+  if (cat.includes("مؤطر") || cat.includes("مشرف") || title.includes("مؤطر") || title.includes("مشرف") || spec.includes("مؤطر") || spec.includes("تأطير")) {
     return {
       role: "مؤطر",
       canEditStudents: true,
@@ -100,7 +101,55 @@ export function getRoleAndPermissionsForStaff(teacher: Teacher): {
     };
   }
 
-  // 4. Default: Teachers & Quran instructors (أستاذ / محفظ)
+  // 4. Volunteers (متطوع) - Explicitly respect the volunteer role
+  if (cat.includes("متطوع") || title.includes("متطوع") || spec.includes("تطوع")) {
+    return {
+      role: "متطوع",
+      canEditStudents: false,
+      canEditTeachers: false,
+      canEditGrades: false,
+      canEditPayments: false,
+      teacherTakeAttendance: false,
+      teacherRecordGrades: false,
+      teacherWriteBehaviorReports: false,
+      teacherEditOwnStudents: false,
+      teacherSendAlertsToParents: false,
+    };
+  }
+
+  // 5. Cleaning & Maintenance staff (عامل نظافة / صيانة)
+  if (cat.includes("نظافة") || cat.includes("صيانة") || title.includes("نظافة") || title.includes("صيانة") || spec.includes("نظافة") || spec.includes("صيانة")) {
+    return {
+      role: "عامل نظافة / صيانة",
+      canEditStudents: false,
+      canEditTeachers: false,
+      canEditGrades: false,
+      canEditPayments: false,
+      teacherTakeAttendance: false,
+      teacherRecordGrades: false,
+      teacherWriteBehaviorReports: false,
+      teacherEditOwnStudents: false,
+      teacherSendAlertsToParents: false,
+    };
+  }
+
+  // 6. Other (أخرى)
+  if (cat === "أخرى") {
+    return {
+      role: "أخرى",
+      canEditStudents: false,
+      canEditTeachers: false,
+      canEditGrades: false,
+      canEditPayments: false,
+      teacherTakeAttendance: false,
+      teacherRecordGrades: false,
+      teacherWriteBehaviorReports: false,
+      teacherEditOwnStudents: false,
+      teacherSendAlertsToParents: false,
+    };
+  }
+
+  // 7. Teachers & Quran instructors (أستاذ / محفظ)
   return {
     role: "مدرس",
     canEditStudents: false,
@@ -568,13 +617,18 @@ export const RealmSimDB = {
     if (parentKey) {
       const parentGenId = `p_${student.id}`;
       const savedUsers = getStoredData<AppUser>(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
-      const existingParent = savedUsers.find(u => u.id === parentGenId || (u.role === "ولي أمر" && u.fullName === student.parentName));
-      const parentUsername = (existingParent?.username && existingParent.username !== "user") ? existingParent.username : getUsernameForParent(student);
+      const existingParent = savedUsers.find(u => u.id !== "u1" && (u.id === parentGenId || (u.role === "ولي أمر" && u.fullName === student.parentName)));
+      const parentId = (existingParent?.id && existingParent.id.startsWith("p_") && existingParent.id !== "u1") ? existingParent.id : parentGenId;
+      let parentUsername = (existingParent?.username && existingParent.username !== "user" && existingParent.username !== "admin_alfajr") ? existingParent.username : getUsernameForParent(student);
+      if (parentUsername === "admin_alfajr") {
+        parentUsername = `parent_${parentUsername}`;
+      }
 
       const parentUser: AppUser = {
-        id: existingParent?.id || parentGenId,
+        id: parentId,
         username: parentUsername,
         fullName: student.parentName,
+        phone: student.parentPhone,
         password: existingParent?.password || "123",
         role: "ولي أمر",
         isActive: existingParent !== undefined ? existingParent.isActive : true,
@@ -652,27 +706,40 @@ export const RealmSimDB = {
     // Also sync the teacher's AppUser
     const genId = `t_${teacher.id}`;
     const savedUsers = getStoredData<AppUser>(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
-    const existing = savedUsers.find(u => u.id === genId);
+    const existing = savedUsers.find(u => u.id === genId || (teacher.fullName && u.fullName?.trim() === teacher.fullName.trim()));
     const teacherUsername = (existing?.username && existing.username !== "user") ? existing.username : getUsernameForTeacher(teacher);
     const staffDefaults = getRoleAndPermissionsForStaff(teacher);
     
+    // Archiving status: If archived, the account MUST be suspended (isActive: false)
+    const isArchived = Boolean(teacher.isArchived);
+    const shouldBeActive = isArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
+
+    // Synchronize role directly with staff defaults
+    let userRole = staffDefaults.role;
+    if (existing && existing.role === "مدير" && staffDefaults.role !== "مدير") {
+      userRole = "مدير";
+    }
+    
     const teacherUser: AppUser = {
-      id: genId,
+      id: existing?.id || genId,
       username: teacherUsername,
       fullName: teacher.fullName,
       password: existing?.password || "123",
-      role: (existing && existing.role && existing.role !== "مدرس") ? existing.role : staffDefaults.role,
-      isActive: existing !== undefined ? existing.isActive : true,
-      canEditStudents: existing?.canEditStudents !== undefined ? existing.canEditStudents : staffDefaults.canEditStudents,
-      canEditTeachers: existing?.canEditTeachers !== undefined ? existing.canEditTeachers : staffDefaults.canEditTeachers,
+      role: userRole,
+      roleTitle: teacher.roleTitle,
+      category: teacher.category,
+      isActive: shouldBeActive,
+      isArchived: isArchived,
+      canEditStudents: existing?.canEditStudents !== undefined && existing.role === userRole ? existing.canEditStudents : staffDefaults.canEditStudents,
+      canEditTeachers: existing?.canEditTeachers !== undefined && existing.role === userRole ? existing.canEditTeachers : staffDefaults.canEditTeachers,
       canEditGrades: existing?.canEditGrades !== undefined ? existing.canEditGrades : staffDefaults.canEditGrades,
-      canEditPayments: existing?.canEditPayments !== undefined ? existing.canEditPayments : staffDefaults.canEditPayments,
+      canEditPayments: existing?.canEditPayments !== undefined && existing.role === userRole ? existing.canEditPayments : staffDefaults.canEditPayments,
       teacherTakeAttendance: existing?.teacherTakeAttendance !== undefined ? existing.teacherTakeAttendance : staffDefaults.teacherTakeAttendance,
       teacherRecordGrades: existing?.teacherRecordGrades !== undefined ? existing.teacherRecordGrades : staffDefaults.teacherRecordGrades,
       teacherWriteBehaviorReports: existing?.teacherWriteBehaviorReports !== undefined ? existing.teacherWriteBehaviorReports : staffDefaults.teacherWriteBehaviorReports,
       teacherEditOwnStudents: existing?.teacherEditOwnStudents !== undefined ? existing.teacherEditOwnStudents : staffDefaults.teacherEditOwnStudents,
       teacherSendAlertsToParents: existing?.teacherSendAlertsToParents !== undefined ? existing.teacherSendAlertsToParents : staffDefaults.teacherSendAlertsToParents,
-      permissions: existing?.permissions,
+      permissions: existing?.permissions || getDefaultPermissionsForRole(userRole),
     };
     
     this.saveAppUser(teacherUser);
@@ -946,11 +1013,19 @@ export const RealmSimDB = {
       return true;
     });
 
-    // Migrate the u1 admin account if it still has old values
+    // Migrate or repair the u1 admin account
     const adminIdx = filtered.findIndex(u => u.id === "u1" || u.username === "admin_alfajr");
     if (adminIdx >= 0) {
       const admin = filtered[adminIdx];
       let needsSave = false;
+      if (admin.id !== "u1") {
+        admin.id = "u1";
+        needsSave = true;
+      }
+      if (admin.role !== "مدير") {
+        admin.role = "مدير";
+        needsSave = true;
+      }
       if (admin.username === "director" || admin.password === "123") {
         admin.username = "admin_alfajr";
         admin.password = "FajrAcademy@2026!";
@@ -960,6 +1035,12 @@ export const RealmSimDB = {
         admin.fullName = targetDirectorName;
         needsSave = true;
       }
+      admin.canEditStudents = true;
+      admin.canEditTeachers = true;
+      admin.canEditGrades = true;
+      admin.canEditPayments = true;
+      admin.isActive = true;
+      admin.isArchived = false;
       if (needsSave) {
         saveToFirestore("appUsers", admin.id, admin);
       }
@@ -988,65 +1069,73 @@ export const RealmSimDB = {
         parentUpdateContactInfo: true,
         parentRegisterInActivities: true,
       };
-      filtered.push(defaultAdmin);
+      filtered.unshift(defaultAdmin);
       saveToFirestore("appUsers", "u1", defaultAdmin);
     }
 
     // 1. Generate Teacher & Staff users
     const teachersList = getStoredData<Teacher>(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
     teachersList.forEach(teacher => {
-      if (teacher.isArchived) return;
       const genId = `t_${teacher.id}`;
+      const isArchived = Boolean(teacher.isArchived);
       const existing = savedUsers.find(u =>
-        u.id === genId ||
-        (teacher.fullName && u.fullName?.trim() === teacher.fullName.trim()) ||
-        (teacher.email && u.email?.trim().toLowerCase() === teacher.email.trim().toLowerCase())
+        u.id !== "u1" && (
+          u.id === genId ||
+          (u.role === "مدرس" && teacher.fullName && u.fullName?.trim() === teacher.fullName.trim()) ||
+          (teacher.email && u.email?.trim().toLowerCase() === teacher.email.trim().toLowerCase())
+        )
       );
       
       const staffDefaults = getRoleAndPermissionsForStaff(teacher);
       
-      // Determine the role: if existing had a role that was NOT stuck on "مدرس" due to previous bug, keep it;
-      // otherwise, if the category indicates a board member, administrator, or mentor, apply staffDefaults.role.
       let userRole = staffDefaults.role;
-      if (existing && existing.role) {
-        const isStaffSpecialCat = 
-          teacher.category?.includes("مكتب") || 
-          teacher.category?.includes("مسير") || 
-          teacher.category?.includes("إداري") || 
-          teacher.category?.includes("كاتب") ||
-          teacher.category?.includes("مؤطر") || 
-          teacher.category?.includes("مشرف");
-
-        if (existing.role === "مدرس" && isStaffSpecialCat) {
-          userRole = staffDefaults.role;
-        } else {
-          userRole = existing.role;
-        }
+      if (existing && existing.role === "مدير" && staffDefaults.role !== "مدير") {
+        userRole = "مدير";
       }
 
-      const isUpgradedRole = existing?.role === "مدرس" && userRole !== "مدرس";
+      const shouldBeActive = isArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
+      const teacherId = (existing?.id && existing.id.startsWith("t_") && existing.id !== "u1") ? existing.id : genId;
       
+      let teacherUsername = (existing?.username && existing.username !== "user" && existing.username !== "admin_alfajr")
+        ? existing.username
+        : getUsernameForTeacher(teacher);
+
+      if (teacherUsername === "admin_alfajr") {
+        teacherUsername = `staff_${teacherUsername}`;
+      }
+
       const teacherUser: AppUser = {
-        id: existing?.id || genId,
-        username: existing?.username || getUsernameForTeacher(teacher),
+        id: teacherId,
+        username: teacherUsername,
         fullName: teacher.fullName,
         password: existing?.password || "123",
         role: userRole,
-        isActive: existing !== undefined ? existing.isActive : true,
-        canEditStudents: existing?.canEditStudents !== undefined && !isUpgradedRole ? existing.canEditStudents : staffDefaults.canEditStudents,
-        canEditTeachers: existing?.canEditTeachers !== undefined && !isUpgradedRole ? existing.canEditTeachers : staffDefaults.canEditTeachers,
-        canEditGrades: existing?.canEditGrades !== undefined ? existing.canEditGrades : staffDefaults.canEditGrades,
-        canEditPayments: existing?.canEditPayments !== undefined && !isUpgradedRole ? existing.canEditPayments : staffDefaults.canEditPayments,
-        teacherTakeAttendance: existing?.teacherTakeAttendance !== undefined ? existing.teacherTakeAttendance : staffDefaults.teacherTakeAttendance,
-        teacherRecordGrades: existing?.teacherRecordGrades !== undefined ? existing.teacherRecordGrades : staffDefaults.teacherRecordGrades,
-        teacherWriteBehaviorReports: existing?.teacherWriteBehaviorReports !== undefined ? existing.teacherWriteBehaviorReports : staffDefaults.teacherWriteBehaviorReports,
-        teacherEditOwnStudents: existing?.teacherEditOwnStudents !== undefined ? existing.teacherEditOwnStudents : staffDefaults.teacherEditOwnStudents,
-        teacherSendAlertsToParents: existing?.teacherSendAlertsToParents !== undefined ? existing.teacherSendAlertsToParents : staffDefaults.teacherSendAlertsToParents,
-        permissions: existing?.permissions,
+        roleTitle: teacher.roleTitle,
+        category: teacher.category,
+        isActive: shouldBeActive,
+        isArchived: isArchived,
+        canEditStudents: staffDefaults.canEditStudents,
+        canEditTeachers: staffDefaults.canEditTeachers,
+        canEditGrades: staffDefaults.canEditGrades,
+        canEditPayments: staffDefaults.canEditPayments,
+        teacherTakeAttendance: staffDefaults.teacherTakeAttendance,
+        teacherRecordGrades: staffDefaults.teacherRecordGrades,
+        teacherWriteBehaviorReports: staffDefaults.teacherWriteBehaviorReports,
+        teacherEditOwnStudents: staffDefaults.teacherEditOwnStudents,
+        teacherSendAlertsToParents: staffDefaults.teacherSendAlertsToParents,
+        permissions: existing?.permissions || getDefaultPermissionsForRole(userRole),
       };
       
-      if (!filtered.some(u => u.id === teacherUser.id)) {
+      const existingIdx = filtered.findIndex(u => u.id === teacherUser.id && u.id !== "u1");
+      if (existingIdx >= 0) {
+        filtered[existingIdx] = teacherUser;
+      } else {
         filtered.push(teacherUser);
+      }
+
+      // Synchronize changes to Firestore if out of sync
+      if (existing && (existing.role !== userRole || existing.isActive !== shouldBeActive || existing.roleTitle !== teacher.roleTitle || existing.isArchived !== isArchived)) {
+        saveToFirestore("appUsers", teacherUser.id, teacherUser);
       }
     });
 
@@ -1054,25 +1143,46 @@ export const RealmSimDB = {
     const studentsList = getStoredData<Student>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
     const processedParents = new Set<string>();
     studentsList.forEach(student => {
-      if (student.isArchived) return;
       const parentKey = student.parentPhone || student.parentName;
       if (!parentKey || processedParents.has(parentKey)) return;
       processedParents.add(parentKey);
 
+      // Check if all children associated with this parent are archived
+      const parentChildren = studentsList.filter(s => (s.parentPhone && s.parentPhone === student.parentPhone) || (s.parentName && s.parentName === student.parentName));
+      const areAllChildrenArchived = parentChildren.length > 0 && parentChildren.every(s => Boolean(s.isArchived));
+
       const genId = `p_${student.id}`;
+      // CRITICAL GUARD: Only match parent accounts (role === "ولي أمر" or id starts with "p_"). NEVER match director (u1) or other roles!
       const existing = savedUsers.find(u =>
-        u.id === genId ||
-        (student.parentName && u.fullName?.trim() === student.parentName.trim()) ||
-        (u.role === "ولي أمر" && u.fullName === student.parentName)
+        u.id !== "u1" && (
+          u.id === genId ||
+          (u.role === "ولي أمر" && (
+            (student.parentPhone && u.phone && u.phone === student.parentPhone) ||
+            (student.parentName && u.fullName?.trim() === student.parentName.trim())
+          ))
+        )
       );
       
+      const shouldBeActive = areAllChildrenArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
+      const parentId = (existing?.id && existing.id.startsWith("p_") && existing.id !== "u1") ? existing.id : genId;
+
+      let parentUsername = (existing?.username && existing.username !== "user" && existing.username !== "admin_alfajr")
+        ? existing.username
+        : getUsernameForParent(student);
+
+      if (parentUsername === "admin_alfajr") {
+        parentUsername = `parent_${parentUsername}`;
+      }
+
       const parentUser: AppUser = {
-        id: existing?.id || genId,
-        username: existing?.username || getUsernameForParent(student),
+        id: parentId,
+        username: parentUsername,
         fullName: student.parentName,
+        phone: student.parentPhone,
         password: existing?.password || "123",
-        role: existing?.role || "ولي أمر",
-        isActive: existing !== undefined ? existing.isActive : true,
+        role: "ولي أمر",
+        isActive: shouldBeActive,
+        isArchived: areAllChildrenArchived,
         canEditStudents: false,
         canEditTeachers: false,
         canEditGrades: false,
@@ -1083,34 +1193,56 @@ export const RealmSimDB = {
         parentViewOwnPayments: existing?.parentViewOwnPayments !== undefined ? existing.parentViewOwnPayments : true,
         parentUpdateContactInfo: existing?.parentUpdateContactInfo !== undefined ? existing.parentUpdateContactInfo : true,
         parentRegisterInActivities: existing?.parentRegisterInActivities !== undefined ? existing.parentRegisterInActivities : true,
-        permissions: existing?.permissions,
+        permissions: existing?.permissions || getDefaultPermissionsForRole("ولي أمر"),
       };
 
-      if (!filtered.some(u => u.id === parentUser.id)) {
+      // Safeguard: NEVER overwrite u1 or any non-parent user
+      const existingIdx = filtered.findIndex(u => u.id === parentUser.id && u.id !== "u1");
+      if (existingIdx >= 0) {
+        filtered[existingIdx] = parentUser;
+      } else {
         filtered.push(parentUser);
+      }
+
+      if (existing && (existing.isActive !== shouldBeActive || existing.isArchived !== areAllChildrenArchived)) {
+        saveToFirestore("appUsers", parentUser.id, parentUser);
       }
     });
 
     // 3. Generate Student users (only for age >= 15)
     studentsList.forEach(student => {
-      if (student.isArchived) return;
       const birthYear = student.birthDate ? parseInt(student.birthDate.split('-')[0]) : 2015;
       const age = 2026 - birthYear;
       if (age < 15) return;
 
       const genId = `s_${student.id}`;
+      const isArchived = Boolean(student.isArchived);
       const existing = savedUsers.find(u =>
-        u.id === genId ||
-        (student.fullName && u.fullName?.trim() === student.fullName.trim())
+        u.id !== "u1" && (
+          u.id === genId ||
+          (u.role === "طالب" && student.fullName && u.fullName?.trim() === student.fullName.trim())
+        )
       );
 
+      const shouldBeActive = isArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
+      const studentId = (existing?.id && existing.id.startsWith("s_") && existing.id !== "u1") ? existing.id : genId;
+
+      let studentUsername = (existing?.username && existing.username !== "user" && existing.username !== "admin_alfajr")
+        ? existing.username
+        : getUsernameForStudent(student);
+
+      if (studentUsername === "admin_alfajr") {
+        studentUsername = `student_${studentUsername}`;
+      }
+
       const studentUser: AppUser = {
-        id: existing?.id || genId,
-        username: existing?.username || getUsernameForStudent(student),
+        id: studentId,
+        username: studentUsername,
         fullName: student.fullName,
         password: existing?.password || "123",
-        role: existing?.role || "طالب",
-        isActive: existing !== undefined ? existing.isActive : true,
+        role: "طالب",
+        isActive: shouldBeActive,
+        isArchived: isArchived,
         canEditStudents: false,
         canEditTeachers: false,
         canEditGrades: false,
@@ -1119,36 +1251,48 @@ export const RealmSimDB = {
         parentViewOwnAttendance: existing?.parentViewOwnAttendance !== undefined ? existing.parentViewOwnAttendance : true,
         parentViewCertificates: existing?.parentViewCertificates !== undefined ? existing.parentViewCertificates : true,
         parentViewOwnPayments: existing?.parentViewOwnPayments !== undefined ? existing.parentViewOwnPayments : true,
-        permissions: existing?.permissions,
+        permissions: existing?.permissions || getDefaultPermissionsForRole("طالب"),
       };
 
-      if (!filtered.some(u => u.id === studentUser.id)) {
+      const existingIdx = filtered.findIndex(u => u.id === studentUser.id && u.id !== "u1");
+      if (existingIdx >= 0) {
+        filtered[existingIdx] = studentUser;
+      } else {
         filtered.push(studentUser);
       }
-    });
 
-    // Enforce distinct, unique usernames only for users missing usernames
-    const usedUsernames = new Set<string>();
-    filtered.forEach((u) => {
-      const uname = (u.username || "").trim().toLowerCase();
-      if (uname && uname !== "user") {
-        usedUsernames.add(uname);
+      if (existing && (existing.isActive !== shouldBeActive || existing.isArchived !== isArchived)) {
+        saveToFirestore("appUsers", studentUser.id, studentUser);
       }
     });
 
+    // Enforce distinct, globally unique usernames across all users
+    const seenUsernames = new Map<string, string>(); // username -> userId
+    // Register u1 first so admin always owns its username and cannot be shadowed
+    const adminUser = filtered.find(u => u.id === "u1");
+    if (adminUser) {
+      const aName = (adminUser.username || "admin_alfajr").trim().toLowerCase();
+      seenUsernames.set(aName, "u1");
+    }
+
     filtered.forEach((u) => {
+      if (u.id === "u1") return; // Admin username is already registered and protected
       let uname = (u.username || "").trim().toLowerCase();
-      if (!uname || uname === "user") {
-        uname = generateUniqueUsername(u.fullName || "user", Array.from(usedUsernames));
+      if (!uname || uname === "user" || uname === "admin_alfajr" || (seenUsernames.has(uname) && seenUsernames.get(uname) !== u.id)) {
+        uname = generateUniqueUsername(u.fullName || "user", Array.from(seenUsernames.keys()), u.id);
         u.username = uname;
-        usedUsernames.add(uname);
         saveToFirestore("appUsers", u.id, u);
       }
+      seenUsernames.set(uname, u.id);
     });
 
     return filtered;
   },
   saveAppUser(user: AppUser): void {
+    // Permanent guard: u1 must always remain a "مدير"
+    if (user.id === "u1") {
+      user.role = "مدير";
+    }
     const list = this.getAppUsers();
     const idx = list.findIndex(u => u.id === user.id);
     if (idx >= 0) {
@@ -1160,6 +1304,10 @@ export const RealmSimDB = {
     saveToFirestore("appUsers", user.id, user);
   },
   deleteAppUser(userId: string): void {
+    if (userId === "u1") {
+      console.warn("Attempt to delete primary administrator u1 blocked.");
+      return;
+    }
     const list = this.getAppUsers().filter(u => u.id !== userId);
     setStoredData(STORAGE_KEYS.SETTINGS_USERS, list);
     deleteFromFirestore("appUsers", userId);

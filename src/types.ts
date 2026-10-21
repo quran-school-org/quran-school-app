@@ -131,7 +131,7 @@ export interface Notification {
   isRead: boolean;
 }
 
-export type UserRole = "مدير" | "إداري" | "مؤطر" | "مدرس" | "طالب" | "ولي أمر";
+export type UserRole = "مدير" | "إداري" | "مؤطر" | "مدرس" | "متطوع" | "عامل نظافة / صيانة" | "طالب" | "ولي أمر" | "أخرى";
 
 export interface ExecutiveMemberItem {
   id: string;
@@ -318,6 +318,34 @@ export function getDefaultPermissionsForRole(role: UserRole): UserPermissions {
       } else {
         permissions[mod.id] = { read: false, create: false, update: false, delete: false, print: false };
       }
+    } else if (role === "متطوع") {
+      if (
+        mod.id === "dashboard" ||
+        mod.id === "activities" ||
+        mod.id === "notifications"
+      ) {
+        permissions[mod.id] = { read: true, create: false, update: false, delete: false, print: true };
+      } else {
+        permissions[mod.id] = { read: false, create: false, update: false, delete: false, print: false };
+      }
+    } else if (role === "عامل نظافة / صيانة") {
+      if (
+        mod.id === "dashboard" ||
+        mod.id === "notifications"
+      ) {
+        permissions[mod.id] = { read: true, create: false, update: false, delete: false, print: true };
+      } else {
+        permissions[mod.id] = { read: false, create: false, update: false, delete: false, print: false };
+      }
+    } else if (role === "أخرى") {
+      if (
+        mod.id === "dashboard" ||
+        mod.id === "notifications"
+      ) {
+        permissions[mod.id] = { read: true, create: false, update: false, delete: false, print: false };
+      } else {
+        permissions[mod.id] = { read: false, create: false, update: false, delete: false, print: false };
+      }
     }
   });
 
@@ -430,6 +458,9 @@ export interface AppUser {
   fullName: string;
   password?: string;
   role: UserRole;
+  roleTitle?: string;
+  category?: StaffCategory;
+  isArchived?: boolean;
   isActive: boolean;
   email?: string;
   phone?: string;
