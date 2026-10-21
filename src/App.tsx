@@ -636,6 +636,12 @@ export default function App() {
     purgeLegacySensitiveStorage();
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
+        // Session terminée sans passer par « خروج » (jeton révoqué ou expiré,
+        // compte désactivé, persistance effacée) : rien ne reste en cache.
+        unsubscribeAllRef.current();
+        setActiveSchool(null);
+        clearLocalCache();
+        resetSessionState();
         setAuthUid(null);
         setCurrentUser(null);
         setAuthChecking(false);

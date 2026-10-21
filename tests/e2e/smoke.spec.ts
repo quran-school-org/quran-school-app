@@ -134,4 +134,18 @@ test.describe.serial("revue de sécurité", () => {
     await popup.close().catch(() => undefined);
     await logout(page);
   });
+
+  test("C-02 : session Firebase terminée sans déconnexion (jeton expiré, révoqué) : le cache local est purgé", async ({ page }) => {
+    await login(page, "youssef_baqali", "e2e-enseignant-2026");
+    await expect.poll(async () => (await page.evaluate(() => Object.keys(localStorage))).some((k) => k.startsWith("kuttab:alfajr:"))).toBe(true);
+    // Fin de session sans passer par le bouton « خروج » : la persistance Auth disparaît.
+    await page.evaluate(() => new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase("firebaseLocalStorageDb");
+      req.onsuccess = req.onerror = req.onblocked = () => resolve(null);
+    }));
+    await page.goto("about:blank");
+    await page.goto("/");
+    await expect(page.locator('form button[type="submit"]')).toBeVisible();
+    expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("kuttab:alfajr:")))).toEqual([]);
+  });
 });
