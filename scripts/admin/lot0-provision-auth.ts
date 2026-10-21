@@ -28,12 +28,23 @@
  *   --confirm-prod=<id>     obligatoire pour écrire sur un vrai projet
  *   --accept-critical       passe outre les anomalies critiques (compte u1)
  *   --no-sync-passwords     ne réaligne pas le mot de passe des comptes Auth existants
+ *   --rotate-passwords=<p>  remplace les mots de passe exposés par des mots de passe
+ *                           temporaires aléatoires : weak (défaut : faibles + bureau),
+ *                           all (tous), none (historique, démonstration uniquement).
+ *                           Les nouveaux mots de passe sont dans le rapport SECRET
+ *                           mots-de-passe-temporaires.csv (application seulement).
  *   --out=<dossier>         dossier des rapports (défaut scripts/admin/out, ignoré par git)
  *
- * ATTENTION : les rapports contiennent des données personnelles (noms, téléphones).
- * Ils ne doivent jamais être commités ni partagés hors de l'école.
+ * ATTENTION : les rapports contiennent des données personnelles (noms, téléphones)
+ * et, après application, des mots de passe temporaires. Ils ne doivent jamais être
+ * commités ni partagés hors de l'école ; supprimer le fichier des mots de passe
+ * une fois ceux-ci remis aux personnes.
+ *
+ * Une erreur sur un compte n'interrompt pas les autres : elle est comptée
+ * (`failures`), signalée comme anomalie critique et rapportée ; une relance
+ * reprend les comptes restants (code de sortie 2 tant qu'il reste des échecs).
  */
-import { mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FieldValue, type Firestore } from "firebase-admin/firestore";
@@ -49,6 +60,7 @@ import {
   type StudentLike,
   type TeacherLike,
 } from "./lib/linking";
+import { generateTemporaryPassword, parseRotationPolicy, shouldRotate, type RotationPolicy } from "./lib/passwords";
 import { isValidUsername, normalizeAuthPassword, normalizeUsername, usernameToEmail } from "../../src/security/accounts";
 import { generateUniqueUsername } from "../../src/utils/usernames";
 
@@ -74,6 +86,7 @@ export interface PlannedAccount {
   renamed: boolean;
   email: string;
   knownPassword: string | null; // null : mot de passe déjà retiré (provisionnement antérieur)
+  rotatePassword: boolean; // mot de passe exposé remplacé par un mot de passe temporaire
   passwordIsLegacyDefault: boolean;
   hadPasswordField: boolean;
   existingAuthUid: string | null;
@@ -108,7 +121,7 @@ function compareDuplicates(a: RawUser, b: RawUser): number {
 }
 
 /** Étape pure : audit, noms d'utilisateur, liens. Aucune E/S. */
-export function computeProvisionPlan(users: RawUser[], students: StudentLike[], teachers: TeacherLike[]): ProvisionPlan {
+export function computeProvisionPlan(users: RawUser[], students: StudentLike[], teachers: TeacherLike[], rotation: RotationPolicy = "weak"): ProvisionPlan {
   const anomalies: Anomaly[] = [];
   const add = (severity: Anomaly["severity"], code: string, u: RawUser, detail: string) =>
     anomalies.push({ severity, code, appUserId: u.id, username: String(u.username ?? ""), detail });
@@ -164,7 +177,13 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     let linkedTeacherId: string | null = null;
     let linkIssues: LinkIssue[] = [];
     const accountLike = { id: u.id, role, fullName: u.fullName, phone: u.phone };
-    if (role === "ولي أمر") {
+    const alreadyProvisioned = typeof u.authUid === "string" && u.authUid.length > 0;
+    if (alreadyProvisioned) {
+      // Compte déjà provisionné : les liens enregistrés font foi (l'école a pu
+      // retirer un lien « à retirer si erroné ») ; aucun recalcul heuristique.
+      linkedStudentIds = Array.isArray(u.linkedStudentIds) ? u.linkedStudentIds.filter((x: unknown): x is string => typeof x === "string") : [];
+      linkedTeacherId = typeof u.linkedTeacherId === "string" && u.linkedTeacherId ? u.linkedTeacherId : null;
+    } else if (role === "ولي أمر") {
       const r = computeParentLinks(accountLike, students);
       linkedStudentIds = r.studentIds;
       linkIssues = r.issues;
@@ -177,10 +196,10 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
       linkedTeacherId = r.teacherId;
       linkIssues = r.issues;
     }
-    if (Array.isArray(u.linkedStudentIds) && u.linkedStudentIds.length > 0) {
+    if (!alreadyProvisioned && Array.isArray(u.linkedStudentIds) && u.linkedStudentIds.length > 0) {
       linkedStudentIds = Array.from(new Set([...u.linkedStudentIds, ...linkedStudentIds]));
     }
-    if (typeof u.linkedTeacherId === "string" && u.linkedTeacherId) linkedTeacherId = u.linkedTeacherId;
+    if (!alreadyProvisioned && typeof u.linkedTeacherId === "string" && u.linkedTeacherId) linkedTeacherId = u.linkedTeacherId;
     if (linkedStudentIds.length > 30) {
       linkIssues.push({ code: "TOO_MANY_STUDENTS", detail: `${linkedStudentIds.length} élèves liés (30 maximum) : liste tronquée` });
       linkedStudentIds = linkedStudentIds.slice(0, 30);
@@ -190,7 +209,6 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     }
 
     const hasPassword = typeof u.password === "string" && u.password.length > 0;
-    const alreadyProvisioned = typeof u.authUid === "string" && u.authUid.length > 0;
     if (!hasPassword && !alreadyProvisioned) add("avertissement", "NO_PASSWORD", u, `aucun mot de passe enregistré : l'ancien mot de passe par défaut « ${LEGACY_DEFAULT_PASSWORD} » sera utilisé`);
     if (hasPassword && !alreadyProvisioned && String(u.password).length < 6) add("info", "SHORT_PASSWORD", u, "mot de passe court (complété par _secure_fajr dans Firebase Auth)");
     if (hasPassword && alreadyProvisioned) {
@@ -200,6 +218,7 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     }
 
     const fu = finalUsername.get(u.id)!;
+    const knownPassword = alreadyProvisioned ? null : hasPassword ? String(u.password) : LEGACY_DEFAULT_PASSWORD;
     accounts.push({
       appUserId: u.id,
       fullName: String(u.fullName ?? ""),
@@ -209,7 +228,8 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
       username: fu.username,
       renamed: fu.renamed,
       email: usernameToEmail(fu.username),
-      knownPassword: alreadyProvisioned ? null : hasPassword ? String(u.password) : LEGACY_DEFAULT_PASSWORD,
+      knownPassword,
+      rotatePassword: shouldRotate(rotation, { role, username: fu.username, phone: u.phone, knownPassword }),
       hadPasswordField: hasPassword,
       passwordIsLegacyDefault: !hasPassword && !alreadyProvisioned,
       existingAuthUid: alreadyProvisioned ? u.authUid : null,
@@ -234,6 +254,8 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
 export interface ProvisionOptions {
   apply: boolean;
   syncExistingPasswords: boolean;
+  /** Remplacement des mots de passe exposés (défaut : "weak"). Voir lib/passwords.ts. */
+  rotatePasswords?: RotationPolicy;
   acceptCritical: boolean;
   outDir: string | null;
   log?: (msg: string) => void;
@@ -247,6 +269,10 @@ export interface ProvisionSummary {
   authExisting: number;
   authPasswordSynced: number;
   authEmailUpdated: number;
+  sessionsRevoked: number;
+  passwordsRotated: number;
+  rotationPolicy: RotationPolicy;
+  failures: number;
   linksWritten: number;
   passwordsRemoved: number;
   mustChangePasswordSet: number;
@@ -276,6 +302,7 @@ async function findAuthUser(auth: Auth, acc: PlannedAccount): Promise<UserRecord
 /** Exécute le provisionnement (simulation par défaut). */
 export async function runLot0Provision(db: Firestore, auth: Auth, opts: ProvisionOptions): Promise<{ summary: ProvisionSummary; plan: ProvisionPlan }> {
   const log = opts.log ?? (() => undefined);
+  const rotation = opts.rotatePasswords ?? "weak";
   const [usersSnap, studentsSnap, teachersSnap] = await Promise.all([
     db.collection("appUsers").get(),
     db.collection("students").get(),
@@ -284,7 +311,8 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
   const users: RawUser[] = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
   const students: StudentLike[] = studentsSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
   const teachers: TeacherLike[] = teachersSnap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-  const plan = computeProvisionPlan(users, students, teachers);
+  const plan = computeProvisionPlan(users, students, teachers, rotation);
+  const toRotate = plan.accounts.filter((a) => a.rotatePassword).length;
 
   const summary: ProvisionSummary = {
     mode: opts.apply ? "application" : "simulation",
@@ -293,12 +321,16 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
     authExisting: 0,
     authPasswordSynced: 0,
     authEmailUpdated: 0,
+    sessionsRevoked: 0,
+    passwordsRotated: opts.apply ? 0 : toRotate,
+    rotationPolicy: rotation,
+    failures: 0,
     linksWritten: 0,
     passwordsRemoved: 0,
     mustChangePasswordSet: 0,
     renamedUsernames: plan.accounts.filter((a) => a.renamed).length,
     linksToReview: plan.accounts.reduce((n, a) => n + a.linkIssues.length, 0),
-    anomalies: plan.anomalies.reduce<Record<string, number>>((m, a) => ({ ...m, [a.code]: (m[a.code] || 0) + 1 }), {}),
+    anomalies: {},
     critical: plan.critical,
     reportDir: null,
   };
@@ -306,71 +338,107 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
   if (opts.apply && plan.critical && !opts.acceptCritical) {
     throw new Error("Anomalies critiques détectées (voir le rapport en simulation) : corrigez-les ou relancez avec --accept-critical.");
   }
+  if (opts.apply && toRotate > 0 && !opts.outDir) {
+    // Sans rapport, les mots de passe temporaires seraient perdus (comptes inaccessibles).
+    throw new Error("Remplacement de mots de passe sans dossier de rapport (--out) : refus.");
+  }
 
   const nowIso = (opts.now ?? new Date()).toISOString();
   const results: Record<string, unknown>[] = [];
+  const temporaryPasswords: Record<string, unknown>[] = [];
   for (const acc of plan.accounts) {
-    const existing = await findAuthUser(auth, acc);
-    let uid = existing?.uid ?? null;
-    let action = existing ? "existant" : "à créer";
-    const authPassword = acc.knownPassword !== null ? normalizeAuthPassword(acc.knownPassword) : null;
+    let uid: string | null = null;
+    let action = "?";
+    let passwordState = acc.knownPassword === null ? "" : acc.rotatePassword ? "à remplacer" : "conservé";
+    try {
+      const existing = await findAuthUser(auth, acc);
+      uid = existing?.uid ?? null;
+      action = existing ? "existant" : "à créer";
+      const temporary = opts.apply && acc.rotatePassword ? generateTemporaryPassword() : null;
+      const authPassword = temporary ?? (acc.knownPassword !== null ? normalizeAuthPassword(acc.knownPassword) : null);
+      const recordTemporary = () => {
+        if (!temporary) return;
+        summary.passwordsRotated++;
+        passwordState = "remplacé";
+        temporaryPasswords.push({ appUserId: acc.appUserId, compte: acc.fullName, role: acc.role, identifiant: acc.username, motDePasseTemporaire: temporary });
+      };
 
-    if (existing) summary.authExisting++;
-    if (opts.apply) {
-      if (!existing) {
-        if (authPassword === null) {
-          action = "IMPOSSIBLE (aucun mot de passe connu)";
+      if (existing) summary.authExisting++;
+      if (opts.apply) {
+        if (!existing) {
+          if (authPassword === null) {
+            action = "IMPOSSIBLE (aucun mot de passe connu)";
+          } else {
+            const created = await auth.createUser({ email: acc.email, password: authPassword, displayName: acc.fullName || undefined, disabled: !acc.isActive });
+            uid = created.uid;
+            summary.authCreated++;
+            action = "créé";
+            recordTemporary();
+          }
         } else {
-          const created = await auth.createUser({ email: acc.email, password: authPassword, displayName: acc.fullName || undefined, disabled: !acc.isActive });
-          uid = created.uid;
-          summary.authCreated++;
-          action = "créé";
+          const update: Record<string, unknown> = { disabled: !acc.isActive };
+          if (existing.email !== acc.email) {
+            update.email = acc.email;
+            summary.authEmailUpdated++;
+          }
+          if (temporary) {
+            update.password = temporary;
+            action = "existant, mot de passe remplacé";
+          } else if (authPassword !== null && opts.syncExistingPasswords) {
+            update.password = authPassword;
+            summary.authPasswordSynced++;
+            action = "existant, mot de passe réaligné";
+          }
+          await auth.updateUser(existing.uid, update);
+          recordTemporary();
+          if (acc.existingAuthUid === null) {
+            // Première adoption d'un compte Auth créé hors du script (ancien client,
+            // ou un tiers via l'inscription libre) : aucune session antérieure ne
+            // doit survivre au rattachement.
+            await auth.revokeRefreshTokens(existing.uid);
+            summary.sessionsRevoked++;
+          }
         }
-      } else {
-        const update: Record<string, unknown> = { disabled: !acc.isActive };
-        if (existing.email !== acc.email) {
-          update.email = acc.email;
-          summary.authEmailUpdated++;
-        }
-        if (authPassword !== null && opts.syncExistingPasswords) {
-          update.password = authPassword;
-          summary.authPasswordSynced++;
-          action = "existant, mot de passe réaligné";
-        }
-        await auth.updateUser(existing.uid, update);
-      }
 
-      if (uid) {
-        await db.collection("authLinks").doc(uid).set({
-          appUserId: acc.appUserId,
-          role: acc.role,
-          isActive: acc.isActive,
-          username: acc.username,
-          linkedStudentIds: acc.linkedStudentIds,
-          linkedTeacherId: acc.linkedTeacherId,
-          updatedAt: nowIso,
-          updatedBy: "lot0-provision-auth",
-        }, { merge: true });
-        summary.linksWritten++;
+        if (uid) {
+          await db.collection("authLinks").doc(uid).set({
+            appUserId: acc.appUserId,
+            role: acc.role,
+            isActive: acc.isActive,
+            username: acc.username,
+            linkedStudentIds: acc.linkedStudentIds,
+            linkedTeacherId: acc.linkedTeacherId,
+            updatedAt: nowIso,
+            updatedBy: "lot0-provision-auth",
+          }, { merge: true });
+          summary.linksWritten++;
 
-        const userUpdate: Record<string, unknown> = {
-          authUid: uid,
-          authEmail: acc.email,
-          username: acc.username,
-          linkedStudentIds: acc.linkedStudentIds,
-          linkedTeacherId: acc.linkedTeacherId,
-          provisionedAt: nowIso,
-          password: FieldValue.delete(),
-        };
-        // Un mot de passe vient d'être (re)défini à partir d'une valeur exposée :
-        // changement obligatoire. Sinon (relance), on ne réimpose rien.
-        if (action === "créé" || action.includes("réaligné")) {
-          userUpdate.mustChangePassword = true;
-          summary.mustChangePasswordSet++;
+          const userUpdate: Record<string, unknown> = {
+            authUid: uid,
+            authEmail: acc.email,
+            username: acc.username,
+            linkedStudentIds: acc.linkedStudentIds,
+            linkedTeacherId: acc.linkedTeacherId,
+            provisionedAt: nowIso,
+            password: FieldValue.delete(),
+          };
+          // Un mot de passe vient d'être (re)défini à partir d'une valeur exposée
+          // ou temporaire : changement obligatoire. Sinon (relance), on ne réimpose rien.
+          if (action === "créé" || action.includes("réaligné") || action.includes("remplacé")) {
+            userUpdate.mustChangePassword = true;
+            summary.mustChangePasswordSet++;
+          }
+          if (acc.hadPasswordField) summary.passwordsRemoved++;
+          await db.collection("appUsers").doc(acc.appUserId).set(userUpdate, { merge: true });
         }
-        if (acc.hadPasswordField) summary.passwordsRemoved++;
-        await db.collection("appUsers").doc(acc.appUserId).set(userUpdate, { merge: true });
       }
+    } catch (error: any) {
+      // Une erreur (quota, réseau, email déjà pris…) n'interrompt pas les autres
+      // comptes : elle est rapportée et la relance reprendra ce compte.
+      summary.failures++;
+      action = `ÉCHEC : ${error?.code || error?.message || error}`;
+      plan.anomalies.push({ severity: "critique", code: "ACCOUNT_FAILED", appUserId: acc.appUserId, username: acc.username, detail: `${error?.code || ""} ${error?.message || error}`.trim() });
+      plan.critical = true;
     }
 
     results.push({
@@ -383,12 +451,15 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
       renomme: acc.renamed ? "oui" : "",
       email: acc.email,
       auth: action,
+      motDePasse: passwordState,
       uid: uid ?? "",
       elevesLies: acc.linkedStudentIds,
       ficheLiee: acc.linkedTeacherId ?? "",
     });
     log(`${acc.appUserId.padEnd(24)} ${acc.username.padEnd(28)} ${action}`);
   }
+  summary.anomalies = plan.anomalies.reduce<Record<string, number>>((m, a) => ({ ...m, [a.code]: (m[a.code] || 0) + 1 }), {});
+  summary.critical = plan.critical;
 
   if (opts.outDir) {
     const dir = join(opts.outDir, `lot0-${summary.mode}-${timestamp(opts.now)}`);
@@ -397,6 +468,12 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
     writeFileSync(join(dir, "resume.json"), JSON.stringify(summary, null, 2));
     writeFileSync(join(dir, "comptes.csv"), toCsv(results));
     writeFileSync(join(dir, "anomalies.csv"), toCsv(plan.anomalies as unknown as Record<string, unknown>[], ["severity", "code", "appUserId", "username", "detail"]));
+    if (temporaryPasswords.length > 0) {
+      // SECRET : à remettre aux personnes puis à supprimer. Lisible par le seul propriétaire.
+      const secret = join(dir, "mots-de-passe-temporaires.csv");
+      writeFileSync(secret, toCsv(temporaryPasswords, ["appUserId", "compte", "role", "identifiant", "motDePasseTemporaire"]), { mode: 0o600 });
+      chmodSync(secret, 0o600);
+    }
     const studentNames = new Map(students.map((s) => [s.id, s.fullName ?? ""]));
     const review = plan.accounts.flatMap((a) =>
       a.linkIssues.map((i) => ({
@@ -429,12 +506,20 @@ async function main() {
       apply: args.apply,
       syncExistingPasswords: !args.flags.has("no-sync-passwords"),
       acceptCritical: args.flags.has("accept-critical"),
+      rotatePasswords: parseRotationPolicy(args.flags.get("rotate-passwords")),
       outDir: args.outDir,
       log: (m) => console.log(m),
     });
     console.log(JSON.stringify(summary, null, 2));
     console.log("[lot0] Rapports (données personnelles, ne pas commiter) :", summary.reportDir);
+    if (args.apply && summary.passwordsRotated > 0) {
+      console.log(`[lot0] ${summary.passwordsRotated} mot(s) de passe remplacé(s) : fichier SECRET mots-de-passe-temporaires.csv (à remettre aux personnes, puis à supprimer).`);
+    }
     if (!args.apply) console.log("[lot0] Simulation terminée : aucune écriture. Relancer avec --apply pour appliquer.");
+    if (summary.failures > 0) {
+      console.error(`[lot0] ${summary.failures} compte(s) en échec (voir comptes.csv / anomalies.csv) : corriger puis relancer.`);
+      process.exitCode = 2;
+    }
   } finally {
     await admin.close();
   }

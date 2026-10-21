@@ -44,7 +44,7 @@ afterAll(async () => {
 describe("migration racine → schools/alfajr", () => {
   it("la simulation (par défaut) n'écrit rien et compte ce qui serait copié", async () => {
     const out = mkdtempSync(join(tmpdir(), "migration-dry-"));
-    const { summary } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: false, outDir: out, superAdminUsername: "admin_alfajr" });
+    const { summary } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: false, outDir: out, superAdminUsername: "admin_alfajr", rotatePasswords: "none" });
     expect(summary.mode).toBe("simulation");
     for (const c of summary.collections) {
       const expected = Object.keys(fx.collections[c.collection] || {}).length;
@@ -58,7 +58,7 @@ describe("migration racine → schools/alfajr", () => {
   });
 
   it("l'application copie tout, crée users/members/usernames, pose le claim super-admin", async () => {
-    const { summary, anomalies } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: true, outDir: null, superAdminUsername: "admin_alfajr" });
+    const { summary, anomalies } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: true, outDir: null, superAdminUsername: "admin_alfajr", rotatePasswords: "none" });
     expect(summary.critical).toBe(false);
     for (const c of summary.collections) {
       expect(c.targetAfter, c.collection).toBe(c.source);
@@ -103,7 +103,7 @@ describe("migration racine → schools/alfajr", () => {
     await admin.db.doc(`schools/${S}/students/S-101`).update({ hizbCount: 42 });
     const directorUid = await uidOf("u1");
     await admin.db.doc(`users/${directorUid}`).update({ mustChangePassword: false });
-    const { summary } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: true, outDir: null });
+    const { summary } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: true, outDir: null, rotatePasswords: "none" });
     for (const c of summary.collections) {
       expect(c.copied, c.collection).toBe(0);
       expect(c.skippedExisting, c.collection).toBe(c.source);
@@ -150,11 +150,11 @@ describe("migration après un Lot 0 déjà déployé", () => {
   it("reprend les comptes provisionnés sans réimposer de changement de mot de passe", async () => {
     await clearEmulators();
     await seedLegacyFixture(admin.db, admin.auth, fx);
-    await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null });
+    await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
     await admin.db.doc("appUsers/t_t2").update({ mustChangePassword: false }); // khalid_tazi a changé son mot de passe
     const authBefore = (await admin.auth.listUsers(1000)).users.length;
 
-    const { summary } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: true, outDir: null });
+    const { summary } = await runMigration(admin.db, admin.auth, { schoolId: S, apply: true, outDir: null, rotatePasswords: "none" });
     expect(summary.accounts.pendingAuth).toBe(0);
     expect((await admin.auth.listUsers(1000)).users.length).toBe(authBefore);
     const uid = await uidOf("t_t2");
