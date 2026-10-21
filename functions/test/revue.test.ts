@@ -85,3 +85,18 @@ describe("F-02 réinitialisation du mot de passe du directeur historique", () =>
     await accounts.resetUserPasswordCore({ uid: "super", superAdmin: true }, "alfajr", u1, "recuperation-2026");
   });
 });
+
+describe("hypothèse réfutée : course à la création de comptes", () => {
+  it("deux créations simultanées du même identifiant : une seule réussit, un seul compte Auth, registre cohérent", async () => {
+    const dir = await makeUser("dir_a");
+    await addMember("alfajr", dir, "مدير");
+    const input = { schoolId: "alfajr", username: "meme_nom", password: "motdepasse-2026", fullName: "x", role: "مدرس" };
+    const results = await Promise.allSettled([accounts.createSchoolUserCore(dir, input), accounts.createSchoolUserCore(dir, input), accounts.createSchoolUserCore(dir, input)]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const winner = (results.find((r) => r.status === "fulfilled") as PromiseFulfilledResult<{ uid: string }>).value.uid;
+    const users = (await admin.adminAuth().listUsers(100)).users.filter((u) => u.email?.startsWith("meme_nom@"));
+    expect(users.map((u) => u.uid)).toEqual([winner]);
+    expect((await admin.adminDb().doc("usernames/meme_nom").get()).data()?.uid).toBe(winner);
+    expect((await admin.adminDb().collection("schools/alfajr/members").where("username", "==", "meme_nom").get()).size).toBe(1);
+  });
+});
