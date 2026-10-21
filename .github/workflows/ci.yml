@@ -1,0 +1,69 @@
+# Intégration continue : lint, build, tests unitaires et tests sur émulateurs.
+# AUCUN déploiement ici : la prod se déploie à la main (voir docs/runbooks/).
+name: CI
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Garde-fou : tout se fait sur le projet de démonstration des émulateurs.
+      GCLOUD_PROJECT: demo-quran-school
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      # Java est requis par l'émulateur Firestore.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Cache des émulateurs Firebase
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ hashFiles('package-lock.json') }}
+
+      - name: Installation (application)
+        run: npm ci
+
+      - name: Installation (Cloud Functions)
+        run: npm ci --prefix functions
+
+      - name: Lint (tsc)
+        run: npm run lint
+
+      - name: Lint Cloud Functions (tsc)
+        run: npm run lint:functions
+
+      - name: Build de production
+        run: npm run build
+
+      - name: Build Cloud Functions
+        run: npm run build:functions
+
+      - name: Tests unitaires
+        run: npm test
+
+      - name: Tests sur émulateurs (règles Firestore, scripts)
+        run: npm run test:rules
