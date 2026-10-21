@@ -169,3 +169,85 @@ les suivantes ont été prises en cours de route.
 - `lastLogin` est désormais mis à jour à la connexion (champ autorisé en
   auto-modification par les règles).
 - Le proxy Gemini (`server.ts`) ne renvoie plus le message d'erreur brut (S7, partiel).
+
+## Multi-écoles (branche `feat/multi-tenant`)
+
+### D23. Comptes : `users/{uid}` + `schools/{s}/members/{uid}`, écrits par les Functions
+- **Décision** : le profil global (`users`) porte l'identifiant, les écoles et
+  l'obligation de changer de mot de passe ; l'appartenance (`members`) porte le
+  rôle, la matrice de droits, les drapeaux hérités et les liens explicites. Aucun
+  client n'écrit ces documents (sauf champs anodins de son propre compte) : tout
+  passe par `createSchoolUser`, `setMemberRole`, `resetUserPassword`, `createSchool`.
+- **Raison** : rien à vérifier côté règles pour empêcher l'auto-promotion ou
+  l'ajout d'un membre dans une autre école ; une seule logique, testée.
+- **Conséquence** : `authLinks` (Lot 0) n'est plus utilisé après la bascule.
+
+### D24. Identifiants et domaine des nouveaux comptes
+- Noms d'utilisateur uniques sur toute la plateforme : registre
+  `usernames/{username}` (Functions uniquement) + contrôle des comptes Auth
+  historiques. Comptes existants : `@alfajr.local` ; nouveaux comptes :
+  `@comptes.kuttab.local` (constante `NEW_ACCOUNTS_EMAIL_DOMAIN`). La connexion
+  essaie les deux domaines (aucun index public nom → email).
+- Une même personne dans deux écoles = un seul compte, deux appartenances
+  (option « إضافة حساب موجود » du formulaire).
+
+### D25. Super-admin par claim, sans accès implicite aux données
+- Claim `superAdmin` posé par le script de migration (`--super-admin=`). Il liste
+  les écoles et leurs membres, crée des écoles (et peut s'en faire directeur),
+  réinitialise n'importe quel mot de passe, mais **ne lit pas les données d'une
+  école dont il n'est pas membre** (moindre privilège). Le super-utilisateur
+  codé en dur « admin_alfajr » de `checkUserPermission` est supprimé.
+
+### D26. Réinitialisation de mot de passe d'un compte multi-écoles
+- Refusée à un directeur qui ne dirige pas TOUTES les écoles du compte (sinon il
+  pourrait prendre le contrôle du compte du directeur d'une autre école) ; le
+  super-admin seul peut le faire. Pas d'auto-rétrogradation ; le directeur
+  historique (`legacyAppUserId: "u1"`) n'est modifiable que par le super-admin.
+
+### D27. Paramètres métier par école
+- `subscriptionFee` (existant) devient la cotisation réellement appliquée
+  (repli : 100), `feeOverrides` (tarifs par mois), `openingYear`/`openingMonth`
+  (ouverture), `studentAccountMinAge`. La migration fixe pour `alfajr` les valeurs
+  implicites de l'ancien code (100, 70 en juillet-août 2026, ouverture juillet 2026)
+  et signale la correction de `subscriptionFee` s'il valait 0.
+- Saisie dans Paramètres › الرسوم المرجعية (champs ajoutés dans le style existant).
+- Nom, saison, devise et identité de l'école lus dans les paramètres ; le titre
+  de l'onglet suit l'école active (`index.html` garde le titre d'Al Fajr par défaut).
+- Supprimé : remplacement automatique « طنجة → سلا » et « تأسست سنة 2018 » par
+  défaut (propres à Al Fajr).
+
+### D28. Migrations client
+- La création de la ligne de cotisation du mois d'ouverture n'écrase plus jamais
+  un document (transaction, création seule), ne tourne que pour le bureau, après
+  réception des paiements depuis le serveur, selon l'ouverture de l'école.
+- Les mois antérieurs à l'ouverture sont seulement masqués (plus réécrits dans le
+  cache). La synchro des activités reste locale et réservée au bureau.
+
+### D29. Familles
+- Parents : lecture des cotisations de leurs enfants liés (requête filtrée +
+  règle), ce qui rétablit l'onglet « سجل الرسوم » fermé en Lot 0. Élèves : pas de
+  cotisations (comme la matrice par défaut). Notifications toujours fermées aux
+  familles (elles citent d'autres élèves).
+
+### D30. Proxy Gemini uniquement dans la fonction `api`
+- Jeton Firebase + appartenance active avec un rôle pédagogique à l'école,
+  clé `GEMINI_API_KEY` dans Secret Manager, modèle paramétrable (`GEMINI_MODEL`),
+  aucune requête externe sans clé, réponse de repli sans détail technique.
+- La route ouverte de `server.ts` est retirée (réponse 410). `VITE_API_BASE_URL`
+  pointe l'émulateur en développement, la même origine en production.
+- **Limite** : pas de limitation de débit par utilisateur (à ajouter si abus).
+
+### D31. Migration idempotente et non destructive
+- Un document cible existant n'est jamais écrasé (sauf `--overwrite`) : une
+  relance après la bascule ne peut pas effacer une saisie. Les données racine sont
+  conservées 30 jours (retour arrière) puis supprimées à la main (runbook §7).
+- Le provisionnement Auth du Lot 0 est réutilisé tel quel (mêmes garde-fous).
+
+### D32. Choix d'interface minimaux
+- Page de choix d'école dans le style de l'écran de connexion ; sélecteur
+  `<select>` dans la barre du haut (visible si plusieurs écoles ou super-admin) ;
+  onglet par défaut inchangé (`dashboard`), comme avant.
+
+### D33. Retrait d'un membre
+- `setMemberRole(remove)` supprime l'appartenance ; si la personne n'a plus
+  aucune école, son compte Auth est désactivé (pas supprimé, pour l'historique).
