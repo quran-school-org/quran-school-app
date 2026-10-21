@@ -11,6 +11,9 @@ coverage/
 !.env.example
 !.env.development
 !.env.production
+# Paramètres NON secrets des Cloud Functions par projet
+!functions/.env.demo-quran-school
+!functions/.env.gen-lang-client-0481880143
 
 # Émulateurs Firebase et tests
 .firebase/
