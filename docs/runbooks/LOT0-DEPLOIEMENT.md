@@ -187,12 +187,16 @@ npx firebase deploy --only functions --project prod
    l'énumération des emails.
 3. **Restreindre la clé API web** (référents HTTP : domaine Hosting) et prévoir
    App Check (lot ultérieur).
-4. **Communiquer** les identifiants renommés et faire valider
+4. **La connexion se fait désormais uniquement par nom d'utilisateur** (plus
+   par nom complet ni téléphone, décision D2). Communiquer à chacun son
+   identifiant (colonne `identifiant` de `comptes.csv`), en priorité aux
+   parents qui se connectaient avec leur téléphone.
+5. **Communiquer** les identifiants renommés et faire valider
    `liens-a-valider.csv` par l'école ; corriger les liens dans Paramètres ›
    المستخدمين (« الأبناء المرتبطون بهذا الحساب »).
-5. Supprimer de votre poste les rapports `scripts/admin/out/` une fois traités,
+6. Supprimer de votre poste les rapports `scripts/admin/out/` une fois traités,
    et conserver l'export Auth hors ligne.
-6. **Limite connue** : en Lot 0, les parents ne voient plus l'onglet des
+7. **Limite connue** : en Lot 0, les parents ne voient plus l'onglet des
    paiements (finances réservées au bureau) ; le rapport IA ne fonctionne pas
    sur le domaine Hosting (proxy Gemini dans la fonction `api` : lot suivant).
 

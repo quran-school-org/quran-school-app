@@ -3380,6 +3380,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                     className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-medium"
                   />
                 </div>
+                <p className="text-[10px] text-slate-400 mt-1 mr-1">استخدم اسم المستخدم الذي زودتك به إدارة الجمعية (وليس الاسم الكامل أو رقم الهاتف).</p>
               </div>
 
               <div>
