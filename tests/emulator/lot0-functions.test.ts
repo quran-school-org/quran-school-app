@@ -40,7 +40,7 @@ beforeAll(async () => {
   await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${PROJECT}/databases/(default)/documents`, { method: "DELETE" });
   await fetch(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/emulator/v1/projects/${PROJECT}/accounts`, { method: "DELETE" });
   await seedLegacyFixture(admin.db, admin.auth, legacyFixture());
-  await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null });
+  await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
 
   app = initClientApp({ projectId: PROJECT, apiKey: "demo-api-key" }, `functions-client-${Date.now()}`);
   auth = getClientAuth(app);

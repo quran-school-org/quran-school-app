@@ -129,7 +129,7 @@ describe("exécution sur les émulateurs", () => {
   it("la simulation (par défaut) n'écrit rien", async () => {
     const before = (await allAuthUsers()).length;
     const out = mkdtempSync(join(tmpdir(), "lot0-dry-"));
-    const { summary } = await runLot0Provision(admin.db, admin.auth, { apply: false, syncExistingPasswords: true, acceptCritical: false, outDir: out });
+    const { summary } = await runLot0Provision(admin.db, admin.auth, { apply: false, syncExistingPasswords: true, acceptCritical: false, outDir: out, rotatePasswords: "none" });
     expect(summary.mode).toBe("simulation");
     expect(summary.authCreated).toBe(0);
     expect((await allAuthUsers()).length).toBe(before);
@@ -146,13 +146,13 @@ describe("exécution sur les émulateurs", () => {
 
   it("refuse d'appliquer en présence d'anomalie critique sans --accept-critical", async () => {
     await admin.db.collection("appUsers").doc("u1").update({ role: "ولي أمر" });
-    await expect(runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null })).rejects.toThrow(/critiques/);
+    await expect(runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" })).rejects.toThrow(/critiques/);
     await admin.db.collection("appUsers").doc("u1").update({ role: "مدير" });
     expect((await admin.db.collection("authLinks").get()).size).toBe(0);
   });
 
   it("l'application crée les comptes, les liens, retire les mots de passe", async () => {
-    const { summary } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null });
+    const { summary } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
     const fx = legacyFixture();
     const nbUsers = Object.keys(fx.collections.appUsers).length;
     expect(summary.appUsers).toBe(nbUsers);
@@ -184,7 +184,7 @@ describe("exécution sur les émulateurs", () => {
     const before = (await allAuthUsers()).length;
     // Un utilisateur a déjà changé son mot de passe entre-temps.
     await admin.db.collection("appUsers").doc("t_t2").update({ mustChangePassword: false });
-    const { summary } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null });
+    const { summary } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
     expect(summary.authCreated).toBe(0);
     expect(summary.authPasswordSynced).toBe(0);
     expect(summary.mustChangePasswordSet).toBe(0);
@@ -195,7 +195,7 @@ describe("exécution sur les émulateurs", () => {
   it("supprime un mot de passe réécrit par un ancien client sans toucher à Firebase Auth", async () => {
     // Ancien onglet resté ouvert entre le script et le déploiement des règles.
     await admin.db.collection("appUsers").doc("t_t2").update({ password: "123" });
-    const { summary, plan } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null });
+    const { summary, plan } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
     expect(plan.anomalies.find((a) => a.code === "PASSWORD_REAPPEARED")?.appUserId).toBe("t_t2");
     expect(summary.passwordsRemoved).toBe(1);
     expect(summary.authPasswordSynced).toBe(0);

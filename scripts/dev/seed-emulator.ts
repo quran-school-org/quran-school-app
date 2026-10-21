@@ -30,6 +30,8 @@ async function main() {
       syncExistingPasswords: true,
       acceptCritical: false,
       outDir: null,
+      // Données FICTIVES : mots de passe de démonstration conservés (jamais en prod).
+      rotatePasswords: "none",
     });
     console.log("[seed] Données fictives écrites et comptes provisionnés :", JSON.stringify(summary, null, 2));
   } finally {
