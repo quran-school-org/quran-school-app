@@ -251,3 +251,92 @@ les suivantes ont été prises en cours de route.
 ### D33. Retrait d'un membre
 - `setMemberRole(remove)` supprime l'appartenance ; si la personne n'a plus
   aucune école, son compte Auth est désactivé (pas supprimé, pour l'historique).
+
+## Revue de sécurité adversariale (étape 2, branches `fix/revue-securite*`)
+
+Numérotation commune aux deux branches de revue (`fix/revue-securite` depuis
+`feat/multi-tenant`, `fix/revue-securite-lot0` depuis `fix/lot0-securite`).
+Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
+
+### D34. Tous les mots de passe hérités sont remplacés au provisionnement
+- **Contexte** : avant le Lot 0, `appUsers` était lisible (S1) **et modifiable**
+  (S2) par tous ; le mot de passe du directeur figurait dans le code public (S4).
+  Reprendre ces mots de passe dans Firebase Auth laissait les comptes ouverts à
+  quiconque les avait relevés ou plantés (R-01, R-08). `mustChangePassword` n'est
+  qu'un rappel de l'interface.
+- **Décision** : `--rotate-passwords=all` par défaut (scripts du Lot 0 et de
+  migration) : mot de passe temporaire aléatoire (CSPRNG, `xxxx-xxxx-xxxx`) pour
+  chaque compte non encore provisionné, changement imposé, écrit dans le seul
+  rapport secret `mots-de-passe-temporaires.csv` (droits 600), jamais dans
+  Firestore ni les journaux ; jamais régénéré à la relance. `weak` (faibles,
+  publiés et bureau seulement) reste un choix humain explicite ; `none` est
+  réservé aux données de démonstration. Sans dossier de rapport, l'application
+  est refusée (mots de passe perdus sinon).
+- **Coût** : chaque personne reçoit un mot de passe temporaire, remis avec son
+  identifiant (déjà à communiquer, D2).
+- **Retour arrière** : relancer avec `--rotate-passwords=weak` ou `none` (déconseillé) ;
+  en cas de retour à l'ancien front, réimport de l'export Auth (runbook Lot 0 §7).
+
+### D35. `authLinks` est l'ancre de confiance du provisionnement
+- **Contexte** : l'ancienne application n'écrivait jamais `authUid` ni de liens
+  dans `appUsers` ; `authLinks` lui était fermé. Un `authUid` planté rattachait le
+  compte Auth d'un tiers au rôle visé (R-08) ; une relance recalculait des liens
+  que l'école avait retirés (R-02) ou réactivait un compte suspendu dans son lien (R-09).
+- **Décision** : un `authUid` ne vaut provisionnement que s'il est confirmé par
+  `authLinks/{uid}.appUserId` (sinon anomalie critique `UNTRUSTED_AUTH_UID`, uid
+  ignoré) ; au premier provisionnement les liens préexistants sont ignorés
+  (`UNEXPECTED_LINK_FIELDS`) ; pour un compte provisionné, le lien fait foi
+  (rôle, liens, statut le plus restrictif ; `AUTHLINK_MISMATCH`) et rien n'est
+  recalculé ; les comptes du bureau autres que u1 sont listés (`PRIVILEGED_ACCOUNT`)
+  pour confirmation par l'école. Les sessions d'un compte Auth préexistant
+  adopté sont révoquées.
+- **Retour arrière** : revenir au commit précédent du script (déconseillé).
+
+### D36. Erreurs partielles et relances des scripts
+- Une erreur sur un compte n'interrompt plus le provisionnement : comptée
+  (`failures`), anomalie critique `ACCOUNT_FAILED`, rapports écrits, code de
+  sortie 2 ; la relance reprend les comptes restants (R-04).
+- Migration (branche multi-écoles) : copies par `create` sans `--overwrite`
+  (`ALREADY_EXISTS` = déjà présent, jamais écrasé ; R-05) ; code 2 si anomalie
+  critique après application.
+
+### D37. Échappement HTML obligatoire des fenêtres d'impression
+- **Contexte** : les impressions (`window.open("")` + `document.write`) partagent
+  l'origine de l'application ; un nom d'élève piégé par un enseignant y
+  exécutait du script dans la session du directeur (C-01, démontré).
+- **Décision** : toute donnée insérée passe par `escapeHtml`
+  (`src/security/html.ts`) ; `tests/unit/printTemplates.test.ts` interdit toute
+  interpolation brute dans ces gabarits. Pas de CSP dans ces fenêtres pour
+  l'instant (les gabarits utilisent `onload` et `cdn.tailwindcss.com`, script
+  tiers exécuté dans l'origine de l'application : à retirer dans un lot ultérieur).
+
+### D38. Le rôle مدير n'est jamais attribué par la synchronisation des rôles
+- La fiche du personnel est modifiable par le bureau : la déduction du rôle à
+  partir de l'intitulé (« رئيس », « مدير ») permettait à un إداري de devenir
+  directeur au prochain clic du directeur (C-03). Le rôle مدير ne s'attribue
+  plus qu'explicitement.
+
+### D39. Rattachement d'un compte existant et compte u1 (Cloud Functions)
+- `createSchoolUser(attachExisting)` ne rattache qu'un compte du registre
+  `usernames` (un compte créé par l'inscription libre sous un identifiant
+  anticipé n'entre jamais dans une école) et ne réactive pas un compte
+  désactivé, sauf par le super-admin (F-01).
+- `resetUserPassword` refuse la réinitialisation du directeur historique
+  (`legacyAppUserId: "u1"`) par un autre directeur (F-02, conforme à D26).
+
+### D40. Purge du cache quand la session se termine sans déconnexion
+- Quand Firebase Auth signale l'absence de session (jeton révoqué ou expiré,
+  compte désactivé), le cache local est purgé (C-02). La persistance de session
+  Firebase reste « locale » (pas de changement fonctionnel) : sur les PC
+  partagés de l'école, `browserSessionPersistence` est recommandée (à décider).
+
+### D41. Constats acceptés, non corrigés dans cette revue
+- R-06 (connu, D14) : les enseignants lisent salaires et CIN (`teachers`) ;
+  correction = scinder la fiche publique et la fiche RH (lot ultérieur).
+- R-07 : les familles peuvent créer des notifications (contenu affiché échappé
+  par React) ; à restreindre si l'interface n'en a pas besoin.
+- Inscription libre Firebase Auth et énumération des identifiants : actions
+  humaines du runbook (désactivation de l'inscription, protection contre
+  l'énumération) ; leurs effets sont neutralisés par D34–D35 et le registre (D39).
+- Proxy Gemini : pas de limitation de débit par utilisateur (D30) ; le service
+  Cloud Run d'AI Studio expose un proxy ouvert à arrêter au Lot 0 (runbook).
