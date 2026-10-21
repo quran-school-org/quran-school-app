@@ -75,6 +75,7 @@ export interface PlannedAccount {
   email: string;
   knownPassword: string | null; // null : mot de passe déjà retiré (provisionnement antérieur)
   passwordIsLegacyDefault: boolean;
+  hadPasswordField: boolean;
   existingAuthUid: string | null;
   linkedStudentIds: string[];
   linkedTeacherId: string | null;
@@ -191,7 +192,12 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
     const hasPassword = typeof u.password === "string" && u.password.length > 0;
     const alreadyProvisioned = typeof u.authUid === "string" && u.authUid.length > 0;
     if (!hasPassword && !alreadyProvisioned) add("avertissement", "NO_PASSWORD", u, `aucun mot de passe enregistré : l'ancien mot de passe par défaut « ${LEGACY_DEFAULT_PASSWORD} » sera utilisé`);
-    if (hasPassword && String(u.password).length < 6) add("info", "SHORT_PASSWORD", u, "mot de passe court (complété par _secure_fajr dans Firebase Auth)");
+    if (hasPassword && !alreadyProvisioned && String(u.password).length < 6) add("info", "SHORT_PASSWORD", u, "mot de passe court (complété par _secure_fajr dans Firebase Auth)");
+    if (hasPassword && alreadyProvisioned) {
+      // Un ancien client resté ouvert a réécrit le champ : on le supprime sans
+      // toucher au mot de passe Firebase Auth (celui que la personne utilise).
+      add("avertissement", "PASSWORD_REAPPEARED", u, "champ password réécrit après provisionnement (ancien onglet encore ouvert ?) : il sera supprimé, Firebase Auth inchangé");
+    }
 
     const fu = finalUsername.get(u.id)!;
     accounts.push({
@@ -203,7 +209,8 @@ export function computeProvisionPlan(users: RawUser[], students: StudentLike[], 
       username: fu.username,
       renamed: fu.renamed,
       email: usernameToEmail(fu.username),
-      knownPassword: hasPassword ? String(u.password) : alreadyProvisioned ? null : LEGACY_DEFAULT_PASSWORD,
+      knownPassword: alreadyProvisioned ? null : hasPassword ? String(u.password) : LEGACY_DEFAULT_PASSWORD,
+      hadPasswordField: hasPassword,
       passwordIsLegacyDefault: !hasPassword && !alreadyProvisioned,
       existingAuthUid: alreadyProvisioned ? u.authUid : null,
       linkedStudentIds,
@@ -361,7 +368,7 @@ export async function runLot0Provision(db: Firestore, auth: Auth, opts: Provisio
           userUpdate.mustChangePassword = true;
           summary.mustChangePasswordSet++;
         }
-        if (acc.knownPassword !== null && !acc.passwordIsLegacyDefault) summary.passwordsRemoved++;
+        if (acc.hadPasswordField) summary.passwordsRemoved++;
         await db.collection("appUsers").doc(acc.appUserId).set(userUpdate, { merge: true });
       }
     }

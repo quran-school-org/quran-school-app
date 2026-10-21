@@ -184,6 +184,16 @@ describe("exécution sur les émulateurs", () => {
     expect((await admin.db.collection("appUsers").doc("t_t2").get()).data()?.mustChangePassword).toBe(false);
   });
 
+  it("supprime un mot de passe réécrit par un ancien client sans toucher à Firebase Auth", async () => {
+    // Ancien onglet resté ouvert entre le script et le déploiement des règles.
+    await admin.db.collection("appUsers").doc("t_t2").update({ password: "123" });
+    const { summary, plan } = await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null });
+    expect(plan.anomalies.find((a) => a.code === "PASSWORD_REAPPEARED")?.appUserId).toBe("t_t2");
+    expect(summary.passwordsRemoved).toBe(1);
+    expect(summary.authPasswordSynced).toBe(0);
+    expect((await admin.db.collection("appUsers").doc("t_t2").get()).data()?.password).toBeUndefined();
+  });
+
   it("les utilisateurs se connectent avec leur mot de passe connu, et les règles s'appliquent", async () => {
     const app = initClientApp({ projectId: PROJECT, apiKey: "demo-api-key" }, `client-${Date.now()}`);
     const auth = getClientAuth(app);
