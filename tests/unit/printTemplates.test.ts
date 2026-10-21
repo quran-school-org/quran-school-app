@@ -6,7 +6,8 @@
  * gabarits d'impression (garde-fou contre une régression).
  * La démonstration de bout en bout est dans tests/e2e/smoke.spec.ts (C-01).
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { escapeHtml } from "../../src/security/html";
@@ -14,7 +15,15 @@ import { escapeHtml } from "../../src/security/html";
 // Valeurs déjà sûres : HTML produit par React (innerHTML), lignes déjà échappées,
 // constantes du code.
 const ALLOWED = new Set(["tableRows", "printContent.innerHTML", "reportElement.innerHTML", "printContent", "tailwindCdn", "labScale", "sideSuffix"]);
-const FILES = ["src/App.tsx", "src/components/StudentCard.tsx", "src/components/FinanceManagement.tsx"];
+// Tous les fichiers sources : le garde-fou suit les gabarits si App.tsx est découpé.
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return sourceFiles(path);
+    return /\.(ts|tsx)$/.test(name) ? [path] : [];
+  });
+}
+const FILES = sourceFiles("src").filter((f) => readFileSync(f, "utf8").includes("document.write(`"));
 
 function printBlocks(source: string): string[][] {
   const lines = source.split("\n");
@@ -43,10 +52,13 @@ describe("échappement HTML des impressions", () => {
     expect(escapeHtml("محمد العلمي")).toBe("محمد العلمي");
   });
 
+  it("des gabarits d'impression sont bien trouvés et inspectés", () => {
+    expect(FILES.length).toBeGreaterThan(0);
+  });
+
   for (const file of FILES) {
     it(`${file} : aucune donnée insérée sans échappement dans un gabarit d'impression`, () => {
       const blocks = printBlocks(readFileSync(file, "utf8"));
-      expect(blocks.length).toBeGreaterThan(0);
       const raw: string[] = [];
       for (const block of blocks) {
         for (const line of block) {
