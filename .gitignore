@@ -15,6 +15,9 @@ coverage/
 !functions/.env.demo-quran-school
 !functions/.env.gen-lang-client-0481880143
 
+# Secrets locaux des Cloud Functions (émulateur)
+functions/.secret.local
+
 # Émulateurs Firebase et tests
 .firebase/
 firebase-debug.log*
