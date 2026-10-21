@@ -23,3 +23,5 @@ export type { NavItem, NavGroup } from "./SideNav";
 export { Topbar, SyncPill } from "./Topbar";
 export type { SyncState } from "./Topbar";
 export { AppShell } from "./AppShell";
+export { Ltr, WhatsAppIcon, DropdownMenu, InfoRow } from "./Misc";
+export type { MenuItem } from "./Misc";
