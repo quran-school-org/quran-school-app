@@ -19,7 +19,7 @@
     "test:all": "npm run test && npm run test:rules",
     "emulators:persist": "npm run build:functions && firebase emulators:start --project demo-quran-school --import=./emulator-data --export-on-exit=./emulator-data",
     "seed:emulator": "tsx scripts/dev/seed-emulator.ts",
-    "test:e2e": "npm run build:functions && firebase emulators:exec --only auth,firestore,functions --project demo-quran-school \"npm run seed:emulator && playwright test\""
+    "test:e2e": "npm run build:functions && firebase emulators:exec --only auth,firestore,functions --project demo-quran-school \"npm run seed:emulator && E2E_CSP=1 playwright test\""
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

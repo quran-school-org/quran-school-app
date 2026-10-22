@@ -66,3 +66,34 @@ describe("rewrite Hosting /api/** → fonction api", () => {
     expect(await res.text()).toContain('<div id="root">');
   });
 });
+
+describe("en-têtes de sécurité et cache servis par Hosting (D49)", () => {
+  it("page de l'application : CSP, nosniff, Referrer-Policy, Permissions-Policy (caméra pour le scan QR), pas de cache", async () => {
+    const res = await fetch(`${HOSTING}/`);
+    const csp = res.headers.get("content-security-policy") || "";
+    expect(csp).toContain("default-src 'self'");
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("https://fonts.googleapis.com");
+    expect(csp).toContain("https://www.google.com/recaptcha/");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
+    expect(res.headers.get("permissions-policy")).toContain("camera=(self)");
+    expect(res.headers.get("permissions-policy")).toContain("microphone=()");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+    expect(res.headers.get("cache-control")).toBe("no-cache");
+    const html = await res.text();
+    expect(html).not.toContain("الفجر");
+  });
+
+  it("fichiers versionnés de /assets : cache long et immuable ; route SPA : pas de cache", async () => {
+    const html = await (await fetch(`${HOSTING}/`)).text();
+    const asset = html.match(/\/assets\/[^"']+\.js/)?.[0];
+    expect(asset).toBeTruthy();
+    const res = await fetch(`${HOSTING}${asset}`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect((await fetch(`${HOSTING}/eleves/S-101`)).headers.get("cache-control")).toBe("no-cache");
+  });
+});
