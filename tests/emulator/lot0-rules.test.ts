@@ -157,7 +157,7 @@ const MATRIX: Record<string, { list: Role[]; create: Role[]; remove: Role[]; doc
   activities: { list: ROLES, create: EDUCATORS, remove: OFFICE, docId: "act9" },
   activityParticipants: { list: [...EDUCATORS, "متطوع"], create: EDUCATORS, remove: EDUCATORS, docId: "part9" },
   activityExpenses: { list: EDUCATORS, create: EDUCATORS, remove: EDUCATORS, docId: "ae9" },
-  notifications: { list: STAFF, create: ROLES, remove: OFFICE, docId: "n9" },
+  notifications: { list: STAFF, create: STAFF, remove: OFFICE, docId: "n9" }, // R-07 (D52)
   appUsers: { list: OFFICE, create: ["مدير"], remove: ["مدير"], docId: "u_new" },
   authLinks: { list: ["مدير"], create: ["مدير"], remove: ["مدير"], docId: "uid_new" },
 };
