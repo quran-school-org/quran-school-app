@@ -252,8 +252,9 @@ collections racine et du service Cloud Run d'AI Studio).
   **237/237** en lançant les émulateurs sans variables de proxy (D48) ;
   Functions **33/33** ; Hosting (rewrite + en-têtes) **5/5** ; Playwright **11/11**
   sous la CSP de production.
-- CI GitHub sur `070b104` : succès (unitaires 45/45 à ce commit, émulateurs
-  237/237 triggers compris, Functions 33/33, Hosting 5/5, Playwright 11/11).
+- CI GitHub sur `b7ec60e` (code identique au dernier commit, seule la doc
+  diffère) : succès — unitaires 49/49, émulateurs 237/237 triggers compris,
+  Functions 33/33, Hosting 5/5, Playwright 11/11 sous la CSP.
 - Non testé (exige un vrai projet) : échange de jetons App Check, workflows de
   déploiement (validés par `actionlint` seulement), export Firestore réel,
   restrictions de clé.
