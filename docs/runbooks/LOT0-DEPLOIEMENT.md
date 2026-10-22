@@ -102,15 +102,22 @@ personnelles : ne pas diffuser**) :
 Ne passer à la suite que si le résumé est compris et qu'aucune anomalie
 critique ne reste.
 
-**Mots de passe (revue de sécurité, R-01 / R-08)** : avant le Lot 0, les mots
-de passe de `appUsers` étaient lisibles **et modifiables** par n'importe qui
-(S1, S2) et celui du directeur figurait dans le code public (S4). Par défaut,
-l'application **remplace donc tous les mots de passe** par des mots de passe
-temporaires aléatoires (`--rotate-passwords=all`), à remettre à chacun avec
-son identifiant ; le changement reste imposé à la première connexion.
-`--rotate-passwords=weak` (seulement les mots de passe faibles et les comptes du
-bureau) est possible mais laisse ouverts les comptes dont le mot de passe a pu
-être relevé ou planté : décision à prendre et à consigner par le responsable.
+**Mots de passe (revue de sécurité, R-01 / R-08) : décision du 22/10/2026 (D53)** :
+le responsable a choisi de **ne pas remplacer les mots de passe** au Lot 0
+(`--rotate-passwords=none`). Le Lot 0 les rend **invisibles** : le champ
+`password` est supprimé de `appUsers`, la collection n'est plus lisible
+publiquement, plus rien n'est stocké en clair côté client. Chacun se connecte
+avec son mot de passe actuel, puis le **changement est imposé à la première
+connexion** (`mustChangePassword`).
+
+Risque résiduel accepté : les mots de passe d'avant le Lot 0 étaient lisibles
+et modifiables par n'importe qui (S1, S2), `123` est le mot de passe par défaut
+et celui du directeur figure dans le code public (S4). Une personne qui les a
+relevés peut se connecter **avant** le titulaire du compte. Le directeur doit
+donc se connecter et changer son mot de passe **immédiatement** après le
+déploiement. Pour remplacer plus tard les mots de passe faibles et ceux du
+bureau, relancer le script avec `--rotate-passwords=weak`, ou `all` pour
+tous les comptes.
 
 ## 3. Déploiement des Cloud Functions (sans impact utilisateur)
 
@@ -134,16 +141,17 @@ npx firebase deploy --only functions --project prod
 
 1. **Application du script** :
    ```bash
-   npx tsx scripts/admin/lot0-provision-auth.ts --project=$PROJECT --database=$DB --apply --confirm-prod=$PROJECT
+   npx tsx scripts/admin/lot0-provision-auth.ts --project=$PROJECT --database=$DB --rotate-passwords=none --apply --confirm-prod=$PROJECT
    ```
    Contrôler `resume.json` : `failures` = 0 (sinon le script sort avec le code 2 :
    lire `anomalies.csv` › `ACCOUNT_FAILED`, corriger, **relancer la même
    commande** — seuls les comptes restants sont traités), `linksWritten` =
    nombre de comptes, `authCreated + authExisting` = nombre de comptes, aucune
    ligne « IMPOSSIBLE » ni « ÉCHEC » dans `comptes.csv`.
-   Le fichier **SECRET** `mots-de-passe-temporaires.csv` (droits 600) contient
-   les nouveaux mots de passe : le déplacer immédiatement hors du dépôt (support
-   chiffré), ne jamais l'envoyer par messagerie de groupe.
+   Avec `--rotate-passwords=none`, aucun fichier de mots de passe temporaires
+   n'est produit. Si une rotation est faite plus tard, le fichier **SECRET**
+   `mots-de-passe-temporaires.csv` (droits 600) est à déplacer immédiatement hors
+   du dépôt et à ne jamais envoyer par messagerie de groupe.
 2. **Règles Firestore** (immédiatement après : les anciens clients pourraient
    sinon réécrire des mots de passe) :
    ```bash

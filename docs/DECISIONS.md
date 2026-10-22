@@ -260,6 +260,19 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
   ne la sert pas, mais le service Cloud Run d'AI Studio en expose une version
   ouverte, à arrêter au Lot 0 (runbook).
 
+## D53 — Lot 0 sans remplacement des mots de passe (22/10/2026)
+- **Contexte** : la revue (R-01) recommandait de remplacer tous les mots de passe
+  au Lot 0 (`--rotate-passwords=all`), ce qui empêche toute connexion tant que
+  chacun n'a pas reçu son mot de passe temporaire.
+- **Décision (responsable du projet)** : pas de remplacement pour l'instant.
+  Le Lot 0 est lancé avec `--rotate-passwords=none` : les mots de passe
+  deviennent invisibles (champ supprimé, collection fermée), chacun garde le
+  sien et doit le changer à la première connexion. La valeur par défaut du
+  script reste `all`, pour qu'un oubli d'option soit du côté sûr.
+- **Risque accepté** : les mots de passe exposés avant le Lot 0 restent valables
+  jusqu'au premier changement par leur titulaire (voir le runbook, §2).
+- **Retour arrière** : relancer le script avec `--rotate-passwords=weak` ou `all`.
+
 ## Revue adversariale du durcissement (branche `fix/revue-durcissement-lot0`)
 
 Rapport complet et décisions détaillées : branche `fix/revue-durcissement`,
