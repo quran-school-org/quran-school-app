@@ -59,12 +59,10 @@ export function useAdminActions(s: DerivedScope) {
 
     if (isPrimaryDirector(user) && user.fullName && systemSettings) {
       if (systemSettings.directorName !== user.fullName) {
-        const updatedSysSettings = {
-          ...systemSettings,
-          directorName: user.fullName,
-        };
-        RealmSimDB.saveSystemSettings(updatedSysSettings);
-        setSystemSettings(updatedSysSettings);
+        // Écriture partielle (F1) : jamais tout l'objet des paramètres.
+        const directorName = user.fullName;
+        RealmSimDB.updateSystemSettingsFields({ directorName });
+        setSystemSettings((prev: SystemSettings | null) => (prev ? { ...prev, directorName } : prev));
       }
     }
 

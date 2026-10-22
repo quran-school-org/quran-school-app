@@ -94,12 +94,12 @@ export function useProfileActions(s: DerivedScope) {
     setProfileSaving(false);
 
     if (currentRole === "مدير" && systemSettings && systemSettings.directorName !== profileFullName.trim() && isPrimaryDirector(currentUser)) {
-      const updatedSettings: SystemSettings = {
-        ...systemSettings,
-        directorName: profileFullName.trim(),
-      };
-      RealmSimDB.saveSystemSettings(updatedSettings);
-      setSystemSettings(updatedSettings);
+      // Seul le nom du directeur est écrit (F1) : les autres paramètres de l'école
+      // ne sont jamais recopiés depuis l'état local, qui peut encore contenir les
+      // valeurs par défaut si les paramètres ne sont pas arrivés du serveur.
+      const directorName = profileFullName.trim();
+      RealmSimDB.updateSystemSettingsFields({ directorName });
+      setSystemSettings((prev: SystemSettings | null) => (prev ? { ...prev, directorName } : prev));
     }
 
     addSysNotification(
