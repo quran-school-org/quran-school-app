@@ -106,7 +106,7 @@ export default function UsersSection() {
           {/* Sync Notice Banner & Action */}
           <div className="bg-primary-50/80 border border-primary-200/80 text-primary-900 p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px]">
             <div className="flex items-start gap-3">
-              <span className="p-1.5 bg-primary-100 text-primary-800 rounded-xl font-bold flex items-center justify-center w-7 h-7 shrink-0">⚙️</span>
+              <span aria-hidden="true" className="p-1.5 bg-primary-100 text-primary rounded-xl flex items-center justify-center w-8 h-8 shrink-0"><RefreshCw className="w-4 h-4" strokeWidth={1.75} /></span>
               <div>
                 <p className="font-bold text-primary-950">المزامنة التلقائية والذكية لحسابات المؤسسة والأدوار:</p>
                 <p className="text-ink-2 mt-0.5 leading-relaxed">
@@ -172,8 +172,8 @@ export default function UsersSection() {
                   <option value="إداري">إداريون وأعضاء المكتب التنفيذي</option>
                   <option value="مؤطر">مؤطرون ومشرفون تربويون</option>
                   <option value="مدرس">أساتذة ومحفظون (حلقات التحفيظ)</option>
-                  <option value="متطوع">متطوعون بالأنشطة والفعاليات 🤝</option>
-                  <option value="عامل نظافة / صيانة">عمال نظافة وصيانة 🧹</option>
+                  <option value="متطوع">متطوعون بالأنشطة والفعاليات</option>
+                  <option value="عامل نظافة / صيانة">عمال نظافة وصيانة</option>
                   <option value="ولي أمر">أولياء أمور</option>
                   <option value="طالب">طلاب (15+ سنة)</option>
                   <option value="أخرى">أخرى</option>
@@ -346,14 +346,6 @@ export default function UsersSection() {
                                   ? "bg-primary-50 text-primary-800 border-primary-200"
                                   : "bg-sand-50 text-ink border-line"
                               }`}>
-                                {user.role === "متطوع" && "🤝 "}
-                                {user.role === "عامل نظافة / صيانة" && "🧹 "}
-                                {user.role === "مدرس" && "👨‍🏫 "}
-                                {user.role === "مؤطر" && "🌟 "}
-                                {user.role === "إداري" && "📋 "}
-                                {user.role === "مدير" && "👑 "}
-                                {user.role === "ولي أمر" && "👨‍👧‍👦 "}
-                                {user.role === "طالب" && "🎓 "}
                                 <span>{user.role}</span>
                               </span>
                               {user.roleTitle && user.roleTitle !== user.role && (
@@ -398,16 +390,16 @@ export default function UsersSection() {
                                 </span>
                               ) : (
                                 <>
-                                  <span className={`px-1.5 py-0.5 rounded text-[11.5px] border ${user.canEditStudents ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-sand-100 text-ink-3 border-line line-through opacity-60"}`}>
+                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditStudents ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
                                     الطلاب
                                   </span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[11.5px] border ${user.canEditTeachers ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-sand-100 text-ink-3 border-line line-through opacity-60"}`}>
+                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditTeachers ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
                                     العاملين
                                   </span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[11.5px] border ${user.canEditGrades ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-sand-100 text-ink-3 border-line line-through opacity-60"}`}>
+                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditGrades ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
                                     الدرجات
                                   </span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[11.5px] border ${user.canEditPayments ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-sand-100 text-ink-3 border-line line-through opacity-60"}`}>
+                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditPayments ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
                                     المالية
                                   </span>
                                 </>
@@ -480,12 +472,6 @@ export default function UsersSection() {
                           ? "bg-primary-100 text-primary-800 border-primary-200"
                           : "bg-sand-100 text-ink border-line"
                       }`}>
-                        {user.role === "متطوع" && "🤝 "}
-                        {user.role === "عامل نظافة / صيانة" && "🧹 "}
-                        {user.role === "مدرس" && "👨‍🏫 "}
-                        {user.role === "مؤطر" && "🌟 "}
-                        {user.role === "إداري" && "📋 "}
-                        {user.role === "مدير" && "👑 "}
                         {user.role}
                       </span>
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
@@ -529,7 +515,7 @@ export default function UsersSection() {
 
                     {(user.id.startsWith("t_") || user.id.startsWith("p_") || user.id.startsWith("s_")) && (
                       <div className="mb-3 flex items-center gap-1 bg-primary-50 text-primary-800 border border-primary-100 rounded-lg px-2 py-1.5 text-[11.5px] font-bold" dir="rtl">
-                        <span>🔄</span>
+                        <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                         <span>مزامنة تلقائية من سجلات {user.role}</span>
                       </div>
                     )}

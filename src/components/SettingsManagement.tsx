@@ -9,6 +9,7 @@ import SettingsTabs from "./settings/SettingsTabs";
 import GeneralSettingsSection from "./settings/GeneralSettingsSection";
 import UsersSection from "./settings/UsersSection";
 import UserFormModal from "./settings/UserFormModal";
+import { PageHeader } from "../ui";
 
 export interface SettingsManagementProps {
   settings: SystemSettings;
@@ -37,7 +38,8 @@ export default function SettingsManagement(props: SettingsManagementProps) {
   } = state;
   return (
     <SettingsContext.Provider value={state}>
-    <div data-screen="settings" className="space-y-6" id="settings-management-panel">
+    <div data-screen="settings" className="flex flex-col gap-6" id="settings-management-panel">
+      <PageHeader title="الإعدادات والمستخدمون" description="بيانات الجمعية والمطبوعات الرسمية، وحسابات المستخدمين وصلاحياتهم." />
       <SettingsTabs />
 
       <GeneralSettingsSection />
