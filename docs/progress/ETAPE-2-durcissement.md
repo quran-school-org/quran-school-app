@@ -34,13 +34,15 @@ Commandes locales (conteneur à proxy, D21, D48), toujours sous verrou :
    Referrer-Policy, Permissions-Policy caméra, X-Frame-Options, COOP, HSTS),
    cache ; toute la suite Playwright tourne sous la CSP (`E2E_CSP=1`), 11/11.
 9. **Clé API web / D50** : runbook `docs/runbooks/CLE-API-WEB.md`.
+10. **Photos / D51** : filet de sécurité (recompression des images base64
+    trop lourdes avant écriture) ; Cloud Storage NON implémenté (règles Storage
+    sans accès à la base nommée → claims d'appartenance d'abord), plan détaillé.
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-10. Photos : évaluation / passage à Cloud Storage.
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 10 : photos base64 → évaluation Cloud Storage (implémentation ou plan dans DECISIONS).
+Clôture : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`, vérification finale complète.

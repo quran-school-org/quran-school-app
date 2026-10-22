@@ -551,3 +551,91 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
   l'inscription libre restait ouverte). La sécurité des données reste dans
   les règles.
 - **Retour arrière** : `gcloud services api-keys update … --clear-restrictions`.
+
+### D51. Photos : filet de sécurité immédiat, passage à Cloud Storage planifié (non implémenté)
+- **Constat** :
+  - photos d'élèves compressées côté client (180 px, JPEG ≈ 10–20 Ko) ;
+  - photos du personnel et logo **non compressés** (jusqu'à 2 Mo, soit ≈ 2,7 Mo en
+    base64) : au-delà de 1 Mio le document est refusé par Firestore et
+    l'enregistrement échouait en silence (fiche entière perdue) ;
+  - toutes les photos voyagent dans chaque lecture de la collection et dans le
+    cache local (limite de ≈ 5 Mo de localStorage : 300 élèves à 15 Ko la saturent).
+- **Fait (couche données, aucun changement d'écran)** : `shrinkInlinePhotos`
+  (`src/utils/imageCompression.ts`) recompresse avant écriture toute image
+  base64 de plus de ≈ 300 Ko (`photo`, `photoUrl`, `associationLogo`, `logo` ;
+  512 px puis 320 px), dans `saveToFirestore` et `saveStaffToFirestore`.
+  Tests unitaires (décision, absence d'effet sur les URL et petites images).
+- **Pourquoi pas Cloud Storage cette nuit** : les règles Storage ne peuvent
+  pas lire l'appartenance à une école (`firestore.get()` des règles Storage ne
+  fonctionne qu'avec la base `(default)` d'après la documentation Firebase
+  consultée lors de la conception, à revérifier au moment de l'implémentation ;
+  or la nôtre est une base NOMMÉE, D7).
+  Une isolation propre par école exige d'abord des claims d'appartenance, et
+  l'intégration touche les écrans d'envoi et d'affichage que la branche design
+  réécrit. Le faire à moitié (URL à jeton, lecture par tout compte connecté)
+  aurait affaibli l'isolation entre écoles.
+- **Plan détaillé (à faire après fusion de `feat/design`)** :
+  1. *Claims d'appartenance* : claim `sm` = `{ <schoolId>: <code rôle> }`
+     (< 1000 octets), posé par les Functions à chaque changement
+     (`createSchool`, `createSchoolUser`, `setMemberRole`, triggers
+     d'archivage) et par la migration ; le client force `getIdToken(true)`
+     quand son document `members` change (abonnement existant). Tests sur
+     émulateurs : claim posé, retiré, désactivation.
+  2. *Chemins* : `schools/{s}/photos/{kind}/{docId}/{photoId}.jpg`
+     (`kind` = `students` | `staff` | `school`), métadonnées `schoolId`,
+     `uploadedBy`. `photoId` = empreinte SHA-256 du contenu (idempotent).
+  3. *`storage.rules`* (esquisse) :
+     ```
+     rules_version = '2';
+     service firebase.storage {
+       match /b/{bucket}/o {
+         function role(s) { return request.auth != null && request.auth.token.sm != null ? request.auth.token.sm[s] : null; }
+         function educator(s) { return role(s) in ['dir', 'adm', 'coo', 'ens']; }
+         function office(s) { return role(s) in ['dir', 'adm']; }
+         match /schools/{s}/photos/students/{id}/{f} {
+           allow read: if educator(s);   // familles : via une fonction qui vérifie linkedStudentIds
+           allow write: if educator(s) && request.resource.size < 300 * 1024
+                        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+         }
+         match /schools/{s}/photos/staff/{id}/{f} {
+           allow read: if educator(s);
+           allow write: if office(s) && request.resource.size < 300 * 1024 && request.resource.contentType.matches('image/.*');
+         }
+         match /schools/{s}/photos/school/{f} {
+           allow read: if role(s) != null;
+           allow write: if role(s) == 'dir' && request.resource.size < 500 * 1024;
+         }
+         match /{all=**} { allow read, write: if false; }
+       }
+     }
+     ```
+     Les familles (photo de leur enfant) passent par `api` (`/api/photos/…`,
+     contrôle de `linkedStudentIds`) ou gardent l'avatar par défaut.
+  4. *Champ* : `photo` contient `storage:schools/…` ; un utilitaire
+     `resolvePhoto(value)` (couche données) renvoie l'URL (`getDownloadURL`,
+     mise en cache) pour les valeurs `storage:` et laisse passer `data:`/`https:`
+     (compatibilité pendant la migration). Envoi : `uploadSchoolPhoto(schoolId,
+     kind, docId, file)` = compression canvas (512 px, JPEG 0,8, ≤ 200 Ko) +
+     `uploadBytes` + chemin renvoyé.
+  5. *Points d'intégration interface* (à refaire sur `feat/design`) : envoi des
+     photos d'élève (`handleStudentPhotoUpload` / `handleStudentDrop`), du
+     personnel (`TeacherManagement` : envoi et glisser-déposer), du logo
+     (`SettingsManagement`) ; affichage (`studentAvatar`, `StudentCard`, cartes
+     et badges) ; fenêtres d'impression : résoudre les URL AVANT d'écrire le
+     HTML.
+  6. *Migration* : `scripts/migration/photos-to-storage.ts` (simulation par
+     défaut, `--project` obligatoire, Admin SDK) : pour chaque document dont un
+     champ image est en `data:`, envoi au chemin déterministe puis mise à jour
+     du champ **seulement s'il n'a pas changé** (transaction) ; comptages et
+     anomalies (`LARGE_PHOTO`, image illisible) ; relance idempotente.
+  7. *Émulateur Storage* (port 9199) dans `firebase.json`, tests des règles
+     Storage (`@firebase/rules-unit-testing`), test de la migration, test
+     Playwright d'envoi et d'affichage.
+  8. *Exploitation* : bucket dans la région de la base ; Firestore export ne
+     couvre PAS Storage → versionnement des objets + suppression réversible
+     (soft delete 30 j) et copie nocturne vers le bucket de sauvegarde (D47) ;
+     CSP : `img-src https://firebasestorage.googleapis.com`.
+  9. *Estimation* : 1,5 à 2 jours (claims : 0,5 ; Storage + règles + tests :
+     0,5 ; migration : 0,5 ; intégration écrans : 0,5).
+- **Retour arrière du filet de sécurité** : retirer l'appel à
+  `shrinkInlinePhotos` dans `src/firebase.ts`.
