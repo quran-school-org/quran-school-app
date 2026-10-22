@@ -1,0 +1,30 @@
+# Étape 2 — durcissement : avancement
+
+Branche `feat/durcissement` (depuis `fix/revue-securite`), worktree `/home/user/wt-durcissement`.
+Décisions : `docs/DECISIONS.md` à partir de D42.
+
+Commandes locales (conteneur à proxy, D21), toujours sous verrou :
+- `EMULATOR_SKIP_FIRESTORE_TRIGGERS=true flock /home/user/.emulators.lock npm run test:rules`
+- `EMULATOR_SKIP_FIRESTORE_TRIGGERS=true flock /home/user/.emulators.lock npm run test:e2e`
+
+## Fait
+1. **R-06 / D42** : fiches RH `staffPrivate` (règles, couche données, migration,
+   peuplement, tests unitaires / règles / migration / Playwright).
+
+## En cours
+- (rien)
+
+## Suivant (ordre de la mission)
+2. Proxy IA `api` : limitation de débit (utilisateur, école, global), taille des entrées, journaux sans données personnelles.
+3. App Check préparé, désactivé par défaut.
+4. `npm audit` (app, functions).
+5. `deploy.yml` (workflow_dispatch, WIF) + runbook CI-DEPLOIEMENT.
+6. Sauvegardes planifiées + runbook PITR / restauration.
+7. Rewrite Hosting `/api/**` : test local ou job CI.
+8. `index.html` générique, en-têtes de sécurité, cache, Playwright avec CSP.
+9. Runbook de restriction de la clé API web.
+10. Photos : évaluation / passage à Cloud Storage.
+Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
+
+## Prochaine action exacte
+Point 2 : `functions/src/tenant/api.ts` (limitation de débit transactionnelle).

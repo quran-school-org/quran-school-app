@@ -340,3 +340,45 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
   l'énumération) ; leurs effets sont neutralisés par D34–D35 et le registre (D39).
 - Proxy Gemini : pas de limitation de débit par utilisateur (D30) ; le service
   Cloud Run d'AI Studio expose un proxy ouvert à arrêter au Lot 0 (runbook).
+
+## Étape 2 : durcissement (branche `feat/durcissement`)
+
+Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
+
+### D42. Fiche du personnel scindée : `teachers` (publique) + `staffPrivate` (RH)
+- **Contexte** : R-06 (D14, D41) : la pédagogie lit `teachers` (noms, halaqas,
+  téléphones) et y lisait aussi salaires et CIN. Des règles ne filtrent pas des
+  champs : il faut deux documents.
+- **Décision** :
+  - `schools/{s}/staffPrivate/{teacherId}` porte `monthlySalary`,
+    `contractType`, `cinNumber`, `emergencyContact`, `birthDate`, `address`
+    (+ `teacherId`, `schoolId`, `updatedAt`), liste fermée dans les règles ;
+    lecture et écriture : مدير et إداري seulement (ni super-admin sans
+    appartenance, ni autre école) ;
+  - `teachers` refuse tout champ RH (une ancienne fiche se nettoie par une
+    écriture en fusion avec `deleteField`) ;
+  - téléphone, WhatsApp, e-mail, fonction, horaires et affectations restent
+    publics pour la pédagogie : ce sont des coordonnées professionnelles
+    utilisées par l'interface (annuaire du personnel). À déplacer aussi si
+    l'école le demande (ajouter le champ à `STAFF_PRIVATE_FIELDS` et aux règles) ;
+  - la liste des champs vit dans `src/security/staffPrivate.ts` (module pur,
+    partagé par le client, la migration, le peuplement et les tests) ; un test
+    unitaire vérifie qu'elle est identique à celle des règles ;
+  - client : `subscribeToStaff` lit `teachers` et, pour le bureau seulement,
+    `staffPrivate`, puis fusionne : l'interface reçoit le même objet `Teacher`
+    qu'avant (aucun changement d'écran ; la paie lit toujours `monthlySalary`).
+    `saveStaffToFirestore` / `deleteStaffFromFirestore` écrivent les deux
+    documents dans un même lot ;
+  - migration : la fiche publique est copiée sans champs RH, la fiche RH est
+    créée à part (ligne `staffPrivate` des comptages). Une fiche publique cible
+    qui porte encore des champs RH (répétition antérieure) est scindée à la
+    relance (`staffSplitExisting`, anomalie `STAFF_PRIVATE_SPLIT`) sans écraser
+    une fiche RH existante : seule modification d'un document cible existant.
+- **Limites** :
+  - un enseignant ne voit plus son propre salaire dans l'application (choix
+    « bureau seulement » de la mission) ;
+  - un onglet resté ouvert sur l'ancienne version (avant D42) ne peut plus
+    enregistrer une fiche du personnel (refus des règles) : recharger la page ;
+  - branche Lot 0 (`fix/lot0-securite`) non traitée : R-06 y reste accepté.
+- **Retour arrière** : recopier les champs de `staffPrivate` dans `teachers`
+  (Admin SDK, par un humain), puis redéployer les règles et le front précédents.

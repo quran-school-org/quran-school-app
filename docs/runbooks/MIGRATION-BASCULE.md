@@ -95,7 +95,8 @@ personnelles, ne pas diffuser**) :
 | Fichier | À vérifier |
 |---|---|
 | `resume.json` | `critical: false` ; `accounts.pendingAuth` = 0 après application |
-| `comptages.csv` | pour chaque collection : `source` = `copied` + `skippedExisting`, et après application `targetAfter` = `source` |
+| `comptages.csv` | pour chaque collection : `source` = `copied` + `skippedExisting`, et après application `targetAfter` = `source`. La ligne `staffPrivate` (fiches RH du personnel, D42) a pour `source` le nombre de fiches `teachers` de la racine portant au moins un champ RH (salaire, contrat, CIN, adresse, contact d'urgence, naissance) |
+| `resume.json` › `staffSplitExisting` | fiches publiques déjà présentes dans `schools/…/teachers` qui portaient encore des champs RH (répétition antérieure à D42) : scindées par le script, anomalie `STAFF_PRIVATE_SPLIT` (info). Doit valoir 0 à la relance |
 | `anomalies.csv` | critiques (u1, conflits de noms d'utilisateur, écritures échouées `WRITE_FAILED`, comptes en échec `ACCOUNT_FAILED`, `UNTRUSTED_AUTH_UID`) : à corriger avant la bascule ; avertissements (photos lourdes, parents sans enfant, identifiants renommés, `AUTHLINK_MISMATCH` : `appUsers` et `authLinks` divergeaient, le lien a été retenu avec le statut le plus restrictif) : à traiter |
 | `comptes/…/mots-de-passe-temporaires.csv` | **SECRET**, seulement si des comptes n'avaient pas été provisionnés par le Lot 0 (tous remplacés par défaut, voir le runbook du Lot 0 §2) : à remettre individuellement puis à supprimer |
 | `comptes/…/liens-a-valider.csv` | rattachements parent/enfant non accordés par prudence : **à faire valider par l'école** |
@@ -145,7 +146,8 @@ personnelles, ne pas diffuser**) :
    curl -s -H "Authorization: Bearer $TOKEN" "https://firestore.googleapis.com/v1/projects/$PROJECT/databases/$DB/documents/schools/$SCHOOL/classes" | head -3   # données
    ```
 3. **Par rôle**, depuis l'URL Hosting : directeur (tout), إداري (finances, pas de
-   gestion des comptes), enseignant (ses halaqas), parent (ses enfants et leurs
+   gestion des comptes, salaires et CIN visibles dans شؤون العاملين), enseignant
+   (ses halaqas ; dans la liste du personnel, ni salaire ni CIN), parent (ses enfants et leurs
    cotisations), élève (son dossier), agent d'entretien (aucun dossier d'élève).
 4. **Super-admin** : sélecteur « كل المدارس… », création d'une école de test,
    puis la retirer (Console Firestore : supprimer `schools/<test>`).
