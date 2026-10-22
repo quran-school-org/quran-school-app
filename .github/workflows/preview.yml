@@ -1,0 +1,92 @@
+# Canal de prévisualisation Hosting par branche, sur le projet de DEV (D46).
+# PRÉPARÉ, INACTIF : déclenchement manuel uniquement, environnement GitHub `dev`
+# (WIF, sans clé). Jamais sur la prod (garde-fou ci-dessous).
+# Le canal sert le Hosting de la branche ; /api/** est réécrit vers la fonction
+# `api` déjà déployée sur le projet de dev, Firestore et Auth sont ceux du dev.
+name: Prévisualisation (dev, manuel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expires:
+        description: "Durée de vie du canal (ex. 7d, 24h ; 30d maximum)"
+        type: string
+        default: 7d
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  apercu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+    steps:
+      - name: Garde-fous
+        run: |
+          set -euo pipefail
+          [ -n "${PROJECT_ID}" ] || { echo "::error::Variable FIREBASE_PROJECT_ID absente de l'environnement dev."; exit 1; }
+          case "${PROJECT_ID}" in demo-*|gen-lang-client-0481880143) echo "::error::Projet interdit pour un aperçu : ${PROJECT_ID}."; exit 1;; esac
+
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Configuration web du projet de dev
+        env:
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+          VITE_FIRESTORE_DATABASE_ID: ${{ vars.VITE_FIRESTORE_DATABASE_ID }}
+          VITE_APPCHECK_SITE_KEY: ${{ vars.VITE_APPCHECK_SITE_KEY }}
+        run: |
+          {
+            echo "VITE_FIREBASE_API_KEY=\"${VITE_FIREBASE_API_KEY}\""
+            echo "VITE_FIREBASE_AUTH_DOMAIN=\"${VITE_FIREBASE_AUTH_DOMAIN}\""
+            echo "VITE_FIREBASE_PROJECT_ID=\"${PROJECT_ID}\""
+            echo "VITE_FIREBASE_STORAGE_BUCKET=\"${VITE_FIREBASE_STORAGE_BUCKET}\""
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=\"${VITE_FIREBASE_MESSAGING_SENDER_ID}\""
+            echo "VITE_FIREBASE_APP_ID=\"${VITE_FIREBASE_APP_ID}\""
+            echo "VITE_FIRESTORE_DATABASE_ID=\"${VITE_FIRESTORE_DATABASE_ID}\""
+            echo "VITE_APPCHECK_SITE_KEY=\"${VITE_APPCHECK_SITE_KEY}\""
+            echo 'VITE_USE_EMULATORS="false"'
+            echo 'VITE_API_BASE_URL=""'
+          } > .env.production.local
+
+      - run: npm run build
+      - run: npm test
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Canal de prévisualisation de la branche
+        id: canal
+        env:
+          BRANCH: ${{ github.ref_name }}
+          EXPIRES: ${{ inputs.expires }}
+        run: |
+          set -euo pipefail
+          # Identifiant de canal : minuscules, chiffres et tirets, 36 caractères au plus.
+          CHANNEL=$(echo "br-${BRANCH}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]+/-/g; s/-+/-/g; s/^-|-$//g' | cut -c1-36)
+          npx firebase hosting:channel:deploy "${CHANNEL}" --expires "${EXPIRES}" \
+            --project "${PROJECT_ID}" --non-interactive --json > canal.json
+          URL=$(node -e 'const r=require("./canal.json");const v=Object.values(r.result||{})[0]||{};console.log(v.url||"")')
+          echo "url=${URL}" >> "$GITHUB_OUTPUT"
+          echo "### Aperçu de \`${BRANCH}\` : ${URL} (expire dans ${EXPIRES})" >> "$GITHUB_STEP_SUMMARY"
