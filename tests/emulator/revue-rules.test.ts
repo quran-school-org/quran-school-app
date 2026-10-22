@@ -143,8 +143,34 @@ describe("R-06 corrigé (D42) : fiches RH du personnel", () => {
   });
 });
 
-describe("constats confirmés, non corrigés (voir le rapport)", () => {
-  it("R-07 : une famille peut créer une notification (lue par le personnel)", async () => {
-    await assertSucceeds(setDoc(doc(as("parent"), "schools", A, "notifications", "n_famille"), { title: "x", message: "y", schoolId: A }));
+describe("R-07 corrigé (D52) : notifications réservées au personnel", () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: false, schoolId: A });
+    });
+  });
+
+  it("une famille (parent, élève) ne crée ni ne modifie aucune notification", async () => {
+    await assertFails(setDoc(doc(as("parent"), "schools", A, "notifications", "n_famille"), { title: "x", message: "y", schoolId: A }));
+    await assertFails(setDoc(doc(as("parent"), "schools", A, "notifications", "n_1"), { isRead: true, schoolId: A }, { merge: true }));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, "members", "eleve"), { role: "طالب", isActive: true, linkedStudentIds: ["S-1"], schoolId: A });
+    });
+    await assertFails(setDoc(doc(as("eleve"), "schools", A, "notifications", "n_eleve"), { title: "x", message: "y", schoolId: A }));
+  });
+
+  it("le personnel crée une notification ; hors bureau, il ne peut que la marquer comme lue", async () => {
+    await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "notifications", "n_prof"), { title: "x", message: "y", isRead: false, schoolId: A }));
+    await assertSucceeds(setDoc(doc(as("benevole"), "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: true, schoolId: A }, { merge: true }));
+    await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { message: "payez sur le compte X" }));
+    await assertFails(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { title: "faux", message: "faux", isRead: false, schoolId: A }));
+    await assertSucceeds(updateDoc(doc(as("admin"), "schools", A, "notifications", "n_1"), { message: "corrigé" }));
+  });
+
+  it("une autre école ne crée pas de notification chez A, même avec le bon schoolId", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", B, "members", "prof_b"), { role: "مدرس", isActive: true, schoolId: B });
+    });
+    await assertFails(setDoc(doc(as("prof_b"), "schools", A, "notifications", "n_b"), { title: "x", message: "y", schoolId: A }));
   });
 });

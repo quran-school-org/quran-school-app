@@ -639,3 +639,28 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
      0,5 ; migration : 0,5 ; intégration écrans : 0,5).
 - **Retour arrière du filet de sécurité** : retirer l'appel à
   `shrinkInlinePhotos` dans `src/firebase.ts`.
+
+## Revue adversariale du durcissement (branches `fix/revue-durcissement*`)
+
+Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
+`docs/progress/ETAPE-2-revue2.md`.
+
+### D52. Notifications réservées au personnel (R-07)
+- **Contexte** : R-07 (D41) : tout membre actif, familles comprises, pouvait
+  créer une notification, lue ensuite par tout le personnel (hameçonnage
+  interne : « réglez la cotisation sur tel compte »). Tout membre du personnel
+  pouvait aussi réécrire le titre et le message d'une notification existante.
+- **Décision** : création réservée au personnel (`isStaff`) ; mise à jour libre
+  pour le bureau, limitée au champ `isRead` pour le reste du personnel ;
+  suppression inchangée (bureau). Même correctif sur le Lot 0 (`isStaff()`).
+- **Effet sur l'interface** : aucun écran ne permet à une famille d'écrire une
+  notification ; seule la notification automatique « تعديل البيانات الشخصية »
+  après la modification de son profil était envoyée. Elle reste affichée
+  localement, mais son écriture Firestore est refusée et seulement journalisée
+  dans la console (`saveToFirestore` intercepte l'erreur). Les familles ne
+  lisaient déjà pas les notifications.
+- **Tests** : `tests/emulator/revue-rules.test.ts` › R-07 (échouaient avant le
+  correctif), matrice de `tenant-rules.test.ts` ; Lot 0 :
+  `tests/emulator/revue-rules.test.ts` et `lot0-rules.test.ts`.
+- **Retour arrière** : rétablir `isMember(s)` (Lot 0 : `active()`) pour
+  `create` et `isStaff(s)` seul pour `update`.
