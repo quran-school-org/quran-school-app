@@ -1,9 +1,11 @@
 /**
- * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
+ * Dossier pédagogique d'un élève côté enseignant (charte « لوحة الكتّاب »). Même logique qu'auparavant.
  */
 import { checkUserPermission } from "../../types";
 import { StudentAvatar } from "../../utils/studentAvatar";
-import { BookOpen, Award, Trash2, Check, X, FileText } from "lucide-react";
+import React from "react";
+import { BookOpen, Award, Trash2, Check, FileText } from "lucide-react";
+import { Button, EmptyState, FormField, IconButton, Input, Ltr, Modal, Pill, Select, Textarea, cx } from "../../ui";
 import { useApp } from "../../app/AppContext";
 
 export default function TeacherStudentFileModal() {
@@ -31,278 +33,147 @@ export default function TeacherStudentFileModal() {
     handleDeleteDailyProgress,
   } = useApp();
 
+  const close = () => {
+    setShowTeacherStudentFileModal(false);
+    setTeacherSelectedStudent(null);
+  };
+  const canEdit = checkUserPermission(currentUser, currentRole, "students", "update") || checkUserPermission(currentUser, currentRole, "teacher-students", "update");
+  const records = dailyProgress.filter((dp) => dp.studentId === teacherSelectedStudent.id);
+  const RATING_TONE: Record<string, any> = { "ممتاز": "success", "جيد جداً": "primary", "جيد": "warn", "مقبول": "warn" };
+  const update = (patch: any) => setTeacherSelectedStudent((prev: any) => (prev ? { ...prev, ...patch } : null));
+
   return (
-    <div data-modal="teacher-student-file" className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]" style={{ direction: "rtl" }}>
-      <div className="bg-surface w-full max-w-4xl overflow-hidden my-8 max-h-[90vh] flex flex-col rounded-3xl border border-line shadow-pop">
-        <div className="flex justify-between items-center shrink-0 bg-night text-night-text px-6 py-4 border-b border-night-line">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl overflow-hidden border border-white/10 shrink-0">
-              <StudentAvatar student={teacherSelectedStudent} alt={teacherSelectedStudent.fullName} className="w-full h-full object-cover" />
-            </div>
-            <div>
-              <h3 className="font-bold text-base sm:text-lg font-sans">
-                الملف التعليمي للطالب: {teacherSelectedStudent.fullName}
-              </h3>
-              <p className="text-[13px] text-primary-200 font-sans">
-                رقم العضوية: {teacherSelectedStudent.studentNumber || "N/A"} | المستوى الدراسي: {teacherSelectedStudent.educationLevel}
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={() => {
-              setShowTeacherStudentFileModal(false);
-              setTeacherSelectedStudent(null);
-            }} 
-            className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition text-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 bg-sand-50">
-
-          {/* LEFT COLUMN: Record Progress Form & Core Updates (7 spans) */}
-          <div className="lg:col-span-7 space-y-6">
-
-            {(checkUserPermission(currentUser, currentRole, "students", "update") || checkUserPermission(currentUser, currentRole, "teacher-students", "update")) && (
-              <>
-                {/* 1. Core Profile & Teaching Updates */}
-                <div className="bg-surface rounded-2xl p-5 border border-line space-y-4">
-                  <h4 className="font-bold text-ink text-[13px] sm:text-sm flex items-center gap-2 border-b pb-2 font-sans">
-                    <BookOpen className="w-4 h-4 text-primary-600" />
-                    <span>تعديل الحالة الراهنة وبيانات التدريس</span>
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans">
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">السورة الحالية</label>
-                      <input 
-                        type="text" 
-                        value={teacherSelectedStudent.currentSurah || ""}
-                        onChange={(e) => setTeacherSelectedStudent(prev => prev ? { ...prev, currentSurah: e.target.value } : null)}
-                        placeholder="مثال: البقرة - الآية 142"
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">مستوى التجويد الحالي</label>
-                      <select 
-                        value={teacherSelectedStudent.tajweedLevel || "متوسط"}
-                        onChange={(e) => setTeacherSelectedStudent(prev => prev ? { ...prev, tajweedLevel: e.target.value as any } : null)}
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                      >
+    <Modal
+      modalId="teacher-student-file"
+      size="lg"
+      icon={
+        <span className="w-11 h-11 rounded-full overflow-hidden border border-line bg-sunken inline-flex">
+          <StudentAvatar student={teacherSelectedStudent} alt={teacherSelectedStudent.fullName} className="w-full h-full object-cover" />
+        </span>
+      }
+      title={`الملف التعليمي للطالب: ${teacherSelectedStudent.fullName}`}
+      subtitle={`رقم العضوية: ${teacherSelectedStudent.studentNumber || "N/A"} | المستوى الدراسي: ${teacherSelectedStudent.educationLevel || "—"}`}
+      onClose={close}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-7 flex flex-col gap-5">
+          {canEdit && (
+            <>
+              <section className="rounded-2xl border border-line bg-white p-4 flex flex-col gap-3" aria-labelledby="tsf-status">
+                <h3 id="tsf-status" className="m-0 flex items-center gap-2 font-sans font-semibold text-[15px] text-primary pb-2 border-b border-line-soft">
+                  <BookOpen className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />تعديل الحالة الراهنة وبيانات التدريس
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label="السورة الحالية">
+                    {(id) => <Input id={id} type="text" value={teacherSelectedStudent.currentSurah || ""} onChange={(e: any) => update({ currentSurah: e.target.value })} placeholder="مثال: البقرة - الآية 142" />}
+                  </FormField>
+                  <FormField label="مستوى التجويد الحالي">
+                    {(id) => (
+                      <Select id={id} value={teacherSelectedStudent.tajweedLevel || "متوسط"} onChange={(e: any) => update({ tajweedLevel: e.target.value as any })}>
                         <option value="ممتاز">ممتاز (مخارج صحيحة وأحكام كاملة)</option>
                         <option value="متوسط">متوسط (يحتاج لبعض التوجيه)</option>
                         <option value="مبتدئ">مبتدئ (يتعلم القواعد الأساسية)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">عدد الأحزاب المحفوظة فعلياً</label>
-                      <input 
-                        type="number" 
-                        min="0"
-                        max="60"
-                        value={teacherSelectedStudent.hizbCount ?? 1}
-                        onChange={(e) => setTeacherSelectedStudent(prev => prev ? { ...prev, hizbCount: Number(e.target.value) } : null)}
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رأي وتوجيهات عامة للمعلم</label>
-                      <input 
-                        type="text" 
-                        placeholder="ملاحظات وسلوكيات الطالب العامة..."
-                        value={teacherSelectedStudent.notes || ""}
-                        onChange={(e) => setTeacherSelectedStudent(prev => prev ? { ...prev, notes: e.target.value } : null)}
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                      />
-                    </div>
-                  </div>
+                      </Select>
+                    )}
+                  </FormField>
+                  <FormField label="عدد الأحزاب المحفوظة فعلياً">
+                    {(id) => <Input id={id} type="number" min="0" max="60" value={teacherSelectedStudent.hizbCount ?? 1} onChange={(e: any) => update({ hizbCount: Number(e.target.value) })} className="tabular-nums" />}
+                  </FormField>
+                  <FormField label="رأي وتوجيهات عامة للمعلم">
+                    {(id) => <Input id={id} type="text" placeholder="ملاحظات وسلوكيات الطالب العامة..." value={teacherSelectedStudent.notes || ""} onChange={(e: any) => update({ notes: e.target.value })} />}
+                  </FormField>
                 </div>
+              </section>
 
-                {/* 2. Daily Assessment Entry Form */}
-                <form onSubmit={handleSaveDailyProgress} className="bg-surface rounded-2xl p-5 border border-line space-y-4">
-                  <h4 className="font-bold text-ink text-[13px] sm:text-sm flex items-center gap-2 border-b pb-2 font-sans">
-                    <Award className="w-4 h-4 text-primary-600" />
-                    <span>تسجيل تقييم ومتابعة الحفظ اليومي</span>
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans">
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تاريخ المتابعة</label>
-                      <input 
-                        type="date" 
-                        value={progressDate}
-                        onChange={(e) => setProgressDate(e.target.value)}
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الحفظ الجديد (Sabaq)</label>
-                      <input 
-                        type="text" 
-                        placeholder="مثال: من آية 1 إلى آية 15"
-                        value={progressMemorization}
-                        onChange={(e) => setProgressMemorization(e.target.value)}
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المراجعة القريبة (Kum - الأجزاء القريبة)</label>
-                      <input 
-                        type="text" 
-                        placeholder="مثال: سورة البقرة بالكامل"
-                        value={progressRevision}
-                        onChange={(e) => setProgressRevision(e.target.value)}
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المراجعة البعيدة (Sabqi - القديم)</label>
-                      <input 
-                        type="text" 
-                        placeholder="مثال: الجزء الأول والثاني"
-                        value={progressOldRevision}
-                        onChange={(e) => setProgressOldRevision(e.target.value)}
-                        className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                      />
-                    </div>
+              <form onSubmit={handleSaveDailyProgress} className="rounded-2xl border border-line bg-white p-4 flex flex-col gap-3" aria-labelledby="tsf-daily">
+                <h3 id="tsf-daily" className="m-0 flex items-center gap-2 font-sans font-semibold text-[15px] text-primary pb-2 border-b border-line-soft">
+                  <Award className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />تسجيل تقييم ومتابعة الحفظ اليومي
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <FormField label="تاريخ المتابعة">
+                    {(id) => <Input id={id} type="date" value={progressDate} onChange={(e: any) => setProgressDate(e.target.value)} required />}
+                  </FormField>
+                  <FormField label="الحفظ الجديد (Sabaq)">
+                    {(id) => <Input id={id} type="text" placeholder="مثال: من آية 1 إلى آية 15" value={progressMemorization} onChange={(e: any) => setProgressMemorization(e.target.value)} />}
+                  </FormField>
+                  <FormField label="المراجعة القريبة (Kum - الأجزاء القريبة)">
+                    {(id) => <Input id={id} type="text" placeholder="مثال: سورة البقرة بالكامل" value={progressRevision} onChange={(e: any) => setProgressRevision(e.target.value)} />}
+                  </FormField>
+                  <FormField label="المراجعة البعيدة (Sabqi - القديم)">
+                    {(id) => <Input id={id} type="text" placeholder="مثال: الجزء الأول والثاني" value={progressOldRevision} onChange={(e: any) => setProgressOldRevision(e.target.value)} />}
+                  </FormField>
+                </div>
+                <fieldset className="m-0 p-0 border-0 flex flex-col gap-1.5">
+                  <legend className="text-[13.5px] font-semibold text-ink-2 mb-1.5">التقييم والتقدير اليومي</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {(["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"] as const).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        aria-pressed={progressRating === r}
+                        onClick={() => setProgressRating(r)}
+                        className={cx("min-h-11 px-4 rounded-[10px] border text-[13.5px] font-semibold cursor-pointer transition-colors", progressRating === r ? "bg-primary border-primary text-white" : "bg-white border-line text-ink-2 hover:border-ink-4")}
+                      >
+                        {r}
+                      </button>
+                    ))}
                   </div>
+                </fieldset>
+                <FormField label="ملاحظات وتوجيهات الحفظ اليومي">
+                  {(id) => <Textarea id={id} rows={2} placeholder="توجيهات محددة لهذا اليوم لولي الأمر أو الطالب..." value={progressNotes} onChange={(e: any) => setProgressNotes(e.target.value)} />}
+                </FormField>
+                <div className="flex justify-end">
+                  <Button type="submit" variant="primary" icon={<Check className="w-4 h-4" strokeWidth={1.75} />}>حفظ التغييرات وتسجيل المتابعة اليومية</Button>
+                </div>
+              </form>
+            </>
+          )}
+        </div>
 
-                  {/* Rating Selector */}
-                  <div className="font-sans">
-                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">التقييم والتقدير اليومي</label>
-                    <div className="flex flex-wrap gap-2">
-                      {(["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"] as const).map((r) => (
-                        <button
-                          key={r}
-                          type="button"
-                          onClick={() => setProgressRating(r)}
-                          className={`px-4 py-2 rounded-xl text-[13px] font-bold border transition duration-150 ${
-                            progressRating === r 
-                              ? "bg-primary-600 border-primary-600 text-white shadow-md"
-                              : "bg-sand-50 border-line text-ink-2 hover:bg-sand-100"
-                          }`}
-                        >
-                          {r}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Specific notes */}
-                  <div className="font-sans">
-                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">ملاحظات وتوجيهات الحفظ اليومي</label>
-                    <textarea 
-                      rows={2}
-                      placeholder="توجيهات محددة لهذا اليوم لولي الأمر أو الطالب..."
-                      value={progressNotes}
-                      onChange={(e) => setProgressNotes(e.target.value)}
-                      className="py-2.5 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full leading-relaxed"
-                    />
-                  </div>
-
-                  <div className="pt-2 flex justify-end gap-3 font-sans">
-                    <button
-                      type="submit"
-                      className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-2"
-                    >
-                      <Check className="w-4 h-4" />
-                      <span>حفظ التغييرات وتسجيل المتابعة اليومية</span>
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
+        <section className="lg:col-span-5 rounded-2xl border border-line bg-white p-4 flex flex-col gap-3 max-h-[70vh] overflow-hidden" aria-labelledby="tsf-history">
+          <div className="flex justify-between items-center pb-2 border-b border-line-soft">
+            <h3 id="tsf-history" className="m-0 flex items-center gap-2 font-sans font-semibold text-[15px] text-primary">
+              <FileText className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />تاريخ وسجلات الحفظ السابقة
+            </h3>
+            <Pill tone="neutral">{records.length} سجلات</Pill>
           </div>
-
-          {/* RIGHT COLUMN: Daily Progress Records History (5 spans) */}
-          <div className="lg:col-span-5 bg-surface rounded-2xl p-5 border border-line flex flex-col h-full overflow-hidden max-h-[75vh]">
-            <div className="border-b pb-3 flex justify-between items-center shrink-0 font-sans">
-              <h4 className="font-bold text-ink text-[13px] sm:text-sm flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary-600" />
-                <span>تاريخ وسجلات الحفظ السابقة</span>
-              </h4>
-              <span className="text-[11.5px] bg-sand-100 text-ink-3 font-mono px-2 py-0.5 rounded font-bold">
-                {dailyProgress.filter(dp => dp.studentId === teacherSelectedStudent.id).length} سجلات
-              </span>
-            </div>
-
-            <div className="mt-4 flex-1 overflow-y-auto space-y-4 pr-1 font-sans">
-              {dailyProgress.filter(dp => dp.studentId === teacherSelectedStudent.id).length === 0 ? (
-                <div className="text-center py-16 text-ink-3 text-[13px] flex flex-col items-center justify-center h-full">
-                  <p className="text-3xl mb-2">📖</p>
-                  <p>لا توجد أي سجلات متابعة مسجلة بعد لهذا الطالب.</p>
-                </div>
-              ) : (
-                <div className="relative border-r-2 border-line-soft mr-2 space-y-5">
-                  {dailyProgress
-                    .filter(dp => dp.studentId === teacherSelectedStudent.id)
-                    .sort((a, b) => b.date.localeCompare(a.date))
-                    .map(record => (
-                      <div key={record.id} className="relative pr-5">
-                        {/* Dot timeline */}
-                        <div className="absolute top-1.5 -right-1.5 w-3 h-3 rounded-full bg-primary-600 border-2 border-white"></div>
-
-                        <div className="bg-sand-50 p-3.5 rounded-2xl border border-sand-150 space-y-2 hover:border-line-strong transition relative group">
-                          {/* Delete button */}
-                          <button
-                            onClick={() => handleDeleteDailyProgress(record.id)}
-                            className="absolute left-3 top-3 text-ink-3 hover:text-danger-600 transition p-1"
-                            title="حذف هذا السجل"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <div className="flex justify-between items-center">
-                            <span className="text-[11.5px] text-ink-3 font-mono font-bold bg-sand-200/50 px-2 py-0.5 rounded-full">
-                              {record.date}
-                            </span>
-                            <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                              record.rating === "ممتاز" ? "bg-primary-100 text-primary-800" :
-                              record.rating === "جيد جداً" ? "bg-primary-100 text-primary-800" :
-                              record.rating === "جيد" ? "bg-gold-100 text-gold-800" :
-                              record.rating === "مقبول" ? "bg-gold-100 text-gold-800" :
-                              "bg-danger-100 text-danger-800"
-                            }`}>
-                              {record.rating}
-                            </span>
-                          </div>
-
-                          <div className="space-y-1.5 text-[12.5px] text-ink-2">
-                            {record.memorizationPart && (
-                              <p><span className="font-bold text-primary-800 font-sans">الحفظ الجديد:</span> {record.memorizationPart}</p>
-                            )}
-                            {record.revisionPart && (
-                              <p><span className="font-bold text-primary-800 font-sans">مراجعة قريبة:</span> {record.revisionPart}</p>
-                            )}
-                            {record.oldRevisionPart && (
-                              <p><span className="font-bold text-ink-2 font-sans">مراجعة بعيدة:</span> {record.oldRevisionPart}</p>
-                            )}
-                            {record.notes && (
-                              <div className="bg-white border p-2 rounded-lg mt-1 text-[11.5px] text-ink-3 border-dashed leading-relaxed">
-                                <span className="font-bold text-ink-2 block mb-0.5 font-sans">ملاحظات التقييم:</span>
-                                {record.notes}
-                              </div>
-                            )}
-                          </div>
+          <div className="flex-1 overflow-y-auto">
+            {records.length === 0 ? (
+              <EmptyState icon={<BookOpen className="w-8 h-8" strokeWidth={1.5} />}>لا توجد أي سجلات متابعة مسجلة بعد لهذا الطالب.</EmptyState>
+            ) : (
+              <ol className="m-0 p-0 list-none relative border-s-2 border-line-soft ms-2 flex flex-col gap-4">
+                {records
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((record) => (
+                    <li key={record.id} className="relative ps-5">
+                      <span aria-hidden="true" className="absolute top-2 -start-[7px] w-3 h-3 rounded-full bg-gold border-2 border-white" />
+                      <div className="rounded-xl border border-line-soft bg-surface-2 p-3 flex flex-col gap-2">
+                        <div className="flex justify-between items-center gap-2">
+                          <Ltr className="text-[12.5px] text-ink-2 font-semibold">{record.date}</Ltr>
+                          <span className="flex items-center gap-1.5">
+                            <Pill tone={RATING_TONE[record.rating] || "danger"}>{record.rating}</Pill>
+                            <IconButton size="sm" tone="danger" label="حذف هذا السجل" onClick={() => handleDeleteDailyProgress(record.id)}><Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} /></IconButton>
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-1 text-[13px] text-ink-2">
+                          {record.memorizationPart && <p className="m-0"><strong className="text-primary">الحفظ الجديد:</strong> {record.memorizationPart}</p>}
+                          {record.revisionPart && <p className="m-0"><strong className="text-primary">مراجعة قريبة:</strong> {record.revisionPart}</p>}
+                          {record.oldRevisionPart && <p className="m-0"><strong className="text-ink">مراجعة بعيدة:</strong> {record.oldRevisionPart}</p>}
+                          {record.notes && (
+                            <p className="m-0 mt-1 rounded-lg border border-dashed border-line-strong bg-white p-2 text-[12.5px] text-ink-2 leading-relaxed">
+                              <strong className="block text-ink mb-0.5">ملاحظات التقييم:</strong>
+                              {record.notes}
+                            </p>
+                          )}
                         </div>
                       </div>
-                    ))}
-                </div>
-              )}
-            </div>
+                    </li>
+                  ))}
+              </ol>
+            )}
           </div>
-
-        </div>
+        </section>
       </div>
-    </div>
+    </Modal>
   );
 }

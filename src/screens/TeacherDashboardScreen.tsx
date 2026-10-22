@@ -1,8 +1,10 @@
 /**
- * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
+ * Portail de l'enseignant (charte « لوحة الكتّاب ») : ses halaqas, ses élèves, le suivi du ḥifẓ.
  */
 import { StudentAvatar } from "../utils/studentAvatar";
-import { Users, BookOpen } from "lucide-react";
+import React from "react";
+import { BookOpen, Clock3, NotebookPen, Users } from "lucide-react";
+import { Button, Card, CardHeader, EmptyState, KpiGrid, KpiTile, PageHeader, Pill, ProgressBar, Table, TableWrap, Td, Th, Tr } from "../ui";
 import { useApp } from "../app/AppContext";
 
 export default function TeacherDashboardScreen() {
@@ -25,211 +27,130 @@ export default function TeacherDashboardScreen() {
     teacherFurthestHizb,
   } = useApp();
 
+  const openFile = (student: any) => {
+    setTeacherSelectedStudent(student);
+    setProgressMemorization("");
+    setProgressRevision("");
+    setProgressOldRevision("");
+    setProgressNotes("");
+    setProgressDate(new Date().toISOString().split("T")[0]);
+    setShowTeacherStudentFileModal(true);
+  };
+  const TAJWEED_TONE: Record<string, any> = { "ممتاز": "success", "متوسط": "warn" };
+
   return (
-    <div data-screen="teacher-dashboard" className="space-y-6 animate-fade-in" dir="rtl">
-      {/* Header Welcome Banner */}
-      <div className="bg-gradient-to-l from-primary-800 to-primary-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="space-y-2">
-            <span className="bg-gold-400 text-sand-950 font-bold text-[10px] sm:text-xs px-3 py-1 rounded-full font-sans">بوابة المدرس والمحفّظ</span>
-            <h2 className="text-xl md:text-3xl font-extrabold tracking-tight mt-1 font-sans">
-              مرحباً بك، {activeTeacher?.fullName || "المحفظ الفاضل"} 👋
-            </h2>
-            <p className="text-xs md:text-sm text-primary-100 max-w-xl leading-relaxed font-sans">
-              تتيح لك هذه اللوحة استعراض الحلقات والطلاب المسندين إليك، وإدخال بيانات الحفظ اليومية، ومتابعة تطور مستويات التجويد لطلابك.
-            </p>
-          </div>
-          {activeTeacher?.specialty && (
-            <div className="bg-primary-700/50 border border-primary-500/30 rounded-2xl p-4 text-xs font-sans">
-              <p className="font-bold text-gold-300">التخصص الحالي:</p>
-              <p className="text-white mt-1">{activeTeacher.specialty}</p>
-              {activeTeacher.trainingCourses && activeTeacher.trainingCourses.length > 0 && (
-                <p className="text-primary-200 mt-1.5 text-[10px]">
-                  🎓 {activeTeacher.trainingCourses[0]}
-                </p>
-              )}
+    <div data-screen="teacher-dashboard" className="flex flex-col gap-6" dir="rtl">
+      <PageHeader
+        eyebrow="بوابة المدرس والمحفّظ"
+        title={`مرحباً بك، ${activeTeacher?.fullName || "المحفظ الفاضل"}`}
+        description="تتيح لك هذه اللوحة استعراض الحلقات والطلاب المسندين إليك، وإدخال بيانات الحفظ اليومية، ومتابعة تطور مستويات التجويد لطلابك."
+        actions={
+          activeTeacher?.specialty && (
+            <div className="rounded-xl border border-line bg-surface px-4 py-3 text-[13.5px]">
+              <p className="m-0 text-ink-3">التخصص الحالي</p>
+              <p className="m-0 font-semibold text-ink">{activeTeacher.specialty}</p>
+              {activeTeacher.trainingCourses && activeTeacher.trainingCourses.length > 0 && <p className="m-0 mt-1 text-[12.5px] text-ink-2">{activeTeacher.trainingCourses[0]}</p>}
             </div>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
-      {/* KPI STATS CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-sand-200 rounded-2xl p-5 shadow-sm hover:shadow transition">
-          <p className="text-xs font-bold text-sand-500 mb-1 font-sans">الحلقات المسندة</p>
-          <h3 className="text-3xl font-black text-sand-800 font-mono">{teacherClasses.length}</h3>
-          <div className="mt-2 text-[11px] text-primary-600 font-bold flex items-center gap-1 font-sans">
-            <span>📚 فصول دراسية نشطة</span>
-          </div>
-        </div>
+      <KpiGrid label="مؤشرات حلقاتي" min={160}>
+        <KpiTile size="md" label="الحلقات المسندة" value={teacherClasses.length} hint="فصول دراسية نشطة" />
+        <KpiTile size="md" label="إجمالي طلابي" value={teacherStudents.length} hint="طالباً تحت إشرافك" />
+        <KpiTile size="md" label="متوسط نسبة الحضور" value={`${teacherAverageAttendance}%`}>
+          <ProgressBar value={teacherAverageAttendance} height={6} className="flex-none mt-2" label={`متوسط الحضور ${teacherAverageAttendance}%`} />
+        </KpiTile>
+        <KpiTile size="md" label="أبعد حزب بلغه طالب" value={teacherFurthestHizb} unit="حزب" hint={`المعدل: ${teacherAverageHizb}`} />
+      </KpiGrid>
 
-        <div className="bg-white border border-sand-200 rounded-2xl p-5 shadow-sm hover:shadow transition">
-          <p className="text-xs font-bold text-sand-500 mb-1 font-sans">إجمالي طلابي</p>
-          <h3 className="text-3xl font-black text-sand-800 font-mono">{teacherStudents.length}</h3>
-          <div className="mt-2 text-[11px] text-primary-600 font-bold flex items-center gap-1 font-sans">
-            <span>🧑‍🎓 طالباً تحت إشرافك</span>
-          </div>
-        </div>
-
-        <div className="bg-white border border-sand-200 rounded-2xl p-5 shadow-sm hover:shadow transition">
-          <p className="text-xs font-bold text-sand-500 mb-1 font-sans">متوسط نسبة الحضور</p>
-          <h3 className="text-3xl font-black text-sand-800 font-mono">{teacherAverageAttendance}%</h3>
-          <div className="mt-2 w-full bg-sand-100 rounded-full h-1.5">
-            <div className="bg-primary-600 h-1.5 rounded-full" style={{ width: `${teacherAverageAttendance}%` }}></div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-sand-200 rounded-2xl p-5 shadow-sm hover:shadow transition">
-          <p className="text-xs font-bold text-sand-500 mb-1 font-sans">أبعد حزب بلغه طالب</p>
-          <h3 className="text-3xl font-black text-primary-700 font-mono">{teacherFurthestHizb} <span className="text-sm font-normal text-sand-500">حزب</span></h3>
-          <div className="mt-2 text-[11px] text-sand-500 font-bold flex items-center justify-between font-sans">
-            <span>📖 أقصى حفظ مسجل</span>
-            <span className="text-primary-700 font-mono">المعدل: {teacherAverageHizb}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* TWO COLUMN GRID: Left = My Classes, Right = Students Table */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* MY CLASSES LIST (1 Column) */}
-        <div className="bg-white border border-sand-200 rounded-2xl p-5 shadow-sm space-y-4">
-          <div className="border-b pb-3 flex justify-between items-center font-sans">
-            <h3 className="font-extrabold text-sand-800 text-sm flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-primary-600" />
-              <span>الحلقات والحلقات الدراسية المسندة</span>
-            </h3>
-            <span className="text-[10px] bg-sand-100 text-sand-500 font-mono px-2 py-0.5 rounded font-bold">
-              {teacherClasses.length} حلقات
-            </span>
-          </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <Card className="flex flex-col gap-3" aria-labelledby="my-classes-title">
+          <CardHeader id="my-classes-title" icon={<BookOpen className="w-5 h-5" strokeWidth={1.75} />} title="الحلقات المسندة" actions={<Pill tone="neutral">{teacherClasses.length} حلقات</Pill>} />
           {teacherClasses.length === 0 ? (
-            <div className="text-center py-8 text-sand-500 text-xs font-sans">
-              <p>📭 لم يتم إسناد أي حلقات لك بعد في النظام.</p>
-            </div>
+            <EmptyState title="لا حلقات">لم يتم إسناد أي حلقات لك بعد في النظام.</EmptyState>
           ) : (
-            <div className="space-y-3 font-sans">
-              {teacherClasses.map(cls => {
-                const classStudents = students.filter(s => s.classId === cls.id && !s.isArchived);
+            <ul className="m-0 p-0 list-none flex flex-col gap-2.5">
+              {teacherClasses.map((cls) => {
+                const classStudents = students.filter((s) => s.classId === cls.id && !s.isArchived);
                 return (
-                  <div key={cls.id} className="p-4 bg-sand-50 border border-sand-200 rounded-xl hover:border-primary-500 transition">
-                    <h4 className="font-bold text-sand-800 text-xs sm:text-sm">{cls.name}</h4>
-                    <p className="text-[10px] text-sand-500 mt-1 leading-relaxed">🕒 {cls.schedule}</p>
-                    <div className="mt-3 flex justify-between items-center text-[11px]">
-                      <span className="text-sand-500 font-bold">عدد الطلاب:</span>
-                      <span className="font-bold text-primary-700 bg-primary-50 border border-primary-100 px-2 py-0.5 rounded-full font-mono">
-                        {classStudents.length} / {cls.maxStudents} طالب
-                      </span>
-                    </div>
-                  </div>
+                  <li key={cls.id} className="p-3.5 rounded-xl border border-line bg-white flex flex-col gap-2">
+                    <span className="font-semibold text-[15px] text-ink">{cls.name}</span>
+                    <span className="flex items-center gap-1.5 text-[12.5px] text-ink-2"><Clock3 className="w-3.5 h-3.5 text-gold-700" strokeWidth={1.75} aria-hidden="true" />{cls.schedule}</span>
+                    <span className="flex justify-between items-center text-[13px]">
+                      <span className="text-ink-3">عدد الطلاب</span>
+                      <Pill tone="primary">{classStudents.length} / {cls.maxStudents} طالب</Pill>
+                    </span>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
-        </div>
+        </Card>
 
-        {/* MY STUDENTS TABLE & FILE TRIGGER (2 Columns) */}
-        <div className="lg:col-span-2 bg-white border border-sand-200 rounded-2xl p-5 shadow-sm flex flex-col">
-          <div className="border-b pb-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 font-sans">
-            <div>
-              <h3 className="font-extrabold text-sand-800 text-sm flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary-600" />
-                <span>قائمة الطلاب المسجلين بحلقاتك</span>
-              </h3>
-              <p className="text-[10px] text-sand-500 mt-0.5">انقر على "فتح ملف المتابعة" لتسجيل الحفظ ومراجعة الطالب.</p>
-            </div>
-            <span className="text-[10px] bg-primary-50 text-primary-700 border border-primary-100 px-3 py-1 rounded-full font-bold">
-              إجمالي طلابك: {teacherStudents.length} طلاب
-            </span>
+        <Card padded={false} className="lg:col-span-2 overflow-hidden" aria-labelledby="my-students-title">
+          <div className="px-5 py-4 border-b border-line-soft">
+            <CardHeader
+              id="my-students-title"
+              icon={<Users className="w-5 h-5" strokeWidth={1.75} />}
+              title="قائمة الطلاب المسجلين بحلقاتك"
+              description='انقر على "متابعة الحفظ والتجويد" لتسجيل الحفظ ومراجعة الطالب.'
+              actions={<Pill tone="primary">إجمالي طلابك: {teacherStudents.length} طلاب</Pill>}
+            />
           </div>
-
           {teacherStudents.length === 0 ? (
-            <div className="text-center py-12 text-sand-500 text-xs flex-1 flex flex-col items-center justify-center font-sans">
-              <p className="text-2xl mb-2">🧒</p>
-              <p>لا يوجد طلاب مسجلون بحلقاتك حالياً.</p>
-            </div>
+            <div className="p-5"><EmptyState title="لا طلاب">لا يوجد طلاب مسجلون بحلقاتك حالياً.</EmptyState></div>
           ) : (
-            <div className="overflow-x-auto flex-1 font-sans">
-              <table className="w-full text-right border-collapse text-xs">
+            <TableWrap label="طلابي">
+              <Table>
                 <thead>
-                  <tr className="border-b border-sand-100 text-sand-500 font-bold">
-                    <th className="py-2.5 px-3">اسم الطالب</th>
-                    <th className="py-2.5 px-2">الحفظ الفعلي</th>
-                    <th className="py-2.5 px-2">السورة الحالية</th>
-                    <th className="py-2.5 px-2">التجويد</th>
-                    <th className="py-2.5 px-2">نسبة الحضور</th>
-                    <th className="py-2.5 px-2 text-center">الملف التعليمي</th>
+                  <tr>
+                    <Th>اسم الطالب</Th>
+                    <Th>الحفظ الفعلي</Th>
+                    <Th>السورة الحالية</Th>
+                    <Th>التجويد</Th>
+                    <Th>نسبة الحضور</Th>
+                    <Th className="text-center">الملف التعليمي</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-sand-50 font-medium">
-                  {teacherStudents.map(student => {
+                <tbody>
+                  {teacherStudents.map((student) => {
                     const attRate = getStudentAttendanceRate(student.id);
                     return (
-                      <tr key={student.id} className="hover:bg-sand-50 transition">
-                        <td className="py-3 px-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full overflow-hidden bg-sand-100 border shrink-0">
-                              <StudentAvatar student={student} alt={student.fullName} className="w-full h-full object-cover animate-fade-in" />
-                            </div>
-                            <div>
-                              <p className="font-bold text-sand-800">{student.fullName}</p>
-                              <p className="text-[9px] text-sand-500">
-                                {classes.find(c => c.id === student.classId)?.name || "بدون فصل"}
-                              </p>
-                            </div>
+                      <Tr key={student.id}>
+                        <Td>
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-9 h-9 rounded-full overflow-hidden bg-sunken border border-line shrink-0">
+                              <StudentAvatar student={student} alt={student.fullName} className="w-full h-full object-cover" />
+                            </span>
+                            <span className="flex flex-col">
+                              <span className="font-semibold text-ink">{student.fullName}</span>
+                              <span className="text-[12.5px] text-ink-3">{classes.find((c) => c.id === student.classId)?.name || "بدون فصل"}</span>
+                            </span>
                           </div>
-                        </td>
-                        <td className="py-3 px-2 font-mono text-primary-700 font-bold">
-                          {student.hizbCount} حزب
-                        </td>
-                        <td className="py-3 px-2 text-gold-700 font-bold font-sans">
-                          {student.currentSurah || "غير محدد"}
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            student.tajweedLevel === "ممتاز" ? "bg-primary-100 text-primary-800" :
-                            student.tajweedLevel === "متوسط" ? "bg-gold-100 text-gold-800" :
-                            "bg-danger-100 text-danger-800"
-                          }`}>
-                            {student.tajweedLevel}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono text-sand-700 font-bold">{attRate}%</span>
-                            <div className="w-12 bg-sand-100 rounded-full h-1">
-                              <div className={`h-1 rounded-full ${attRate >= 80 ? "bg-primary-600" : attRate >= 50 ? "bg-gold-500" : "bg-danger-500"}`} style={{ width: `${attRate}%` }}></div>
-                            </div>
+                        </Td>
+                        <Td className="whitespace-nowrap"><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</Td>
+                        <Td>{student.currentSurah || "غير محدد"}</Td>
+                        <Td><Pill tone={TAJWEED_TONE[student.tajweedLevel] || "danger"}>{student.tajweedLevel}</Pill></Td>
+                        <Td>
+                          <div className="flex items-center gap-2 min-w-[110px]">
+                            <span className="tabular-nums font-semibold text-ink-2 w-10">{attRate}%</span>
+                            <ProgressBar value={attRate} height={6} tone={attRate >= 80 ? "success" : attRate >= 50 ? "gold" : "danger"} label={`نسبة الحضور ${attRate}%`} />
                           </div>
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <button
-                            data-action="open-teacher-student-file"
-                            onClick={() => {
-                              setTeacherSelectedStudent(student);
-                              setProgressMemorization("");
-                              setProgressRevision("");
-                              setProgressOldRevision("");
-                              setProgressNotes("");
-                              setProgressDate(new Date().toISOString().split("T")[0]);
-                              setShowTeacherStudentFileModal(true);
-                            }}
-                            className="bg-primary-50 hover:bg-primary-600 hover:text-white text-primary-800 border border-primary-200 px-3 py-1.5 rounded-lg text-[10px] font-bold transition duration-150"
-                          >
-                            📝 متابعة الحفظ والتجويد
-                          </button>
-                        </td>
-                      </tr>
+                        </Td>
+                        <Td className="text-center">
+                          <Button size="sm" className="whitespace-nowrap" data-action="open-teacher-student-file" onClick={() => openFile(student)} icon={<NotebookPen className="w-3.5 h-3.5" strokeWidth={1.75} />}>
+                            متابعة الحفظ والتجويد
+                          </Button>
+                        </Td>
+                      </Tr>
                     );
                   })}
                 </tbody>
-              </table>
-            </div>
+              </Table>
+            </TableWrap>
           )}
-        </div>
-
+        </Card>
       </div>
     </div>
   );
