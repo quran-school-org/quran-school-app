@@ -89,10 +89,15 @@ function sanitizeLinks(role: UserRole, linkedTeacherId: unknown, linkedStudentId
   return { linkedTeacherId: family ? null : teacher, linkedStudentIds: family ? Array.from(new Set(students)) : [] };
 }
 
-/** uid d'un nom d'utilisateur existant (registre, puis comptes Auth des deux domaines). */
+/**
+ * uid d'un nom d'utilisateur existant (registre, puis comptes Auth des deux
+ * domaines). Sert au contrôle d'UNICITÉ : un compte Auth créé hors des
+ * Functions (inscription libre) bloque le nom, mais ne doit jamais être
+ * rattaché à une école (voir findRegisteredUid).
+ */
 export async function findUidByUsername(username: string): Promise<string | null> {
-  const reg = await adminDb().collection("usernames").doc(username).get();
-  if (reg.exists && typeof reg.data()?.uid === "string") return reg.data()!.uid;
+  const registered = await findRegisteredUid(username);
+  if (registered) return registered;
   for (const email of loginEmailCandidates(username)) {
     try {
       return (await adminAuth().getUserByEmail(email)).uid;
@@ -101,6 +106,12 @@ export async function findUidByUsername(username: string): Promise<string | null
     }
   }
   return null;
+}
+
+/** uid d'un compte inscrit au registre `usernames` (créé par les Functions ou la migration). */
+export async function findRegisteredUid(username: string): Promise<string | null> {
+  const reg = await adminDb().collection("usernames").doc(username).get();
+  return reg.exists && typeof reg.data()?.uid === "string" ? reg.data()!.uid : null;
 }
 
 // ---------------------------------------------------------------- createSchool
@@ -144,7 +155,7 @@ export const createSchool = onCall({ region: FUNCTIONS_REGION }, async (request)
 
 // ------------------------------------------------------------ createSchoolUser
 
-export async function createSchoolUserCore(callerUid: string, data: Record<string, unknown>) {
+export async function createSchoolUserCore(callerUid: string, data: Record<string, unknown>, caller: { superAdmin: boolean } = { superAdmin: false }) {
   const schoolId = assertSchoolId(data.schoolId);
   const username = normalizeUsername(str(data.username, "username", 40)!);
   if (!isValidUsername(username)) {
@@ -175,12 +186,20 @@ export async function createSchoolUserCore(callerUid: string, data: Record<strin
 
   // Rattacher un compte existant (même personne dans plusieurs écoles).
   if (data.attachExisting === true) {
-    const uid = await findUidByUsername(username);
+    // Registre uniquement : un compte Auth créé par un tiers (inscription libre)
+    // sous un identifiant anticipé ne doit jamais entrer dans une école.
+    const uid = await findRegisteredUid(username);
     if (!uid) throw new HttpsError("not-found", "لا يوجد حساب بهذا الاسم.");
     if (await getMember(schoolId, uid)) throw new HttpsError("already-exists", "هذا الحساب عضو في هذه المدرسة من قبل.");
+    // Un compte désactivé (suspendu, retiré de toutes ses écoles, bloqué par
+    // l'administration) n'est réactivé que par le super-admin.
+    const authUser = await auth.getUser(uid);
+    if (authUser.disabled && !caller.superAdmin) {
+      throw new HttpsError("failed-precondition", "هذا الحساب موقوف: إعادة تفعيله من صلاحية المشرف العام.");
+    }
     await db.collection("schools").doc(schoolId).collection("members").doc(uid).set({ ...memberBase, uid });
     await db.collection("users").doc(uid).set({ username, schoolIds: FieldValue.arrayUnion(schoolId) }, { merge: true });
-    await auth.updateUser(uid, { disabled: false });
+    if (authUser.disabled && memberBase.isActive) await auth.updateUser(uid, { disabled: false });
     logger.info("createSchoolUser.attach", { schoolId, uid, role, by: callerUid });
     return { uid, username };
   }
@@ -212,7 +231,7 @@ export const createSchoolUser = onCall({ region: FUNCTIONS_REGION }, async (requ
   const data = (request.data || {}) as Record<string, unknown>;
   const schoolId = assertSchoolId(data.schoolId);
   const caller = await requireSchoolRole(request, schoolId, DIRECTOR_ROLES);
-  return createSchoolUserCore(caller.uid, data);
+  return createSchoolUserCore(caller.uid, data, caller);
 });
 
 // ------------------------------------------------------------ resetUserPassword
@@ -222,6 +241,11 @@ export async function resetUserPasswordCore(caller: { uid: string; superAdmin: b
   const target = await getMember(schoolId, uid);
   if (!target) throw new HttpsError("not-found", "Compte introuvable dans cette école.");
   if (!caller.superAdmin) {
+    // Le directeur historique (u1) n'est modifiable que par le super-admin (D26) :
+    // un autre directeur ne peut pas en prendre le contrôle.
+    if (target.legacyAppUserId === "u1" && caller.uid !== uid) {
+      throw new HttpsError("permission-denied", "حساب المدير الأساسي محمي: إعادة تعيين كلمة مروره من صلاحية المشرف العام.");
+    }
     const authUser = await adminAuth().getUser(uid);
     if (authUser.customClaims?.superAdmin === true) {
       throw new HttpsError("permission-denied", "لا يمكن إعادة تعيين كلمة مرور المشرف العام.");

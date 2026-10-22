@@ -2,13 +2,14 @@
  * Impression des cartes d'élève, à l'unité ou par lot.
  * Gabarit HTML déplacé tel quel depuis App.tsx (Lot 2).
  */
+import { escapeHtml } from "../security/html";
 import type { Payment, Student, SystemSettings } from "../types";
 
 export function singleCardHtml(labStudent: Student, sideSuffix: string, printSide: "both" | "front" | "back", labScale: number, printContent: HTMLElement): string {
   return `
         <html dir="rtl" lang="ar">
           <head>
-            <title>بطاقة الطالب - ${labStudent.fullName}${sideSuffix}</title>
+            <title>بطاقة الطالب - ${escapeHtml(labStudent.fullName)}${sideSuffix}</title>
             <meta charset="utf-8" />
             <script src="https://cdn.tailwindcss.com"></script>
             <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />

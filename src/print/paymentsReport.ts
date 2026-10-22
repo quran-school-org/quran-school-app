@@ -2,13 +2,14 @@
  * Rapport financier des cotisations (fenêtre d'impression).
  * Gabarit HTML déplacé tel quel depuis App.tsx (Lot 2).
  */
+import { escapeHtml } from "../security/html";
 import type { Payment, Student, SystemSettings } from "../types";
 
 export function paymentsReportHtml(reportTitle: string, tableRows: string, filteredPayments: Payment[], totalCollected: number, totalPending: number, systemSettings: SystemSettings | null, schoolName: string): string {
   return `
       <html dir="rtl" lang="ar">
         <head>
-          <title>${reportTitle}</title>
+          <title>${escapeHtml(reportTitle)}</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
@@ -29,37 +30,37 @@ export function paymentsReportHtml(reportTitle: string, tableRows: string, filte
               <div style="display: flex; align-items: center; gap: 12px;">
                 ${systemSettings?.associationLogo ? `
                   <div style="width: 50px; height: 50px; background-color: white; border-radius: 8px; border: 1px solid #e2e8f0; padding: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; shrink-0;">
-                    <img src="${systemSettings.associationLogo}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
+                    <img src="${escapeHtml(systemSettings.associationLogo)}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />
                   </div>
                 ` : ''}
                 <div>
-                  <h1 class="text-2xl font-black text-emerald-800" style="font-size: 24px; font-weight: 900; color: #065f46; margin: 0;">${schoolName}</h1>
+                  <h1 class="text-2xl font-black text-emerald-800" style="font-size: 24px; font-weight: 900; color: #065f46; margin: 0;">${escapeHtml(schoolName)}</h1>
                   <p class="text-xs text-slate-500 font-medium mt-1" style="margin: 4px 0 0 0;">التقرير المالي التفصيلي للاشتراكات والرسوم الإدارية</p>
                 </div>
               </div>
               <div class="text-left" style="text-align: left;">
                 <p class="text-xs text-slate-400">تاريخ إصدار التقرير:</p>
-                <p class="text-xs font-mono font-bold text-slate-700">${new Date().toLocaleDateString("ar-MA")}</p>
+                <p class="text-xs font-mono font-bold text-slate-700">${escapeHtml(new Date().toLocaleDateString("ar-MA"))}</p>
               </div>
             </div>
 
             <div class="text-center bg-slate-50 p-4 rounded-2xl border border-slate-200" style="text-align: center; background-color: #f8fafc; padding: 16px; border-radius: 16px; border: 1px solid #e2e8f0;">
-              <h2 class="text-base font-bold text-slate-800">${reportTitle}</h2>
-              <p class="text-xs text-slate-500 mt-1">عدد السجلات الإجمالي في التقرير: ${filteredPayments.length} معاملة</p>
+              <h2 class="text-base font-bold text-slate-800">${escapeHtml(reportTitle)}</h2>
+              <p class="text-xs text-slate-500 mt-1">عدد السجلات الإجمالي في التقرير: ${escapeHtml(filteredPayments.length)} معاملة</p>
             </div>
 
             <div class="grid grid-cols-3 gap-4" style="display: grid; grid-template-cols: repeat(3, minmax(0, 1fr)); gap: 16px;">
               <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-center" style="background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px; border-radius: 12px; text-align: center;">
                 <span class="text-[10px] text-emerald-700 font-bold block" style="font-size: 10px; color: #047857; font-weight: 700; display: block;">إجمالي المداخيل المحصلة</span>
-                <span class="text-lg font-black font-mono text-emerald-800" style="font-size: 18px; font-weight: 900; color: #065f46;">${totalCollected} درهم</span>
+                <span class="text-lg font-black font-mono text-emerald-800" style="font-size: 18px; font-weight: 900; color: #065f46;">${escapeHtml(totalCollected)} درهم</span>
               </div>
               <div class="bg-rose-50 border border-rose-200 p-3 rounded-xl text-center" style="background-color: #fff1f2; border: 1px solid #fecdd3; padding: 12px; border-radius: 12px; text-align: center;">
                 <span class="text-[10px] text-rose-700 font-bold block" style="font-size: 10px; color: #be123c; font-weight: 700; display: block;">إجمالي المستحقات المعلقة</span>
-                <span class="text-lg font-black font-mono text-rose-800" style="font-size: 18px; font-weight: 900; color: #9f1239;">${totalPending} درهم</span>
+                <span class="text-lg font-black font-mono text-rose-800" style="font-size: 18px; font-weight: 900; color: #9f1239;">${escapeHtml(totalPending)} درهم</span>
               </div>
               <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl text-center" style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; text-align: center;">
                 <span class="text-[10px] text-blue-700 font-bold block" style="font-size: 10px; color: #1d4ed8; font-weight: 700; display: block;">المجموع المتوقع للدفعة</span>
-                <span class="text-lg font-black font-mono text-blue-800" style="font-size: 18px; font-weight: 900; color: #1e40af;">${totalCollected + totalPending} درهم</span>
+                <span class="text-lg font-black font-mono text-blue-800" style="font-size: 18px; font-weight: 900; color: #1e40af;">${escapeHtml(totalCollected + totalPending)} درهم</span>
               </div>
             </div>
 
@@ -83,7 +84,7 @@ export function paymentsReportHtml(reportTitle: string, tableRows: string, filte
             </div>
 
             <div class="flex justify-between items-center pt-8 border-t text-[10px] text-slate-400 mt-10" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; margin-top: 40px; font-size: 10px; color: #94a3b8;">
-              <p>${schoolName} • إدارة الحسابات والمالية</p>
+              <p>${escapeHtml(schoolName)} • إدارة الحسابات والمالية</p>
               <p>الصفحة 1 من 1</p>
             </div>
           </div>

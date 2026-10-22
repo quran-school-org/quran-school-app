@@ -1,6 +1,6 @@
 # Étape 2 — découpage (Lot 2) et nouveau design : avancement
 
-Mis à jour à chaque écran. Reprise : lire ce fichier, puis `docs/DECISIONS.md` (D34+).
+Mis à jour à chaque écran. Reprise : lire ce fichier, puis `docs/DECISIONS.md` (D42+ ; D34-D41 = revue de sécurité).
 
 ## Partie 1 — `refactor/decoupage-app` (sans changement de comportement)
 - [x] Repères `data-*` et tests e2e par rôle et par écran (`tests/e2e/screens.spec.ts`)

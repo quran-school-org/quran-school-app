@@ -1,6 +1,7 @@
 /**
  * Extrait mécaniquement d'App.tsx (Lot 2, sans changement de comportement).
  */
+import { escapeHtml } from "../../security/html";
 import { receiptHtml } from "../../print/receipt";
 import { certificateHtml } from "../../print/certificate";
 import { paymentsReportHtml } from "../../print/paymentsReport";
@@ -73,14 +74,14 @@ export function usePrintActions(s: DerivedScope) {
     const tableRows = filteredPayments.map(p => {
       const stud = students.find(s => s.id === p.studentId);
       return `
-        <tr class="border-b border-sand-100 text-xs">
-          <td class="p-2 text-right" style="padding: 8px; text-align: right;">${stud?.fullName || "طالب مجهول"}<br/><span class="text-[9px] text-sand-500">ولي الأمر: ${stud?.parentName || "—"}</span></td>
-          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${p.month} / ${p.year}</td>
-          <td class="p-2 text-center font-mono font-bold" style="padding: 8px; text-align: center;">${p.amount} درهم</td>
-          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${p.status === "مدفوع" ? "مدفوع ✓" : "غير مدفوع ❌"}</td>
-          <td class="p-2 text-center font-mono" style="padding: 8px; text-align: center;">${p.paymentDate || "—"}</td>
-          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${p.paymentMethod || "—"}</td>
-          <td class="p-2 text-center font-mono" style="padding: 8px; text-align: center;">${p.receiptNo || "—"}</td>
+        <tr class="border-b border-slate-100 text-xs">
+          <td class="p-2 text-right" style="padding: 8px; text-align: right;">${escapeHtml(stud?.fullName || "طالب مجهول")}<br/><span class="text-[9px] text-slate-400">ولي الأمر: ${escapeHtml(stud?.parentName || "—")}</span></td>
+          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${escapeHtml(p.month)} / ${escapeHtml(p.year)}</td>
+          <td class="p-2 text-center font-mono font-bold" style="padding: 8px; text-align: center;">${escapeHtml(p.amount)} درهم</td>
+          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${escapeHtml(p.status === "مدفوع" ? "مدفوع ✓" : "غير مدفوع ❌")}</td>
+          <td class="p-2 text-center font-mono" style="padding: 8px; text-align: center;">${escapeHtml(p.paymentDate || "—")}</td>
+          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${escapeHtml(p.paymentMethod || "—")}</td>
+          <td class="p-2 text-center font-mono" style="padding: 8px; text-align: center;">${escapeHtml(p.receiptNo || "—")}</td>
         </tr>
       `;
     }).join("");
@@ -117,21 +118,21 @@ export function usePrintActions(s: DerivedScope) {
       const statusColor = s.isArchived ? "color: #b45309; background-color: #fffbeb;" : "color: #047857; background-color: #ecfdf5;";
 
       return `
-        <tr class="border-b border-sand-100 text-xs">
-          <td class="p-3 text-right font-bold text-sand-800" style="padding: 12px; text-align: right;">${s.fullName}</td>
-          <td class="p-3 text-center text-sand-600" style="padding: 12px; text-align: center;">${s.birthDate}</td>
-          <td class="p-3 text-center text-sand-600" style="padding: 12px; text-align: center;">${s.gender}</td>
-          <td class="p-3 text-right text-sand-600" style="padding: 12px; text-align: right;">
-            <div class="font-medium text-sand-700">${parentName}</div>
-            <div class="text-[10px] text-sand-500 font-mono">${parentPhone}</div>
+        <tr class="border-b border-slate-100 text-xs">
+          <td class="p-3 text-right font-bold text-slate-800" style="padding: 12px; text-align: right;">${escapeHtml(s.fullName)}</td>
+          <td class="p-3 text-center text-slate-600" style="padding: 12px; text-align: center;">${escapeHtml(s.birthDate)}</td>
+          <td class="p-3 text-center text-slate-600" style="padding: 12px; text-align: center;">${escapeHtml(s.gender)}</td>
+          <td class="p-3 text-right text-slate-600" style="padding: 12px; text-align: right;">
+            <div class="font-medium text-slate-700">${escapeHtml(parentName)}</div>
+            <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(parentPhone)}</div>
           </td>
           <td class="p-3 text-right" style="padding: 12px; text-align: right;">
-            <div class="font-bold text-primary-800">${s.hizbCount} حزب</div>
-            <div class="text-[10px] text-gold-600 font-medium">${s.currentSurah || "—"}</div>
+            <div class="font-bold text-emerald-800">${escapeHtml(s.hizbCount)} حزب</div>
+            <div class="text-[10px] text-amber-600 font-medium">${escapeHtml(s.currentSurah || "—")}</div>
           </td>
-          <td class="p-3 text-center font-bold text-sand-700" style="padding: 12px; text-align: center;">${s.tajweedLevel}</td>
+          <td class="p-3 text-center font-bold text-slate-700" style="padding: 12px; text-align: center;">${escapeHtml(s.tajweedLevel)}</td>
           <td class="p-3 text-center" style="padding: 12px; text-align: center;">
-            <span class="px-2 py-1 rounded text-[10px] font-bold" style="padding: 4px 8px; border-radius: 4px; font-weight: 700; ${statusColor}">${statusText}</span>
+            <span class="px-2 py-1 rounded text-[10px] font-bold" style="padding: 4px 8px; border-radius: 4px; font-weight: 700; ${escapeHtml(statusColor)}">${escapeHtml(statusText)}</span>
           </td>
         </tr>
       `;

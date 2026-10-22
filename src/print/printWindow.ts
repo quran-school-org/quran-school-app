@@ -3,7 +3,11 @@
  * de style de l'application sont recopiées (adresses absolues), ce qui permet
  * d'imprimer tel quel un aperçu rendu à l'écran (cartes, fiches) ; plus aucune
  * dépendance au CDN Tailwind.
+ *
+ * Sécurité (C-01) : le titre est échappé ici ; tout autre fragment de `body`
+ * doit être déjà sûr (HTML produit par React, ou valeurs passées par escapeHtml).
  */
+import { escapeHtml } from "../security/html";
 
 export const PRINT_FONTS =
   '<link rel="preconnect" href="https://fonts.googleapis.com" /><link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet" />';
@@ -23,9 +27,9 @@ export function appStylesHtml(): string {
   let html = "";
   document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
     if (node instanceof HTMLLinkElement) {
-      html += `<link rel="stylesheet" href="${new URL(node.getAttribute("href") || "", window.location.href).href}" />`;
+      html += '<link rel="stylesheet" href="' + escapeHtml(new URL(node.getAttribute("href") || "", window.location.href).href) + '" />';
     } else {
-      html += `<style>${node.textContent || ""}</style>`;
+      html += "<style>" + (node.textContent || "") + "</style>";
     }
   });
   return html;
@@ -44,9 +48,22 @@ export interface PrintOptions {
   closeAfter?: boolean;
 }
 
-/** Document HTML complet d'une impression (testable sans fenêtre). */
+/**
+ * Document HTML complet d'une impression (testable sans fenêtre). Assemblé par
+ * concaténation de fragments de confiance : constantes de ce module, styles de
+ * l'application, titre échappé, et `body` déjà sûr (contrat de l'appelant).
+ */
 export function printDocument({ title, body, css = "", withAppStyles }: Pick<PrintOptions, "title" | "body" | "css" | "withAppStyles">): string {
-  return `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8" /><title>${title}</title>${PRINT_FONTS}${withAppStyles ? appStylesHtml() : ""}<style>${PRINT_BASE_CSS}${css}</style></head><body>${body}</body></html>`;
+  return [
+    '<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8" />',
+    "<title>" + escapeHtml(title) + "</title>",
+    PRINT_FONTS,
+    withAppStyles ? appStylesHtml() : "",
+    "<style>" + PRINT_BASE_CSS + css + "</style>",
+    "</head><body>",
+    body,
+    "</body></html>",
+  ].join("");
 }
 
 export function openPrintWindow(opts: PrintOptions): Window | null {
@@ -55,10 +72,12 @@ export function openPrintWindow(opts: PrintOptions): Window | null {
     alert(opts.blockedMessage);
     return null;
   }
-  const delay = opts.delay ?? 900;
+  const delay = String(Math.max(0, Math.round(opts.delay ?? 900)));
   const after = opts.closeAfter === false ? "" : "setTimeout(function(){ window.close(); }, 500);";
-  const script = `<script>window.addEventListener('load', function(){ var go=function(){ setTimeout(function(){ window.print(); ${after} }, ${delay}); }; if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); } });<\/script>`;
-  w.document.write(printDocument(opts).replace("</body>", `${script}</body>`));
+  const script =
+    "<script>window.addEventListener('load', function(){ var go=function(){ setTimeout(function(){ window.print(); " + after + " }, " + delay +
+    "); }; if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); } });<\/script>";
+  w.document.write(printDocument(opts).replace("</body>", script + "</body>"));
   w.document.close();
   return w;
 }

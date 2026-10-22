@@ -20,18 +20,26 @@
  *
  * Options : --project (obligatoire), --school (obligatoire), --database (obligatoire hors
  * émulateur), --apply, --confirm-prod=<id>, --super-admin=<username>, --overwrite,
- * --accept-critical, --out=<dossier> (défaut scripts/migration/out, ignoré par git).
- * Les rapports contiennent des données personnelles : ne jamais les commiter.
+ * --accept-critical, --rotate-passwords=weak|all|none (voir le script du Lot 0),
+ * --out=<dossier> (défaut scripts/migration/out, ignoré par git).
+ * Les rapports contiennent des données personnelles (et, si des mots de passe sont
+ * remplacés, le fichier SECRET comptes/…/mots-de-passe-temporaires.csv) : ne jamais
+ * les commiter.
+ *
+ * Sans --overwrite, les copies utilisent `create` : un document cible apparu
+ * entre l'inventaire et l'écriture (relance pendant que la nouvelle application
+ * écrit) n'est jamais écrasé ; il est compté comme déjà présent.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { FieldValue, type Firestore } from "firebase-admin/firestore";
+import { FieldValue, type DocumentReference, type Firestore } from "firebase-admin/firestore";
 import type { Auth } from "firebase-admin/auth";
 
 import { initAdmin, parseCommonArgs, timestamp } from "../admin/lib/cli";
 import { toCsv } from "../admin/lib/csv";
 import { runLot0Provision, type Anomaly } from "../admin/lot0-provision-auth";
+import { parseRotationPolicy, type RotationPolicy } from "../admin/lib/passwords";
 
 /** Les 14 collections métier déplacées sous schools/{schoolId}/. */
 export const TENANT_COLLECTIONS = [
@@ -69,6 +77,7 @@ export interface MigrationOptions {
   superAdminUsername?: string;
   acceptCritical?: boolean;
   syncExistingPasswords?: boolean;
+  rotatePasswords?: RotationPolicy;
   outDir: string | null;
   now?: Date;
   log?: (m: string) => void;
@@ -158,6 +167,7 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
   const lot0 = await runLot0Provision(db, auth, {
     apply: opts.apply,
     syncExistingPasswords: opts.syncExistingPasswords ?? true,
+    rotatePasswords: opts.rotatePasswords,
     acceptCritical: opts.acceptCritical ?? false,
     outDir: reportDir ? join(reportDir, "comptes") : null,
     now: opts.now,
@@ -174,9 +184,16 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
   const writer = opts.apply ? db.bulkWriter() : null;
   writer?.onWriteError((err) => err.code !== 6 /* ALREADY_EXISTS */ && err.failedAttempts < 5);
   const writeErrors: string[] = [];
-  const track = (p: Promise<unknown>, what: string) => {
-    p.catch((e) => writeErrors.push(`${what} : ${e?.message || e}`));
+  // ALREADY_EXISTS (code 6) : le document cible existe déjà (course) → jamais écrasé, compté à part.
+  const alreadyExisted = new Map<string, number>();
+  const track = (p: Promise<unknown>, what: string, group?: string) => {
+    p.catch((e) => {
+      if (e?.code === 6 && group) alreadyExisted.set(group, (alreadyExisted.get(group) || 0) + 1);
+      else writeErrors.push(`${what} : ${e?.message || e}`);
+    });
   };
+  const put = (ref: DocumentReference, data: Record<string, unknown>) =>
+    opts.overwrite ? writer!.set(ref, data) : writer!.create(ref, data);
   const counts: CollectionCount[] = [];
   for (const col of TENANT_COLLECTIONS) {
     const targetPath = `schools/${s}/${col}`;
@@ -188,7 +205,7 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
       copied++;
       if (writer) {
         const { id, ...data } = d;
-        track(writer.set(db.collection(targetPath).doc(id), { ...data, id, schoolId: s }), `${targetPath}/${id}`);
+        track(put(db.collection(targetPath).doc(id), { ...data, id, schoolId: s }), `${targetPath}/${id}`, col);
       }
     }
     counts.push({ collection: col, source: source[col].length, targetBefore: existing.size, copied, skippedExisting: skipped, targetAfter: null });
@@ -212,7 +229,7 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
     for (const k of ["feeOverrides", "openingYear", "openingMonth", "studentAccountMinAge"] as const) {
       if (merged[k] === undefined) merged[k] = LEGACY_BUSINESS_DEFAULTS[k];
     }
-    if (writer) track(writer.set(settingsRef, merged), settingsRef.path);
+    if (writer) track(put(settingsRef, merged), settingsRef.path, "settings");
   }
 
   // 5. Document de l'école.
@@ -220,10 +237,10 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
   const schoolSnap = await schoolRef.get();
   const schoolDoc: MigrationSummary["schoolDoc"] = schoolSnap.exists ? "existing" : "created";
   if (!schoolSnap.exists && writer) {
-    track(writer.set(schoolRef, {
+    track(writer.create(schoolRef, {
       name: String(legacySettings?.associationName || s), slug: s, status: "active",
       createdAt: nowIso, migratedAt: nowIso, migratedFrom: "racine (version mono-école)",
-    }), schoolRef.path);
+    }), schoolRef.path, "school");
   }
 
   // 6. Comptes : users/{uid}, members/{uid}, registre usernames.
@@ -274,7 +291,7 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
       member.isActive = u.isActive !== false;
       member.linkedStudentIds = Array.isArray(u.linkedStudentIds) ? u.linkedStudentIds : [];
       member.linkedTeacherId = u.linkedTeacherId ?? null;
-      track(writer.set(db.collection("schools").doc(s).collection("members").doc(uid), member), `schools/${s}/members/${uid}`);
+      track(put(db.collection("schools").doc(s).collection("members").doc(uid), member), `schools/${s}/members/${uid}`, "members");
     }
   }
 
@@ -294,6 +311,15 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
   }
 
   if (writer) await writer.close();
+  for (const c of counts) {
+    const n = alreadyExisted.get(c.collection) || 0;
+    c.copied -= n;
+    c.skippedExisting += n;
+  }
+  if (alreadyExisted.get("settings")) settingsState = "existing";
+  const raced = alreadyExisted.get("members") || 0;
+  accounts.membersWritten -= raced;
+  accounts.membersSkipped += raced;
   for (const e of writeErrors) anomaly(anomalies, "critique", "WRITE_FAILED", "-", e);
 
   // 8. Audit et comptages après écriture.
@@ -339,12 +365,17 @@ async function main() {
       superAdminUsername: typeof superAdmin === "string" ? superAdmin : undefined,
       acceptCritical: args.flags.has("accept-critical"),
       syncExistingPasswords: !args.flags.has("no-sync-passwords"),
+      rotatePasswords: parseRotationPolicy(args.flags.get("rotate-passwords")),
       outDir: args.outDir,
       log: (m) => console.log(m),
     });
     console.log(JSON.stringify(summary, null, 2));
     console.log("[migration] Rapports (données personnelles, ne pas commiter) :", summary.reportDir);
     if (!args.apply) console.log("[migration] Simulation terminée : aucune écriture. Relancer avec --apply pour appliquer.");
+    if (args.apply && summary.critical) {
+      console.error("[migration] Anomalies critiques (échecs de comptes ou d'écriture, conflits) : voir anomalies.csv, corriger puis relancer.");
+      process.exitCode = 2;
+    }
   } finally {
     await admin.close();
   }

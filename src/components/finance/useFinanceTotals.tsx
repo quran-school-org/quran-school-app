@@ -2,6 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
+import { escapeHtml } from "../../security/html";
 import React, { useState, useMemo } from "react";
 import { Student } from "../../types";
 import type { useFinanceForms } from "./useFinanceForms";
@@ -337,7 +338,7 @@ export function useFinanceTotals(s: ReturnType<typeof useFinanceForms>) {
       <!DOCTYPE html>
       <html dir="rtl" lang="ar">
         <head>
-          <title>التقرير المالي والختامي - ${selectedYear}</title>
+          <title>التقرير المالي والختامي - ${escapeHtml(selectedYear)}</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap');
