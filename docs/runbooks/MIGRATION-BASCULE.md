@@ -140,6 +140,7 @@ personnelles, ne pas diffuser**) :
    `<identifiant>@alfajr.local` pour un compte historique) :
    ```bash
    API_KEY=$(grep VITE_FIREBASE_API_KEY .env.production | cut -d'"' -f2)
+   # Si la clé web est restreinte par référent (CLE-API-WEB.md), ajouter : -H "Referer: https://$PROJECT.web.app/"
    TOKEN=$(curl -s "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$API_KEY" -H 'Content-Type: application/json' \
      -d '{"email":"<identifiant-de-test>@comptes.kuttab.local","password":"<mot-de-passe>","returnSecureToken":true}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["idToken"])')
    curl -s -H "Authorization: Bearer $TOKEN" "https://firestore.googleapis.com/v1/projects/$PROJECT/databases/$DB/documents/students" | head -3       # PERMISSION_DENIED

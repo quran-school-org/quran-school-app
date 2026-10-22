@@ -539,3 +539,15 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
   d'un élève ou d'un membre du personnel à un tiers. À remplacer par une
   génération locale (côté interface) ; la CSP le permet encore pour ne rien casser.
 - **Retour arrière** : retirer le bloc `hosting.headers` et redéployer le Hosting.
+
+### D50. Restriction de la clé API web : référents HTTP et API autorisées
+- **Décision** (action humaine, runbook `docs/runbooks/CLE-API-WEB.md`) : clé
+  web limitée aux domaines Hosting (et au domaine personnalisé) et aux API
+  Identity Toolkit, Secure Token, Firestore et App Check ; clé Gemini limitée
+  à l'API Generative Language, puis tournée après l'arrêt du service Cloud Run
+  d'AI Studio (O-01). Projet de dev : `localhost` et `*.web.app` (aperçus).
+- **Raison** : la clé est publique ; la restriction réduit l'abus de quota
+  et l'usage hors de l'application (énumération, création de comptes si
+  l'inscription libre restait ouverte). La sécurité des données reste dans
+  les règles.
+- **Retour arrière** : `gcloud services api-keys update … --clear-restrictions`.
