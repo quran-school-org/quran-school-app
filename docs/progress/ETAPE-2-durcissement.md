@@ -21,12 +21,15 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 5. **Déploiement GitHub Actions / D46** : `deploy.yml`, `preview.yml`
    (workflow_dispatch, WIF, environnements dev / production), runbook
    `docs/runbooks/CI-DEPLOIEMENT.md` ; validés par actionlint.
+6. **Sauvegardes / D47** : `scheduledFirestoreExport` (omise tant que
+   `BACKUP_ENABLED` ≠ true, vérifié sur l'émulateur), rétention, tests par
+   appel direct, runbook `docs/runbooks/SAUVEGARDES.md` (PITR, bucket, IAM,
+   restauration sur le dev).
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-6. Sauvegardes planifiées + runbook PITR / restauration.
 7. Rewrite Hosting `/api/**` : test local ou job CI.
 8. `index.html` générique, en-têtes de sécurité, cache, Playwright avec CSP.
 9. Runbook de restriction de la clé API web.
@@ -34,4 +37,4 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 6 : fonction planifiée d'export Firestore (`functions/src/backup.ts`) + runbook SAUVEGARDES.
+Point 7 : test du rewrite Hosting `/api/**` (local avec variables proxy vidées, sinon job CI).

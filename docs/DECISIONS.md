@@ -469,3 +469,19 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
   `actionlint` seulement.
 - **Retour arrière** : `gh workflow disable`, désactivation du fournisseur WIF
   (runbook `CI-DEPLOIEMENT.md` §8).
+
+### D47. Sauvegardes : PITR + export quotidien planifié avec rétention
+- **Décision** : fonction `scheduledFirestoreExport` (`onSchedule`, 02:30 heure
+  du Maroc, `europe-west1`) qui lance un export géré complet de la base vers
+  `gs://<BACKUP_BUCKET>/firestore/<base>/<horodatage>/`, attend sa fin, puis
+  supprime les exports de plus de `BACKUP_RETENTION_DAYS` (30) en gardant
+  toujours les 3 plus récents. Compte d'exécution dédié `firestore-backup@`
+  (export Firestore + objets du seul bucket). Omise du déploiement
+  (`omit: BACKUP_ENABLED.equals(false)`) tant que le bucket et le compte
+  n'existent pas : le prochain déploiement des Functions ne dépend donc pas
+  de Cloud Scheduler. En plus : PITR (7 jours), règle de cycle de vie du
+  bucket (Nearline à 7 jours, suppression à 45), et en option les sauvegardes
+  planifiées natives de Firestore.
+- **Tests** : logique pure (préfixes, requête, rétention, échec d'export sans
+  suppression) par appel direct ; l'export réel n'est pas émulable.
+- **Retour arrière** : `BACKUP_ENABLED=false` et redéploiement (runbook §6).
