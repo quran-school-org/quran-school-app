@@ -263,9 +263,11 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 ## Revue adversariale du durcissement (branche `fix/revue-durcissement-lot0`)
 
 Rapport complet et décisions détaillées : branche `fix/revue-durcissement`,
-`docs/revues/REVUE-SECURITE-DURCISSEMENT.md` et `docs/DECISIONS.md` (D52, D58).
+`docs/revues/REVUE-SECURITE-DURCISSEMENT.md` et `docs/DECISIONS.md` (D64 pour R-07,
+D70 pour R-06). Numérotation : D53 est pris par `release/lot0` ; cette branche
+utilise D54 et D55.
 
-### D52 (Lot 0). Les familles ne créent plus de notification (R-07)
+### D54 (Lot 0). Les familles ne créent plus de notification (R-07)
 - **Décision** : `notifications` : `create` réservé au personnel (`isStaff()`)
   au lieu de tout compte lié actif. Lecture, mise à jour et suppression
   inchangées (correctif court).
@@ -277,7 +279,7 @@ Rapport complet et décisions détaillées : branche `fix/revue-durcissement`,
   `tests/emulator/lot0-rules.test.ts`.
 - **Retour arrière** : rétablir `active()` pour `create`.
 
-### D58 (Lot 0). R-06 : pas de mesure minimale par les règles
+### D55 (Lot 0). R-06 : pas de mesure minimale par les règles
 - Fermer `teachers` hors bureau casserait le tableau de bord de l'enseignant
   (sa fiche est cherchée dans la liste), l'affichage des noms d'enseignants et
   l'affectation des halaqas par le مؤطر ; une lecture « sa seule fiche »

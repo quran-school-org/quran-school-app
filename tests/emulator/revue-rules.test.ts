@@ -77,7 +77,7 @@ describe("constats confirmés", () => {
     await assertSucceeds(getDoc(doc(as("prof"), "teachers", "t1")));
   });
 
-  it("R-07 corrigé (D52) : une famille ne crée pas de notification ; le personnel, si", async () => {
+  it("R-07 corrigé (D54) : une famille ne crée pas de notification ; le personnel, si", async () => {
     await assertFails(setDoc(doc(as("parent"), "notifications", "n_famille"), { title: "x", message: "y" }));
     await assertSucceeds(setDoc(doc(as("prof"), "notifications", "n_prof"), { title: "x", message: "y" }));
   });

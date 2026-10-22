@@ -210,7 +210,7 @@ service cloud.firestore {
     }
 
     // --------------------------------------------------------- notifications
-    // Personnel seulement (R-07, D52) : les familles ne créent pas de notification.
+    // Personnel seulement (R-07, D54) : les familles ne créent pas de notification.
     match /notifications/{notificationId} {
       allow read: if isStaff();
       allow create: if isStaff() && isValidId(notificationId);
