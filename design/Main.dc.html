@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>لوحة الكتّاب</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;600;700&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;family=Amiri:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#ECEDE6}
+a{color:#1B3A6B}a:hover{color:#102446}
+:focus-visible{outline:2px solid #D4A017;outline-offset:2px}
+.nav-a{transition:background-color .15s}
+.nav-a:hover{background-color:rgba(255,255,255,.08)!important}
+.tb-icon:hover{border-color:#1B3A6B!important}
+.tb-out:hover{background-color:#F5E2DE!important}
+.btn{cursor:pointer;transition:background-color .15s,border-color .15s,color .15s}
+.btn-p:hover{background-color:#102446!important}
+.btn-o:hover{background-color:#F1F2EB!important;border-color:#B9BDAF!important}
+.row{transition:background-color .12s}
+.row:hover{background-color:#F1F2EB!important}
+.col{cursor:pointer;transition:background-color .15s}
+.col:hover{background-color:rgba(212,160,23,.12)!important}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.dot{animation:rise .6s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+select{background-color:#FFFFFF;color:#1A1F2B}
+</style>
+</helmet>
+<div dir="rtl" style="display: flex; flex-wrap: wrap; min-height: 100vh; background: #ECEDE6; font-family: 'IBM Plex Sans Arabic', sans-serif; color: #1A1F2B">
+  <div style="flex: 1 1 264px; max-width: 100%; background: #102446; display: flex; flex-direction: column">
+    <dc-import name="Nav" active="dashboard" unread="52" hint-size="100%,1000px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" bell="52" hint-size="100%,76px"></dc-import>
+    <main style="width: 100%; max-width: 1240px; box-sizing: border-box; padding: 32px 32px 64px; display: flex; flex-direction: column; gap: 24px">
+
+      <section style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+          <h1 style="margin: 0; font-family: 'Reem Kufi', sans-serif; font-weight: 700; font-size: 44px; line-height: 1.15; color: #1B3A6B">لوحة الكتّاب</h1>
+          <p style="margin: 0; font-size: 16px; color: #4A5060; max-width: 60ch">حال الحلقات والطلاب والمالية في نظرة واحدة.</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px">
+          <button type="button" class="btn btn-o" onClick="{{backup}}" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #D0D3C6; background: #F8F8F3; color: #1A1F2B; font-family: inherit; font-size: 14.5px; font-weight: 600">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path><path d="M12 15V3"></path></svg>
+            تنزيل نسخة احتياطية
+          </button>
+          <button type="button" class="btn btn-o" onClick="{{restore}}" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #D0D3C6; background: #F8F8F3; color: #1A1F2B; font-family: inherit; font-size: 14.5px; font-weight: 600">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path><path d="M8 16H3v5"></path></svg>
+            استرجاع نسخة
+          </button>
+        </div>
+      </section>
+
+      <section aria-labelledby="mapTitle" style="position: relative; background: #102446; border-radius: 22px; padding: 28px 28px 24px; color: #EEF1F7; overflow: hidden">
+        <svg aria-hidden="true" width="100%" height="100%" style="position: absolute; inset: 0; pointer-events: none">
+          <defs>
+            <pattern id="zHero" width="64" height="64" patternUnits="userSpaceOnUse">
+              <g fill="none" stroke="#D4A017" stroke-opacity="0.09" stroke-width="1">
+                <rect x="18" y="18" width="28" height="28"></rect>
+                <rect x="18" y="18" width="28" height="28" transform="rotate(45 32 32)"></rect>
+                <circle cx="32" cy="32" r="6"></circle>
+                <path d="M0 0 L10 10 M64 0 L54 10 M0 64 L10 54 M64 64 L54 54"></path>
+              </g>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#zHero)"></rect>
+        </svg>
+        <div style="position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px 32px">
+          <div style="display: flex; flex-direction: column; gap: 6px; max-width: 56ch">
+            <h2 id="mapTitle" style="margin: 0; font-family: 'Reem Kufi', sans-serif; font-weight: 600; font-size: 28px; color: #F6EDD2">خريطة الحفظ</h2>
+            <p style="margin: 0; font-size: 15px; color: #B8C4D8; line-height: 1.7">موقع كل طالب على الأحزاب الستين. كل نقطة طالب. اختر حزباً لعرض أسماء طلابه.</p>
+          </div>
+          <div style="display: flex; gap: 28px">
+            <div style="display: flex; flex-direction: column">
+              <span style="font-size: 34px; font-weight: 700; color: #FFFFFF; font-variant-numeric: tabular-nums; line-height: 1.1">39</span>
+              <span style="font-size: 13px; color: #B8C4D8">طالباً على الخريطة</span>
+            </div>
+            <div style="display: flex; flex-direction: column">
+              <span style="font-size: 34px; font-weight: 700; color: #D4A017; font-variant-numeric: tabular-nums; line-height: 1.1">6</span>
+              <span style="font-size: 13px; color: #B8C4D8">أبعد حزب بلغه طالب</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="position: relative; margin-top: 24px; overflow-x: auto; padding-bottom: 4px">
+          <div style="min-width: 760px">
+            <div role="group" aria-label="الأحزاب الستون" style="display: grid; grid-template-columns: repeat(60, minmax(0, 1fr)); gap: 2px; height: 236px; align-items: stretch">
+              <sc-for list="{{cols}}" as="c" hint-placeholder-count="60">
+                <button type="button" class="col" onClick="{{c.pick}}" aria-label="{{c.label}}" aria-pressed="{{c.pressed}}" style="display: flex; flex-direction: column-reverse; align-items: center; gap: 3px; padding: 4px 0; border: 0; border-radius: 6px; background: {{c.bg}}; min-width: 0">
+                  <sc-for list="{{c.dots}}" as="d" hint-placeholder-count="1">
+                    <span class="dot" style="width: 8px; height: 8px; border-radius: 50%; background: {{d.bg}}; animation-delay: {{d.delay}}ms; flex: none"></span>
+                  </sc-for>
+                </button>
+              </sc-for>
+            </div>
+            <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(60, minmax(0, 1fr)); gap: 2px; border-top: 1px solid #2E4A78; padding-top: 4px">
+              <sc-for list="{{ticks}}" as="t" hint-placeholder-count="60">
+                <span style="display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0">
+                  <span style="width: 1px; height: {{t.h}}px; background: {{t.c}}"></span>
+                  <span style="font-size: 11.5px; color: #B8C4D8; font-variant-numeric: tabular-nums; height: 15px; white-space: nowrap">{{t.label}}</span>
+                </span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div aria-live="polite" style="position: relative; margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 16px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid #2E4A78">
+          <span style="font-family: 'Reem Kufi', sans-serif; font-size: 18px; color: #F6EDD2">الحزب {{sel}}</span>
+          <span style="font-size: 14px; color: #B8C4D8">{{selCount}}</span>
+          <span style="display: flex; flex-wrap: wrap; gap: 6px">
+            <sc-for list="{{selNames}}" as="n" hint-placeholder-count="5">
+              <span style="font-size: 13.5px; padding: 4px 10px; border-radius: 999px; background: rgba(212, 160, 23, 0.16); color: #FFF2C7">{{n.name}}</span>
+            </sc-for>
+          </span>
+        </div>
+      </section>
+
+      <section aria-label="مؤشرات رئيسية" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: #D9DBD0; border: 1px solid #D9DBD0; border-radius: 18px; overflow: hidden">
+        <div style="background: #F8F8F3; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 14px; color: #4A5060">الطلاب النشطون</span>
+          <span style="font-size: 38px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums">39</span>
+          <span style="font-size: 13.5px; color: #6B7080">26 في حلقتين، و13 بلا حلقة بعد</span>
+        </div>
+        <div style="background: #F8F8F3; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 14px; color: #4A5060">بلغوا 20 حزباً فأكثر</span>
+          <span style="font-size: 38px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums">0</span>
+          <span style="font-size: 13.5px; color: #6B7080">مرشحون للختم لاحقاً</span>
+        </div>
+        <div style="background: #F8F8F3; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 14px; color: #4A5060">الرسوم المحصّلة هذا الموسم</span>
+          <span style="font-size: 38px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums">9,410 <span style="font-size: 18px; font-weight: 600; color: #4A5060">د.م</span></span>
+          <a href="Fees.dc.html" style="font-size: 13.5px; color: #2F5523; text-decoration: none; font-weight: 600">لا دفعات متأخرة</a>
+        </div>
+        <div style="background: #F8F8F3; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 14px; color: #4A5060">مستوى التجويد</span>
+          <div role="img" aria-label="ممتاز 1، متوسط 8، ضعيف 26، مبتدئ 4" style="display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px">
+            <span style="width: 2.6%; background: #1B3A6B"></span>
+            <span style="width: 20.5%; background: #5B7FB0"></span>
+            <span style="width: 66.7%; background: #D4A017"></span>
+            <span style="width: 10.2%; background: #C9CCBF"></span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: 13px; color: #4A5060">
+            <span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 2px; background: #1B3A6B"></span>ممتاز 1</span>
+            <span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 2px; background: #5B7FB0"></span>متوسط 8</span>
+            <span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 2px; background: #D4A017"></span>ضعيف 26</span>
+            <span style="display: flex; align-items: center; gap: 6px"><span style="width: 8px; height: 8px; border-radius: 2px; background: #C9CCBF"></span>مبتدئ 4</span>
+          </div>
+        </div>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch">
+        <section aria-labelledby="tTitle" style="flex: 2 1 520px; min-width: 0; background: #F8F8F3; border: 1px solid #D9DBD0; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px; align-items: flex-start">
+            <div style="display: flex; flex-direction: column; gap: 4px; max-width: 52ch">
+              <h2 id="tTitle" style="margin: 0; font-family: 'Reem Kufi', sans-serif; font-weight: 600; font-size: 22px; color: #1B3A6B">أداء المحفّظين</h2>
+              <p style="margin: 0; font-size: 14px; color: #4A5060; line-height: 1.6">معدل درجات طلاب كل محفّظ في الحفظ والتجويد، من نتائج الاختبارات المسجّلة.</p>
+            </div>
+            <div role="group" aria-label="المؤشر" style="display: inline-flex; padding: 3px; border-radius: 10px; background: #E6E8DF; gap: 2px">
+              <button type="button" class="btn" onClick="{{modeScores}}" aria-pressed="{{scoresPressed}}" style="height: 38px; padding: 0 14px; border: 0; border-radius: 8px; font-family: inherit; font-size: 13.5px; font-weight: 600; background: {{scoresBg}}; color: {{scoresFg}}">الحفظ والتجويد</button>
+              <button type="button" class="btn" onClick="{{modeLoad}}" aria-pressed="{{loadPressed}}" style="height: 38px; padding: 0 14px; border: 0; border-radius: 8px; font-family: inherit; font-size: 13.5px; font-weight: 600; background: {{loadBg}}; color: {{loadFg}}">عدد الطلاب</button>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 14px; color: #4A5060">
+            <span><strong style="color: #1A1F2B; font-variant-numeric: tabular-nums">1</strong> اختبار مسجّل</span>
+            <span><strong style="color: #1A1F2B; font-variant-numeric: tabular-nums">2</strong> محفّظان</span>
+            <span>أفضل حلقة: <strong style="color: #1A1F2B">الدورة الصيفية</strong></span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; border-top: 1px solid #E1E3D8">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 16px 0; border-bottom: 1px solid #E1E3D8">
+              <div style="display: flex; align-items: center; gap: 12px; flex: 1 1 200px; min-width: 0">
+                <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 50%; background: #E3E9F2; color: #1B3A6B; display: inline-flex; align-items: center; justify-content: center; font-family: 'Reem Kufi', sans-serif; font-weight: 700">أ</span>
+                <span style="display: flex; flex-direction: column; min-width: 0">
+                  <span style="font-weight: 600; font-size: 15px">أيوب عفيف</span>
+                  <span style="font-size: 13px; color: #6B7080">الدورة الصيفية، 23 طالباً</span>
+                </span>
+              </div>
+              <sc-if value="{{isScores}}" hint-placeholder-val="{{ true }}">
+                <div style="flex: 2 1 280px; display: flex; flex-direction: column; gap: 8px">
+                  <div style="display: flex; align-items: center; gap: 10px; font-size: 13px">
+                    <span style="width: 44px; color: #4A5060">الحفظ</span>
+                    <span style="flex: 1; height: 10px; border-radius: 3px; background: #E1E3D8; overflow: hidden"><span style="display: block; width: 90%; height: 100%; background: #1B3A6B"></span></span>
+                    <span style="width: 46px; font-weight: 700; font-variant-numeric: tabular-nums">18/20</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 10px; font-size: 13px">
+                    <span style="width: 44px; color: #4A5060">التجويد</span>
+                    <span style="flex: 1; height: 10px; border-radius: 3px; background: #E1E3D8; overflow: hidden"><span style="display: block; width: 90%; height: 100%; background: #D4A017"></span></span>
+                    <span style="width: 46px; font-weight: 700; font-variant-numeric: tabular-nums">18/20</span>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{isLoad}}" hint-placeholder-val="{{ false }}">
+                <div style="flex: 2 1 280px; display: flex; align-items: center; gap: 10px; font-size: 13px">
+                  <span style="flex: 1; height: 10px; border-radius: 3px; background: #E1E3D8; overflow: hidden"><span style="display: block; width: 38%; height: 100%; background: #1B3A6B"></span></span>
+                  <span style="font-weight: 700; font-variant-numeric: tabular-nums">23 / 60 مقعداً</span>
+                </div>
+              </sc-if>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 16px 0">
+              <div style="display: flex; align-items: center; gap: 12px; flex: 1 1 200px; min-width: 0">
+                <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 50%; background: #E6E8DF; color: #6B7080; display: inline-flex; align-items: center; justify-content: center; font-family: 'Reem Kufi', sans-serif; font-weight: 700">م</span>
+                <span style="display: flex; flex-direction: column; min-width: 0">
+                  <span style="font-weight: 600; font-size: 15px">محمد زروال</span>
+                  <span style="font-size: 13px; color: #6B7080">لا حلقة مسندة</span>
+                </span>
+              </div>
+              <div style="flex: 2 1 280px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13.5px; color: #4A5060">
+                <span>لا تظهر له نتائج حتى تُسند إليه حلقة.</span>
+                <a href="Classes.dc.html" style="font-weight: 600">إسناد حلقة</a>
+              </div>
+            </div>
+          </div>
+          <p style="margin: 0; font-size: 13px; color: #6B7080; line-height: 1.6">المعدل = مجموع درجات اختبارات طلاب المحفّظ ÷ عدد تلك الاختبارات.</p>
+        </section>
+
+        <section aria-labelledby="aTitle" style="flex: 1 1 300px; min-width: 0; background: #F8F8F3; border: 1px solid #D9DBD0; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+          <h2 id="aTitle" style="margin: 0; font-family: 'Reem Kufi', sans-serif; font-weight: 600; font-size: 22px; color: #1B3A6B">تحتاج إجراءً</h2>
+          <div style="display: flex; gap: 12px; padding: 14px; border-radius: 12px; background: #F5E2DE">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#A33A2E" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path><path d="M12 8v4M12 16h.01"></path></svg>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span style="font-weight: 600; font-size: 14.5px; color: #7A2A21">31 طالباً بوثائق ناقصة</span>
+              <span style="font-size: 13.5px; color: #5E3530; line-height: 1.6">البطاقة أو العقد أو الصور غير مرفوعة، خاصة للطلاب الجدد.</span>
+              <a href="Students.dc.html" style="font-size: 13.5px; font-weight: 600; color: #7A2A21">مراجعة الملفات</a>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; padding: 14px; border-radius: 12px; background: #F6EDD2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A6400" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"></path><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path></svg>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span style="font-weight: 600; font-size: 14.5px; color: #5C4300">الحلقة الثانية بلا محفّظ</span>
+              <span style="font-size: 13.5px; color: #5C4A1E; line-height: 1.6">3 طلاب مسجلون دون مشرف، و13 طالباً بلا حلقة.</span>
+              <a href="Classes.dc.html" style="font-size: 13.5px; font-weight: 600; color: #5C4300">تنظيم الحلقات</a>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; padding: 14px; border-radius: 12px; background: #EEEFE8">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4A5060" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m16 11 2 2 4-4"></path></svg>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span style="font-weight: 600; font-size: 14.5px">لا حضور مسجّل هذا الأسبوع</span>
+              <span style="font-size: 13.5px; color: #4A5060; line-height: 1.6">تُحسب نسب الحضور بعد تفعيل وحدة الحضور.</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section aria-labelledby="atTitle" style="background: #F8F8F3; border: 1px solid #D9DBD0; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px; align-items: flex-start">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 id="atTitle" style="margin: 0; font-family: 'Reem Kufi', sans-serif; font-weight: 600; font-size: 22px; color: #1B3A6B">الحضور هذا الأسبوع</h2>
+            <p style="margin: 0; font-size: 14px; color: #4A5060">نسبة الحضور اليومية مقارنة بالأسبوع الماضي.</p>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #4A5060">
+            الحلقة
+            <select onChange="{{setAClass}}" value="{{aClass}}" style="height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #D0D3C6; font-family: inherit; font-size: 14px">
+              <option value="all">جميع الحلقات</option>
+              <option value="summer">الدورة الصيفية</option>
+              <option value="second">حلقة ثانية</option>
+            </select>
+          </label>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 32px; font-size: 14px; color: #4A5060">
+          <span>هذا الأسبوع <strong style="color: #1A1F2B">لا بيانات</strong></span>
+          <span>الأسبوع الماضي <strong style="color: #1A1F2B">لا بيانات</strong></span>
+        </div>
+        <div style="position: relative">
+          <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px">
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+                <div style="width: 100%; height: 130px; border-radius: 10px; border: 1.5px dashed #CFD2C4; background: #F1F2EB"></div>
+                <span style="font-size: 13px; color: #6B7080">{{d.name}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="position: absolute; inset: 0 0 28px; display: flex; align-items: center; justify-content: center; padding: 16px">
+            <p style="margin: 0; max-width: 46ch; text-align: center; font-size: 14.5px; line-height: 1.7; color: #4A5060; background: #F8F8F3; padding: 12px 18px; border-radius: 12px; border: 1px solid #E1E3D8">لم تُسجَّل أي حصة في {{aClassName}} منذ 3 أكتوبر. تظهر المقارنة هنا بعد أول تسجيل للحضور.</p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="pTitle" style="background: #F8F8F3; border: 1px solid #D9DBD0; border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px; align-items: flex-start">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 id="pTitle" style="margin: 0; font-family: 'Reem Kufi', sans-serif; font-weight: 600; font-size: 22px; color: #1B3A6B">تقدّم الحفظ</h2>
+            <p style="margin: 0; font-size: 14px; color: #4A5060">الأحزاب المحفوظة من 60 لكل طالب، من الأعلى إلى الأدنى.</p>
+          </div>
+          <div role="group" aria-label="تصفية حسب الحلقة" style="display: flex; flex-wrap: wrap; gap: 6px">
+            <sc-for list="{{classTabs}}" as="t" hint-placeholder-count="4">
+              <button type="button" class="btn" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" style="height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid {{t.bd}}; background: {{t.bg}}; color: {{t.fg}}; font-family: inherit; font-size: 13.5px; font-weight: 600">{{t.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column">
+          <sc-for list="{{progress}}" as="s" hint-placeholder-count="10">
+            <div style="display: grid; grid-template-columns: minmax(130px, 200px) minmax(0, 1fr) 88px; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid #E8EAE1">
+              <a href="Students.dc.html" style="font-size: 14.5px; font-weight: 500; color: #1A1F2B; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{s.name}}</a>
+              <div role="img" aria-label="{{s.aria}}" style="position: relative; height: 12px; border-radius: 3px; background: #E1E3D8; overflow: hidden">
+                <div style="position: absolute; top: 0; bottom: 0; right: 0; width: {{s.pct}}%; background: #1B3A6B"></div>
+                <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(to left, transparent 0, transparent calc(100% / 60 - 1.5px), #F8F8F3 calc(100% / 60 - 1.5px), #F8F8F3 calc(100% / 60))"></div>
+                <div style="position: absolute; inset: 0; background-image: repeating-linear-gradient(to left, transparent 0, transparent calc(100% / 6 - 2px), #D4A017 calc(100% / 6 - 2px), #D4A017 calc(100% / 6))"></div>
+              </div>
+              <span style="font-size: 13.5px; color: #4A5060; font-variant-numeric: tabular-nums; text-align: left"><strong style="color: #1A1F2B">{{s.h}}</strong> / 60</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{emptyProgress}}" hint-placeholder-val="{{ false }}">
+            <p style="margin: 0; padding: 20px 0; font-size: 14px; color: #4A5060">لا يوجد طلاب في هذا التصنيف.</p>
+          </sc-if>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px">
+          <span style="font-size: 13px; color: #6B7080">الخط الذهبي كل 10 أحزاب.</span>
+          <sc-if value="{{canExpand}}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="btn btn-o" onClick="{{toggleAll}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #D0D3C6; background: #F8F8F3; color: #1B3A6B; font-family: inherit; font-size: 14px; font-weight: 600">{{expandLabel}}</button>
+          </sc-if>
+        </div>
+      </section>
+    </main>
+  </div>
+  <div aria-live="polite" style="position: fixed; bottom: 24px; left: 24px; z-index: 20">
+    <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: #1A1F2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 10px 30px rgba(16, 36, 70, 0.25)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4A017" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+        {{toast}}
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2500}}'>
+class Component extends DCLogic {
+  students() {
+    const S = 'summer', T = 'second', N = 'none';
+    return [
+      ['عبد الله البكراوي', 6, S], ['وجدان البكراوي', 5, S],
+      ['عمران البكراوي', 4, S], ['آدم امغاري', 4, S], ['حمزة المرابط', 4, S],
+      ['علاء البكراوي', 3, S], ['سعد اجليد', 3, S], ['صهيب اجليد', 3, S], ['يحيى الزاه', 3, S], ['ملاك بولعلاع', 3, S],
+      ['آدم هروشان', 2, S], ['زياد زنفور', 2, S], ['يوسف المرابط', 2, S], ['بدر عطاس', 2, S], ['رتاج رفيقي', 2, S], ['صفاء جاجا', 2, S], ['مروى جاجا', 2, S], ['تاج الفكروني', 2, S], ['رفيق الشماخي', 2, S],
+      ['علي أبناو', 1, S], ['تاج الدين رفيقي', 1, S], ['هيثم المسيح', 1, S], ['علاء عميمي', 1, S],
+      ['وليد بدة', 1, T], ['عمران أويحيى', 1, T], ['إناس بوهو', 1, T],
+      ['رضى بعلواش', 1, N], ['نزار الدكالي', 1, N], ['ريان فنيش', 1, N], ['فردوس الزهراوي', 1, N],
+      ['إلياس بنعيسى', 1, N], ['أنس الحمري', 1, N], ['مريم العلوي', 1, N], ['سلمى الحسني', 1, N], ['ياسين الكتاني', 1, N],
+      ['أيمن الشرادي', 1, N], ['هبة العمراني', 1, N], ['عثمان بوزيد', 1, N], ['لينا القادري', 1, N]
+    ].map(([name, h, c]) => ({ name, h, c }));
+  }
+  renderVals() {
+    const st = this.state || {};
+    const sel = st.sel ?? 3;
+    const mode = st.mode ?? 'scores';
+    const klass = st.klass ?? 'all';
+    const showAll = st.showAll ?? false;
+    const aClass = st.aClass ?? 'all';
+    const toast = st.toast ?? '';
+    const all = this.students();
+
+    const cols = [];
+    for (let n = 1; n <= 60; n++) {
+      const here = all.filter((s) => s.h === n);
+      const on = n === sel;
+      cols.push({
+        n,
+        label: 'الحزب ' + n + '، ' + here.length + ' طالب',
+        pressed: on ? 'true' : 'false',
+        bg: on ? 'rgba(212, 160, 23, 0.22)' : 'transparent',
+        dots: here.map((s, i) => ({ bg: on ? '#FFE08A' : '#D4A017', delay: 120 + n * 45 + i * 28 })),
+        pick: () => this.setState({ sel: n })
+      });
+    }
+    const ticks = [];
+    for (let n = 1; n <= 60; n++) {
+      const major = n === 1 || n % 10 === 0;
+      ticks.push({ h: major ? 10 : 4, c: major ? '#D4A017' : '#3A5785', label: major ? String(n) : '' });
+    }
+    const selList = all.filter((s) => s.h === sel);
+    const selCount = selList.length === 0 ? 'لا يوجد طالب في هذا الحزب بعد' : (selList.length === 1 ? 'طالب واحد' : selList.length + ' طلاب');
+
+    const tabDefs = [['all', 'الكل', all.length], ['summer', 'الدورة الصيفية', 23], ['second', 'حلقة ثانية', 3], ['none', 'بلا حلقة', 13]];
+    const classTabs = tabDefs.map(([k, l, n]) => {
+      const on = k === klass;
+      return {
+        label: l + ' (' + n + ')', pressed: on ? 'true' : 'false',
+        bg: on ? '#1B3A6B' : '#F8F8F3', fg: on ? '#FFFFFF' : '#1A1F2B', bd: on ? '#1B3A6B' : '#D0D3C6',
+        pick: () => this.setState({ klass: k, showAll: false })
+      };
+    });
+    const filtered = all.filter((s) => klass === 'all' || s.c === klass).sort((a, b) => b.h - a.h);
+    const visible = showAll ? filtered : filtered.slice(0, 10);
+    const progress = visible.map((s) => ({ name: s.name, h: s.h, pct: (s.h / 60 * 100).toFixed(2), aria: s.name + '، ' + s.h + ' من 60 حزباً' }));
+
+    const pill = (on) => ({ bg: on ? '#FFFFFF' : 'transparent', fg: on ? '#1B3A6B' : '#4A5060' });
+    const ps = pill(mode === 'scores'), pl = pill(mode === 'load');
+    const aNames = { all: 'جميع الحلقات', summer: 'الدورة الصيفية', second: 'الحلقة الثانية' };
+    const flash = (msg) => {
+      this.setState({ toast: msg });
+      clearTimeout(this._t);
+      this._t = setTimeout(() => this.setState({ toast: '' }), 2600);
+    };
+
+    return {
+      cols, ticks, sel,
+      selCount,
+      selNames: selList.map((s) => ({ name: s.name })),
+      classTabs, progress,
+      emptyProgress: progress.length === 0,
+      canExpand: filtered.length > 10,
+      expandLabel: showAll ? 'عرض أقل' : 'عرض الطلاب الـ' + filtered.length,
+      toggleAll: () => this.setState({ showAll: !showAll }),
+      isScores: mode === 'scores', isLoad: mode === 'load',
+      scoresBg: ps.bg, scoresFg: ps.fg, loadBg: pl.bg, loadFg: pl.fg,
+      scoresPressed: mode === 'scores' ? 'true' : 'false', loadPressed: mode === 'load' ? 'true' : 'false',
+      modeScores: () => this.setState({ mode: 'scores' }),
+      modeLoad: () => this.setState({ mode: 'load' }),
+      days: ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'].map((name) => ({ name })),
+      aClass, aClassName: aNames[aClass],
+      setAClass: (e) => this.setState({ aClass: e.target.value }),
+      toast, hasToast: toast !== '',
+      backup: () => flash('نُزّلت النسخة الاحتياطية: alfajr-backup-2026-10-08.json'),
+      restore: () => flash('اختر ملف JSON لاسترجاع البيانات منه')
+    };
+  }
+}
+</script>
+</body>
+</html>

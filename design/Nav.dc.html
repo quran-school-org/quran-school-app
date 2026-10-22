@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>القائمة الجانبية</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;600;700&amp;family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<nav dir="rtl" aria-label="القائمة الرئيسية" style="position: relative; width: 100%; height: 100%; min-height: 1000px; box-sizing: border-box; background: #102446; color: #EEF1F7; font-family: 'IBM Plex Sans Arabic', sans-serif; padding: 24px 16px 20px; display: flex; flex-direction: column; gap: 22px; overflow: hidden">
+  <svg aria-hidden="true" width="100%" height="320" style="position: absolute; bottom: 0; left: 0; right: 0; pointer-events: none">
+    <defs>
+      <pattern id="zNav" width="56" height="56" patternUnits="userSpaceOnUse">
+        <g fill="none" stroke="#D4A017" stroke-opacity="0.13" stroke-width="1">
+          <rect x="16" y="16" width="24" height="24"></rect>
+          <rect x="16" y="16" width="24" height="24" transform="rotate(45 28 28)"></rect>
+          <circle cx="28" cy="28" r="5"></circle>
+          <path d="M0 0 L8 8 M56 0 L48 8 M0 56 L8 48 M56 56 L48 48"></path>
+        </g>
+      </pattern>
+      <linearGradient id="zNavFade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#102446" stop-opacity="1"></stop>
+        <stop offset="1" stop-color="#102446" stop-opacity="0"></stop>
+      </linearGradient>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#zNav)"></rect>
+    <rect width="100%" height="100%" fill="url(#zNavFade)"></rect>
+  </svg>
+
+  <a href="Main.dc.html" style="position: relative; display: flex; align-items: center; gap: 12px; text-decoration: none; color: #FFFFFF; padding: 0 6px">
+    <svg width="44" height="44" viewBox="0 0 24 24" aria-hidden="true">
+      <g fill="#D4A017"><rect x="5.5" y="5.5" width="13" height="13"></rect><rect x="5.5" y="5.5" width="13" height="13" transform="rotate(45 12 12)"></rect></g>
+      <circle cx="12" cy="12" r="4.2" fill="#102446"></circle>
+      <circle cx="12" cy="12" r="1.6" fill="#D4A017"></circle>
+    </svg>
+    <span style="display: flex; flex-direction: column; gap: 2px">
+      <span style="font-family: 'Reem Kufi', sans-serif; font-weight: 700; font-size: 19px; line-height: 1.2">جمعية الفجر الجديد</span>
+      <span style="font-size: 12.5px; color: #D4A017; font-weight: 600">النادي القرآني</span>
+    </span>
+  </a>
+
+  <div style="position: relative; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 12px; font-weight: 600; color: #8FA0BD; padding: 0 12px 6px">التعليم</span>
+    <a href="Main.dc.html" class="nav-a" aria-current="{{cur.dashboard}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.dashboard}}; color: {{fg.dashboard}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
+      <span style="flex: 1">لوحة الكتّاب</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.dashboard}}"></span>
+    </a>
+    <a href="Students.dc.html" class="nav-a" aria-current="{{cur.students}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.students}}; color: {{fg.students}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <span style="flex: 1">الطلاب</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.students}}"></span>
+    </a>
+    <a href="Classes.dc.html" class="nav-a" aria-current="{{cur.classes}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.classes}}; color: {{fg.classes}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"></path><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"></path></svg>
+      <span style="flex: 1">الحلقات</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.classes}}"></span>
+    </a>
+    <a href="Exams.dc.html" class="nav-a" aria-current="{{cur.exams}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.exams}}; color: {{fg.exams}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"></circle><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"></path></svg>
+      <span style="flex: 1">الامتحانات والشهادات</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.exams}}"></span>
+    </a>
+    <span aria-disabled="true" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; font-size: 15px; font-weight: 500; color: #7586A3">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="m16 11 2 2 4-4"></path></svg>
+      <span style="flex: 1">الحضور والغياب</span>
+      <span style="font-size: 11px; font-weight: 600; color: #A9B6CC; border: 1px solid #2B4470; border-radius: 999px; padding: 2px 8px">قريباً</span>
+    </span>
+  </div>
+
+  <div style="position: relative; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 12px; font-weight: 600; color: #8FA0BD; padding: 0 12px 6px">المالية</span>
+    <a href="Fees.dc.html" class="nav-a" aria-current="{{cur.fees}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.fees}}; color: {{fg.fees}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
+      <span style="flex: 1">الرسوم والمدفوعات</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.fees}}"></span>
+    </a>
+    <a href="Accounting.dc.html" class="nav-a" aria-current="{{cur.accounting}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.accounting}}; color: {{fg.accounting}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"></circle><path d="M18.09 10.37A6 6 0 1 1 10.34 18"></path><path d="M7 6h1v4"></path></svg>
+      <span style="flex: 1">المحاسبة</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.accounting}}"></span>
+    </a>
+    <a href="Activities.dc.html" class="nav-a" aria-current="{{cur.activities}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.activities}}; color: {{fg.activities}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"></path></svg>
+      <span style="flex: 1">الأنشطة والرحلات</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.activities}}"></span>
+    </a>
+  </div>
+
+  <div style="position: relative; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 12px; font-weight: 600; color: #8FA0BD; padding: 0 12px 6px">الإدارة</span>
+    <a href="Staff.dc.html" class="nav-a" aria-current="{{cur.staff}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.staff}}; color: {{fg.staff}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+      <span style="flex: 1">العاملون والمدرّسون</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.staff}}"></span>
+    </a>
+    <a href="Cards.dc.html" class="nav-a" aria-current="{{cur.cards}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.cards}}; color: {{fg.cards}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M14 14h3v3h-3zM18 18h3v3h-3zM14 20h1M20 14h1"></path></svg>
+      <span style="flex: 1">بطاقات الهوية</span>
+      <span style="width: 6px; height: 6px; border-radius: 50%; background: {{dot.cards}}"></span>
+    </a>
+    <a href="Notifications.dc.html" class="nav-a" aria-current="{{cur.notifications}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 10px; text-decoration: none; font-size: 15px; font-weight: 500; background: {{bg.notifications}}; color: {{fg.notifications}}">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+      <span style="flex: 1">الإشعارات</span>
+      <sc-if value="{{hasUnread}}" hint-placeholder-val="{{ true }}">
+        <span style="font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; background: #D4A017; color: #102446; border-radius: 999px; padding: 1px 8px">{{unread}}</span>
+      </sc-if>
+    </a>
+  </div>
+
+  <div style="position: relative; margin-top: auto; display: flex; flex-direction: column; gap: 12px">
+    <div style="border: 1px solid #2B4470; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 6px; background: rgba(16, 36, 70, 0.85)">
+      <span style="font-size: 12.5px; color: #A9B6CC">حلقاتك</span>
+      <span style="font-size: 14px; color: #EEF1F7">لا توجد حلقة مسندة إليك. حسابك حساب إشراف عام.</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 6px; font-size: 12.5px; color: #A9B6CC">
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: #7FC56B; flex: none"></span>
+      <span>قاعدة البيانات المحلية متصلة، آخر تزامن قبل دقيقة</span>
+    </div>
+  </div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["dashboard","students","classes","exams","fees","accounting","activities","staff","cards","notifications"],"default":"dashboard"},"unread":{"editor":"int","default":52},"$preview":{"width":264,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'dashboard';
+    const unread = Number(this.props.unread ?? 52);
+    const keys = ['dashboard','students','classes','exams','fees','accounting','activities','staff','cards','notifications'];
+    const bg = {}, fg = {}, cur = {}, dot = {};
+    keys.forEach((k) => {
+      const on = k === active;
+      bg[k] = on ? 'rgba(212, 160, 23, 0.16)' : 'transparent';
+      fg[k] = on ? '#FFF7DD' : '#C9D3E3';
+      cur[k] = on ? 'page' : 'false';
+      dot[k] = on ? '#D4A017' : 'transparent';
+    });
+    return { bg, fg, cur, dot, unread, hasUnread: unread > 0 };
+  }
+}
+</script>
+</body>
+</html>
