@@ -33,11 +33,11 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Paramètres, utilisateurs, matrice des droits | fait |
 | Portail enseignant, fenêtre de profil (parent et élève : écrans communs déjà refaits) | fait |
 | Connexion, vérification de session, choix / création d'école | fait |
-| Impressions (reçu, attestation, rapports, cartes, présence mensuelle) + @media print | à faire |
+| Impressions (reçu, attestation, rapports, cartes, présence mensuelle) + @media print | fait (tests/e2e/print.spec.ts) |
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Impressions : `src/print/` (reçu, attestation, rapports) avec `printWindow` ; vérifier @media print (Playwright `emulateMedia`), garde-fou d'échappement vert.
+Balayage final : émojis restants, couleurs hex héritées, Recharts RTL, absence de défilement horizontal à 360 px (test e2e), puis captures « après ».
 (PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
 
 ## Commandes utiles
