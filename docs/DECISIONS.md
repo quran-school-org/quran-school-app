@@ -420,3 +420,30 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
   vrai projet ; les émulateurs ne vérifient pas App Check. La logique de
   décision de `api` est testée par injection d'un vérificateur.
 - **Retour arrière** : runbook `docs/runbooks/APP-CHECK.md` §6.
+
+### D45. Dépendances : audit du 22/10/2026
+- **Avant** : app 22 vulnérabilités (9 modérées, 13 élevées) ; functions 0.
+- **Appliqué** (`npm audit fix`, sans changement majeur, dans les plages de
+  `package.json`) : vite 6.4.3 → 6.4.5, firebase 12.16.0 → 12.19.0 (écart avec
+  D10 assumé : version mineure, le front multi-écoles est de toute façon
+  nouveau), express 4.22.3, body-parser 1.20.8, qs 6.16.1, postcss 8.5.31,
+  nanoid 3.3.20, source-map-js 1.2.2, browserslist 4.29.4, re2 1.27.0,
+  firebase-tools 15.34.1.
+- **Surcharges** (`overrides` de `package.json`, tests verts) :
+  `@grpc/grpc-js` ^1.14.6 sous `@firebase/firestore` (qui exige ~1.9) ;
+  `uuid` ^11.1.1 sous `gaxios@6` (firebase-tools). À retirer quand les paquets
+  parents les exigeront d'eux-mêmes.
+- **Après** : 5 vulnérabilités, toutes dans `firebase-tools` (CLI et
+  émulateurs, outil de développement, jamais déployé ni chargé par le
+  navigateur) : `braces` (toutes versions, via `chokidar`), `@opentelemetry/core`
+  < 2.8 (via `@google-cloud/pubsub`). Risque réel : déni de service d'un
+  outil local sur entrée malveillante, nul en production. La « correction »
+  proposée (`firebase-tools@14`) est un retour en arrière : refusée.
+- **Bundle de production** : aucune vulnérabilité connue dans ce qui est servi
+  (`dist/` : React, Firebase web — grpc-js n'est utilisé que sous Node).
+  `express`, `vite`, `dotenv` sont en `dependencies` mais ne servent qu'au
+  serveur de développement `server.ts` (non déployé : Hosting ignore
+  `server.cjs`) ; à déplacer en `devDependencies` lors d'un nettoyage.
+- **Functions** : `npm audit` = 0.
+- **Suivi** : le job CI `audit` (non bloquant pour les outils de dev) relance
+  `npm audit --omit=dev` (bloquant) et `npm audit` (informatif).

@@ -15,12 +15,14 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
    côté client, runbook `docs/runbooks/PROXY-IA.md`.
 3. **App Check / D44** : client (`VITE_APPCHECK_SITE_KEY`, débogage), Functions
    (`APPCHECK_ENFORCE`, défaut false), runbook `docs/runbooks/APP-CHECK.md`.
+4. **Dépendances / D45** : `npm audit fix` + 2 surcharges (grpc-js, uuid) :
+   22 → 5 vulnérabilités (toutes dans firebase-tools, outil de dev) ;
+   production 0 ; functions 0 ; audit dans la CI.
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-4. `npm audit` (app, functions).
 5. `deploy.yml` (workflow_dispatch, WIF) + runbook CI-DEPLOIEMENT.
 6. Sauvegardes planifiées + runbook PITR / restauration.
 7. Rewrite Hosting `/api/**` : test local ou job CI.
@@ -30,4 +32,4 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 4 : `npm audit` (app puis functions), montées de version, tests.
+Point 5 : `.github/workflows/deploy.yml` (workflow_dispatch, WIF) + `docs/runbooks/CI-DEPLOIEMENT.md`.

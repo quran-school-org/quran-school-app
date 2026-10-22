@@ -50,6 +50,17 @@ jobs:
       - name: Installation (Cloud Functions)
         run: npm ci --prefix functions
 
+      # Audit des dépendances (D45) : bloquant pour ce qui part en production,
+      # informatif pour les outils de développement (firebase-tools…).
+      - name: Audit des dépendances de production
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm audit --omit=dev --audit-level=high --prefix functions
+
+      - name: Audit complet (informatif)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
       - name: Lint (tsc)
         run: npm run lint
 
