@@ -1,0 +1,191 @@
+# Déploiement depuis GitHub Actions (D46) — PRÉPARÉ, INACTIF.
+#
+# - Déclenchement MANUEL uniquement (workflow_dispatch) : aucun push, aucune
+#   PR, aucune planification ne déploie.
+# - Authentification Google par Workload Identity Federation (OIDC GitHub),
+#   SANS clé JSON. Rien ne fonctionne tant que l'humain n'a pas créé le pool,
+#   le compte de service et les environnements GitHub : voir
+#   docs/runbooks/CI-DEPLOIEMENT.md.
+# - Environnements GitHub : `dev` (projet de développement) et `production`
+#   (validation manuelle obligatoire par un relecteur, branche main seulement).
+# - Aucune valeur sensible dans ce fichier : identifiants de projet, fournisseur
+#   WIF et compte de service viennent des VARIABLES de l'environnement GitHub.
+name: Déploiement (manuel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement GitHub (dev ou production)"
+        type: choice
+        options: [dev, production]
+        default: dev
+      target:
+        description: "Cible à déployer"
+        type: choice
+        options: [all, firestore-rules, functions, hosting]
+        default: all
+      confirm:
+        description: "Production : recopier l'identifiant du projet de prod pour confirmer"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  verifier:
+    name: Build et tests (émulateurs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GCLOUD_PROJECT: demo-quran-school
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm ci --prefix functions
+      - run: npm audit --omit=dev --audit-level=high && npm audit --omit=dev --audit-level=high --prefix functions
+      - run: npm run lint
+      - run: npm run lint:functions
+      - run: npm run build
+      - run: npm test
+      - run: npm run test:rules
+
+  deployer:
+    name: Déploiement (${{ inputs.environment }} / ${{ inputs.target }})
+    needs: verifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    # Environnement GitHub : variables propres, relecteurs obligatoires et
+    # branche main seulement pour `production` (voir le runbook).
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write # jeton OIDC pour la fédération d'identité
+    env:
+      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+    steps:
+      - name: Garde-fous
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          CONFIRM: ${{ inputs.confirm }}
+          REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PROJECT_ID}" ] || [ -z "${{ vars.GCP_WIF_PROVIDER }}" ] || [ -z "${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}" ]; then
+            echo "::error::Variables de l'environnement GitHub '${ENVIRONMENT}' absentes (FIREBASE_PROJECT_ID, GCP_WIF_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT). Voir docs/runbooks/CI-DEPLOIEMENT.md."
+            exit 1
+          fi
+          case "${PROJECT_ID}" in demo-*) echo "::error::Projet demo-* : rien à déployer."; exit 1;; esac
+          if [ "${ENVIRONMENT}" = "production" ]; then
+            if [ "${REF}" != "refs/heads/main" ]; then echo "::error::La production ne se déploie que depuis main (reçu : ${REF})."; exit 1; fi
+            if [ "${CONFIRM}" != "${PROJECT_ID}" ]; then echo "::error::Confirmation incorrecte : recopier l'identifiant du projet de prod."; exit 1; fi
+          else
+            if [ "${PROJECT_ID}" = "gen-lang-client-0481880143" ]; then echo "::error::L'environnement dev pointe vers la prod."; exit 1; fi
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - run: npm ci
+      - run: npm ci --prefix functions
+
+      - name: Configuration web du projet de dev (variables publiques)
+        if: inputs.environment == 'dev'
+        env:
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+          VITE_FIRESTORE_DATABASE_ID: ${{ vars.VITE_FIRESTORE_DATABASE_ID }}
+          VITE_APPCHECK_SITE_KEY: ${{ vars.VITE_APPCHECK_SITE_KEY }}
+          FUNCTIONS_FIRESTORE_DATABASE_ID: ${{ vars.FUNCTIONS_FIRESTORE_DATABASE_ID }}
+          FUNCTIONS_TRIGGER_REGION: ${{ vars.FUNCTIONS_TRIGGER_REGION }}
+        run: |
+          set -euo pipefail
+          # .env.production.local surcharge .env.production (Vite) : le build vise le projet de dev.
+          {
+            echo "VITE_FIREBASE_API_KEY=\"${VITE_FIREBASE_API_KEY}\""
+            echo "VITE_FIREBASE_AUTH_DOMAIN=\"${VITE_FIREBASE_AUTH_DOMAIN}\""
+            echo "VITE_FIREBASE_PROJECT_ID=\"${PROJECT_ID}\""
+            echo "VITE_FIREBASE_STORAGE_BUCKET=\"${VITE_FIREBASE_STORAGE_BUCKET}\""
+            echo "VITE_FIREBASE_MESSAGING_SENDER_ID=\"${VITE_FIREBASE_MESSAGING_SENDER_ID}\""
+            echo "VITE_FIREBASE_APP_ID=\"${VITE_FIREBASE_APP_ID}\""
+            echo "VITE_FIRESTORE_DATABASE_ID=\"${VITE_FIRESTORE_DATABASE_ID}\""
+            echo "VITE_APPCHECK_SITE_KEY=\"${VITE_APPCHECK_SITE_KEY}\""
+            echo 'VITE_USE_EMULATORS="false"'
+            echo 'VITE_API_BASE_URL=""'
+          } > .env.production.local
+          # Paramètres non secrets des Functions pour ce projet, s'ils ne sont pas versionnés.
+          if [ ! -f "functions/.env.${PROJECT_ID}" ]; then
+            {
+              echo "FIRESTORE_DATABASE_ID=${FUNCTIONS_FIRESTORE_DATABASE_ID}"
+              echo "FIRESTORE_TRIGGER_REGION=${FUNCTIONS_TRIGGER_REGION:-europe-west1}"
+            } > "functions/.env.${PROJECT_ID}"
+          fi
+
+      - name: Build de l'application
+        run: npm run build
+
+      - name: Contrôle du projet visé par le bundle
+        run: |
+          set -euo pipefail
+          grep -q "${PROJECT_ID}" dist/assets/*.js || { echo "::error::Le bundle ne vise pas ${PROJECT_ID}."; exit 1; }
+          if grep -q "demo-quran-school" dist/assets/*.js; then echo "::error::Bundle branché sur les émulateurs."; exit 1; fi
+
+      - name: Authentification Google (Workload Identity Federation, sans clé)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Cibles
+        id: cibles
+        run: |
+          case "${{ inputs.target }}" in
+            all) echo "only=firestore:rules,functions,hosting" >> "$GITHUB_OUTPUT" ;;
+            firestore-rules) echo "only=firestore:rules" >> "$GITHUB_OUTPUT" ;;
+            functions) echo "only=functions" >> "$GITHUB_OUTPUT" ;;
+            hosting) echo "only=hosting" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::cible inconnue"; exit 1 ;;
+          esac
+
+      - name: Déploiement Firebase
+        run: |
+          npx firebase deploy --only "${{ steps.cibles.outputs.only }}" \
+            --project "${PROJECT_ID}" --non-interactive \
+            --message "GitHub Actions ${GITHUB_SHA::7} (${GITHUB_ACTOR})"
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "### Déploiement ${{ inputs.environment }}"
+            echo "- projet : \`${PROJECT_ID}\`"
+            echo "- cibles : \`${{ steps.cibles.outputs.only }}\`"
+            echo "- commit : \`${GITHUB_SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

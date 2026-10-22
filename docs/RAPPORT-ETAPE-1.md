@@ -223,3 +223,109 @@ npx tsx scripts/migration/migrate-to-tenants.ts --project=$PROJECT --database=$D
 ```
 Puis vérifications (§5 du runbook), et nettoyage à J+30 (§7 : suppression des
 collections racine et du service Cloud Run d'AI Studio).
+
+## 6. Étape 2 : durcissement (22/10/2026, branche `feat/durcissement`)
+
+> Travail fait en autonomie par un agent, **sans aucune action sur la
+> production** ni sur GCP : rien n'a été déployé, aucun pool, compte,
+> bucket ou clé n'a été créé. Tout ce qui touche GCP est **écrit** dans les
+> runbooks pour un humain. Branche créée depuis `fix/revue-securite`.
+> Décisions : D42 à D51. Suivi : `docs/progress/ETAPE-2-durcissement.md`.
+
+### 6.1 Ce qui a été fait
+| # | Point | Résultat |
+|---|---|---|
+| 1 | **R-06** (D42) | Salaire, contrat, CIN, adresse, contact d'urgence, naissance déplacés dans `schools/{s}/staffPrivate/{teacherId}` (bureau seulement) ; `teachers` refuse ces champs ; couche données (`subscribeToStaff`, `saveStaffToFirestore`) ; migration (fiche RH créée, fiches existantes scindées à la relance, ligne `staffPrivate` des comptages) ; données de démonstration ; tests règles / migration / Playwright |
+| 2 | **Proxy IA** (D43) | Quotas transactionnels `aiQuota` (30/jour/utilisateur, 5/minute, 300/jour/école, 1000/jour global, paramétrables, 0 = coupure) ; 413 au-delà de 32 Kio ; journaux `ai.analyze` sans donnée personnelle ; `requestAiReport` côté client |
+| 3 | **App Check** (D44) | Préparé, **désactivé** : `VITE_APPCHECK_SITE_KEY` (reCAPTCHA Enterprise, débogage sur émulateurs), `APPCHECK_ENFORCE` côté Functions (callables + `api`) |
+| 4 | **Dépendances** (D45) | 22 → 5 vulnérabilités (toutes dans `firebase-tools`, outil de dev) ; production 0 ; functions 0 ; audit en CI |
+| 5 | **Déploiement GitHub Actions** (D46) | `deploy.yml` / `preview.yml`, `workflow_dispatch` seulement, WIF sans clé, environnements `dev` / `production` ; **inactifs** tant que le runbook n'est pas déroulé |
+| 6 | **Sauvegardes** (D47) | `scheduledFirestoreExport` (quotidienne, rétention 30 j, garde les 3 plus récents), **omise** tant que `BACKUP_ENABLED` ≠ true ; PITR et restauration dans le runbook |
+| 7 | **Rewrite `/api/**`** (D48) | Testé de bout en bout (`npm run test:hosting`), localement et en CI ; le proxy du conteneur se contourne par processus (`scripts/dev/without-proxy.sh`), triggers compris |
+| 8 | **Pages de prod** (D49) | `index.html` générique ; CSP, `nosniff`, `Referrer-Policy`, `Permissions-Policy` (caméra), `X-Frame-Options`, COOP, HSTS ; cache `/assets` immuable, pages `no-cache` ; **toute la suite Playwright tourne sous la CSP** |
+| 9 | **Clé API web** (D50) | Runbook |
+| 10 | **Photos** (D51) | Filet de sécurité (recompression des images base64 > 300 Ko avant écriture) ; Cloud Storage **non implémenté** (règles Storage sans accès à la base nommée → claims d'appartenance d'abord), plan détaillé |
+
+### 6.2 Tests (réellement obtenus)
+- Local (conteneur, 22/10/2026) : lint app et functions OK ; build de prod OK ;
+  unitaires **49/49** ; émulateurs **235 réussis + 2 ignorés** (triggers, D21) et
+  **237/237** en lançant les émulateurs sans variables de proxy (D48) ;
+  Functions **33/33** ; Hosting (rewrite + en-têtes) **5/5** ; Playwright **11/11**
+  sous la CSP de production.
+- CI GitHub sur `b7ec60e` (code identique au dernier commit, seule la doc
+  diffère) : succès — unitaires 49/49, émulateurs 237/237 triggers compris,
+  Functions 33/33, Hosting 5/5, Playwright 11/11 sous la CSP.
+- Non testé (exige un vrai projet) : échange de jetons App Check, workflows de
+  déploiement (validés par `actionlint` seulement), export Firestore réel,
+  restrictions de clé.
+
+### 6.3 Changements d'interface (à reporter sur `feat/design`)
+1. `src/App.tsx`, abonnement au personnel : `sub<Teacher>("teachers", …)`
+   remplacé par `subscribeToStaff(schoolId, canReadStaffPrivate(role), …)`
+   (sur `feat/design` : `src/data/useSchoolSync.ts`).
+2. `src/App.tsx`, `handleGenerateAIReport` : `fetch` remplacé par
+   `requestAiReport(...)`, message d'erreur `AiReportError.userMessage`
+   (sur `feat/design` : `src/app/actions/useAiActions.ts`).
+3. `index.html` : titre et description génériques.
+4. Imports ajoutés dans `App.tsx` (`subscribeToStaff`, `canReadStaffPrivate`,
+   `requestAiReport`, `AiReportError`) ; `getIdToken` et `apiUrl` n'y sont plus importés.
+Aucun changement de style ni de mise en page. À savoir pour le design :
+les fenêtres d'impression héritent de la CSP (D49) ; les gabarits sans CDN ni
+script en ligne permettront de retirer `'unsafe-inline'` ; le QR code par
+`api.qrserver.com` envoie des noms à un tiers (O-05).
+
+### 6.4 Actions humaines nouvelles (dans l'ordre, dev d'abord)
+```bash
+export REPO=quran-school-org/quran-school-app
+export PROJECT=<id-du-projet-de-dev>        # puis gen-lang-client-0481880143
+export DB=ai-studio-a6572431-c7db-4071-82bf-a922d18511ec
+
+# 0. Relire et fusionner feat/durcissement (après fix/revue-securite) ; la
+#    bascule multi-écoles inclut désormais staffPrivate (rien de plus à faire :
+#    la migration scinde les fiches ; vérifier la ligne staffPrivate de comptages.csv).
+
+# 1. Proxy IA (docs/runbooks/PROXY-IA.md) : TTL des compteurs
+gcloud firestore fields ttls update expiresAt --collection-group=aiQuota --enable-ttl --database=$DB --project=$PROJECT
+
+# 2. Déploiement GitHub Actions (docs/runbooks/CI-DEPLOIEMENT.md, §1 à §5) :
+#    API, pool WIF « github », fournisseur « quran-school-app » restreint au dépôt
+#    et à l'environnement, compte github-deploy et ses rôles, environnements
+#    GitHub dev / production (relecteur, branche main), variables :
+gcloud iam workload-identity-pools create github --location=global --display-name="GitHub Actions" --project=$PROJECT
+#    … (commandes complètes dans le runbook)
+npx firebase functions:artifacts:setpolicy --project $PROJECT --location europe-west1 --days 30
+
+# 3. Sauvegardes (docs/runbooks/SAUVEGARDES.md)
+gcloud firestore databases update --database=$DB --enable-pitr --project=$PROJECT
+gcloud storage buckets create gs://$PROJECT-firestore-sauvegardes --project=$PROJECT --location=EU \
+  --uniform-bucket-level-access --public-access-prevention --soft-delete-duration=7d
+#    règle de cycle de vie, compte firestore-backup et droits (§2, §3), puis dans
+#    functions/.env.$PROJECT : BACKUP_ENABLED=true, BACKUP_BUCKET=$PROJECT-firestore-sauvegardes
+npx firebase deploy --only functions:scheduledFirestoreExport --project $PROJECT
+gcloud scheduler jobs run firebase-schedule-scheduledFirestoreExport-europe-west1 --location=europe-west1 --project=$PROJECT
+#    test de restauration dans une base neuve du projet de dev (§5)
+
+# 4. App Check (docs/runbooks/APP-CHECK.md) : clé reCAPTCHA Enterprise,
+#    enregistrement console, VITE_APPCHECK_SITE_KEY dans .env.production,
+#    observation 7 à 14 jours, PUIS APPCHECK_ENFORCE=true et « Appliquer » dans la console.
+gcloud recaptcha keys create --display-name="kuttab-web-appcheck" --web --domains=$PROJECT.web.app --integration-type=SCORE --project=$PROJECT
+
+# 5. Clé API web et clé Gemini (docs/runbooks/CLE-API-WEB.md)
+gcloud services api-keys update <KEY_ID> --project=$PROJECT \
+  --allowed-referrers="https://$PROJECT.web.app/*,https://$PROJECT.firebaseapp.com/*" \
+  --api-target=service=identitytoolkit.googleapis.com --api-target=service=securetoken.googleapis.com \
+  --api-target=service=firestore.googleapis.com --api-target=service=firebaseappcheck.googleapis.com
+gcloud services api-keys update <GEMINI_KEY_ID> --project=$PROJECT --api-target=service=generativelanguage.googleapis.com
+
+# 6. En-têtes de sécurité : déployés avec le Hosting (firebase.json) ; après
+#    déploiement, vérifier : curl -sI https://$PROJECT.web.app/ | grep -iE "content-security|permissions|referrer|nosniff"
+#    puis tester une impression (reçu, liste des élèves) et le scan QR (caméra).
+```
+
+### 6.5 Points ouverts
+- R-07 (familles qui créent des notifications) et O-05 (QR code chez un tiers)
+  restent à traiter (interface).
+- `express`, `vite`, `dotenv` à déplacer en `devDependencies` (D45).
+- `CLAUDE.md` ne mentionne pas encore `staffPrivate` ni `test:hosting` :
+  à mettre à jour par le propriétaire.
+- Photos dans Cloud Storage : plan D51 (claims d'appartenance d'abord).

@@ -4,6 +4,10 @@
  *
  *   racine X/{id}            → schools/{school}/X/{id}  (même ID, + champ schoolId)
  *   settings/system          → schools/{school}/settings/system (+ paramètres métier)
+ *   teachers/{id}            → schools/{school}/teachers/{id}     (fiche publique)
+ *                              + schools/{school}/staffPrivate/{id} (fiche RH : salaire,
+ *                              contrat, CIN, adresse, contact d'urgence, naissance ;
+ *                              bureau seulement, R-06 / D42)
  *   appUsers/{id}            → comptes Firebase Auth (via le provisionnement du Lot 0)
  *                              + users/{uid} + schools/{school}/members/{uid}
  *                              + registre usernames/{username}
@@ -40,6 +44,7 @@ import { initAdmin, parseCommonArgs, timestamp } from "../admin/lib/cli";
 import { toCsv } from "../admin/lib/csv";
 import { runLot0Provision, type Anomaly } from "../admin/lot0-provision-auth";
 import { parseRotationPolicy, type RotationPolicy } from "../admin/lib/passwords";
+import { STAFF_PRIVATE_COLLECTION, STAFF_PRIVATE_FIELDS, hasStaffPrivateFields, splitStaffRecord } from "../../src/security/staffPrivate";
 
 /** Les 14 collections métier déplacées sous schools/{schoolId}/. */
 export const TENANT_COLLECTIONS = [
@@ -83,6 +88,9 @@ export interface MigrationOptions {
   log?: (m: string) => void;
 }
 
+/** Collections cibles comptées en plus des 14 collections métier. */
+export const DERIVED_COLLECTIONS = [STAFF_PRIVATE_COLLECTION] as const;
+
 export interface CollectionCount {
   collection: string;
   source: number;
@@ -98,6 +106,8 @@ export interface MigrationSummary {
   collections: CollectionCount[];
   settings: "copied" | "existing" | "absent";
   schoolDoc: "created" | "existing";
+  /** Fiches publiques déjà présentes dans la cible et encore porteuses de champs RH, scindées. */
+  staffSplitExisting: number;
   accounts: { appUsers: number; withAuth: number; usersWritten: number; membersWritten: number; membersSkipped: number; usernamesRegistered: number; pendingAuth: number };
   superAdmin: string | null;
   anomalies: Record<string, number>;
@@ -205,11 +215,53 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
       copied++;
       if (writer) {
         const { id, ...data } = d;
-        track(put(db.collection(targetPath).doc(id), { ...data, id, schoolId: s }), `${targetPath}/${id}`, col);
+        // Personnel : la fiche publique ne porte plus aucun champ RH (D42).
+        const body = col === "teachers" ? splitStaffRecord(data).publicData : data;
+        track(put(db.collection(targetPath).doc(id), { ...body, id, schoolId: s }), `${targetPath}/${id}`, col);
       }
     }
     counts.push({ collection: col, source: source[col].length, targetBefore: existing.size, copied, skippedExisting: skipped, targetAfter: null });
     log(`[migration] ${col.padEnd(22)} source ${source[col].length}, déjà présents ${skipped}, à copier ${copied}`);
+  }
+
+  // 3 bis. Fiches RH du personnel (staffPrivate), même identifiant que la fiche publique.
+  const staffPath = `schools/${s}/${STAFF_PRIVATE_COLLECTION}`;
+  const existingStaff = await listIds(db, staffPath);
+  const staffSource = source.teachers.filter((t) => hasStaffPrivateFields(t));
+  // Fiches publiques cibles encore porteuses de champs RH (voir 3 ter) : leurs
+  // valeurs, plus récentes que la racine, font foi.
+  const legacyTargets = (await readAll(db, `schools/${s}/teachers`)).filter((t) => hasStaffPrivateFields(t));
+  const legacyTargetIds = new Set(legacyTargets.map((t) => t.id));
+  let staffCopied = 0;
+  let staffSkipped = 0;
+  for (const t of staffSource) {
+    if ((existingStaff.has(t.id) && !opts.overwrite) || legacyTargetIds.has(t.id)) { staffSkipped++; continue; }
+    staffCopied++;
+    if (writer) {
+      track(put(db.collection(staffPath).doc(t.id), { ...splitStaffRecord(t).privateData, teacherId: t.id, schoolId: s, updatedAt: nowIso }), `${staffPath}/${t.id}`, STAFF_PRIVATE_COLLECTION);
+    }
+  }
+  counts.push({ collection: STAFF_PRIVATE_COLLECTION, source: staffSource.length, targetBefore: existingStaff.size, copied: staffCopied, skippedExisting: staffSkipped, targetAfter: null });
+  log(`[migration] ${STAFF_PRIVATE_COLLECTION.padEnd(22)} source ${staffSource.length}, déjà présents ${staffSkipped}, à copier ${staffCopied}`);
+
+  // 3 ter. Fiches publiques DÉJÀ présentes dans la cible avec des champs RH
+  // (répétition antérieure à D42, ou saisie par une version précédente de
+  // l'application) : les champs RH sont déplacés vers staffPrivate (sans écraser
+  // une fiche RH existante) puis retirés de la fiche publique. Seule
+  // modification d'un document cible existant : c'est le correctif R-06.
+  let staffSplitExisting = 0;
+  for (const t of legacyTargets) {
+    staffSplitExisting++;
+    anomaly(anomalies, "info", "STAFF_PRIVATE_SPLIT", t.id, "fiche publique existante porteuse de champs RH : champs déplacés vers staffPrivate");
+    if (writer) {
+      const privRef = db.collection(staffPath).doc(t.id);
+      if (!existingStaff.has(t.id)) {
+        track(writer.create(privRef, { ...splitStaffRecord(t).privateData, teacherId: t.id, schoolId: s, updatedAt: nowIso }), privRef.path, STAFF_PRIVATE_COLLECTION);
+      }
+      const removed: Record<string, FieldValue> = {};
+      for (const k of STAFF_PRIVATE_FIELDS) removed[k] = FieldValue.delete();
+      track(writer.update(db.collection(`schools/${s}/teachers`).doc(t.id), removed), `schools/${s}/teachers/${t.id}`);
+    }
   }
 
   // 4. Paramètres de l'école (+ paramètres métier implicites de l'ancienne application).
@@ -332,6 +384,7 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
     mode: opts.apply ? "application" : "simulation",
     schoolId: s,
     collections: counts,
+    staffSplitExisting,
     settings: settingsState,
     schoolDoc,
     accounts,

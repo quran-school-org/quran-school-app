@@ -1,7 +1,7 @@
 /**
  * Extrait mécaniquement d'App.tsx (Lot 2, sans changement de comportement).
  */
-import { getIdToken, apiUrl } from "../../firebase";
+import { requestAiReport, AiReportError } from "../../firebase";
 import { Student } from "../../types";
 import { computeAge } from "../../school/businessRules";
 import type { DerivedScope } from "../scope";
@@ -34,35 +34,21 @@ export function useAiActions(s: DerivedScope) {
       .join(", ");
 
     try {
-      // Fonction `api` : exige un ID token et l'appartenance à l'école active.
-      const idToken = await getIdToken();
-      const res = await fetch(apiUrl("/api/gemini/analyze"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
-        },
-        body: JSON.stringify({
-          schoolId: activeSchoolId,
-          studentName: student.fullName,
-          hizbCount: student.hizbCount,
-          tajweedLevel: student.tajweedLevel,
-          age: computeAge(student.birthDate),
-          notes: student.notes,
-          attendanceRate,
-          recentGrades: studentGrades || "لا توجد امتحانات حديثة مسجلة."
-        })
+      // Fonction `api` (src/firebase.ts) : jeton, appartenance, quota (D43).
+      const data = await requestAiReport<any>({
+        schoolId: activeSchoolId || "",
+        studentName: student.fullName,
+        hizbCount: student.hizbCount,
+        tajweedLevel: student.tajweedLevel,
+        age: computeAge(student.birthDate),
+        notes: student.notes,
+        attendanceRate,
+        recentGrades: studentGrades || "لا توجد امتحانات حديثة مسجلة."
       });
-
-      if (!res.ok) {
-        throw new Error("فشل في استدعاء خادم التحليل الذكي.");
-      }
-
-      const data = await res.json();
       setAiReport(data);
     } catch (err: any) {
       console.error(err);
-      setAiError("عذراً، حدث خطأ أثناء تشغيل محرك الذكاء الاصطناعي. الرجاء التحقق من مفتاح API وإعادة المحاولة.");
+      setAiError(err instanceof AiReportError ? err.userMessage : "عذراً، حدث خطأ أثناء تشغيل محرك الذكاء الاصطناعي. الرجاء التحقق من مفتاح API وإعادة المحاولة.");
     } finally {
       setAiLoading(false);
     }

@@ -2,7 +2,7 @@
  * Test de fumée : connexion par rôle, isolation des données, changement
  * d'école. Données FICTIVES (npm run seed:emulator), émulateurs uniquement.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { ACCOUNTS, SCHOOL_1, SCHOOL_2, loginAs, logout, openTab } from "./helpers";
 
 test.describe.serial("parcours par rôle", () => {
@@ -130,5 +130,32 @@ test.describe.serial("revue de sécurité", () => {
     await page.goto("/");
     await expect(page.locator('form button[type="submit"]')).toBeVisible();
     expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("kuttab:alfajr:")))).toEqual([]);
+  });
+});
+
+/**
+ * Étape 2, durcissement : fiches RH du personnel (R-06, D42). Vérifié sur le
+ * cache local rempli par la couche données (indépendant de la mise en page).
+ */
+test.describe.serial("durcissement", () => {
+  const cachedTeachers = (page: Page) => page.evaluate(() => {
+    const raw = localStorage.getItem("kuttab:alfajr:teachers");
+    return raw ? (JSON.parse(raw) as Record<string, unknown>[]) : null;
+  });
+
+  test("R-06 : le bureau reçoit les fiches RH, l'enseignant jamais", async ({ page }) => {
+    await loginAs(page, ACCOUNTS.directeur);
+    await expect.poll(async () => (await cachedTeachers(page))?.find((t) => t.id === "t1")?.monthlySalary ?? null).toBe(2500);
+    await logout(page);
+
+    await loginAs(page, ACCOUNTS.enseignant);
+    await expect.poll(async () => (await cachedTeachers(page))?.length ?? 0).toBeGreaterThan(0);
+    const staff = (await cachedTeachers(page))!;
+    for (const t of staff) {
+      for (const k of ["monthlySalary", "cinNumber", "contractType", "birthDate", "address", "emergencyContact"]) {
+        expect(t[k], `${t.id}.${k}`).toBeUndefined();
+      }
+    }
+    await logout(page);
   });
 });

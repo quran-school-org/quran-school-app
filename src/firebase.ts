@@ -6,6 +6,8 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  deleteField,
+  writeBatch,
   onSnapshot,
   getDoc,
   getDocs,
@@ -24,16 +26,49 @@ import {
   type UserCredential,
 } from "firebase/auth";
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from "firebase/functions";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken as getAppCheckToken, type AppCheck } from "firebase/app-check";
 import type { SystemSettings, AppUser, UserProfile, SchoolInfo } from "./types";
-import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, apiBaseUrl } from "./config/env";
+import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, apiBaseUrl, appCheckConfig } from "./config/env";
 import { loginEmailCandidates, normalizeAuthPassword, normalizeUsername } from "./security/accounts";
 import { getCacheScope, scopedKey } from "./cache/localCache";
+import { shrinkInlinePhotos } from "./utils/imageCompression";
+import { STAFF_PRIVATE_COLLECTION, STAFF_PRIVATE_FIELDS, mergeStaffRecords, splitStaffRecord, stripStaffPrivate } from "./security/staffPrivate";
 
 /** Région des Cloud Functions (identique à functions/src/config.ts). */
 export const FUNCTIONS_REGION = "europe-west1";
 
 // Configuration web Firebase lue depuis les variables VITE_* (voir .env.example).
 const app = initializeApp(firebaseWebConfig);
+
+// App Check (D44) : seulement si une clé de site est fournie (désactivé par
+// défaut). En mode émulateurs ou avec un jeton de débogage, le fournisseur de
+// débogage remplace reCAPTCHA (le jeton doit être enregistré dans la console
+// App Check du projet). Doit précéder l'initialisation des autres services.
+export const appCheck: AppCheck | null = (() => {
+  if (!appCheckConfig.siteKey || typeof window === "undefined") return null;
+  if (emulatorConfig.enabled || appCheckConfig.debugToken) {
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckConfig.debugToken || true;
+  }
+  try {
+    return initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(appCheckConfig.siteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (error) {
+    console.error("[firebase] App Check non initialisé :", error);
+    return null;
+  }
+})();
+
+/** Jeton App Check pour la fonction HTTP `api` (null si App Check est désactivé ou indisponible). */
+export async function getAppCheckHeader(): Promise<string | null> {
+  if (!appCheck) return null;
+  try {
+    return (await getAppCheckToken(appCheck, false)).token;
+  } catch {
+    return null;
+  }
+}
 
 // Base Firestore (base nommée en prod, "(default)" sur les émulateurs).
 export const db = firestoreDatabaseId === "(default)"
@@ -187,6 +222,51 @@ export function apiUrl(path: string): string {
   return `${apiBaseUrl}${path}`;
 }
 
+/** Erreur d'appel au rapport IA, avec un message arabe prêt à afficher. */
+export class AiReportError extends Error {
+  constructor(public readonly status: number, public readonly userMessage: string) {
+    super(`ai-report-${status}`);
+  }
+}
+
+/** Message arabe selon le code HTTP de la fonction `api` (429 quota, 413 taille…). */
+export function describeAiReportStatus(status: number): string {
+  if (status === 429) return "تم بلوغ الحد المسموح به من تقارير الذكاء الاصطناعي لهذا اليوم. يرجى المحاولة لاحقاً.";
+  if (status === 413) return "بيانات الطالب طويلة جداً لإنشاء التقرير. يرجى اختصار الملاحظات.";
+  if (status === 401) return "انتهت الجلسة. يرجى تسجيل الدخول من جديد.";
+  if (status === 403) return "ليست لديك صلاحية إنشاء تقرير الذكاء الاصطناعي في هذه المدرسة.";
+  return "عذراً، حدث خطأ أثناء تشغيل محرك الذكاء الاصطناعي. الرجاء إعادة المحاولة.";
+}
+
+/**
+ * Rapport pédagogique IA d'un élève (fonction `api`, POST /api/gemini/analyze).
+ * Jeton Firebase joint ; en cas d'échec, lève AiReportError (message arabe).
+ */
+export async function requestAiReport<T = unknown>(input: {
+  schoolId: string;
+  studentName: string;
+  hizbCount?: number;
+  tajweedLevel?: string;
+  age?: number | string | null;
+  notes?: string;
+  attendanceRate?: number;
+  recentGrades?: string;
+}): Promise<T> {
+  const idToken = await getIdToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (idToken) headers.Authorization = `Bearer ${idToken}`;
+  const appCheckToken = await getAppCheckHeader();
+  if (appCheckToken) headers["X-Firebase-AppCheck"] = appCheckToken;
+  let res: Response;
+  try {
+    res = await fetch(apiUrl("/api/gemini/analyze"), { method: "POST", headers, body: JSON.stringify(input) });
+  } catch {
+    throw new AiReportError(0, "تعذر الاتصال بالخادم. تحقق من الاتصال بالإنترنت.");
+  }
+  if (!res.ok) throw new AiReportError(res.status, describeAiReportStatus(res.status));
+  return (await res.json()) as T;
+}
+
 // ---------------------------------------------------------------------------
 // Cloud Functions callables (gestion des écoles et des comptes)
 // ---------------------------------------------------------------------------
@@ -318,7 +398,8 @@ export function sanitizeForFirestore(obj: any): any {
  */
 export async function saveToFirestore(schoolId: string, collectionName: string, id: string, data: any) {
   try {
-    const sanitizedData = sanitizeForFirestore(stripPassword({ ...data }));
+    // Photos base64 trop lourdes recompressées (limite de 1 Mio par document, D51).
+    const sanitizedData = sanitizeForFirestore(await shrinkInlinePhotos(stripPassword({ ...data })));
     await setDoc(schoolDocRef(schoolId, collectionName, id), { ...sanitizedData, schoolId }, { merge: true });
   } catch (error) {
     console.error(`Error saving to Firestore ${schoolId}/${collectionName}/${id}:`, error);
@@ -472,4 +553,93 @@ export function subscribeToSettings(
     console.error(`Error in real-time sync for ${schoolId}/settings:`, error);
     checkAndHandleQuotaError(error);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Personnel : fiche publique `teachers` + fiche RH `staffPrivate` (R-06, D42)
+// ---------------------------------------------------------------------------
+
+/**
+ * Enregistre une fiche du personnel en deux documents, dans un seul lot :
+ * `teachers/{id}` (partie publique, champs RH explicitement supprimés pour ne
+ * jamais les y laisser) et `staffPrivate/{id}` (partie RH, bureau seulement).
+ * Les champs RH absents de l'objet ne sont pas effacés (écriture en fusion).
+ */
+export async function saveStaffToFirestore(schoolId: string, staff: { id: string; [k: string]: any }) {
+  try {
+    const { publicData, privateData } = splitStaffRecord(await shrinkInlinePhotos(stripPassword({ ...staff })));
+    const batch = writeBatch(db);
+    const removed: Record<string, unknown> = {};
+    for (const k of STAFF_PRIVATE_FIELDS) removed[k] = deleteField();
+    batch.set(schoolDocRef(schoolId, "teachers", staff.id), { ...sanitizeForFirestore(publicData), ...removed, schoolId }, { merge: true });
+    batch.set(
+      schoolDocRef(schoolId, STAFF_PRIVATE_COLLECTION, staff.id),
+      { ...sanitizeForFirestore(privateData), teacherId: staff.id, schoolId, updatedAt: new Date().toISOString() },
+      { merge: true },
+    );
+    await batch.commit();
+  } catch (error) {
+    console.error(`Error saving staff ${schoolId}/teachers/${staff.id}:`, error);
+    checkAndHandleQuotaError(error);
+  }
+}
+
+/** Supprime la fiche publique et la fiche RH d'un membre du personnel. */
+export async function deleteStaffFromFirestore(schoolId: string, id: string) {
+  try {
+    const batch = writeBatch(db);
+    batch.delete(schoolDocRef(schoolId, "teachers", id));
+    batch.delete(schoolDocRef(schoolId, STAFF_PRIVATE_COLLECTION, id));
+    await batch.commit();
+  } catch (error) {
+    console.error(`Error deleting staff ${schoolId}/teachers/${id}:`, error);
+    checkAndHandleQuotaError(error);
+  }
+}
+
+/**
+ * Abonnement aux fiches du personnel. Sans droit RH (`includePrivate` faux),
+ * seules les fiches publiques sont lues (et tout champ RH résiduel est retiré).
+ * Avec droit RH (bureau), les fiches RH sont fusionnées dans les fiches
+ * publiques : l'interface reçoit le même objet `Teacher` qu'avant la scission.
+ * La liste n'est émise qu'une fois les deux lectures arrivées ; si la lecture
+ * RH est refusée, les fiches publiques sont émises seules.
+ */
+export function subscribeToStaff<T extends { id: string }>(
+  schoolId: string,
+  includePrivate: boolean,
+  onUpdate: (data: T[]) => void,
+  cacheName: string,
+) {
+  let publicDocs: T[] | null = null;
+  let privateDocs: { id: string; [k: string]: unknown }[] | null = includePrivate ? null : [];
+  const emit = () => {
+    if (publicDocs === null || privateDocs === null) return;
+    const items = includePrivate
+      ? mergeStaffRecords(publicDocs, privateDocs)
+      : publicDocs.map((t) => stripStaffPrivate(t as T & Record<string, any>) as unknown as T);
+    writeCache(schoolId, cacheName, items);
+    onUpdate(items);
+  };
+  const unsubs = [
+    onSnapshot(schoolCollection(schoolId, "teachers"), (snapshot) => {
+      publicDocs = snapshot.docs.map((d) => stripPassword({ id: d.id, ...d.data() } as T & Record<string, any>));
+      emit();
+    }, (error) => {
+      console.error(`Error in real-time sync for ${schoolId}/teachers:`, error);
+      checkAndHandleQuotaError(error);
+    }),
+  ];
+  if (includePrivate) {
+    unsubs.push(onSnapshot(schoolCollection(schoolId, STAFF_PRIVATE_COLLECTION), (snapshot) => {
+      privateDocs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      emit();
+    }, (error) => {
+      console.error(`Error in real-time sync for ${schoolId}/${STAFF_PRIVATE_COLLECTION}:`, error);
+      privateDocs = [];
+      emit();
+      checkAndHandleQuotaError(error);
+    }));
+  }
+  return () => unsubs.forEach((u) => u());
 }

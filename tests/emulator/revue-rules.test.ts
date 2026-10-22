@@ -33,7 +33,9 @@ beforeEach(async () => {
           await setDoc(doc(db, "schools", s, col, `${col}_${id}`), { studentId: id, schoolId: s });
         }
       }
-      await setDoc(doc(db, "schools", s, "teachers", "t1"), { fullName: "prof", monthlySalary: 2500, cinNumber: "XX1", schoolId: s });
+      // Fiche scindée (D42) : partie publique et fiche RH.
+      await setDoc(doc(db, "schools", s, "teachers", "t1"), { fullName: "prof", schoolId: s });
+      await setDoc(doc(db, "schools", s, "staffPrivate", "t1"), { monthlySalary: 2500, cinNumber: "XX1", teacherId: "t1", schoolId: s });
     }
     // Parent de A lié à S-1 ; ses liens citent aussi un identifiant qui n'existe que dans B.
     await setDoc(doc(db, "schools", A, "members", "parent"), { role: "ولي أمر", isActive: true, linkedStudentIds: ["S-1"], schoolId: A });
@@ -126,12 +128,22 @@ describe("hypothèses réfutées : personnel", () => {
   });
 });
 
-describe("constats confirmés, non corrigés (voir le rapport)", () => {
-  it("R-06 (connu, D14) : un enseignant lit les salaires et CIN de tout le personnel", async () => {
+describe("R-06 corrigé (D42) : fiches RH du personnel", () => {
+  it("un enseignant lit la fiche publique, sans salaire ni CIN, mais pas la fiche RH", async () => {
     const snap = await assertSucceeds(getDoc(doc(as("prof"), "schools", A, "teachers", "t1")));
-    if (snap.data()?.monthlySalary !== 2500) throw new Error("donnée attendue");
+    if (snap.data()?.monthlySalary !== undefined || snap.data()?.cinNumber !== undefined) throw new Error("champ RH dans la fiche publique");
+    await assertFails(getDoc(doc(as("prof"), "schools", A, "staffPrivate", "t1")));
+    await assertFails(getDocs(collection(as("prof"), "schools", A, "staffPrivate")));
   });
 
+  it("le bureau lit la fiche RH de son école, pas celle d'une autre", async () => {
+    const snap = await assertSucceeds(getDoc(doc(as("admin"), "schools", A, "staffPrivate", "t1")));
+    if (snap.data()?.monthlySalary !== 2500) throw new Error("donnée attendue");
+    await assertFails(getDoc(doc(as("admin"), "schools", B, "staffPrivate", "t1")));
+  });
+});
+
+describe("constats confirmés, non corrigés (voir le rapport)", () => {
   it("R-07 : une famille peut créer une notification (lue par le personnel)", async () => {
     await assertSucceeds(setDoc(doc(as("parent"), "schools", A, "notifications", "n_famille"), { title: "x", message: "y", schoolId: A }));
   });

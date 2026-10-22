@@ -4,9 +4,9 @@
 import { useEffect } from "react";
 import { runTransaction } from "firebase/firestore";
 import { RealmSimDB } from "../db";
-import { subscribeToCollection, subscribeToSettings, subscribeToDocument, subscribeToDocumentsByIds, subscribeToQueryIn, schoolDocRef, sanitizeForFirestore, db } from "../firebase";
+import { subscribeToCollection, subscribeToSettings, subscribeToDocument, subscribeToDocumentsByIds, subscribeToQueryIn, subscribeToStaff, schoolDocRef, sanitizeForFirestore, db } from "../firebase";
 import { Student, Teacher, Class, Attendance, Grade, Payment, Notification, AppUser, UserProfile, DailyProgress, OtherIncome, SalaryPayment, Expense, ActivityTrip, ActivityParticipant, ActivityExpense } from "../types";
-import { isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections } from "../security/access";
+import { isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections, canReadStaffPrivate } from "../security/access";
 import { linkedStudentIdsOf } from "../security/accountAlignment";
 import { getOpeningPeriod, monthIndex } from "../school/businessRules";
 import { parseClassSchedule, mergeSessionProfile } from "../app/helpers";
@@ -154,7 +154,12 @@ export function useSchoolSync(s: SessionScope) {
           if (active) setAppUsers(items);
         }, "settings_users"));
       }
-      sub<Teacher>("teachers", "teachers", setTeachers);
+      if (readable.has("teachers")) {
+        // Fiches publiques ; fiches RH (salaire, CIN…) fusionnées pour le bureau seulement (D42).
+        unsubscribes.push(subscribeToStaff<Teacher>(schoolId, canReadStaffPrivate(role), (items) => {
+          if (active) setTeachers(items);
+        }, "teachers"));
+      }
       sub<Class>("classes", "classes", setClasses);
       sub<Payment>("payments", "payments", onPayments);
       sub<Notification>("notifications", "notifications", setNotifications);

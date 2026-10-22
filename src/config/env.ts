@@ -54,3 +54,15 @@ export const emulatorConfig = {
  * URL de l'émulateur Functions (voir .env.development).
  */
 export const apiBaseUrl: string = (env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "");
+
+/**
+ * App Check (D44), DÉSACTIVÉ tant que VITE_APPCHECK_SITE_KEY est vide.
+ * - VITE_APPCHECK_SITE_KEY : clé de site reCAPTCHA Enterprise (publique) ;
+ * - VITE_APPCHECK_DEBUG_TOKEN : jeton de débogage (émulateurs, CI, poste de
+ *   développement) ; à enregistrer dans la console App Check du projet de DEV.
+ *   Ne jamais en mettre un dans .env.production.
+ */
+export const appCheckConfig = {
+  siteKey: (env.VITE_APPCHECK_SITE_KEY || "").trim(),
+  debugToken: (env.VITE_APPCHECK_DEBUG_TOKEN || "").trim(),
+};

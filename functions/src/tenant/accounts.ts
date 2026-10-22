@@ -27,6 +27,7 @@ import {
 import { FAMILY_ROLES, isRole, type UserRole } from "../shared/roles.js";
 import { defaultSchoolSettings } from "../shared/schoolDefaults.js";
 import { assertSchoolId, getMember, requireAuth, requireSchoolRole } from "./access.js";
+import { APPCHECK_ENFORCE, noteCallableAppCheck } from "../appCheck.js";
 
 const FLAG_KEYS = [
   "canEditStudents", "canEditTeachers", "canEditGrades", "canEditPayments",
@@ -147,7 +148,8 @@ export async function createSchoolCore(callerUid: string, data: Record<string, u
   return { schoolId };
 }
 
-export const createSchool = onCall({ region: FUNCTIONS_REGION }, async (request) => {
+export const createSchool = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: APPCHECK_ENFORCE }, async (request) => {
+  noteCallableAppCheck("createSchool", request);
   const { uid, superAdmin } = requireAuth(request);
   if (!superAdmin) throw new HttpsError("permission-denied", "إنشاء المدارس مخصص للمشرف العام للمنصة.");
   return createSchoolCore(uid, (request.data || {}) as Record<string, unknown>);
@@ -227,7 +229,8 @@ export async function createSchoolUserCore(callerUid: string, data: Record<strin
   return { uid: record.uid, username };
 }
 
-export const createSchoolUser = onCall({ region: FUNCTIONS_REGION }, async (request) => {
+export const createSchoolUser = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: APPCHECK_ENFORCE }, async (request) => {
+  noteCallableAppCheck("createSchoolUser", request);
   const data = (request.data || {}) as Record<string, unknown>;
   const schoolId = assertSchoolId(data.schoolId);
   const caller = await requireSchoolRole(request, schoolId, DIRECTOR_ROLES);
@@ -267,7 +270,8 @@ export async function resetUserPasswordCore(caller: { uid: string; superAdmin: b
   return { ok: true };
 }
 
-export const resetUserPassword = onCall({ region: FUNCTIONS_REGION }, async (request) => {
+export const resetUserPassword = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: APPCHECK_ENFORCE }, async (request) => {
+  noteCallableAppCheck("resetUserPassword", request);
   const data = (request.data || {}) as Record<string, unknown>;
   const schoolId = assertSchoolId(data.schoolId);
   const uid = str(data.uid, "uid", 128)!;
@@ -333,7 +337,8 @@ export async function setMemberRoleCore(caller: { uid: string; superAdmin: boole
   return { ok: true };
 }
 
-export const setMemberRole = onCall({ region: FUNCTIONS_REGION }, async (request) => {
+export const setMemberRole = onCall({ region: FUNCTIONS_REGION, enforceAppCheck: APPCHECK_ENFORCE }, async (request) => {
+  noteCallableAppCheck("setMemberRole", request);
   const data = (request.data || {}) as Record<string, unknown>;
   const schoolId = assertSchoolId(data.schoolId);
   const uid = str(data.uid, "uid", 128)!;

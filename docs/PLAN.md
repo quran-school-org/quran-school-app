@@ -22,7 +22,7 @@ Détails, constats et estimations : [`docs/analyse/RAPPORT-ANALYSE.md`](analyse/
 | 7 | **Design** | Jetons, composants, cadre de l'app (menu, barre du haut, sélecteur d'école) ; tableau de bord d'après la maquette ; puis un écran par PR | Capture avant/après par écran | Déploiements progressifs |
 | 8 | **Exploitation** | Déploiement prod depuis GitHub Actions ; arrêt du service Cloud Run AI Studio ; suppression des anciennes collections après 30 jours | Le déploiement se fait depuis ce dépôt | Oui, sur accord |
 
-## Avancement (21/10/2026)
+## Avancement (21/10/2026, complété le 22/10/2026)
 
 Détail, résultats des tests et actions humaines restantes : [`docs/RAPPORT-ETAPE-1.md`](RAPPORT-ETAPE-1.md).
 Décisions prises : [`docs/DECISIONS.md`](DECISIONS.md).
@@ -36,9 +36,26 @@ Décisions prises : [`docs/DECISIONS.md`](DECISIONS.md).
 | 5 | Migration | **Script et tests faits** (émulateurs, données fictives). Reste : sauvegarde et deux répétitions sur un projet de dev, validation des liens parent/enfant par l'école | `feat/multi-tenant` |
 | 6 | Bascule | À faire par un humain (`docs/runbooks/MIGRATION-BASCULE.md`) | — |
 | 7 | Design | Non commencé (hors mission) | — |
-| 8 | Exploitation | En partie : CI sans déploiement ; reste déploiement depuis GitHub Actions, arrêt de Cloud Run AI Studio, nettoyage J+30 | — |
+| 8 | Exploitation | **Préparé** (`feat/durcissement`) : déploiement GitHub Actions manuel par WIF (`deploy.yml`, `preview.yml`, inactifs), sauvegardes planifiées + PITR, App Check (désactivé), quotas du proxy IA, en-têtes de sécurité, audit des dépendances en CI. Reste (humain) : runbooks `CI-DEPLOIEMENT`, `SAUVEGARDES`, `APP-CHECK`, `CLE-API-WEB`, `PROXY-IA` ; arrêt de Cloud Run AI Studio ; nettoyage J+30 | `feat/durcissement` |
 
-Branches empilées : `docs/analyse-et-plan` ← `chore/socle-dev` ← `fix/lot0-securite` ← `feat/multi-tenant`.
+Branches empilées : `docs/analyse-et-plan` ← `chore/socle-dev` ← `fix/lot0-securite` ← `feat/multi-tenant`
+← `fix/revue-securite` (revue, étape 2) ← `feat/durcissement` (durcissement, étape 2).
+
+### Étape 2 — durcissement (22/10/2026, `feat/durcissement`)
+Détail et actions humaines : [`docs/RAPPORT-ETAPE-1.md`](RAPPORT-ETAPE-1.md) § 6 ; décisions D42–D51.
+
+| # | Point | État |
+|---|---|---|
+| 1 | R-06 : fiches RH du personnel (`staffPrivate`, bureau seulement) | **Fait** (règles, couche données, migration, tests) |
+| 2 | Proxy IA : quotas, taille des entrées, journaux sans données personnelles | **Fait** |
+| 3 | App Check | **Préparé, désactivé** (runbook) |
+| 4 | Dépendances (`npm audit`) | **Fait** : production 0 vulnérabilité ; 5 restantes dans `firebase-tools` (outil de dev) |
+| 5 | Déploiement GitHub Actions (WIF, environnements) | **Préparé, inactif** (runbook) |
+| 6 | Sauvegardes (export planifié, PITR) | **Préparé, désactivé** (runbook) |
+| 7 | Rewrite `/api/**` | **Testé** (local et CI) |
+| 8 | `index.html` générique, en-têtes, cache, Playwright sous CSP | **Fait** |
+| 9 | Restriction de la clé API web | Runbook (humain) |
+| 10 | Photos | Filet de sécurité fait ; Cloud Storage **planifié** (D51) |
 
 ## Modèles Claude
 - **Opus 5.5** : lots 0, 4, 5 et 6.
