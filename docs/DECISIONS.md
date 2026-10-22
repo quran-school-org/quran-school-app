@@ -405,3 +405,18 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
 - **Retour arrière** : limites très hautes dans `functions/.env.<projet>` (les
   compteurs restent), ou revenir au commit précédent de `api.ts`.
 - Runbook : `docs/runbooks/PROXY-IA.md` (paramètres, TTL, coupure d'urgence).
+
+### D44. App Check préparé, désactivé par défaut
+- **Décision** : client : `initializeAppCheck` + `ReCaptchaEnterpriseProvider`
+  seulement si `VITE_APPCHECK_SITE_KEY` est défini (vide partout dans le dépôt) ;
+  fournisseur de débogage si émulateurs ou `VITE_APPCHECK_DEBUG_TOKEN` ; jeton
+  joint à `api` par `requestAiReport` (`X-Firebase-AppCheck`). Functions :
+  paramètre `APPCHECK_ENFORCE` (défaut false) : `enforceAppCheck` des callables
+  et vérification manuelle dans `api` (refus 401 seulement si appliqué) ;
+  journaux d'état du jeton pour la période d'observation.
+- **Raison** : App Check appliqué trop tôt bloque les utilisateurs dont le
+  navigateur ne charge pas reCAPTCHA ; il faut mesurer d'abord.
+- **Non testé ici** : l'échange réel du jeton (reCAPTCHA ou débogage) exige un
+  vrai projet ; les émulateurs ne vérifient pas App Check. La logique de
+  décision de `api` est testée par injection d'un vérificateur.
+- **Retour arrière** : runbook `docs/runbooks/APP-CHECK.md` §6.

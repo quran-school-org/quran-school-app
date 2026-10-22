@@ -13,12 +13,13 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 2. **Proxy IA / D43** : quotas transactionnels (utilisateur jour/minute, école,
    global), corps ≤ 32 Kio, journaux sans données personnelles, `requestAiReport`
    côté client, runbook `docs/runbooks/PROXY-IA.md`.
+3. **App Check / D44** : client (`VITE_APPCHECK_SITE_KEY`, débogage), Functions
+   (`APPCHECK_ENFORCE`, défaut false), runbook `docs/runbooks/APP-CHECK.md`.
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-3. App Check préparé, désactivé par défaut.
 4. `npm audit` (app, functions).
 5. `deploy.yml` (workflow_dispatch, WIF) + runbook CI-DEPLOIEMENT.
 6. Sauvegardes planifiées + runbook PITR / restauration.
@@ -29,4 +30,4 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 3 : App Check (client `src/firebase.ts` + `src/config/env.ts`, Functions, runbook).
+Point 4 : `npm audit` (app puis functions), montées de version, tests.
