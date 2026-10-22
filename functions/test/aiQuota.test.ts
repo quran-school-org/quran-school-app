@@ -149,3 +149,34 @@ describe("fonction api : quota, taille et journaux", () => {
     expect(text).toContain("fallback-error");
   });
 });
+
+describe("App Check (préparé, désactivé par défaut, D44)", () => {
+  const body = { schoolId: "alfajr", studentName: "ياسين", hizbCount: 1, attendanceRate: 100 };
+  const verify = async (token: string) => { if (token !== "jeton-valide") throw new Error("invalide"); return {}; };
+
+  it("état du jeton : absent, invalide, valide", async () => {
+    const ac = await import("../src/appCheck.js");
+    expect(await ac.appCheckStateOf({}, verify)).toBe("missing");
+    expect(await ac.appCheckStateOf({ "x-firebase-appcheck": "faux" }, verify)).toBe("invalid");
+    expect(await ac.appCheckStateOf({ "x-firebase-appcheck": "jeton-valide" }, verify)).toBe("valid");
+    expect(ac.appCheckEnforced()).toBe(false); // défaut : non appliqué
+  });
+
+  it("non appliqué : la requête passe sans jeton ; appliqué : 401 sans jeton valide, avant tout quota", async () => {
+    const { token } = await teacher("prof_appcheck");
+    const call = async (headers: Record<string, string>, enforceAppCheck?: boolean) => {
+      const { res, out } = fakeRes();
+      await api.handleApi({ method: "POST", path: "/api/gemini/analyze", headers: { authorization: `Bearer ${token}`, ...headers }, body }, res,
+        async () => JSON.stringify({ summary: "ok" }), { limits: LIMITS, now: () => NOON, enforceAppCheck, verifyAppCheck: verify });
+      return out;
+    };
+    expect((await call({})).status).toBe(200);
+    const before = (await admin.adminDb().collection("aiQuota").get()).size;
+    const denied = await call({}, true);
+    expect(denied.status).toBe(401);
+    expect(denied.body).toEqual({ error: "app-check" });
+    expect((await call({ "x-firebase-appcheck": "faux" }, true)).status).toBe(401);
+    expect((await admin.adminDb().collection("aiQuota").get()).size).toBe(before);
+    expect((await call({ "x-firebase-appcheck": "jeton-valide" }, true)).status).toBe(200);
+  });
+});

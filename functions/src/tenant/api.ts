@@ -22,6 +22,7 @@ import { adminAuth, adminDb } from "../admin.js";
 import { FUNCTIONS_REGION } from "../config.js";
 import { SCHOOL_ID_PATTERN } from "../shared/schoolDefaults.js";
 import { consumeAiQuota, currentLimits, pseudonym, type AiLimits } from "./aiQuota.js";
+import { appCheckEnforced, checkAppCheckHeader, type AppCheckVerifier } from "../appCheck.js";
 
 /** Taille maximale du corps JSON accepté (octets). Les champs restent tronqués dans l'invite. */
 export const MAX_BODY_BYTES = 32 * 1024;
@@ -112,6 +113,9 @@ export interface ApiOptions {
   limits?: Partial<AiLimits>;
   /** Horloge (tests). */
   now?: () => Date;
+  /** App Check : application forcée (défaut : paramètre APPCHECK_ENFORCE) et vérificateur (tests). */
+  enforceAppCheck?: boolean;
+  verifyAppCheck?: AppCheckVerifier;
 }
 
 /** Journal structuré SANS donnée personnelle (ni nom d'élève, ni invite, ni réponse, ni uid en clair). */
@@ -136,6 +140,12 @@ export async function handleApi(req: Req, res: Res, generate?: (prompt: string) 
     if (bodySize(req) > MAX_BODY_BYTES) {
       logAnalyze("rejected-too-large", { startedAt });
       res.status(413).json({ error: "payload-too-large" });
+      return;
+    }
+    const appCheck = await checkAppCheckHeader(req.headers, opts.enforceAppCheck ?? appCheckEnforced(), opts.verifyAppCheck);
+    if (!appCheck.allowed) {
+      logAnalyze("rejected-app-check", { startedAt, extra: { appCheck: appCheck.state } });
+      res.status(401).json({ error: "app-check" });
       return;
     }
     const auth = await authorizeAnalyze(req);
@@ -175,7 +185,7 @@ export async function handleApi(req: Req, res: Res, generate?: (prompt: string) 
             config: { responseMimeType: "application/json" },
           })).text || "{}";
       const report = JSON.parse(text);
-      logAnalyze("ok", { schoolId: auth.schoolId, uid: auth.uid, startedAt, extra: { promptChars: prompt.length, remainingUser: quota.remaining.user } });
+      logAnalyze("ok", { schoolId: auth.schoolId, uid: auth.uid, startedAt, extra: { promptChars: prompt.length, remainingUser: quota.remaining.user, appCheck: appCheck.state } });
       res.json(report);
     } catch (error) {
       // Ni message brut (il peut citer l'invite), ni pile : le nom et le code HTTP éventuel.
