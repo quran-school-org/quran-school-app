@@ -1528,9 +1528,9 @@ export default function TeacherManagement({
               <div id="staff-badge-print-area" className="w-[320px] bg-white rounded-2xl shadow-lg border-2 border-emerald-800 overflow-hidden text-right font-sans relative">
                 {/* Badge Top Header */}
                 <div className="bg-emerald-800 text-white p-3.5 text-center relative">
-                  <div className="text-[10px] font-medium opacity-90">{systemSettings?.associationName || "جمعية الفجر الجديد"}</div>
+                  <div className="text-[10px] font-medium opacity-90">{systemSettings?.associationName || ""}</div>
                   <div className="text-xs font-black tracking-wide mt-0.5">بطاقة التعريف المهنية والشارة</div>
-                  <div className="text-[9px] opacity-75 mt-0.5">الموسم: {systemSettings?.activeAcademicSeason || "2026/2027"}</div>
+                  <div className="text-[9px] opacity-75 mt-0.5">الموسم: {systemSettings?.activeAcademicSeason || ""}</div>
                 </div>
 
                 {/* Badge Body */}
@@ -1639,9 +1639,9 @@ export default function TeacherManagement({
             <div className="p-6 max-h-[75vh] overflow-y-auto space-y-6">
               {/* Official Document Header */}
               <div className="text-center pb-4 border-b border-slate-200 space-y-1">
-                <div className="text-xs text-slate-500">{systemSettings?.associationName || "جمعية الفجر الجديد"}</div>
+                <div className="text-xs text-slate-500">{systemSettings?.associationName || ""}</div>
                 <h3 className="text-lg font-black text-slate-900">سجل وحصر شؤون العاملين والأطر</h3>
-                <p className="text-xs text-slate-500">الموسم الدراسي: {systemSettings?.activeAcademicSeason || "2026/2027"}</p>
+                <p className="text-xs text-slate-500">الموسم الدراسي: {systemSettings?.activeAcademicSeason || ""}</p>
               </div>
 
               {/* Table */}

@@ -1,5 +1,5 @@
 /**
- * Revue de sécurité (étape 2) — provisionnement des comptes (Lot 0).
+ * Revue de sécurité (étape 2) — provisionnement des comptes et migration.
  *
  * Chaque test démontre une faille constatée (il échouait avant le correctif)
  * puis sert de test de non-régression. Données FICTIVES, émulateurs uniquement.
@@ -10,9 +10,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Auth } from "firebase-admin/auth";
+import type { Firestore } from "firebase-admin/firestore";
 
 import { initAdmin, type AdminHandles } from "../../scripts/admin/lib/cli";
 import { runLot0Provision } from "../../scripts/admin/lot0-provision-auth";
+import { runMigration } from "../../scripts/migration/migrate-to-tenants";
 import { DEMO_PASSWORDS, legacyFixture } from "../../scripts/dev/fixtures/legacy-alfajr";
 import { seedLegacyFixture } from "../../scripts/dev/lib/seed";
 import { normalizeAuthPassword } from "../../src/security/accounts";
@@ -78,6 +80,29 @@ function flakyAuth(auth: Auth, failingEmails: string[]): Auth {
             throw Object.assign(new Error("Quota exceeded (panne simulée)"), { code: "auth/quota-exceeded" });
           }
           return target.createUser(props as any);
+        };
+      }
+      const v = (target as any)[prop];
+      return typeof v === "function" ? v.bind(target) : v;
+    },
+  });
+}
+
+/** Firestore dont listDocuments() rate les documents d'un chemin (course simulée). */
+function staleListingDb(db: Firestore, stalePath: string): Firestore {
+  return new Proxy(db, {
+    get(target, prop) {
+      if (prop === "collection") {
+        return (path: string) => {
+          const col = target.collection(path);
+          if (path !== stalePath) return col;
+          return new Proxy(col, {
+            get(c, p) {
+              if (p === "listDocuments") return async () => [];
+              const v = (c as any)[p];
+              return typeof v === "function" ? v.bind(c) : v;
+            },
+          });
         };
       }
       const v = (target as any)[prop];
@@ -161,7 +186,7 @@ describe("R-01 mots de passe exposés encore valables après le provisionnement"
 });
 
 describe("R-02 relance du provisionnement : un lien retiré par l'école revient", () => {
-  it("un lien parent/enfant retiré après validation n'est pas rétabli par une relance", async () => {
+  it("un lien parent/enfant retiré après validation n'est pas rétabli par une relance (ni par la migration)", async () => {
     await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
     const before = await appUser("u_manual_parent");
     expect(before.linkedStudentIds).toEqual(["S-106"]); // « LIÉ — à retirer si erroné »
@@ -174,6 +199,8 @@ describe("R-02 relance du provisionnement : un lien retiré par l'école revient
     expect((await admin.db.collection("authLinks").doc(before.authUid).get()).data()?.linkedStudentIds).toEqual([]);
     expect((await appUser("u_manual_parent")).linkedStudentIds).toEqual([]);
 
+    await runMigration(admin.db, admin.auth, { schoolId: "alfajr", apply: true, outDir: null, rotatePasswords: "none" });
+    expect((await admin.db.doc(`schools/alfajr/members/${before.authUid}`).get()).data()?.linkedStudentIds).toEqual([]);
   });
 });
 
@@ -218,6 +245,31 @@ describe("R-04 erreur partielle pendant le provisionnement", () => {
     expect(typeof (await appUser("t_t3")).authUid).toBe("string");
   });
 
+  it("la migration interrompue au milieu des comptes se termine à la relance, sans doublon", async () => {
+    const auth = flakyAuth(admin.auth, ["omar_idrissi@alfajr.local"]);
+    const first = await runMigration(admin.db, auth, { schoolId: "alfajr", apply: true, outDir: null, rotatePasswords: "none" });
+    expect(first.summary.accounts.pendingAuth).toBe(1);
+    expect(first.summary.critical).toBe(true); // échec signalé comme critique
+    const second = await runMigration(admin.db, admin.auth, { schoolId: "alfajr", apply: true, outDir: null, rotatePasswords: "none" });
+    expect(second.summary.accounts.pendingAuth).toBe(0);
+    const members = await admin.db.collection("schools/alfajr/members").get();
+    expect(members.size).toBe(Object.keys(legacyFixture().collections.appUsers).length);
+  });
+});
+
+describe("R-05 relance de la migration pendant que la nouvelle application écrit", () => {
+  it("un document cible apparu après l'inventaire n'est jamais écrasé par la copie racine", async () => {
+    await runMigration(admin.db, admin.auth, { schoolId: "alfajr", apply: true, outDir: null, rotatePasswords: "none" });
+    const path = "schools/alfajr/attendance";
+    // Saisie faite dans la nouvelle application après la bascule.
+    await admin.db.doc(`${path}/a_2026-10-17_S-101`).update({ status: "غائب", editedAfterSwitch: true });
+    // Relance (contrôle d'écart) : l'inventaire de la cible est périmé (course).
+    const { summary } = await runMigration(staleListingDb(admin.db, path), admin.auth, { schoolId: "alfajr", apply: true, outDir: null, rotatePasswords: "none" });
+    const after = (await admin.db.doc(`${path}/a_2026-10-17_S-101`).get()).data()!;
+    expect(after.status).toBe("غائب");
+    expect(after.editedAfterSwitch).toBe(true);
+    expect(summary.anomalies.WRITE_FAILED ?? 0).toBe(0);
+  });
 });
 
 describe("R-08 comptes falsifiés avant le Lot 0 (appUsers était modifiable par tout compte connecté)", () => {
@@ -259,7 +311,7 @@ describe("R-08 comptes falsifiés avant le Lot 0 (appUsers était modifiable par
 });
 
 describe("R-09 divergence appUsers / authLinks (le lien fait foi, D12)", () => {
-  it("un compte suspendu dans son lien n'est pas réactivé par la relance", async () => {
+  it("un compte suspendu dans son lien n'est pas réactivé par la relance ni par la migration", async () => {
     await runLot0Provision(admin.db, admin.auth, { apply: true, syncExistingPasswords: true, acceptCritical: false, outDir: null, rotatePasswords: "none" });
     const parent = await appUser("p_S-101");
     // Suspension appliquée au lien (règles), mais l'écriture d'appUsers a échoué.
@@ -271,5 +323,7 @@ describe("R-09 divergence appUsers / authLinks (le lien fait foi, D12)", () => {
     expect((await admin.db.collection("authLinks").doc(parent.authUid).get()).data()?.isActive).toBe(false);
     expect((await admin.auth.getUser(parent.authUid)).disabled).toBe(true);
 
+    await runMigration(admin.db, admin.auth, { schoolId: "alfajr", apply: true, outDir: null, rotatePasswords: "none" });
+    expect((await admin.db.doc(`schools/alfajr/members/${parent.authUid}`).get()).data()?.isActive).toBe(false);
   });
 });

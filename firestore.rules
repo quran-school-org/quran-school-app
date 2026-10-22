@@ -1,13 +1,18 @@
 rules_version = '2';
 
 // =============================================================================
-// Règles Firestore — Lot 0 (correctif de sécurité sur la structure actuelle)
+// Règles Firestore — multi-écoles (schéma schools/{schoolId}/…, rapport §4.3)
 // =============================================================================
-// Principe : un compte Firebase Auth ne donne accès à RIEN par lui-même.
-// L'accès passe par un lien d'autorisation `authLinks/{uid}` :
-//   { appUserId, role, isActive, linkedStudentIds?, linkedTeacherId? }
-// écrit uniquement par le script Admin SDK (scripts/admin/lot0-provision-auth.ts),
-// par les Cloud Functions, ou par un directeur (مدير).
+// Principes :
+//  - un compte Firebase Auth ne donne accès à RIEN par lui-même ;
+//  - l'accès aux données d'une école exige un document
+//    schools/{schoolId}/members/{uid} actif ; le rôle y est lu ;
+//  - isolation par construction : tout est sous schools/{schoolId}, et chaque
+//    écriture doit porter le bon champ schoolId ;
+//  - les comptes, rôles et écoles ne s'écrivent QUE par les Cloud Functions
+//    (Admin SDK) : aucun client ne peut créer un membre ni se promouvoir ;
+//  - super-admin de la plateforme : claim `superAdmin` (Admin SDK) ;
+//  - la racine (anciennes collections incluses) est fermée.
 //
 // Groupes de rôles (valeurs en arabe, identiques à src/types.ts) :
 //   bureau      : مدير, إداري
@@ -15,7 +20,8 @@ rules_version = '2';
 //   personnel   : pédagogie + متطوع, عامل نظافة / صيانة, أخرى
 //   famille     : طالب, ولي أمر (accès limité à linkedStudentIds)
 //
-// La matrice détaillée est testée dans tests/emulator/lot0-rules.test.ts.
+// Fiches RH du personnel : schools/{s}/staffPrivate (bureau seulement, D42).
+// Matrice testée dans tests/emulator/tenant-rules.test.ts.
 // =============================================================================
 
 service cloud.firestore {
@@ -26,199 +32,236 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function linkPath() {
-      return /databases/$(database)/documents/authLinks/$(request.auth.uid);
+    function isSuper() {
+      return signedIn() && request.auth.token.superAdmin == true;
     }
 
-    function link() {
-      return get(linkPath()).data;
+    function mPath(s) {
+      return /databases/$(database)/documents/schools/$(s)/members/$(request.auth.uid);
     }
 
-    // Compte authentifié ET lié ET actif.
-    function active() {
-      return signedIn() && exists(linkPath()) && link().isActive == true;
+    function member(s) {
+      return get(mPath(s)).data;
     }
 
-    function roleIn(roles) {
-      return active() && link().role in roles;
+    // Membre actif de l'école s.
+    function isMember(s) {
+      return signedIn() && exists(mPath(s)) && member(s).isActive == true;
     }
 
-    function isDirector() {
-      return roleIn(['مدير']);
+    function hasRole(s, roles) {
+      return isMember(s) && member(s).role in roles;
     }
 
-    function isOffice() {
-      return roleIn(['مدير', 'إداري']);
+    function isDirector(s) {
+      return hasRole(s, ['مدير']);
     }
 
-    function isEducator() {
-      return roleIn(['مدير', 'إداري', 'مؤطر', 'مدرس']);
+    function isOffice(s) {
+      return hasRole(s, ['مدير', 'إداري']);
     }
 
-    function isCoordinator() {
-      return roleIn(['مدير', 'إداري', 'مؤطر']);
+    function isEducator(s) {
+      return hasRole(s, ['مدير', 'إداري', 'مؤطر', 'مدرس']);
     }
 
-    function isStaff() {
-      return roleIn(['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع', 'عامل نظافة / صيانة', 'أخرى']);
+    function isCoordinator(s) {
+      return hasRole(s, ['مدير', 'إداري', 'مؤطر']);
     }
 
-    function isFamily() {
-      return roleIn(['طالب', 'ولي أمر']);
+    function isStaff(s) {
+      return hasRole(s, ['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع', 'عامل نظافة / صيانة', 'أخرى']);
     }
 
-    function linkedStudents() {
-      return link().get('linkedStudentIds', []);
+    function isFamily(s) {
+      return hasRole(s, ['طالب', 'ولي أمر']);
     }
 
-    function allRoles() {
-      return ['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع', 'عامل نظافة / صيانة', 'أخرى', 'طالب', 'ولي أمر'];
+    function isParent(s) {
+      return hasRole(s, ['ولي أمر']);
+    }
+
+    function linkedStudents(s) {
+      return member(s).get('linkedStudentIds', []);
     }
 
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Aucun mot de passe ne doit plus jamais être écrit dans Firestore.
-    function noPassword() {
-      return !('password' in request.resource.data);
+    // Écriture d'un document de l'école s : bon schoolId, jamais de mot de passe.
+    function validWrite(s, id) {
+      return isValidId(id)
+        && request.resource.data.schoolId == s
+        && !('password' in request.resource.data);
     }
 
-    // Document de la famille : l'élève concerné est lié au compte.
-    function familyOwnsDoc() {
-      return isFamily() && resource.data.studentId in linkedStudents();
+    // Champs RH du personnel (miroir de src/security/staffPrivate.ts).
+    function staffPrivateFields() {
+      return ['monthlySalary', 'contractType', 'cinNumber', 'emergencyContact', 'birthDate', 'address'];
     }
 
-    // ------------------------------------------------- liens d'autorisation
-    match /authLinks/{uid} {
-      // Chacun peut lire SON lien (même inactif, pour afficher « compte suspendu »).
-      allow get: if (signedIn() && request.auth.uid == uid) || isDirector();
-      allow list: if isDirector();
-      // Seul un directeur actif écrit un lien : personne ne peut se lier ou se promouvoir seul.
-      allow create, update: if isDirector()
-        && request.resource.data.appUserId is string
-        && request.resource.data.role in allRoles()
-        && request.resource.data.isActive is bool
-        && request.resource.data.get('linkedStudentIds', []) is list
-        && request.resource.data.get('linkedStudentIds', []).size() <= 30;
-      allow delete: if isDirector();
+    // Document d'élève lié au compte famille (lecture filtrée sur studentId).
+    function familyOwnsDoc(s) {
+      return isFamily(s) && resource.data.studentId in linkedStudents(s);
     }
 
-    // ---------------------------------------------------- comptes applicatifs
-    match /appUsers/{userId} {
-      // Un utilisateur ne modifie que des champs anodins de SON compte
-      // (jamais role, permissions, isActive, username, liens…), et ne peut
-      // que lever (jamais poser) l'obligation de changer son mot de passe.
-      function selfUpdate() {
-        let changed = request.resource.data.diff(resource.data).affectedKeys();
-        return active()
-          && link().appUserId == userId
-          && noPassword()
-          && changed.hasOnly(['mustChangePassword', 'lastLogin', 'fullName', 'phone', 'passwordChangedAt'])
-          && (!('mustChangePassword' in changed) || request.resource.data.mustChangePassword == false);
+    // --------------------------------------------- profil global users/{uid}
+    match /users/{uid} {
+      allow get: if (signedIn() && request.auth.uid == uid) || isSuper();
+      allow list: if isSuper();
+      allow create, delete: if false; // Cloud Functions uniquement
+      // Champs anodins de SON profil ; on ne peut que lever l'obligation de
+      // changer le mot de passe, jamais modifier ses écoles ou son identifiant.
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['lastSchoolId', 'mustChangePassword', 'passwordChangedAt', 'lastLogin'])
+        && (!('mustChangePassword' in request.resource.data.diff(resource.data).affectedKeys())
+            || request.resource.data.mustChangePassword == false)
+        && (request.resource.data.get('lastSchoolId', null) == null
+            || request.resource.data.lastSchoolId in resource.data.get('schoolIds', []));
+    }
+
+    // Registre global des noms d'utilisateur : Cloud Functions uniquement.
+    match /usernames/{username} {
+      allow read, write: if false;
+    }
+
+    // ------------------------------------------------------------- écoles
+    match /schools/{s} {
+      allow get: if isMember(s) || isSuper();
+      allow list: if isSuper();
+      allow create, delete: if false; // createSchool (Cloud Function, super-admin)
+      allow update: if (isSuper() || isDirector(s))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'logo', 'updatedAt']);
+
+      // Appartenances : écrites par les Cloud Functions (createSchoolUser,
+      // setMemberRole). Chacun lit la sienne ; le bureau lit celles de l'école.
+      match /members/{uid} {
+        allow get: if (signedIn() && request.auth.uid == uid) || isOffice(s) || isSuper();
+        allow list: if isOffice(s) || isSuper();
+        allow create, delete: if false;
+        allow update: if isMember(s) && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'fullName', 'phone']);
       }
 
-      allow get: if isOffice() || (active() && link().appUserId == userId);
-      allow list: if isOffice();
-      allow create: if isDirector() && isValidId(userId) && noPassword();
-      allow update: if (isDirector() && noPassword()) || selfUpdate();
-      allow delete: if isDirector() && userId != 'u1';
+      // Paramètres et identité de l'école.
+      match /settings/{docId} {
+        allow read: if isMember(s) || isSuper();
+        allow write: if (isDirector(s) || isSuper()) && validWrite(s, docId);
+      }
+
+      // ------------------------------------------------------------ élèves
+      match /students/{studentId} {
+        allow get: if isEducator(s) || (isFamily(s) && studentId in linkedStudents(s));
+        allow list: if isEducator(s);
+        allow create, update: if isEducator(s) && validWrite(s, studentId);
+        allow delete: if isOffice(s);
+      }
+
+      // ------------------------------------------------ personnel et halaqas
+      // Fiche publique du personnel : lisible par la pédagogie. Les champs RH
+      // (salaire, contrat, CIN, adresse, contact d'urgence, naissance) y sont
+      // interdits : ils vivent dans staffPrivate (R-06, D42).
+      match /teachers/{teacherId} {
+        allow read: if isEducator(s);
+        allow write: if isOffice(s) && validWrite(s, teacherId)
+          && !request.resource.data.keys().hasAny(staffPrivateFields());
+        allow delete: if isOffice(s);
+      }
+
+      // Fiche RH du personnel : bureau (مدير, إداري) uniquement, même identifiant
+      // que la fiche publique. Liste fermée de champs.
+      match /staffPrivate/{teacherId} {
+        allow read: if isOffice(s);
+        allow create, update: if isOffice(s) && validWrite(s, teacherId)
+          && request.resource.data.keys().hasOnly(staffPrivateFields().concat(['schoolId', 'teacherId', 'updatedAt']))
+          && request.resource.data.get('teacherId', teacherId) == teacherId;
+        allow delete: if isOffice(s);
+      }
+
+      match /classes/{classId} {
+        allow read: if isMember(s);
+        allow create, update: if isCoordinator(s) && validWrite(s, classId);
+        allow delete: if isOffice(s);
+      }
+
+      // ----------------------------------------------------------- pédagogie
+      match /attendance/{attendanceId} {
+        allow read: if isEducator(s) || familyOwnsDoc(s);
+        allow create, update: if isEducator(s) && validWrite(s, attendanceId);
+        allow delete: if isOffice(s);
+      }
+
+      match /grades/{gradeId} {
+        allow read: if isEducator(s) || familyOwnsDoc(s);
+        allow create, update: if isEducator(s) && validWrite(s, gradeId);
+        allow delete: if isOffice(s);
+      }
+
+      match /dailyProgress/{progressId} {
+        allow read: if isEducator(s) || familyOwnsDoc(s);
+        allow create, update: if isEducator(s) && validWrite(s, progressId);
+        allow delete: if isEducator(s);
+      }
+
+      // ----------------------------------------------------------- finances
+      // Bureau uniquement ; un parent lit les cotisations de SES enfants.
+      match /payments/{paymentId} {
+        allow read: if isOffice(s) || (isParent(s) && resource.data.studentId in linkedStudents(s));
+        allow create, update: if isOffice(s) && validWrite(s, paymentId);
+        allow delete: if isOffice(s);
+      }
+
+      match /otherIncomes/{incomeId} {
+        allow read: if isOffice(s);
+        allow create, update: if isOffice(s) && validWrite(s, incomeId);
+        allow delete: if isOffice(s);
+      }
+
+      match /salaryPayments/{salaryId} {
+        allow read: if isOffice(s);
+        allow create, update: if isOffice(s) && validWrite(s, salaryId);
+        allow delete: if isOffice(s);
+      }
+
+      match /expenses/{expenseId} {
+        allow read: if isOffice(s);
+        allow create, update: if isOffice(s) && validWrite(s, expenseId);
+        allow delete: if isOffice(s);
+      }
+
+      // ------------------------------------------------ activités et sorties
+      match /activities/{activityId} {
+        allow read: if isMember(s);
+        allow create, update: if isEducator(s) && validWrite(s, activityId);
+        allow delete: if isOffice(s);
+      }
+
+      match /activityParticipants/{participantId} {
+        allow read: if hasRole(s, ['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع']);
+        allow create, update: if isEducator(s) && validWrite(s, participantId);
+        allow delete: if isEducator(s);
+      }
+
+      match /activityExpenses/{expenseId} {
+        allow read: if isEducator(s);
+        allow create, update: if isEducator(s) && validWrite(s, expenseId);
+        allow delete: if isEducator(s);
+      }
+
+      // ------------------------------------------------------- notifications
+      match /notifications/{notificationId} {
+        allow read: if isStaff(s);
+        allow create: if isMember(s) && validWrite(s, notificationId);
+        allow update: if isStaff(s) && validWrite(s, notificationId);
+        allow delete: if isOffice(s);
+      }
     }
 
-    // ------------------------------------------------------------ paramètres
-    match /settings/{settingsId} {
-      allow read: if active();
-      allow write: if isDirector() && isValidId(settingsId);
-    }
-
-    // ---------------------------------------------------------------- élèves
-    match /students/{studentId} {
-      allow get: if isEducator() || (isFamily() && studentId in linkedStudents());
-      allow list: if isEducator();
-      allow create, update: if isEducator() && isValidId(studentId);
-      allow delete: if isOffice();
-    }
-
-    // ------------------------------------------------- personnel et halaqas
-    match /teachers/{teacherId} {
-      allow read: if isEducator();
-      allow write: if isOffice() && isValidId(teacherId);
-    }
-
-    match /classes/{classId} {
-      allow read: if active();
-      allow create, update: if isCoordinator() && isValidId(classId);
-      allow delete: if isOffice();
-    }
-
-    // ------------------------------------------------------------ pédagogie
-    match /attendance/{attendanceId} {
-      allow read: if isEducator() || familyOwnsDoc();
-      allow create, update: if isEducator() && isValidId(attendanceId);
-      allow delete: if isOffice();
-    }
-
-    match /grades/{gradeId} {
-      allow read: if isEducator() || familyOwnsDoc();
-      allow create, update: if isEducator() && isValidId(gradeId);
-      allow delete: if isOffice();
-    }
-
-    match /dailyProgress/{progressId} {
-      allow read: if isEducator() || familyOwnsDoc();
-      allow create, update, delete: if isEducator() && isValidId(progressId);
-    }
-
-    // -------------------------------------------- finances : bureau seulement
-    match /payments/{paymentId} {
-      allow read: if isOffice();
-      allow write: if isOffice() && isValidId(paymentId);
-    }
-
-    match /otherIncomes/{incomeId} {
-      allow read: if isOffice();
-      allow write: if isOffice() && isValidId(incomeId);
-    }
-
-    match /salaryPayments/{salaryId} {
-      allow read: if isOffice();
-      allow write: if isOffice() && isValidId(salaryId);
-    }
-
-    match /expenses/{expenseId} {
-      allow read: if isOffice();
-      allow write: if isOffice() && isValidId(expenseId);
-    }
-
-    // ------------------------------------------------- activités et sorties
-    match /activities/{activityId} {
-      allow read: if active();
-      allow create, update: if isEducator() && isValidId(activityId);
-      allow delete: if isOffice();
-    }
-
-    match /activityParticipants/{participantId} {
-      allow read: if roleIn(['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع']);
-      allow create, update: if isEducator() && isValidId(participantId);
-      allow delete: if isEducator();
-    }
-
-    match /activityExpenses/{expenseId} {
-      allow read: if isEducator();
-      allow create, update: if isEducator() && isValidId(expenseId);
-      allow delete: if isEducator();
-    }
-
-    // --------------------------------------------------------- notifications
-    match /notifications/{notificationId} {
-      allow read: if isStaff();
-      allow create: if active() && isValidId(notificationId);
-      allow update: if isStaff() && isValidId(notificationId);
-      allow delete: if isOffice();
-    }
-
-    // Tout le reste est fermé (la règle la plus permissive l'emporte : aucune
-    // règle ci-dessus ne s'applique en dehors de ses collections).
+    // Racine fermée : anciennes collections (students, appUsers, authLinks…)
+    // et tout chemin non prévu ci-dessus. La migration et le retour arrière
+    // passent par l'Admin SDK.
     match /{document=**} {
       allow read, write: if false;
     }

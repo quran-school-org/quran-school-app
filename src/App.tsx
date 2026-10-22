@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { RealmSimDB, clearLocalCache, ensureCacheOwner, purgeLegacySensitiveStorage } from "./db";
+import { runTransaction } from "firebase/firestore";
+import {
+  RealmSimDB, clearLocalCache, ensureCacheOwner, purgeLegacySensitiveStorage, setActiveSchool,
+} from "./db";
 import { 
   subscribeToCollection, 
   subscribeToSettings,
@@ -8,28 +11,52 @@ import {
   subscribeToDocumentsByIds,
   subscribeToQueryIn,
   subscribeToQuotaState,
+  subscribeToStaff,
   signInWithUsername,
   signOutUser,
   changeOwnPassword,
-  fetchAuthLink,
-  fetchAppUser,
-  updateOwnAppUserFields,
-  createUserAccountRemote,
+  fetchUserProfile,
+  fetchMember,
+  fetchSchool,
+  listAllSchools,
+  isCurrentUserSuperAdmin,
+  updateOwnUserFields,
+  updateOwnMemberFields,
+  createSchoolUserRemote,
+  createSchoolRemote,
   resetUserPasswordRemote,
   describeFirebaseError,
   stripPassword,
-  auth
+  schoolDocRef,
+  sanitizeForFirestore,
+  requestAiReport,
+  AiReportError,
+  auth,
+  db
 } from "./firebase";
 import { 
   Student, Teacher, Class, Attendance, Grade, Payment, Notification, 
-  UserRole, TajweedLevel, SystemSettings, AppUser, AuthLink, DailyProgress, 
+  UserRole, TajweedLevel, SystemSettings, AppUser, UserProfile, SchoolInfo, DailyProgress, 
   OtherIncome, SalaryPayment, Expense, checkUserPermission,
   ActivityTrip, ActivityParticipant, ActivityExpense
 } from "./types";
-import { isDirectorRole, isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections } from "./security/access";
+import { isDirectorRole, isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections, canReadStaffPrivate } from "./security/access";
 import { validateNewPassword } from "./security/accounts";
 import { computeAccountAlignment, linkedStudentIdsOf, linkedTeacherIdOf } from "./security/accountAlignment";
 import { escapeHtml } from "./security/html";
+import {
+  getSubscriptionAmount as rulesSubscriptionAmount,
+  getMonthsToGenerate as rulesMonthsToGenerate,
+  getOpeningPeriod,
+  isMonthBeforeOpening,
+  computeAge,
+  monthIndex,
+  MONTHS_AR,
+} from "./school/businessRules";
+import { SchoolContext, type SchoolContextValue } from "./school/SchoolContext";
+import SchoolPicker from "./school/SchoolPicker";
+import SchoolSwitcher from "./school/SchoolSwitcher";
+import { clearSchoolCache, readLastSchool, rememberLastSchool, scopedKey } from "./cache/localCache";
 import { getStudentPhoto, StudentAvatar } from "./utils/studentAvatar";
 import StudentCard from "./components/StudentCard";
 import TeacherManagement from "./components/TeacherManagement";
@@ -59,15 +86,6 @@ import {
   Compass
 } from "lucide-react";
 
-const getSubscriptionAmount = (month: string, year: number): number => {
-  // Base subscription amount is 100 MAD
-  // Month 7 (يوليوز) and Month 8 (غشت) of current year (2026) has an offer of 70 MAD
-  if (year === 2026 && (month === "يوليوز" || month === "غشت")) {
-    return 70;
-  }
-  return 100;
-};
-
 const getYearAndMonthFromDate = (dateStr: string) => {
   if (!dateStr) return { year: null, month: null };
   const parts = dateStr.split("-");
@@ -79,61 +97,6 @@ const getYearAndMonthFromDate = (dateStr: string) => {
     return { year, month: months_ar[monthNum - 1] };
   }
   return { year: null, month: null };
-};
-
-const isMonthBeforeJuly2026 = (month: string, year: number): boolean => {
-  if (year < 2026) return true;
-  if (year > 2026) return false;
-  const months_ar = ["يناير", "فبراير", "مارس", "أبريل", "ماي", "يونيو", "يوليوز", "غشت", "شتمبر", "أكتوبر", "نونبر", "دجنبر"];
-  const monthIndex = months_ar.indexOf(month);
-  return monthIndex !== -1 && monthIndex < 6; // 6 is "يوليوز"
-};
-
-const getMonthsToGenerate = (registrationDateStr: string) => {
-  const result: { month: string; year: number }[] = [];
-  if (!registrationDateStr) return result;
-  const parts = registrationDateStr.split("-");
-  if (parts.length !== 3) return result;
-  
-  const regYear = parseInt(parts[0], 10);
-  const regMonthNum = parseInt(parts[1], 10); // 1-12
-  
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonthNum = now.getMonth() + 1; // 1-12
-  
-  const months_ar = ["يناير", "فبراير", "مارس", "أبريل", "ماي", "يونيو", "يوليوز", "غشت", "شتمبر", "أكتوبر", "نونبر", "دجنبر"];
-  
-  let tempYear = regYear;
-  let tempMonthNum = regMonthNum;
-  
-  // If the registration date is in the future compared to now, just generate the month of registration
-  if (regYear > currentYear || (regYear === currentYear && regMonthNum > currentMonthNum)) {
-    if (regMonthNum >= 1 && regMonthNum <= 12) {
-      result.push({
-        month: months_ar[regMonthNum - 1],
-        year: regYear
-      });
-    }
-  } else {
-    // Generate from regYear/regMonthNum up to currentYear/currentMonthNum
-    while (tempYear < currentYear || (tempYear === currentYear && tempMonthNum <= currentMonthNum)) {
-      if (tempMonthNum >= 1 && tempMonthNum <= 12) {
-        result.push({
-          month: months_ar[tempMonthNum - 1],
-          year: tempYear
-        });
-      }
-      tempMonthNum++;
-      if (tempMonthNum > 12) {
-        tempMonthNum = 1;
-        tempYear++;
-      }
-    }
-  }
-  
-  // Filter out any months before July 2026 (the official opening)
-  return result.filter(item => !isMonthBeforeJuly2026(item.month, item.year));
 };
 
 interface ParsedSchedule {
@@ -182,15 +145,23 @@ const parseClassSchedule = (scheduleStr: string): ParsedSchedule => {
   return { activeDays, startTime, endTime };
 };
 
-/** Fusionne compte applicatif et lien d'autorisation (le lien fait foi). */
-function mergeSessionProfile(appUser: AppUser, link: AuthLink, uid: string): AppUser {
+/** Libellé affiché quand l'école n'a pas encore de nom dans ses paramètres. */
+const DEFAULT_SCHOOL_LABEL = "المدرسة القرآنية";
+
+/** Compte du directeur historique d'Al Fajr (ancien identifiant u1). */
+const isPrimaryDirector = (u: AppUser | null | undefined) => !!u && (u.id === "u1" || u.legacyAppUserId === "u1");
+
+/** Fusionne appartenance à l'école et profil global (le membre fait foi pour le rôle). */
+function mergeSessionProfile(member: AppUser, profile: UserProfile | null, uid: string, schoolId: string): AppUser {
   return {
-    ...stripPassword(appUser),
-    role: link.role,
-    isActive: link.isActive,
-    authUid: uid,
-    linkedStudentIds: link.linkedStudentIds ?? appUser.linkedStudentIds ?? [],
-    linkedTeacherId: link.linkedTeacherId ?? appUser.linkedTeacherId ?? undefined,
+    ...stripPassword(member),
+    id: uid,
+    uid,
+    schoolId,
+    username: member.username || profile?.username || "",
+    mustChangePassword: Boolean(profile?.mustChangePassword),
+    linkedStudentIds: member.linkedStudentIds ?? [],
+    linkedTeacherId: member.linkedTeacherId ?? undefined,
   };
 }
 
@@ -224,10 +195,29 @@ export default function App() {
   // Lot 0 : session restaurée par Firebase Auth (plus jamais depuis localStorage)
   const [authChecking, setAuthChecking] = useState<boolean>(true);
   const [authUid, setAuthUid] = useState<string | null>(null);
+  // Multi-écoles : école active, écoles accessibles, profil global, super-admin
+  const [activeSchoolId, setActiveSchoolId] = useState<string | null>(null);
+  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
+  const [showSchoolPicker, setShowSchoolPicker] = useState<boolean>(false);
+  const [schoolError, setSchoolError] = useState<string>("");
+  const [schoolBusy, setSchoolBusy] = useState<boolean>(false);
+  const paymentsLoadedRef = useRef(false);
+  // Désabonnement immédiat des écoutes Firestore (changement d'école, déconnexion).
+  const unsubscribeAllRef = useRef<() => void>(() => undefined);
+  const settingsRef = useRef<SystemSettings | null>(null);
   const loginInProgressRef = useRef(false);
 
   // UI state
   const currentRole: UserRole = currentUser?.role || "طالب";
+  // Identité et règles métier de l'école active (paramètres de l'école).
+  settingsRef.current = systemSettings;
+  const activeSchool = useMemo(() => schools.find((sc) => sc.id === activeSchoolId) || null, [schools, activeSchoolId]);
+  const schoolName = systemSettings?.associationName?.trim() || activeSchool?.name || DEFAULT_SCHOOL_LABEL;
+  const getSubscriptionAmount = (month: string, year: number) => rulesSubscriptionAmount(systemSettings, month, year);
+  const getMonthsToGenerate = (registrationDateStr: string) => rulesMonthsToGenerate(systemSettings, registrationDateStr);
+  const keepBillable = (list: Payment[]) => list.filter((pay) => !isMonthBeforeOpening(settingsRef.current, pay.month, pay.year));
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -442,8 +432,8 @@ export default function App() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentFormStudentId, setPaymentFormStudentId] = useState("");
-  const [paymentFormYear, setPaymentFormYear] = useState<number>(2026);
-  const [paymentFormMonth, setPaymentFormMonth] = useState("يوليوز");
+  const [paymentFormYear, setPaymentFormYear] = useState<number>(new Date().getFullYear());
+  const [paymentFormMonth, setPaymentFormMonth] = useState(MONTHS_AR[new Date().getMonth()]);
   const [paymentFormAmount, setPaymentFormAmount] = useState<number>(70);
   const [paymentFormStatus, setPaymentFormStatus] = useState<"مدفوع" | "غير مدفوع">("غير مدفوع");
   const [paymentFormDate, setPaymentFormDate] = useState("");
@@ -466,26 +456,27 @@ export default function App() {
   }, []);
 
   /**
-   * Construit le profil de session : le lien d'autorisation `authLinks/{uid}`
-   * fait foi pour le rôle, le statut et les liens ; le compte applicatif
-   * fournit l'affichage et la matrice de droits de l'interface.
+   * Profil de session : `users/{uid}` (profil global, écoles accessibles),
+   * claim super-admin, puis liste des écoles accessibles.
    */
-  const loadSessionProfile = async (uid: string): Promise<{ user: AppUser } | { error: string }> => {
-    const link = await fetchAuthLink(uid);
-    if (!link) {
-      return { error: "هذا الحساب غير مرتبط بأي مستخدم في المنظومة. يرجى التواصل مع إدارة الجمعية." };
+  const loadUserSession = async (uid: string): Promise<{ profile: UserProfile; superAdmin: boolean; schools: SchoolInfo[] } | { error: string }> => {
+    const [profile, superAdmin] = await Promise.all([fetchUserProfile(uid), isCurrentUserSuperAdmin()]);
+    if (!profile && !superAdmin) {
+      return { error: "هذا الحساب غير مرتبط بأي مدرسة في المنظومة. يرجى التواصل مع إدارة الجمعية." };
     }
-    if (!link.isActive) {
-      return { error: "هذا الحساب معطل حالياً. يرجى التواصل مع إدارة الجمعية." };
+    let list: SchoolInfo[] = [];
+    if (superAdmin) {
+      list = await listAllSchools();
+    } else {
+      const fetched = await Promise.all((profile?.schoolIds || []).map((id) => fetchSchool(id).catch(() => null)));
+      list = fetched.filter((x): x is SchoolInfo => !!x);
     }
-    const appUser = await fetchAppUser(link.appUserId);
-    if (!appUser) {
-      return { error: "تعذر تحميل ملف المستخدم. يرجى التواصل مع إدارة الجمعية." };
-    }
-    return { user: mergeSessionProfile(appUser, link, uid) };
+    list.sort((x, y) => (x.name || x.id).localeCompare(y.name || y.id, "ar"));
+    const effectiveProfile: UserProfile = profile || { uid, username: auth.currentUser?.email?.split("@")[0] || "", schoolIds: [] };
+    return { profile: effectiveProfile, superAdmin, schools: list };
   };
 
-  /** Remet à zéro tout l'état de données (déconnexion, changement de compte). */
+  /** Remet à zéro tout l'état de données (déconnexion, changement d'école). */
   const resetSessionState = () => {
     setStudents([]);
     setTeachers([]);
@@ -502,12 +493,125 @@ export default function App() {
     setActivities([]);
     setActivityParticipants([]);
     setActivityExpenses([]);
+    setSystemSettings(null);
     setSelectedStudent(null);
     setSelectedLabStudentId("");
+    paymentsLoadedRef.current = false;
+  };
+
+  /**
+   * Entrée dans une école : lecture de l'appartenance (rôle, liens), puis
+   * cloisonnement du cache. Changer d'école = désabonnement (effet de
+   * synchronisation), purge de l'état et du cache de l'école quittée,
+   * réabonnement.
+   */
+  const enterSchool = async (schoolId: string, uid: string, profile: UserProfile | null): Promise<string | null> => {
+    const member = await fetchMember(schoolId, uid).catch(() => null);
+    if (!member) return "لست عضواً في هذه المدرسة.";
+    if (member.isActive === false) return "حسابك موقوف في هذه المدرسة. يرجى التواصل مع إدارتها.";
+
+    const previous = activeSchoolId;
+    unsubscribeAllRef.current(); // plus aucune écoute de l'école quittée
+    setActiveSchool(null); // les derniers instantanés de l'école quittée n'écrivent plus le cache
+    if (previous && previous !== schoolId) clearSchoolCache(previous);
+    resetSessionState();
+    setActiveSchool(schoolId);
+    setActiveSchoolId(schoolId);
+    rememberLastSchool(schoolId);
+    const merged = mergeSessionProfile(member, profile, uid, schoolId);
+    loadDatabase(merged.role);
+    setCurrentUser(merged);
+    setActiveTab("dashboard");
+    setShowSchoolPicker(false);
+    setSchoolError("");
+    if (profile && profile.lastSchoolId !== schoolId) {
+      updateOwnUserFields(uid, { lastSchoolId: schoolId }).catch((err) => console.warn("lastSchoolId update failed:", err));
+    }
+    updateOwnMemberFields(schoolId, uid, { lastLogin: new Date().toISOString() }).catch((err) => console.warn("lastLogin update failed:", err));
+    return null;
+  };
+
+  /** Après authentification : choix automatique de l'école ou page de choix. */
+  const startSession = async (uid: string): Promise<string | null> => {
+    const res = await loadUserSession(uid);
+    if ("error" in res) return res.error;
+    ensureCacheOwner(uid);
+    setAuthUid(uid);
+    setUserProfile(res.profile);
+    setIsSuperAdmin(res.superAdmin);
+    setSchools(res.schools);
+
+    const memberOf = new Set(res.profile.schoolIds || []);
+    const candidates = res.schools.filter((sc) => memberOf.has(sc.id));
+    const remembered = [res.profile.lastSchoolId, readLastSchool()].find((id) => id && candidates.some((sc) => sc.id === id));
+    const target = remembered || (candidates.length === 1 ? candidates[0].id : null);
+    if (target) {
+      const err = await enterSchool(target, uid, res.profile);
+      if (!err) return null;
+      setSchoolError(err);
+    }
+    // Plusieurs écoles (ou super-admin) : page de choix.
+    setCurrentUser(null);
+    setShowSchoolPicker(true);
+    return null;
+  };
+
+  const handleSelectSchool = async (schoolId: string) => {
+    if (!authUid) return;
+    setSchoolBusy(true);
+    try {
+      const err = await enterSchool(schoolId, authUid, userProfile);
+      if (err) setSchoolError(err);
+    } catch (e) {
+      console.error("Enter school failed:", e);
+      setSchoolError(describeFirebaseError(e));
+    } finally {
+      setSchoolBusy(false);
+    }
+  };
+
+  /** Création d'une école (super-admin, Cloud Function createSchool). */
+  const handleCreateSchool = async (schoolId: string, name: string) => {
+    setSchoolBusy(true);
+    setSchoolError("");
+    try {
+      await createSchoolRemote({ schoolId, name, makeMeDirector: true });
+      if (authUid) {
+        // Le jeton et le profil changent : on recharge la session.
+        await auth.currentUser?.getIdToken(true);
+        const res = await loadUserSession(authUid);
+        if (!("error" in res)) {
+          setUserProfile(res.profile);
+          setSchools(res.schools);
+        }
+      }
+      return true;
+    } catch (e) {
+      console.error("Create school failed:", e);
+      setSchoolError(describeFirebaseError(e));
+      return false;
+    } finally {
+      setSchoolBusy(false);
+    }
+  };
+
+  /** Retour à la page de choix d'école (désabonnement et purge de l'école active). */
+  const handleOpenSchoolPicker = () => {
+    unsubscribeAllRef.current();
+    setActiveSchool(null);
+    if (activeSchoolId) clearSchoolCache(activeSchoolId);
+    resetSessionState();
+    setActiveSchoolId(null);
+    setCurrentUser(null);
+    setShowSchoolPicker(true);
   };
 
   /** Déconnexion réelle : Firebase Auth + purge du cache local. */
   const handleLogout = async (reason?: string) => {
+    // Écoutes coupées et école active retirée AVANT tout : plus aucune écriture du cache.
+    unsubscribeAllRef.current();
+    setActiveSchool(null);
+    clearLocalCache();
     try {
       await signOutUser();
     } catch (e) {
@@ -515,6 +619,11 @@ export default function App() {
     }
     clearLocalCache();
     resetSessionState();
+    setActiveSchoolId(null);
+    setSchools([]);
+    setUserProfile(null);
+    setIsSuperAdmin(false);
+    setShowSchoolPicker(false);
     setAuthUid(null);
     setCurrentUser(null);
     setActiveTab("dashboard");
@@ -522,15 +631,16 @@ export default function App() {
     if (reason) setLoginError(reason);
   };
 
-  // Démarrage : purge des traces sensibles des anciennes versions, puis
-  // restauration de la session par Firebase Auth (jamais depuis localStorage).
+  // Démarrage : purge des traces de la version mono-école, puis restauration de
+  // la session par Firebase Auth (jamais depuis localStorage).
   useEffect(() => {
     purgeLegacySensitiveStorage();
-    setSystemSettings(RealmSimDB.getSystemSettings());
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (!fbUser) {
         // Session terminée sans passer par « خروج » (jeton révoqué ou expiré,
         // compte désactivé, persistance effacée) : rien ne reste en cache.
+        unsubscribeAllRef.current();
+        setActiveSchool(null);
         clearLocalCache();
         resetSessionState();
         setAuthUid(null);
@@ -540,16 +650,11 @@ export default function App() {
       }
       if (loginInProgressRef.current) return; // pris en charge par handleLoginSubmit
       try {
-        const res = await loadSessionProfile(fbUser.uid);
-        if ("error" in res) {
+        const err = await startSession(fbUser.uid);
+        if (err) {
           await signOutUser();
           clearLocalCache();
-          setLoginError(res.error);
-        } else {
-          ensureCacheOwner(fbUser.uid);
-          loadDatabase(res.user.role);
-          setAuthUid(fbUser.uid);
-          setCurrentUser(res.user);
+          setLoginError(err);
         }
       } catch (e) {
         console.error("Session restore error:", e);
@@ -561,16 +666,17 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Clé de session : on ne se réabonne que si le compte, le rôle ou les liens changent.
-  const sessionKey = currentUser && authUid
-    ? `${authUid}|${currentUser.id}|${currentUser.role}|${linkedStudentIdsOf(currentUser).join(",")}`
+  // Clé de session : on ne se réabonne que si l'école, le compte, le rôle ou les liens changent.
+  const sessionKey = currentUser && authUid && activeSchoolId
+    ? `${activeSchoolId}|${authUid}|${currentUser.role}|${linkedStudentIdsOf(currentUser).join(",")}`
     : "";
 
   // Real-time Firestore synchronization (abonnements limités à ce que le rôle peut lire)
   useEffect(() => {
-    if (!currentUser || !authUid) {
+    if (!currentUser || !authUid || !activeSchoolId) {
       return;
     }
+    const schoolId = activeSchoolId;
     let active = true;
     const unsubscribes: (() => void)[] = [];
     const role = currentUser.role;
@@ -579,44 +685,36 @@ export default function App() {
 
     setSyncStatus("syncing");
     try {
-      // Lien d'autorisation : une suspension ou un changement de rôle s'applique immédiatement.
-      unsubscribes.push(subscribeToDocument<AuthLink & { id: string }>("authLinks", authUid, (link) => {
+      // Appartenance : une suspension ou un changement de rôle s'applique immédiatement.
+      unsubscribes.push(subscribeToDocument<AppUser>(["schools", schoolId, "members", authUid], (member) => {
         if (!active) return;
-        if (!link || !link.isActive) {
-          handleLogout("تم إيقاف هذا الحساب. يرجى التواصل مع إدارة الجمعية.");
+        if (!member || member.isActive === false) {
+          handleLogout("تم إيقاف هذا الحساب في هذه المدرسة. يرجى التواصل مع إدارتها.");
           return;
         }
         setCurrentUser((prev) => {
           if (!prev) return prev;
-          const merged = mergeSessionProfile(prev, link, authUid);
+          const merged = { ...mergeSessionProfile(member, null, authUid, schoolId), mustChangePassword: prev.mustChangePassword };
           return JSON.stringify(merged) === JSON.stringify(prev) ? prev : merged;
         });
       }));
 
-      // Compte applicatif : nom, droits fins de l'interface, obligation de changer le mot de passe.
-      unsubscribes.push(subscribeToDocument<AppUser>("appUsers", currentUser.id, (u) => {
-        if (!active || !u) return;
-        setCurrentUser((prev) => {
-          if (!prev) return prev;
-          const merged: AppUser = {
-            ...stripPassword(u),
-            role: prev.role,
-            isActive: prev.isActive,
-            authUid: prev.authUid,
-            linkedStudentIds: prev.linkedStudentIds,
-            linkedTeacherId: prev.linkedTeacherId,
-          };
-          return JSON.stringify(merged) === JSON.stringify(prev) ? prev : merged;
-        });
+      // Profil global : obligation de changer le mot de passe.
+      unsubscribes.push(subscribeToDocument<UserProfile>(["users", authUid], (profile) => {
+        if (!active || !profile) return;
+        setUserProfile(profile);
+        setCurrentUser((prev) => (prev && Boolean(prev.mustChangePassword) !== Boolean(profile.mustChangePassword)
+          ? { ...prev, mustChangePassword: Boolean(profile.mustChangePassword) }
+          : prev));
       }));
 
-      unsubscribes.push(subscribeToSettings((settings) => {
+      unsubscribes.push(subscribeToSettings(schoolId, (settings) => {
         if (active && settings) setSystemSettings(settings);
-      }, "alfajr_settings_system"));
+      }, "settings_system"));
 
       const sub = <T extends { id: string }>(col: string, key: string, setter: (items: T[]) => void) => {
         if (!readable.has(col)) return;
-        unsubscribes.push(subscribeToCollection<T>(col, (items) => {
+        unsubscribes.push(subscribeToCollection<T>(schoolId, col, (items) => {
           if (active) setter(items);
         }, key));
       };
@@ -632,35 +730,54 @@ export default function App() {
       };
 
       if (readable.has("students")) {
-        sub<Student>("students", "alfajr_students", onStudents);
+        sub<Student>("students", "students", onStudents);
       } else if (isFamilyRole(role)) {
         // Familles : uniquement les dossiers explicitement liés au compte.
-        unsubscribes.push(subscribeToDocumentsByIds<Student>("students", linkedIds, (items) => {
+        unsubscribes.push(subscribeToDocumentsByIds<Student>(schoolId, "students", linkedIds, (items) => {
           if (active) onStudents(items);
-        }, "alfajr_students"));
+        }, "students"));
       }
 
-      sub<AppUser>("appUsers", "alfajr_settings_users", setAppUsers);
-      sub<Teacher>("teachers", "alfajr_teachers", setTeachers);
-      sub<Class>("classes", "alfajr_classes", setClasses);
-      sub<Payment>("payments", "alfajr_payments", setPayments);
-      sub<Notification>("notifications", "alfajr_notifications", setNotifications);
-      sub<OtherIncome>("otherIncomes", "alfajr_other_incomes", setOtherIncomes);
-      sub<SalaryPayment>("salaryPayments", "alfajr_salary_payments", setSalaryPayments);
-      sub<Expense>("expenses", "alfajr_expenses", setExpenses);
-      sub<ActivityTrip>("activities", "alfajr_activities", setActivities);
-      sub<ActivityParticipant>("activityParticipants", "alfajr_activity_participants", setActivityParticipants);
-      sub<ActivityExpense>("activityExpenses", "alfajr_activity_expenses", setActivityExpenses);
+      const onPayments = (items: Payment[]) => {
+        paymentsLoadedRef.current = true;
+        setPayments(keepBillable(items));
+      };
+
+      // Liste des comptes de l'école = membres (bureau uniquement).
+      if (readable.has("appUsers")) {
+        unsubscribes.push(subscribeToCollection<AppUser>(schoolId, "members", (items) => {
+          if (active) setAppUsers(items);
+        }, "settings_users"));
+      }
+      if (readable.has("teachers")) {
+        // Fiches publiques ; fiches RH (salaire, CIN…) fusionnées pour le bureau seulement (D42).
+        unsubscribes.push(subscribeToStaff<Teacher>(schoolId, canReadStaffPrivate(role), (items) => {
+          if (active) setTeachers(items);
+        }, "teachers"));
+      }
+      sub<Class>("classes", "classes", setClasses);
+      sub<Payment>("payments", "payments", onPayments);
+      sub<Notification>("notifications", "notifications", setNotifications);
+      sub<OtherIncome>("otherIncomes", "other_incomes", setOtherIncomes);
+      sub<SalaryPayment>("salaryPayments", "salary_payments", setSalaryPayments);
+      sub<Expense>("expenses", "expenses", setExpenses);
+      sub<ActivityTrip>("activities", "activities", setActivities);
+      sub<ActivityParticipant>("activityParticipants", "activity_participants", setActivityParticipants);
+      sub<ActivityExpense>("activityExpenses", "activity_expenses", setActivityExpenses);
 
       if (readable.has("attendance")) {
-        sub<Attendance>("attendance", "alfajr_attendance", setAttendance);
-        sub<Grade>("grades", "alfajr_grades", setGrades);
-        sub<DailyProgress>("dailyProgress", "alfajr_daily_progress", setDailyProgress);
+        sub<Attendance>("attendance", "attendance", setAttendance);
+        sub<Grade>("grades", "grades", setGrades);
+        sub<DailyProgress>("dailyProgress", "daily_progress", setDailyProgress);
       } else if (isFamilyRole(role)) {
         // Familles : requêtes filtrées sur les élèves liés (vérifiées par les règles).
-        unsubscribes.push(subscribeToQueryIn<Attendance>("attendance", "studentId", linkedIds, (items) => { if (active) setAttendance(items); }, "alfajr_attendance"));
-        unsubscribes.push(subscribeToQueryIn<Grade>("grades", "studentId", linkedIds, (items) => { if (active) setGrades(items); }, "alfajr_grades"));
-        unsubscribes.push(subscribeToQueryIn<DailyProgress>("dailyProgress", "studentId", linkedIds, (items) => { if (active) setDailyProgress(items); }, "alfajr_daily_progress"));
+        unsubscribes.push(subscribeToQueryIn<Attendance>(schoolId, "attendance", "studentId", linkedIds, (items) => { if (active) setAttendance(items); }, "attendance"));
+        unsubscribes.push(subscribeToQueryIn<Grade>(schoolId, "grades", "studentId", linkedIds, (items) => { if (active) setGrades(items); }, "grades"));
+        unsubscribes.push(subscribeToQueryIn<DailyProgress>(schoolId, "dailyProgress", "studentId", linkedIds, (items) => { if (active) setDailyProgress(items); }, "daily_progress"));
+        if (role === "ولي أمر") {
+          // Parents : paiements de leurs enfants uniquement.
+          unsubscribes.push(subscribeToQueryIn<Payment>(schoolId, "payments", "studentId", linkedIds, (items) => { if (active) onPayments(items); }, "payments"));
+        }
       }
 
       setSyncStatus("synced");
@@ -672,13 +789,16 @@ export default function App() {
       }
     }
 
-    return () => {
+    const stopAll = () => {
+      if (!active) return;
       active = false;
       unsubscribes.forEach(unsub => unsub());
     };
+    unsubscribeAllRef.current = stopAll;
+    return stopAll;
   }, [sessionKey]);
 
-  // Changement de mot de passe obligatoire (comptes provisionnés ou réinitialisés).
+  // Changement de mot de passe obligatoire (comptes migrés, créés ou réinitialisés).
   useEffect(() => {
     if (currentUser?.mustChangePassword) {
       setProfileFullName(currentUser.fullName || "");
@@ -689,6 +809,59 @@ export default function App() {
       setShowProfileEditModal(true);
     }
   }, [currentUser?.mustChangePassword]);
+
+  // Les paramètres de l'école arrivent parfois après les paiements : on masque
+  // alors les mois antérieurs à l'ouverture dès qu'ils sont connus.
+  useEffect(() => {
+    if (systemSettings) setPayments((prev) => keepBillable(prev));
+  }, [systemSettings?.openingYear, systemSettings?.openingMonth]);
+
+  // Titre de l'onglet : nom de l'école active.
+  useEffect(() => {
+    if (typeof document !== "undefined" && activeSchoolId && systemSettings?.associationName) {
+      document.title = systemSettings.associationName;
+    }
+  }, [activeSchoolId, systemSettings?.associationName]);
+
+  /**
+   * Migration métier idempotente et propre à l'école : chaque élève inscrit
+   * avant l'ouverture officielle doit avoir une ligne de cotisation pour le
+   * mois d'ouverture. Création UNIQUEMENT si le document n'existe pas
+   * (transaction), jamais d'écrasement ; bureau seulement ; après réception des
+   * paiements depuis le serveur.
+   */
+  useEffect(() => {
+    if (!activeSchoolId || !isOfficeRole(currentRole) || !paymentsLoadedRef.current || !systemSettings) return;
+    const opening = getOpeningPeriod(systemSettings);
+    if (!opening) return;
+    const openingKey = opening.year * 12 + monthIndex(opening.month);
+    const missing = students.filter((stud) => {
+      if (stud.isArchived) return false;
+      const reg = (stud.registrationDate || "").split("-");
+      const regKey = reg.length >= 2 ? parseInt(reg[0], 10) * 12 + (parseInt(reg[1], 10) - 1) : -Infinity;
+      if (regKey > openingKey) return false; // facturé depuis son inscription (handleSaveStudent)
+      return !payments.some((pay) => pay.studentId === stud.id && pay.month === opening.month && Number(pay.year) === opening.year);
+    });
+    if (missing.length === 0) return;
+    const schoolId = activeSchoolId;
+    missing.slice(0, 50).forEach((stud) => {
+      const ref = schoolDocRef(schoolId, "payments", `p_init_${stud.id}`);
+      runTransaction(db, async (tx) => {
+        const snap = await tx.get(ref);
+        if (snap.exists()) return;
+        tx.set(ref, sanitizeForFirestore({
+          id: `p_init_${stud.id}`,
+          studentId: stud.id,
+          year: opening.year,
+          month: opening.month,
+          amount: getSubscriptionAmount(opening.month, opening.year),
+          paymentDate: "",
+          status: "غير مدفوع",
+          schoolId,
+        }));
+      }).catch((err) => console.warn("Opening payment creation skipped:", err));
+    });
+  }, [activeSchoolId, currentRole, students, payments, systemSettings]);
 
   // Auto-process absences based on schedule
   useEffect(() => {
@@ -766,36 +939,10 @@ export default function App() {
     let p = RealmSimDB.getPayments();
     const n = RealmSimDB.getNotifications();
 
-    // Migrate legacy payments: filter out months before July 2026 without resetting payment statuses
-    // Lot 0 : réservé au bureau (seul autorisé à écrire les paiements), et plus
-    // jamais déclenché par un cache vide (qui écrasait des paiements réels).
-    const hasPreJuly = p.some(pay => isMonthBeforeJuly2026(pay.month, pay.year));
-    if (hasPreJuly && isOfficeRole(roleForMigrations)) {
-      const cleanPayments: Payment[] = p.filter(pay => !isMonthBeforeJuly2026(pay.month, pay.year));
-
-      // Make sure every student has a July 2026 payment record
-      s.forEach((stud) => {
-        const hasJuly = cleanPayments.some(pay => pay.studentId === stud.id && pay.month === "يوليوز" && pay.year === 2026);
-        if (!hasJuly) {
-          const initPay: Payment = {
-            id: `p_init_${stud.id}`,
-            studentId: stud.id,
-            year: 2026,
-            month: "يوليوز",
-            amount: getSubscriptionAmount("يوليوز", 2026),
-            paymentDate: "",
-            status: "غير مدفوع"
-          };
-          cleanPayments.push(initPay);
-          RealmSimDB.savePayment(initPay);
-        }
-      });
-
-      p = cleanPayments;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("alfajr_payments", JSON.stringify(p));
-      }
-    }
+    // Les mois antérieurs à l'ouverture officielle de l'école ne sont pas affichés
+    // (paramètre de l'école ; la création des lignes manquantes est faite par
+    // une migration idempotente, voir plus haut).
+    p = keepBillable(p);
 
     // Auto-sync activities finances with accounting records (bureau uniquement)
     if (isOfficeRole(roleForMigrations)) {
@@ -1236,7 +1383,7 @@ export default function App() {
     if (phone.startsWith("0")) {
       formattedPhone = "212" + phone.substring(1);
     }
-    const message = `السلام عليكم ورحمة الله وبركاته، ولي أمر الطالب(ة) *${student.fullName}* المحترم(ة). نحيطكم علماً بأن ابنكم/ابنتكم قد تغيب عن حصص التحفيظ بـ *${consecutiveCount} حصص متتالية*. نرجو منكم التواصل مع إدارة نادي الفجر الجديد للقرآن الكريم لتبرير هذا الغياب والتعاون معنا لضمان التزام الطالب وتقدمه الدراسي. جزاكم الله خيراً.`;
+    const message = `السلام عليكم ورحمة الله وبركاته، ولي أمر الطالب(ة) *${student.fullName}* المحترم(ة). نحيطكم علماً بأن ابنكم/ابنتكم قد تغيب عن حصص التحفيظ بـ *${consecutiveCount} حصص متتالية*. نرجو منكم التواصل مع إدارة ${schoolName} لتبرير هذا الغياب والتعاون معنا لضمان التزام الطالب وتقدمه الدراسي. جزاكم الله خيراً.`;
     const encoded = encodeURIComponent(message);
     window.open(`https://wa.me/${formattedPhone}?text=${encoded}`, "_blank");
 
@@ -1787,8 +1934,8 @@ export default function App() {
               ` : `
                 <span class="text-4xl">🌅</span>
               `}
-              <h2 class="text-xl font-bold text-emerald-800">${escapeHtml(systemSettings?.associationName || "نادي الفجر الجديد للقرآن الكريم")}</h2>
-              <p class="text-xs text-slate-500 font-medium">برعاية ${escapeHtml(systemSettings?.associationName || "جمعية الفجر الجديد")} • وصل استلام مالي</p>
+              <h2 class="text-xl font-bold text-emerald-800">${escapeHtml(schoolName)}</h2>
+              <p class="text-xs text-slate-500 font-medium">برعاية ${escapeHtml(schoolName)} • وصل استلام مالي</p>
             </div>
             
             <div class="border-t border-b border-slate-100 py-4 my-4 space-y-3 text-sm">
@@ -1829,7 +1976,7 @@ export default function App() {
             </div>
 
             <div class="text-center pt-4 border-t border-slate-100 text-[10px] text-slate-400">
-              شكرًا لكم على ثقتكم والتزامكم • جمعية الفجر الجديد
+              شكرًا لكم على ثقتكم والتزامكم • ${escapeHtml(schoolName)}
             </div>
           </div>
         </body>
@@ -1851,7 +1998,7 @@ export default function App() {
 - *رقم الإيصال*: ${p.receiptNo || "—"}
 - *طريقة الدفع*: ${p.paymentMethod || "نقداً"}
 ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
-شاكرين لكم حسن تعاونكم الدائم مع نادي الفجر الجديد للقرآن الكريم.`;
+شاكرين لكم حسن تعاونكم الدائم مع ${schoolName}.`;
     const encodedMsg = encodeURIComponent(rawMsg);
     const phone = (stud?.parentPhone || "").replace(/\s+/g, "");
     let formattedPhone = phone;
@@ -1918,7 +2065,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       return;
     }
 
-    const associationName = systemSettings?.associationName || "جمعية الفجر الجديد";
+    const associationName = schoolName;
     const associationLogo = systemSettings?.associationLogo || "";
 
     printWindow.document.write(`
@@ -2108,7 +2255,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                   </div>
                 ` : ''}
                 <div>
-                  <h1 class="text-2xl font-black text-emerald-800" style="font-size: 24px; font-weight: 900; color: #065f46; margin: 0;">${escapeHtml(systemSettings?.associationName || "نادي الفجر الجديد للقرآن الكريم")}</h1>
+                  <h1 class="text-2xl font-black text-emerald-800" style="font-size: 24px; font-weight: 900; color: #065f46; margin: 0;">${escapeHtml(schoolName)}</h1>
                   <p class="text-xs text-slate-500 font-medium mt-1" style="margin: 4px 0 0 0;">التقرير المالي التفصيلي للاشتراكات والرسوم الإدارية</p>
                 </div>
               </div>
@@ -2158,7 +2305,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             </div>
 
             <div class="flex justify-between items-center pt-8 border-t text-[10px] text-slate-400 mt-10" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; margin-top: 40px; font-size: 10px; color: #94a3b8;">
-              <p>نادي الفجر الجديد • إدارة الحسابات والمالية</p>
+              <p>${escapeHtml(schoolName)} • إدارة الحسابات والمالية</p>
               <p>الصفحة 1 من 1</p>
             </div>
           </div>
@@ -2322,7 +2469,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     if (updatedSettings.directorName && updatedSettings.directorName.trim() && isDirectorRole(currentRole)) {
       const newDirectorName = updatedSettings.directorName.trim();
       const updatedUsers = RealmSimDB.getAppUsers().map(u => {
-        if ((u.id === "u1" || u.username === "admin_alfajr") && u.fullName !== newDirectorName) {
+        if (isPrimaryDirector(u) && u.fullName !== newDirectorName) {
           const uUpdated = { ...u, fullName: newDirectorName };
           RealmSimDB.saveAppUser(uUpdated).catch((err) => console.error("Director name sync failed:", err));
           return uUpdated;
@@ -2350,7 +2497,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       return;
     }
 
-    if ((user.id === "u1" || user.username === "admin_alfajr") && user.fullName && systemSettings) {
+    if (isPrimaryDirector(user) && user.fullName && systemSettings) {
       if (systemSettings.directorName !== user.fullName) {
         const updatedSysSettings = {
           ...systemSettings,
@@ -2371,11 +2518,15 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
   };
 
   /**
-   * Création d'un compte : Cloud Function `createUserAccount` (compte Firebase
-   * Auth + compte applicatif + lien d'autorisation, sans mot de passe stocké).
+   * Création d'un compte dans l'école active : Cloud Function `createSchoolUser`
+   * (compte Firebase Auth + users/{uid} + members/{uid}, nom d'utilisateur
+   * unique sur la plateforme, aucun mot de passe stocké). Mot de passe vide =
+   * rattacher un compte existant (même personne dans plusieurs écoles).
    */
   const handleCreateAppUser = async (user: AppUser, password: string): Promise<boolean> => {
-    const pwError = validateNewPassword(password);
+    if (!activeSchoolId) return false;
+    const attachExisting = password === "";
+    const pwError = attachExisting ? null : validateNewPassword(password);
     if (pwError) {
       alert(pwError);
       return false;
@@ -2390,9 +2541,11 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       if (typeof v === "boolean") flags[k] = v;
     });
     try {
-      const res = await createUserAccountRemote({
+      const res = await createSchoolUserRemote({
+        schoolId: activeSchoolId,
         username: user.username,
-        password,
+        password: attachExisting ? undefined : password,
+        attachExisting,
         fullName: user.fullName,
         role: user.role,
         isActive: user.isActive,
@@ -2403,7 +2556,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
         linkedStudentIds: user.linkedStudentIds,
         flags,
       });
-      const created: AppUser = { ...user, id: res.appUserId, authUid: res.uid, mustChangePassword: true };
+      const created: AppUser = { ...user, id: res.uid, uid: res.uid, username: res.username, schoolId: activeSchoolId, mustChangePassword: !attachExisting };
       const next = [...RealmSimDB.getAppUsers().filter(u => u.id !== created.id), created];
       RealmSimDB.setCachedAppUsers(next);
       setAppUsers(next);
@@ -2412,7 +2565,9 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
         `تم إنشاء حساب المستخدم (${user.fullName}) باسم الدخول ${user.username} بنجاح.`,
         "إداري"
       );
-      alert("تم إنشاء الحساب بنجاح. سيُطلب من المستخدم تغيير كلمة المرور عند أول دخول.");
+      alert(attachExisting
+        ? "تمت إضافة الحساب الموجود إلى هذه المدرسة بنجاح."
+        : "تم إنشاء الحساب بنجاح. سيُطلب من المستخدم تغيير كلمة المرور عند أول دخول.");
       return true;
     } catch (err) {
       console.error("Create user account failed:", err);
@@ -2429,7 +2584,8 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       return false;
     }
     try {
-      await resetUserPasswordRemote(user.id, newPassword);
+      if (!activeSchoolId) return false;
+      await resetUserPasswordRemote(activeSchoolId, user.id, newPassword);
       addSysNotification(
         "إعادة تعيين كلمة المرور",
         `تمت إعادة تعيين كلمة مرور حساب (${user.fullName}). سيُطلب تغييرها عند الدخول القادم.`,
@@ -2565,7 +2721,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                   </div>
                 ` : ''}
                 <div>
-                  <h1 class="text-2xl font-black text-emerald-800" style="font-size: 24px; font-weight: 900; color: #065f46; margin: 0;">${escapeHtml(systemSettings?.associationName || "نادي الفجر الجديد للقرآن الكريم")}</h1>
+                  <h1 class="text-2xl font-black text-emerald-800" style="font-size: 24px; font-weight: 900; color: #065f46; margin: 0;">${escapeHtml(schoolName)}</h1>
                   <p class="text-xs text-slate-500 font-medium mt-1" style="margin: 4px 0 0 0;">تقرير كشف شؤون الطلاب والتقدم الدراسي</p>
                 </div>
               </div>
@@ -2615,7 +2771,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             </div>
 
             <div class="flex justify-between items-center pt-8 border-t text-[10px] text-slate-400 mt-10" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #e2e8f0; margin-top: 40px; font-size: 10px; color: #94a3b8;">
-              <p>نادي الفجر الجديد • إدارة شؤون الطلاب</p>
+              <p>${escapeHtml(schoolName)} • إدارة شؤون الطلاب</p>
               <p>الصفحة 1 من 1</p>
             </div>
           </div>
@@ -2841,31 +2997,21 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       .join(", ");
 
     try {
-      const res = await fetch("/api/gemini/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          studentName: student.fullName,
-          hizbCount: student.hizbCount,
-          tajweedLevel: student.tajweedLevel,
-          age: new Date().getFullYear() - new Date(student.birthDate).getFullYear(),
-          notes: student.notes,
-          attendanceRate,
-          recentGrades: studentGrades || "لا توجد امتحانات حديثة مسجلة."
-        })
+      // Fonction `api` (src/firebase.ts) : jeton, appartenance, quota (D43).
+      const data = await requestAiReport<any>({
+        schoolId: activeSchoolId || "",
+        studentName: student.fullName,
+        hizbCount: student.hizbCount,
+        tajweedLevel: student.tajweedLevel,
+        age: computeAge(student.birthDate),
+        notes: student.notes,
+        attendanceRate,
+        recentGrades: studentGrades || "لا توجد امتحانات حديثة مسجلة."
       });
-
-      if (!res.ok) {
-        throw new Error("فشل في استدعاء خادم التحليل الذكي.");
-      }
-
-      const data = await res.json();
       setAiReport(data);
     } catch (err: any) {
       console.error(err);
-      setAiError("عذراً، حدث خطأ أثناء تشغيل محرك الذكاء الاصطناعي. الرجاء التحقق من مفتاح API وإعادة المحاولة.");
+      setAiError(err instanceof AiReportError ? err.userMessage : "عذراً، حدث خطأ أثناء تشغيل محرك الذكاء الاصطناعي. الرجاء التحقق من مفتاح API وإعادة المحاولة.");
     } finally {
       setAiLoading(false);
     }
@@ -2993,17 +3139,18 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       if (newPassword) {
         await changeOwnPassword(newPassword, profileCurrentPassword || undefined);
       }
-      // 2. Champs autorisés de son propre compte.
-      const fields: Parameters<typeof updateOwnAppUserFields>[1] = {};
-      if (profileFullName.trim() !== currentUser.fullName) fields.fullName = profileFullName.trim();
+      // 2. Champs autorisés de son propre compte (profil global et appartenance).
+      const uid = currentUser.uid || currentUser.id;
+      const patch: Partial<AppUser> = {};
+      if (profileFullName.trim() !== currentUser.fullName && activeSchoolId) {
+        await updateOwnMemberFields(activeSchoolId, uid, { fullName: profileFullName.trim() });
+        patch.fullName = profileFullName.trim();
+      }
       if (newPassword) {
-        fields.mustChangePassword = false;
-        fields.passwordChangedAt = new Date().toISOString();
+        await updateOwnUserFields(uid, { mustChangePassword: false, passwordChangedAt: new Date().toISOString() });
+        patch.mustChangePassword = false;
       }
-      if (Object.keys(fields).length > 0) {
-        await updateOwnAppUserFields(currentUser.id, fields);
-      }
-      setCurrentUser({ ...currentUser, ...fields });
+      setCurrentUser({ ...currentUser, ...patch });
     } catch (err: any) {
       console.error("Profile update failed:", err);
       setProfileError(describeFirebaseError(err));
@@ -3012,7 +3159,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     }
     setProfileSaving(false);
 
-    if (currentRole === "مدير" && systemSettings && systemSettings.directorName !== profileFullName.trim() && currentUser.id === "u1") {
+    if (currentRole === "مدير" && systemSettings && systemSettings.directorName !== profileFullName.trim() && isPrimaryDirector(currentUser)) {
       const updatedSettings: SystemSettings = {
         ...systemSettings,
         directorName: profileFullName.trim(),
@@ -3281,21 +3428,16 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
         return;
       }
 
-      const res = await loadSessionProfile(credential.user.uid);
-      if ("error" in res) {
+      const err = await startSession(credential.user.uid);
+      if (err) {
         await signOutUser();
-        setLoginError(res.error);
+        setLoginError(err);
         return;
       }
-
-      ensureCacheOwner(credential.user.uid);
-      loadDatabase(res.user.role);
-      setAuthUid(credential.user.uid);
-      setCurrentUser(res.user);
       setLoginUsername("");
       setLoginPassword("");
-      updateOwnAppUserFields(res.user.id, { lastLogin: new Date().toISOString() })
-        .catch((err) => console.warn("lastLogin update failed:", err));
+      updateOwnUserFields(credential.user.uid, { lastLogin: new Date().toISOString() })
+        .catch((e) => console.warn("lastLogin update failed:", e));
     } catch (err) {
       console.error("Login error:", err);
       setLoginError("حدث خطأ أثناء تسجيل الدخول");
@@ -3305,6 +3447,22 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       setAuthChecking(false);
     }
   };
+
+  if (!currentUser && authUid && showSchoolPicker) {
+    return (
+      <SchoolPicker
+        schools={schools}
+        memberSchoolIds={userProfile?.schoolIds || []}
+        isSuperAdmin={isSuperAdmin}
+        userName={userProfile?.displayName || userProfile?.username || ""}
+        busy={schoolBusy}
+        error={schoolError}
+        onSelect={handleSelectSchool}
+        onCreate={handleCreateSchool}
+        onLogout={() => handleLogout()}
+      />
+    );
+  }
 
   if (!currentUser && authChecking) {
     return (
@@ -3348,7 +3506,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                 )}
               </div>
               <h2 className="text-xl font-black text-slate-800 tracking-tight">
-                {systemSettings?.associationName || "جمعية الفجر الجديد"}
+                {schoolName}
               </h2>
               <p className="text-xs text-slate-400 mt-1 font-medium">
                 بوابة الدخول الموحدة لإدارة شؤون حفظ وتجويد القرآن الكريم
@@ -3438,7 +3596,22 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     );
   }
 
+  const schoolContextValue: SchoolContextValue = {
+    schoolId: activeSchoolId,
+    school: activeSchool,
+    schools,
+    memberSchoolIds: userProfile?.schoolIds || [],
+    member: currentUser,
+    role: currentUser ? currentRole : null,
+    settings: systemSettings,
+    schoolName,
+    isSuperAdmin,
+    switchSchool: (id: string) => { handleSelectSchool(id); },
+    openSchoolPicker: handleOpenSchoolPicker,
+  };
+
   return (
+    <SchoolContext.Provider value={schoolContextValue}>
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col antialiased selection:bg-emerald-500 selection:text-white" dir="rtl">
       
       {/* HEADER NAVBAR */}
@@ -3469,11 +3642,11 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             {/* Title */}
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base md:text-lg font-bold text-emerald-900 flex items-center gap-1.5 truncate">
-                <span className="truncate">{systemSettings?.associationName || "نادي الفجر الجديد للقرآن"}</span>
+                <span className="truncate">{schoolName}</span>
                 <span className="hidden sm:inline-block text-[10px] sm:text-xs bg-amber-500 text-zinc-950 font-bold px-2 py-0.5 rounded-full shrink-0">نادي القرآن</span>
               </h1>
               <p className="hidden md:block text-[11px] text-slate-500 font-medium truncate">
-                لوحة التحكم الشاملة • برعاية {systemSettings?.associationName || "جمعية الفجر الجديد"}
+                لوحة التحكم الشاملة • برعاية {schoolName}
               </p>
             </div>
           </div>
@@ -3522,6 +3695,9 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                   : "أوفلاين"}
               </span>
             </div>
+
+            {/* Sélecteur d'école (plusieurs écoles ou super-admin) */}
+            <SchoolSwitcher />
 
             {/* Unread notification icon indicator */}
             <div className="relative">
@@ -4455,7 +4631,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                         🟢 متصل بالذاكرة المحلية (RealmDB)
                       </span>
                     </div>
-                    <h2 className="text-2xl md:text-3xl font-black">لوحة الإحصائيات لجمعية الفجر الجديد</h2>
+                    <h2 className="text-2xl md:text-3xl font-black">لوحة الإحصائيات لـ{schoolName}</h2>
                     <p className="text-sm text-emerald-100 max-w-xl">
                       مرحباً بك في النظام التربوي الذكي الخاص بمركز القرآن الكريم. تتيح لك هذه المنصة متابعة شؤون الحلقات والطلاب ومستويات التجويد والرسوم الإدارية بطريقة رقمية ميسرة.
                     </p>
@@ -4592,7 +4768,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                   
                   <div className="bg-slate-50 p-4 rounded-xl text-xs text-slate-600 space-y-1 border border-slate-100">
                     <p className="font-bold text-emerald-800">ملاحظة تنظيمية:</p>
-                    <p>يهدف النادي لمساعدة جميع الأطفال والشيوخ في جمعية الفجر الجديد لختم كتاب الله وضبط مخارج الحروف بتجويد ممتاز.</p>
+                    <p>يهدف النادي لمساعدة جميع الأطفال والشيوخ في {schoolName} لختم كتاب الله وضبط مخارج الحروف بتجويد ممتاز.</p>
                   </div>
                 </div>
 
@@ -4945,7 +5121,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                               if (phone.startsWith("0")) {
                                 formattedPhone = "212" + phone.substring(1);
                               }
-                              const rawMsg = `السلام عليكم ورحمة الله وبركاته، ولي أمر الطالب(ة) ${selectedStudent.fullName} المحترم(ة)... مدرسة نادي الفجر الجديد للقرآن الكريم.`;
+                              const rawMsg = `السلام عليكم ورحمة الله وبركاته، ولي أمر الطالب(ة) ${selectedStudent.fullName} المحترم(ة)... ${schoolName}.`;
                               const encodedMsg = encodeURIComponent(rawMsg);
                               window.open(`https://wa.me/${formattedPhone}?text=${encodedMsg}`, "_blank");
                             }}
@@ -5016,7 +5192,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                           <div className="flex justify-between items-center border-b border-slate-800 pb-3">
                             <div className="flex items-center gap-2">
                               <Sparkles className="w-5 h-5 text-amber-400" />
-                              <h4 className="font-bold text-amber-400 text-sm">التقرير التربوي الذكي لجمعية الفجر الجديد</h4>
+                              <h4 className="font-bold text-amber-400 text-sm">التقرير التربوي الذكي لـ{schoolName}</h4>
                             </div>
                             <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">موجه بالذكاء الاصطناعي</span>
                           </div>
@@ -5720,7 +5896,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                     </p>
                   </div>
                   
-                  <p className="text-[10px] text-amber-700 font-bold">بإشراف جمعية الفجر الجديد نادي القرآن</p>
+                  <p className="text-[10px] text-amber-700 font-bold">بإشراف {schoolName}</p>
                 </div>
 
               </div>
@@ -5945,7 +6121,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="p-4 bg-slate-50 border-b flex justify-between items-center text-xs font-bold text-slate-700">
                   <span>سجل المعاملات والمدفوعات ({sortedPayments.length} سجل مطابق)</span>
-                  <span className="text-[10px] text-slate-500 font-medium">مبلغ الاشتراك الأساسي: 100 درهم / شهر (عرض 70 درهم لشهر 7 و8 من هذه السنة)</span>
+                  <span className="text-[10px] text-slate-500 font-medium">مبلغ الاشتراك الأساسي: {getSubscriptionAmount("", 0)} {systemSettings?.currency || "درهم"} / شهر{(systemSettings?.feeOverrides || []).length > 0 ? ` (تعريفات خاصة: ${(systemSettings?.feeOverrides || []).map((o) => `${o.month} ${o.year}: ${o.amount}`).join("، ")})` : ""}</span>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -6382,7 +6558,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                         )}
                       </div>
                       <div>
-                        <h3 className="text-xs font-bold tracking-wide text-amber-400">{systemSettings?.associationName || "جمعية الفجر الجديد"}</h3>
+                        <h3 className="text-xs font-bold tracking-wide text-amber-400">{schoolName}</h3>
                         <p className="text-[9px] text-emerald-200 font-medium">نادي القرآن الكريم وتجويده</p>
                       </div>
                     </div>
@@ -6442,7 +6618,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                   
                   <div className="p-5 border-b border-zinc-800 text-center relative z-10">
                     <h4 className="text-sm font-bold text-amber-400">تعليمات وضوابط النادي</h4>
-                    <p className="text-[9px] text-zinc-400 mt-1">تلتزم إدارة نادي الفجر الجديد بالمحافظة على تميز الطلاب</p>
+                    <p className="text-[9px] text-zinc-400 mt-1">تلتزم إدارة {schoolName} بالمحافظة على تميز الطلاب</p>
                   </div>
 
                   <div className="px-6 py-4 flex flex-col items-center justify-center gap-4 relative z-10 flex-grow">
@@ -6602,11 +6778,11 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                     <div className="flex items-center gap-2">
                       <span className="flex items-center gap-0.5 text-teal-800">
                         <Globe className="w-3 h-3 text-teal-600" />
-                        <span>جمعية الفجر الجديد</span>
+                        <span>{schoolName}</span>
                       </span>
                       <span className="flex items-center gap-0.5 text-blue-800">
                         <Facebook className="w-3 h-3 text-blue-600" />
-                        <span>الفجر الجديد</span>
+                        <span>{schoolName}</span>
                       </span>
                     </div>
                     
@@ -6673,7 +6849,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
                     <div className="text-left">
                       <p className="text-[7px] text-slate-400 font-bold leading-none">الموسم الدراسي لسنة:</p>
-                      <p className="text-[9px] text-teal-800 font-extrabold font-mono mt-0.5">2026-2027 / 1448</p>
+                      <p className="text-[9px] text-teal-800 font-extrabold font-mono mt-0.5">{(systemSettings?.activeAcademicSeason || "").replace("/", "-")}</p>
                     </div>
                   </div>
 
@@ -6716,7 +6892,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                                 <div className="border border-dashed border-red-500/60 rounded-full w-full h-full flex flex-col items-center justify-center p-0.5">
                                   <span className="text-[6px] text-red-500/70 scale-90">مؤدى عنه</span>
                                   <span className="text-[8px] font-black tracking-widest my-0.5">★ تم ★</span>
-                                  <span className="text-[5px] text-red-500/70 scale-75">الفجر الجديد</span>
+                                  <span className="text-[5px] text-red-500/70 scale-75">{schoolName}</span>
                                 </div>
                               </div>
                             </div>
@@ -7311,8 +7487,8 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
       {/* FOOTER */}
       <footer className="h-10 bg-slate-100 border-t border-slate-200 px-4 md:px-8 flex items-center justify-between text-[10px] text-slate-500 italic">
-        <div>نظام إدارة الأكاديمية وحلقات تحفيظ القرآن الكريم • جمعية الفجر الجديد</div>
-        <div>جميع الحقوق محفوظة © 2026</div>
+        <div>نظام إدارة الأكاديمية وحلقات تحفيظ القرآن الكريم • {schoolName}</div>
+        <div>جميع الحقوق محفوظة © {new Date().getFullYear()}</div>
       </footer>
 
       {/* TEACHER STUDENT FILE & DOSSIER MODAL */}
@@ -8293,7 +8469,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 💡 *ملاحظة:* لا يتم احتساب أيام الجمعة في الكشف لكونها عطلة نهاية الأسبوع الرسمية بالجمعية.
 
 شاكرين لكم حسن تعاونكم وحرصكم على التزام ابنكم ومتابعته المستمرة في حفظ كتاب الله.
-*جمعية الفجر الجديد لتحفيظ القرآن والتربية*`;
+*${schoolName}*`;
 
           const cleanPhone = (phone: string) => {
             const digits = phone.replace(/\D/g, "");
@@ -8360,7 +8536,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                     {/* Printable Top Decorative Header */}
                     <div className="flex justify-between items-start border-b-2 border-emerald-800 pb-4">
                       <div className="space-y-1">
-                        <p className="font-extrabold text-slate-800 text-sm">جمعية الفجر الجديد لتحفيظ القرآن والتربية</p>
+                        <p className="font-extrabold text-slate-800 text-sm">{schoolName}</p>
                         <p className="text-[10px] text-emerald-800 font-bold">حلقات التاج والوقار النموذجية بالمملكة المغربية</p>
                         <p className="text-[9px] text-slate-400 font-mono">الرقم المرجعي للأكاديمية: AI-ACAD-2026</p>
                       </div>
@@ -8681,5 +8857,6 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       )}
 
     </div>
+    </SchoolContext.Provider>
   );
 }

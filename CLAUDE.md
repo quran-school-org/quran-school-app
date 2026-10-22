@@ -36,47 +36,59 @@ Prérequis : Node 22, Java 21 (émulateur Firestore). Un seul gestionnaire : **n
 ```bash
 npm ci && npm ci --prefix functions   # installation
 npm run emulators                      # auth 9099, firestore 8080, functions 5001, hosting 5000, UI 4000
-npm run seed:emulator                  # données FICTIVES + comptes (admin_alfajr / demo-directeur-2026…)
+npm run seed:emulator                  # données FICTIVES : école alfajr (migrée) + école annour, comptes de démo
 npm run dev                            # app sur http://localhost:3000, branchée sur les émulateurs
 npm run lint                           # tsc --noEmit (app, scripts, tests)
 npm run lint:functions                 # tsc des Cloud Functions
 npm test                               # tests unitaires (vitest, sans émulateur)
-npm run test:rules                     # tests sur émulateurs (règles, scripts) via emulators:exec
+npm run test:rules                     # tests sur émulateurs (règles, migration, Functions) via emulators:exec
+npm run test:e2e                       # Playwright (Chromium) contre les émulateurs, données fictives
 npm run build                          # build de PRODUCTION (lit .env.production)
 npm run build:dev                      # build branché sur les émulateurs (pour l'émulateur Hosting)
 ```
 
 - `.env.development` (commité) : projet `demo-quran-school`, `VITE_USE_EMULATORS=true`.
 - `.env.production` (commité) : config web **publique** de la prod (aucun secret).
-- `.env.local` (non commité) : surcharges locales, ex. `GEMINI_API_KEY` pour `server.ts`.
+- `.env.local` (non commité) : surcharges locales. La clé Gemini n'est utilisée que
+  par la fonction `api` (Secret Manager en prod, `functions/.secret.local` en local).
 - **Attention** : l'émulateur Hosting sert `dist/`. Après `npm run build`, ce bundle
   parle à la **prod**. Pour l'émulateur, utiliser `npm run build:dev`.
 - `firebase` sans `--project` utilise `demo-quran-school` (`.firebaserc`). L'alias
   `prod` n'est à utiliser que par un humain, en suivant un runbook.
 
-## Architecture (état actuel)
+## Architecture (multi-écoles)
 
-- `src/App.tsx` (~8 500 lignes) : tout l'état (`useState`), la connexion, le
-  routage par `activeTab`, la plupart des écrans.
+- **Données** : tout est sous `schools/{schoolId}/…` (14 collections +
+  `settings/system`), avec un champ `schoolId` dénormalisé dans chaque document.
+  Comptes : `users/{uid}` (profil global, écoles), `schools/{id}/members/{uid}`
+  (rôle, droits, liens `linkedTeacherId` / `linkedStudentIds`), registre
+  `usernames/{username}`. Super-admin : claim `superAdmin`. Racine fermée.
+- `src/App.tsx` (~8 500 lignes) : tout l'état, la session (connexion, choix
+  d'école), le routage par `activeTab`, la plupart des écrans.
+- `src/school/` : `SchoolContext` (école active), `SchoolPicker` (choix / création
+  d'école), `SchoolSwitcher` (barre du haut), `businessRules` (cotisations,
+  ouverture, âge : paramètres de l'école).
 - `src/db.ts` : `RealmSimDB`, CRUD « localStorage d'abord » + écriture Firestore
-  en parallèle (fire-and-forget).
-- `src/firebase.ts` : initialisation + 4 fonctions génériques
-  (`saveToFirestore`, `deleteFromFirestore`, `subscribeToCollection`, `subscribeToSettings`).
-- `src/config/env.ts` : lecture des variables `VITE_*`, garde-fou émulateurs.
+  sous l'école active ; `setActiveSchool()` fixe l'école.
+- `src/cache/localCache.ts` : cache local cloisonné `kuttab:{schoolId}:…`.
+- `src/firebase.ts` : initialisation, connexion, et les 4 fonctions d'accès qui
+  prennent `schoolId` (`saveToFirestore`, `deleteFromFirestore`,
+  `subscribeToCollection`, `subscribeToSettings`) ; appels des callables.
+- `src/config/env.ts` : variables `VITE_*`, garde-fou émulateurs.
 - `src/types.ts` : modèles, 9 rôles (valeurs en arabe), matrice de permissions.
-- `src/security/` : modules purs (correspondance compte ↔ Auth, groupes de rôles
-  miroirs des règles, alignement explicite des comptes).
-- Sécurité (Lot 0) : connexion Firebase Auth d'abord, puis lien
-  `authLinks/{uid}` (rôle, statut, élèves liés) lu par les règles. Aucun mot de
-  passe dans Firestore ni dans localStorage. Comptes créés / réinitialisés par
-  les callables `createUserAccount` / `resetUserPassword` (directeur).
+- `src/security/` : modules purs (compte ↔ Auth, groupes de rôles miroirs des
+  règles, alignement explicite des comptes).
 - `src/components/` : écrans extraits (données en props, callbacks `onSave…`).
-- `firestore.rules` : règles (appliquées à la base nommée, voir `firebase.json`).
-- `functions/` : Cloud Functions 2nd gen (Node 22, TypeScript, région `europe-west1`).
-- `server.ts` : serveur Express historique (AI Studio / Cloud Run) : proxy Gemini + statique.
-- `scripts/` : scripts d'administration (Admin SDK). `--dry-run` par défaut,
-  `--project` obligatoire ; ne les lancer que contre les émulateurs.
-- `tests/unit` (vitest pur) et `tests/emulator` (règles, scripts, sur émulateurs).
+- `firestore.rules` : règles multi-écoles (base nommée, voir `firebase.json`).
+- `functions/` : Cloud Functions 2nd gen (Node 22, `europe-west1`) : `createSchool`,
+  `createSchoolUser`, `resetUserPassword`, `setMemberRole`, `api` (proxy Gemini
+  authentifié), triggers de suspension à l'archivage.
+- `server.ts` : serveur de développement (Vite) ; plus de proxy Gemini.
+- `scripts/admin/lot0-provision-auth.ts`, `scripts/migration/migrate-to-tenants.ts`
+  (Admin SDK) : `--dry-run` par défaut, `--project` obligatoire ; ne les lancer que
+  contre les émulateurs. `scripts/dev/` : données fictives et peuplement.
+- `tests/unit`, `tests/emulator` (règles, migration, Functions), `tests/e2e`
+  (Playwright), `functions/test` (logique des Functions).
 
 ## Conventions
 
@@ -85,6 +97,8 @@ npm run build:dev                      # build branché sur les émulateurs (pou
   `عامل نظافة / صيانة`, `أخرى`, `طالب`, `ولي أمر`) : compatibilité des données.
 - Toute modification de `firestore.rules` s'accompagne de tests dans `tests/emulator`.
 - Tout accès Firestore passe par `src/firebase.ts` ; pas d'appel direct dispersé.
+  Toute donnée métier est sous `schools/{schoolId}` et porte `schoolId`.
+- Les comptes et appartenances ne s'écrivent que par les Cloud Functions.
 - Aucune valeur de config (projet, base, clé) codée en dur dans le code : `src/config/env.ts`.
 - Toute décision structurante est consignée dans `docs/DECISIONS.md`
   (contexte, décision, retour arrière).

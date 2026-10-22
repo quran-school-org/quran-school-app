@@ -6,6 +6,13 @@
 /** Domaine fictif des emails techniques des comptes existants (compatibilité). */
 export const LEGACY_EMAIL_DOMAIN = "alfajr.local";
 
+/**
+ * Domaine fictif des emails techniques des NOUVEAUX comptes (toutes écoles).
+ * Les noms d'utilisateur sont uniques sur toute la plateforme (registre
+ * `usernames/{username}` tenu par les Cloud Functions), quel que soit le domaine.
+ */
+export const NEW_ACCOUNTS_EMAIL_DOMAIN = "comptes.kuttab.local";
+
 /** Suffixe historique ajouté aux mots de passe de moins de 6 caractères. */
 export const SHORT_PASSWORD_SUFFIX = "_secure_fajr";
 
@@ -25,6 +32,15 @@ export function isValidUsername(username: string): boolean {
 
 export function usernameToEmail(username: string, domain: string = LEGACY_EMAIL_DOMAIN): string {
   return `${normalizeUsername(username)}@${domain}`;
+}
+
+/**
+ * Emails techniques possibles pour un nom d'utilisateur, dans l'ordre d'essai
+ * à la connexion : d'abord le domaine historique (comptes existants), puis
+ * celui des nouveaux comptes. Évite tout index public nom → email.
+ */
+export function loginEmailCandidates(username: string): string[] {
+  return [usernameToEmail(username, LEGACY_EMAIL_DOMAIN), usernameToEmail(username, NEW_ACCOUNTS_EMAIL_DOMAIN)];
 }
 
 /**
