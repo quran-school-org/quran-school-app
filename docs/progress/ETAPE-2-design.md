@@ -28,8 +28,8 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Comptabilité (en-tête, indicateurs, sections, fenêtres) | fait |
 | Activités (en-tête, indicateurs, liste ; espace de travail et fenêtres : harmonisation) | fait |
 | Halaqas (ClassManagement) + fenêtre | fait |
-| Notifications | à faire |
-| Cartes QR (laboratoire) | à faire |
+| Notifications | fait |
+| Cartes QR (laboratoire) | fait (gabarits de cartes : déjà refaits avec les élèves) |
 | Paramètres, utilisateurs, matrice des droits | à faire |
 | Portail enseignant / parent / élève, fenêtre de profil | à faire |
 | Connexion, vérification de session, choix / création d'école | à faire |
@@ -37,7 +37,7 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Notifications : `src/screens/NotificationsScreen.tsx`
+Paramètres : `src/components/settings/` (GeneralSettingsSection, UsersSection, UserFormModal, PermissionMatrixEditor)
 (PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
 
 ## Commandes utiles
