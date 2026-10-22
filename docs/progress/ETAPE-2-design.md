@@ -31,13 +31,13 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Notifications | fait |
 | Cartes QR (laboratoire) | fait (gabarits de cartes : déjà refaits avec les élèves) |
 | Paramètres, utilisateurs, matrice des droits | fait |
-| Portail enseignant / parent / élève, fenêtre de profil | à faire |
-| Connexion, vérification de session, choix / création d'école | à faire |
+| Portail enseignant, fenêtre de profil (parent et élève : écrans communs déjà refaits) | fait |
+| Connexion, vérification de session, choix / création d'école | fait |
 | Impressions (reçu, attestation, rapports, cartes, présence mensuelle) + @media print | à faire |
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Portail enseignant : `src/screens/TeacherDashboardScreen.tsx`, `src/screens/modals/TeacherStudentFileModal.tsx`, `ProfileModal.tsx`
+Impressions : `src/print/` (reçu, attestation, rapports) avec `printWindow` ; vérifier @media print (Playwright `emulateMedia`), garde-fou d'échappement vert.
 (PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
 
 ## Commandes utiles
