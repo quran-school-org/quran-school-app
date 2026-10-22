@@ -41,8 +41,8 @@ Commandes locales (conteneur à proxy, D21, D48), toujours sous verrou :
 ## En cours
 - (rien)
 
-## Suivant (ordre de la mission)
-Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
-
-## Prochaine action exacte
-Clôture : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`, vérification finale complète.
+## Statut
+Mission terminée : les 10 points sont traités (faits, ou préparés et
+désactivés avec runbook, ou planifiés pour Cloud Storage). Plan et rapport mis
+à jour (`docs/PLAN.md`, `docs/RAPPORT-ETAPE-1.md` § 6). Restent les actions
+humaines du § 6.4 du rapport.
