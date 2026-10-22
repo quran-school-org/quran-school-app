@@ -1,5 +1,176 @@
 @import "tailwindcss";
 
+/*
+ * Charte « لوحة الكتّاب » (maquette design/Main.dc.html) : jetons du thème.
+ * Les échelles primary / gold / danger / success / sand remplacent les palettes
+ * émeraude / ambre / rose / ardoise de l'ancienne interface (voir D38).
+ */
+@theme {
+  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-display: "Reem Kufi", "IBM Plex Sans Arabic", sans-serif;
+  --font-quran: "Amiri", "Traditional Arabic", serif;
+  --font-mono: "IBM Plex Sans Arabic", ui-monospace, monospace;
+
+  /* Fonds, surfaces, texte, bordures (valeurs exactes de la maquette) */
+  --color-app: #ECEDE6;
+  --color-surface: #F8F8F3;
+  --color-surface-2: #F1F2EB;
+  --color-sunken: #E6E8DF;
+  --color-quiet: #EEEFE8;
+  --color-night: #102446;
+  --color-night-2: #1B2F55;
+  --color-night-line: #2E4A78;
+  --color-night-line-2: #2B4470;
+  --color-night-text: #EEF1F7;
+  --color-night-muted: #B8C4D8;
+  --color-night-label: #8FA0BD;
+  --color-night-link: #C9D3E3;
+  --color-ink: #1A1F2B;
+  --color-ink-2: #4A5060;
+  --color-ink-3: #6B7080;
+  --color-ink-4: #9A9E92;
+  --color-line: #D9DBD0;
+  --color-line-strong: #D0D3C6;
+  --color-line-soft: #E1E3D8;
+  --color-line-faint: #E8EAE1;
+
+  /* Primaire (bleu nuit) */
+  --color-primary: #1B3A6B;
+  --color-primary-hover: #102446;
+  --color-primary-50: #EEF2F8;
+  --color-primary-100: #E3E9F2;
+  --color-primary-200: #C9D5E6;
+  --color-primary-300: #9FB3D1;
+  --color-primary-400: #5B7FB0;
+  --color-primary-500: #3A5E92;
+  --color-primary-600: #1B3A6B;
+  --color-primary-700: #1B3A6B;
+  --color-primary-800: #142D55;
+  --color-primary-900: #102446;
+  --color-primary-950: #0B1A34;
+
+  /* Or (accent) */
+  --color-gold: #D4A017;
+  --color-gold-50: #FBF6E6;
+  --color-gold-100: #F6EDD2;
+  --color-gold-200: #EEDCA4;
+  --color-gold-300: #E5C566;
+  --color-gold-400: #D4A017;
+  --color-gold-500: #D4A017;
+  --color-gold-600: #B08410;
+  --color-gold-700: #8A6400;
+  --color-gold-800: #5C4300;
+  --color-gold-900: #4A3600;
+  --color-gold-950: #3A2A00;
+  --color-gold-light: #FFE08A;
+
+  /* Danger */
+  --color-danger: #A33A2E;
+  --color-danger-50: #F9EEEB;
+  --color-danger-100: #F5E2DE;
+  --color-danger-200: #E8C9C3;
+  --color-danger-300: #DAA59C;
+  --color-danger-400: #C0665A;
+  --color-danger-500: #A33A2E;
+  --color-danger-600: #A33A2E;
+  --color-danger-700: #8E3226;
+  --color-danger-800: #7A2A21;
+  --color-danger-900: #5E3530;
+  --color-danger-950: #4A1F19;
+
+  /* Succès */
+  --color-success: #3F8A2E;
+  --color-success-50: #EFF4EA;
+  --color-success-100: #E4EDDC;
+  --color-success-200: #C8DBB8;
+  --color-success-300: #9CC285;
+  --color-success-400: #7FC56B;
+  --color-success-500: #3F8A2E;
+  --color-success-600: #2F5523;
+  --color-success-700: #2F5523;
+  --color-success-800: #26461D;
+  --color-success-900: #1D3616;
+
+  /* Neutres sable (remplacent slate / zinc) */
+  --color-sand-50: #F8F8F3;
+  --color-sand-100: #F1F2EB;
+  --color-sand-200: #E1E3D8;
+  --color-sand-300: #D0D3C6;
+  --color-sand-400: #9A9E92;
+  --color-sand-500: #6B7080;
+  --color-sand-600: #4A5060;
+  --color-sand-700: #3A4050;
+  --color-sand-800: #2A3040;
+  --color-sand-900: #1A1F2B;
+  --color-sand-950: #12161F;
+
+  /* Formes */
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 18px;
+  --radius-3xl: 22px;
+  --shadow-toast: 0 10px 30px rgba(16, 36, 70, 0.25);
+  --shadow-pop: 0 12px 32px rgba(16, 36, 70, 0.16);
+}
+
+@layer base {
+  /* Tableaux dans une zone défilante : largeur minimale lisible sur mobile
+     (défilement horizontal dans la carte, jamais de la page). */
+  .overflow-x-auto > table { min-width: 40rem; }
+  /* Les éléments absolus (sr-only…) d'une zone défilante restent dans la zone :
+     sinon ils élargissent la page en mobile. */
+  .overflow-x-auto { position: relative; }
+  /* Tailwind 4 : bordure par défaut = couleur courante ; la charte veut un filet sable. */
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-line-soft);
+  }
+  html {
+    background-color: var(--color-app);
+  }
+  body {
+    margin: 0;
+    background-color: var(--color-app);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+  a {
+    color: var(--color-primary);
+  }
+  a:hover {
+    color: var(--color-primary-hover);
+  }
+  select {
+    background-color: #ffffff;
+    color: var(--color-ink);
+  }
+  ::selection {
+    background: rgba(212, 160, 23, 0.35);
+  }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.hifz-dot {
+  animation: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hifz-dot { animation: none; }
+  *, *::before, *::after { scroll-behavior: auto !important; }
+}
+
+
 /* 
   High-Performance Scrolling & Scrollbar Optimizations
   Fixes scrolling lag, delayed response, and stuttering on wheel/drag scroll.
@@ -23,12 +194,12 @@ html, body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(241, 245, 249, 0.4);
+  background: rgba(225, 227, 216, 0.5);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
+  background: rgba(107, 112, 128, 0.45);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -36,7 +207,7 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.7);
+  background: rgba(74, 80, 96, 0.7);
   border: 2px solid transparent;
   background-clip: padding-box;
 }

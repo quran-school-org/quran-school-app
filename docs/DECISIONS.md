@@ -640,7 +640,228 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
 - **Retour arrière du filet de sécurité** : retirer l'appel à
   `shrinkInlinePhotos` dans `src/firebase.ts`.
 
-## Mise en production par l'orchestrateur (branche `feat/workflows-ops`)
+## Lot 2 — découpage d'App.tsx (branche `refactor/decoupage-app`)
+
+> Numérotation : ces décisions portaient les numéros D42 à D52 sur `refactor/decoupage-app`
+> et `feat/design` ; elles ont été renumérotées D52 à D62 à l'intégration avec `main`
+> (dont le durcissement occupe D42 à D51). Ancien → nouveau : ajouter 10.
+
+### D52. Un contrôleur unique composé de hooks successifs, lu par contexte
+- **Contexte** : `App.tsx` (~8 500 lignes) contenait ~180 états, ~120 fonctions et
+  10 effets dans une seule portée ; les écrans en dépendaient directement.
+- **Décision** : l'état et la logique sont déplacés **tels quels** dans des hooks
+  appelés dans le même ordre que dans l'ancien composant (`src/app/useAppController.ts`) :
+  états (`src/data/useSchoolDataState`, `src/session/useSessionState`,
+  `src/app/state/useUiState`) → règles de l'école et cache (`useCore`) → effets
+  (`useQuotaFallback`, `useSessionActions`, `useSchoolSync`) → valeurs dérivées
+  (`useDerived`) → actions par domaine (`src/app/actions/*`). Chaque étage reçoit la
+  portée des précédents (types `src/app/scope.ts`). Les écrans (`src/screens`), les
+  fenêtres (`src/screens/modals`) et le cadre (`src/shell`) lisent le contrôleur par
+  `useApp()` (`src/app/AppContext.tsx`) ; la session est aussi exposée par
+  `SessionContext` (`src/session/SessionContext.tsx`), l'école par `SchoolContext`.
+- **Raison** : zéro changement de comportement. L'état reste à la racine, donc les
+  filtres, recherches et sélections survivent toujours aux changements d'onglet ; les
+  effets gardent leur ordre d'exécution ; le JSX est copié à l'identique (même DOM).
+  Le découpage a été fait par des scripts (tranches de lignes + analyse des noms
+  utilisés), vérifié par `tsc`, par les tests e2e et par comparaison pixel à pixel des
+  captures avant / après (seules différences : animations en cours, ordre aléatoire
+  des comptes dans la liste des membres).
+- **Gabarits d'impression** : `src/print/*` (reçu, certificat, rapports, cartes,
+  relevé mensuel), fonctions pures qui renvoient le HTML ; les fonctions de
+  `usePrintActions` ouvrent la fenêtre comme avant.
+- **Retour arrière** : `git revert` des commits du Lot 2 (aucune donnée touchée).
+
+### D53. Modules extraits volumineux : état → hook + contexte, JSX → sections
+- `FinanceManagement`, `ActivitiesManagement`, `TeacherManagement`,
+  `SettingsManagement` (1 700 à 3 000 lignes) gardent leur interface (props) et leur
+  fichier ; leur état part dans `src/components/{finance,activities,staff,settings}/use*State`
+  (éventuellement scindé en hooks successifs), exposé par un contexte local, et leur
+  JSX en sections (en-tête, filtres, onglets, fenêtres). Constantes de module dans
+  `shared.tsx` (ré-exportées, ex. `STAFF_CATEGORIES_CONFIG`).
+- **Résultat** : plus aucun fichier au-delà de 800 lignes (le plus long :
+  `src/db.ts`, 758 lignes, non modifié).
+
+### D54. Repères de test `data-*`
+- `data-tab` (boutons du menu), `data-nav` (menu bureau / mobile), `data-screen`
+  (racine de chaque écran), `data-modal` (fenêtres), `data-action` (boutons qui
+  ouvrent une fenêtre), `data-subtab`, `data-app-shell`. Sans effet visible ;
+  servent aux tests e2e et aux captures, et survivent au changement de design.
+
+### D55. Constats faits pendant le découpage (non corrigés : hors périmètre « sans changement »)
+- **F1 — écrasement possible des paramètres de l'école** : à la première connexion
+  du directeur historique, l'enregistrement du profil (`handleSaveProfile`) recopie
+  `systemSettings` en changeant `directorName`. Si les paramètres n'ont pas encore été
+  reçus de Firestore (enregistrement très rapide), ce sont les **valeurs par défaut**
+  (cotisation 0, téléphone vide…) qui sont écrites dans `settings/system`. Observé en
+  e2e (captures). Les tests attendent désormais 2 s avant d'enregistrer. Correctif
+  proposé : ne synchroniser `directorName` que si les paramètres viennent du serveur.
+  Logique de session : à traiter avec la revue de sécurité.
+- **F2** — le portail enseignant (`teacher-dashboard`) n'apparaît dans le menu que si
+  le compte a aussi le droit `dashboard` ; l'enseignant fictif (droits explicites) ne
+  le voit donc pas.
+- **F3** — l'onglet des présences n'a pas de rendu pour `إداري`, `مؤطر`, les parents
+  et les élèves (condition `مدير` / `مدرس` dans le routage) : page vide.
+- **F4** — le bandeau « quota Firestore » affiche en dur l'identifiant du projet et de
+  la base de production.
+
+## Nouveau design (branche `feat/design`)
+
+### D56. Jetons de la charte et remplacement des anciennes palettes
+- **Décision** : thème Tailwind 4 (`@theme` de `src/index.css`) repris de
+  `design/Main.dc.html` : fond `#ECEDE6`, surfaces `#F8F8F3` / `#F1F2EB`, nuit
+  `#102446`, primaire `#1B3A6B`, or `#D4A017`, texte `#1A1F2B` / `#4A5060` /
+  `#6B7080`, bordures `#D9DBD0` / `#D0D3C6` / `#E1E3D8`, tons succès / danger /
+  avertissement ; polices Reem Kufi (titres), IBM Plex Sans Arabic (texte), Amiri
+  (texte coranique) ; rayons 10 / 12 / 18 / 22 px ; cibles de 44 px ;
+  `tabular-nums` ; `:focus-visible` doré.
+- Les échelles `primary`, `gold`, `danger`, `success` et `sand` remplacent
+  `emerald/teal/blue…`, `amber/orange`, `rose/red`, `green`, `slate/zinc` : une
+  passe mécanique (≈ 4 200 classes) a d'abord appliqué la charte partout, puis
+  chaque écran est repris à la main avec les composants de `src/ui`.
+- **Contraste AA** : `text-slate-400` est porté à `#6B7080` (4,6:1 sur surface) ;
+  l'or n'est jamais utilisé comme couleur de texte sur fond clair (`#8A6400`
+  à la place) ; le vert `#3F8A2E` sert aux pastilles, `#2F5523` au texte.
+- **Retour arrière** : revert des commits de `feat/design`.
+
+### D57. Menu de la charte et accès aux écrans
+- Groupes et libellés de la maquette (التعليم / المالية / الإدارة) ; les libellés
+  qui dépendent du rôle sont conservés (« متابعة أبنائي », « ملفي وسجل الحفظ »…).
+  Mêmes droits qu'avant pour chaque onglet, avec deux corrections :
+  - **portail enseignant** (constat F2) : visible pour un `مدرس` qui a le droit
+    `teacher-dashboard` (et plus seulement `dashboard`, que la matrice par défaut
+    ne lui donne pas : le portail était inaccessible) ;
+  - **onglet d'accueil** : si l'onglet actif n'est pas dans le menu du rôle (ex.
+    « dashboard » pour un parent), le premier onglet du menu s'ouvre au lieu
+    d'une page vide.
+- Présences pour les rôles sans écran de saisie (constat F3) : état vide
+  explicatif au lieu d'une page blanche (pas de nouvelle fonction).
+
+### D58. Écarts assumés avec la maquette
+- Niveaux de tajwīd : seuls `ممتاز`, `متوسط`, `ضعيف` (le modèle n'a pas `مبتدئ`).
+  Constat F5 (non corrigé, comportement existant) : le dossier de suivi de
+  l'enseignant propose encore la valeur `مبتدئ`, hors du type `TajweedLevel` ;
+  elle s'affiche comme `ضعيف` (ton rouge). À trancher : retirer l'option ou
+  l'ajouter au modèle.
+- « الحضور والغياب » est actif (pas de « قريباً »).
+- Pied du menu : texte selon l'état réel de la synchronisation (متزامن / مزامنة /
+  غير متصل), et la carte de statistiques de l'ancien menu (même navigation).
+- Aucun nom de personne de la maquette n'est repris (données réelles ou fictives
+  uniquement). Le nom de l'école est affiché dans la marque du menu.
+- Indicateur « الرسوم المحصّلة » : total des cotisations payées (calcul existant),
+  sans la mention « هذا الموسم » ; masqué pour les comptes sans accès aux finances.
+- Bloc « تحتاج إجراءً » calculé : documents manquants, halaqas sans muḥaffiẓ,
+  élèves sans halaqa, cotisations impayées, absence de présences dans la semaine.
+
+### D59. Impressions et cartes aux paramètres de l'école
+- Fenêtre d'impression commune (`src/print/printWindow.ts`) : polices de la charte,
+  styles de l'application recopiés (les aperçus rendus à l'écran s'impriment tels
+  quels), plus de CDN Tailwind ; titre échappé (C-01).
+- Cartes d'élève (`src/print/cards/StudentCards.tsx`) : nom, logo, devise,
+  adresse, téléphone et saison lus dans les paramètres de l'école. Supprimés : l'adresse
+  et le téléphone d'Al Fajr codés en dur, le nom latin « Association El Fajr Jadid »,
+  la saison « 1448 » figée. Le QR est désormais généré localement (voir D61).
+- Reçu, attestation, rapports (élèves, cotisations) et relevé mensuel de présence :
+  gabarits refaits aux couleurs de la charte avec une feuille commune
+  (`src/print/docStyles.ts`), le nom, le logo, la devise, le nom du directeur et le
+  cachet de l'école ; textes fictifs codés en dur retirés (« حلقات التاج والوقار »,
+  « AI-ACAD-2026 »). Toutes les fenêtres passent par `openPrintWindow` ; le garde-fou
+  d'échappement (`tests/unit/printTemplates.test.ts`) inspecte toujours chaque
+  gabarit. Vérification : `tests/e2e/print.spec.ts` (fenêtres sans CDN, polices de
+  la charte, `@media print` de l'application qui masque le cadre).
+- Retour arrière : revenir aux fichiers de `src/print/` et à `usePrintActions.ts`
+  de `refactor/decoupage-app`.
+
+### D60. Bandeau de quota
+- Il affiche le projet et la base de la configuration (`src/config/env.ts`) au lieu
+  des identifiants de production codés en dur (constat F4) ; le lien vers la console
+  de la production est retiré.
+
+### D61. Codes QR générés localement (constat O-05)
+- Contexte : cartes d'élève et badges du personnel appelaient `api.qrserver.com`,
+  qui recevait l'identifiant de l'élève, et le nom et la catégorie du membre du
+  personnel.
+- Décision : bibliothèque npm `qrcode` (1.5.4, sans appel réseau) ; composant
+  `src/ui/QrCode.tsx` qui produit un SVG en ligne (même rendu à l'écran et à
+  l'impression, l'aperçu étant recopié). Contenu des codes inchangé (identifiant de
+  l'élève ; `STAFF:id:nom:catégorie` pour le badge). Le téléphone de secours codé en
+  dur sur le badge et sur l'impression d'activité est remplacé par « — ».
+- Vérification : `tests/e2e/qr.spec.ts` (aucune requête vers `qrserver`, écran,
+  impression de carte, badge) et garde-fou unitaire (aucune mention de `qrserver`
+  dans `src/`).
+- Reste : le numéro « 06.74.633.108 » sert encore de valeur par défaut dans la
+  logique du personnel et des activités (`useStaffState`, `useActivitiesData`) ;
+  non modifié ici (logique métier).
+- Retour arrière : revenir à la balise `<img>` d'origine dans
+  `src/print/cards/StudentCards.tsx` et `StaffBadgeModal.tsx`.
+
+### D62. Impressions compatibles avec une CSP stricte
+- Plus de CDN Tailwind ni de script dans les documents imprimés : `openPrintWindow`
+  écrit le document puis c'est la fenêtre de l'application qui appelle `print()`
+  et `close()` une fois le document et les polices chargés. Seul
+  `src/print/printWindow.ts` écrit dans une fenêtre (garde-fou unitaire : aucun
+  `document.write` ailleurs, aucun `<script>`, `onload=`, `onerror=` ni CDN
+  Tailwind dans `src/`). Le rapport financier (`useFinanceTotals`) passe aussi
+  par `openPrintWindow`.
+- Reste à faire pour resserrer la CSP de production :
+  - styles : blocs `<style>` et attributs `style="…"` (gabarits, échelle des
+    cartes, styles de l'application recopiés) : il faut `style-src 'self'
+    'unsafe-inline' https://fonts.googleapis.com` ou passer à des nonces/hachages ;
+  - polices : `font-src https://fonts.gstatic.com` (Google Fonts) ou polices
+    hébergées avec l'application ;
+  - images : logos d'école en `data:` ou URL externes (`img-src 'self' data: https:`) ;
+  - les fenêtres `about:blank` héritent de la CSP de l'application : la tester sur
+    l'émulateur Hosting (`npm run build:dev`) avant tout déploiement.
+- Retour arrière : réintroduire le script d'impression dans `printDocument`.
+
+## Intégration du design et du durcissement (branche `integration/design`)
+
+Avancement et reprise : `docs/progress/ETAPE-2-integration.md`.
+
+### D63. Fusion de `main` dans le design, constats F1 et F5, valeurs codées en dur
+- **Numérotation** : `main` (durcissement) et `feat/design` avaient tous deux
+  utilisé D42 à D51/D52. Les numéros de `main` sont conservés (déjà cités par les
+  runbooks et le code) ; ceux du découpage et du design deviennent D52 à D62
+  (ancien + 10), renvois mis à jour dans `docs/design/AVANCEMENT.md` et
+  `docs/progress/ETAPE-2-design.md`. Les messages de commit antérieurs gardent
+  les anciens numéros.
+- **Report du durcissement dans l'App découpée** : `subscribeToStaff(schoolId,
+  canReadStaffPrivate(role), …)` dans `src/data/useSchoolSync.ts` ;
+  `requestAiReport` et `AiReportError.userMessage` dans
+  `src/app/actions/useAiActions.ts`. Tests e2e de `main` (`smoke`, `csp`)
+  adaptés au nouveau cadre (`loginAs`, `data-tab`). `capture:screens` tourne
+  aussi sous la CSP (`E2E_CSP=1`).
+- **CSP** : `https://cdn.tailwindcss.com` (script-src) et `https://api.qrserver.com`
+  (img-src) retirés, inutiles depuis D61-D62 ; Google Fonts reste autorisé.
+  `'unsafe-inline'` est **conservé** dans `script-src` : l'application et ses
+  impressions n'en ont plus besoin, mais le retirer demande de vérifier dans un
+  navigateur, sur l'émulateur Hosting puis en dev, le build de production et
+  reCAPTCHA (App Check) ; le serveur de développement de la suite e2e injecte un
+  script en ligne (React Refresh), la variante e2e de la CSP devrait alors
+  l'autoriser à part. À faire dans un lot dédié.
+- **F1** (D55) : les synchronisations automatiques du nom du directeur
+  (`handleSaveProfile`, `handleSaveAppUser`) n'écrivent plus tout l'objet des
+  paramètres mais seulement `directorName` (`RealmSimDB.updateSystemSettingsFields`,
+  écriture en fusion). Preuve : `tests/e2e/settings-f1.spec.ts` retient
+  l'abonnement aux paramètres jusqu'à l'enregistrement du profil ; il échoue sur
+  l'ancien code (cotisation 100 → 0) et passe avec le correctif. L'attente de 2 s
+  ajoutée dans `tests/e2e/helpers.ts` est retirée. L'enregistrement explicite de
+  l'écran des paramètres reste un enregistrement complet (formulaire affiché).
+- **F5** (D58) : le dossier de l'enseignant ne propose plus `مبتدئ` ; une valeur
+  `مبتدئ` déjà enregistrée s'affiche `ضعيف` (comme ailleurs) jusqu'à la prochaine
+  modification. Le modèle `TajweedLevel` est inchangé.
+- **Téléphone « 06.74.633.108 »** (D61) : fiches synthétiques du directeur et du
+  superviseur (personnel, activités) : téléphone de l'école, sinon vide.
+- **Mot de passe par défaut « 123 »** : retiré du bandeau de l'écran des
+  utilisateurs, qui décrit désormais ce que fait la mise en correspondance des
+  rôles (aucun compte créé ; mot de passe temporaire à la création, par les
+  Functions). Garde-fous : `tests/unit/uiGuards.test.ts`.
+- **Personnel hors bureau** : les fiches synthétiques portaient des valeurs RH par
+  défaut (salaire de 3 500 du directeur, type de contrat) visibles par un
+  enseignant autorisé à l'écran du personnel. Les champs RH sont retirés de la
+  liste pour les rôles hors bureau (`useStaffState`, `stripStaffPrivate`).
+  Preuve : `tests/e2e/integration.spec.ts`.
+- **Retour arrière** : `git revert` des commits de `integration/design` postérieurs
+  à la fusion (aucune donnée ni règle modifiée).
 
 ### D64. Mise en prod par workflows déclenchés par l'orchestrateur
 - **Numéro** : D64, D52 à D63 étant pris par le découpage et le design sur `main` ;

@@ -50,7 +50,9 @@ npm run lint                           # tsc --noEmit (app, scripts, tests)
 npm run lint:functions                 # tsc des Cloud Functions
 npm test                               # tests unitaires (vitest, sans émulateur)
 npm run test:rules                     # tests sur émulateurs (règles, migration, Functions) via emulators:exec
-npm run test:e2e                       # Playwright (Chromium) contre les émulateurs, données fictives
+npm run test:e2e                       # Playwright (Chromium) contre les émulateurs, sous la CSP de prod (E2E_CSP=1)
+npm run test:hosting                   # émulateur Hosting (build:dev) : rewrite /api/** et en-têtes de sécurité
+CAPTURE_DIR=/chemin/absolu npm run capture:screens   # captures par rôle et par écran (1440 / 390 px), PNG
 npm run build                          # build de PRODUCTION (lit .env.production)
 npm run build:dev                      # build branché sur les émulateurs (pour l'émulateur Hosting)
 ```
@@ -63,6 +65,10 @@ npm run build:dev                      # build branché sur les émulateurs (pou
   parle à la **prod**. Pour l'émulateur, utiliser `npm run build:dev`.
 - `firebase` sans `--project` utilise `demo-quran-school` (`.firebaserc`). L'alias
   `prod` n'est à utiliser que par un humain, en suivant un runbook.
+- Conteneur avec proxy sortant : `scripts/dev/without-proxy.sh <commande>` lance
+  une commande sans variables de proxy (ex. `test:hosting`, triggers compris, D48).
+- Démarrage d'émulateurs, serveur de dev ou Playwright partagés entre agents :
+  sous `flock /home/user/.emulators.lock <commande>`.
 
 ## Architecture (multi-écoles)
 
@@ -71,17 +77,30 @@ npm run build:dev                      # build branché sur les émulateurs (pou
   Comptes : `users/{uid}` (profil global, écoles), `schools/{id}/members/{uid}`
   (rôle, droits, liens `linkedTeacherId` / `linkedStudentIds`), registre
   `usernames/{username}`. Super-admin : claim `superAdmin`. Racine fermée.
-- `src/App.tsx` (~8 500 lignes) : tout l'état, la session (connexion, choix
-  d'école), le routage par `activeTab`, la plupart des écrans.
+  Personnel : `teachers` (fiche publique) + `staffPrivate/{teacherId}` (salaire,
+  contrat, CIN, adresse, contact d'urgence, naissance : bureau seulement, D42).
+- `src/App.tsx` (~170 lignes) : routage par `activeTab` ; la logique est dans un
+  contrôleur de hooks successifs (`src/app/useAppController.ts`, lu par `useApp()`,
+  D52) : états (`src/data/useSchoolDataState`, `src/session/useSessionState`,
+  `src/app/state`), abonnements Firestore (`src/data/useSchoolSync` :
+  `subscribeToStaff`), session (`src/session`), actions par domaine
+  (`src/app/actions/*`, ex. `useAiActions` → `requestAiReport`).
+- `src/screens/` (écrans et fenêtres `modals/`), `src/shell/` (cadre, menu
+  `navModel`, bandeau de quota), `src/ui/` (composants de la charte : AppShell,
+  Modal, Form, DataTable, Kpi, `QrCode` local sans service tiers, D61).
+- `src/print/` : gabarits d'impression purs (HTML échappé, D37) ; seule
+  `printWindow.ts` écrit dans une fenêtre ; aucun script ni CDN dans les
+  documents (D62). Garde-fous : `tests/unit/printTemplates.test.ts`.
 - `src/school/` : `SchoolContext` (école active), `SchoolPicker` (choix / création
   d'école), `SchoolSwitcher` (barre du haut), `businessRules` (cotisations,
   ouverture, âge : paramètres de l'école).
 - `src/db.ts` : `RealmSimDB`, CRUD « localStorage d'abord » + écriture Firestore
   sous l'école active ; `setActiveSchool()` fixe l'école.
 - `src/cache/localCache.ts` : cache local cloisonné `kuttab:{schoolId}:…`.
-- `src/firebase.ts` : initialisation, connexion, et les 4 fonctions d'accès qui
-  prennent `schoolId` (`saveToFirestore`, `deleteFromFirestore`,
-  `subscribeToCollection`, `subscribeToSettings`) ; appels des callables.
+- `src/firebase.ts` : initialisation (App Check si configuré), connexion, et les
+  fonctions d'accès qui prennent `schoolId` (`saveToFirestore`, `deleteFromFirestore`,
+  `subscribeToCollection`, `subscribeToSettings`, `subscribeToStaff`,
+  `saveStaffToFirestore`) ; appels des callables ; `requestAiReport` (proxy IA).
 - `src/config/env.ts` : variables `VITE_*`, garde-fou émulateurs.
 - `src/types.ts` : modèles, 9 rôles (valeurs en arabe), matrice de permissions.
 - `src/security/` : modules purs (compte ↔ Auth, groupes de rôles miroirs des
@@ -90,13 +109,15 @@ npm run build:dev                      # build branché sur les émulateurs (pou
 - `firestore.rules` : règles multi-écoles (base nommée, voir `firebase.json`).
 - `functions/` : Cloud Functions 2nd gen (Node 22, `europe-west1`) : `createSchool`,
   `createSchoolUser`, `resetUserPassword`, `setMemberRole`, `api` (proxy Gemini
-  authentifié), triggers de suspension à l'archivage.
+  authentifié, quotas `aiQuota`, D43), triggers de suspension à l'archivage,
+  `scheduledFirestoreExport` (omise tant que `BACKUP_ENABLED` ≠ true, D47).
 - `server.ts` : serveur de développement (Vite) ; plus de proxy Gemini.
 - `scripts/admin/lot0-provision-auth.ts`, `scripts/migration/migrate-to-tenants.ts`
   (Admin SDK) : `--dry-run` par défaut, `--project` obligatoire ; ne les lancer que
   contre les émulateurs. `scripts/dev/` : données fictives et peuplement.
-- `tests/unit`, `tests/emulator` (règles, migration, Functions), `tests/e2e`
-  (Playwright), `functions/test` (logique des Functions).
+- `tests/unit`, `tests/emulator` (règles, migration, Functions), `tests/hosting`
+  (rewrite, en-têtes), `tests/e2e` (Playwright, repères `data-*` D54),
+  `functions/test` (logique des Functions).
 
 ## Conventions
 
