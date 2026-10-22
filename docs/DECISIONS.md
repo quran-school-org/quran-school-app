@@ -400,3 +400,62 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
   et les élèves (condition `مدير` / `مدرس` dans le routage) : page vide.
 - **F4** — le bandeau « quota Firestore » affiche en dur l'identifiant du projet et de
   la base de production.
+
+## Nouveau design (branche `feat/design`)
+
+### D46. Jetons de la charte et remplacement des anciennes palettes
+- **Décision** : thème Tailwind 4 (`@theme` de `src/index.css`) repris de
+  `design/Main.dc.html` : fond `#ECEDE6`, surfaces `#F8F8F3` / `#F1F2EB`, nuit
+  `#102446`, primaire `#1B3A6B`, or `#D4A017`, texte `#1A1F2B` / `#4A5060` /
+  `#6B7080`, bordures `#D9DBD0` / `#D0D3C6` / `#E1E3D8`, tons succès / danger /
+  avertissement ; polices Reem Kufi (titres), IBM Plex Sans Arabic (texte), Amiri
+  (texte coranique) ; rayons 10 / 12 / 18 / 22 px ; cibles de 44 px ;
+  `tabular-nums` ; `:focus-visible` doré.
+- Les échelles `primary`, `gold`, `danger`, `success` et `sand` remplacent
+  `emerald/teal/blue…`, `amber/orange`, `rose/red`, `green`, `slate/zinc` : une
+  passe mécanique (≈ 4 200 classes) a d'abord appliqué la charte partout, puis
+  chaque écran est repris à la main avec les composants de `src/ui`.
+- **Contraste AA** : `text-slate-400` est porté à `#6B7080` (4,6:1 sur surface) ;
+  l'or n'est jamais utilisé comme couleur de texte sur fond clair (`#8A6400`
+  à la place) ; le vert `#3F8A2E` sert aux pastilles, `#2F5523` au texte.
+- **Retour arrière** : revert des commits de `feat/design`.
+
+### D47. Menu de la charte et accès aux écrans
+- Groupes et libellés de la maquette (التعليم / المالية / الإدارة) ; les libellés
+  qui dépendent du rôle sont conservés (« متابعة أبنائي », « ملفي وسجل الحفظ »…).
+  Mêmes droits qu'avant pour chaque onglet, avec deux corrections :
+  - **portail enseignant** (constat F2) : visible pour un `مدرس` qui a le droit
+    `teacher-dashboard` (et plus seulement `dashboard`, que la matrice par défaut
+    ne lui donne pas : le portail était inaccessible) ;
+  - **onglet d'accueil** : si l'onglet actif n'est pas dans le menu du rôle (ex.
+    « dashboard » pour un parent), le premier onglet du menu s'ouvre au lieu
+    d'une page vide.
+- Présences pour les rôles sans écran de saisie (constat F3) : état vide
+  explicatif au lieu d'une page blanche (pas de nouvelle fonction).
+
+### D48. Écarts assumés avec la maquette
+- Niveaux de tajwīd : seuls `ممتاز`, `متوسط`, `ضعيف` (le modèle n'a pas `مبتدئ`).
+- « الحضور والغياب » est actif (pas de « قريباً »).
+- Pied du menu : texte selon l'état réel de la synchronisation (متزامن / مزامنة /
+  غير متصل), et la carte de statistiques de l'ancien menu (même navigation).
+- Aucun nom de personne de la maquette n'est repris (données réelles ou fictives
+  uniquement). Le nom de l'école est affiché dans la marque du menu.
+- Indicateur « الرسوم المحصّلة » : total des cotisations payées (calcul existant),
+  sans la mention « هذا الموسم » ; masqué pour les comptes sans accès aux finances.
+- Bloc « تحتاج إجراءً » calculé : documents manquants, halaqas sans muḥaffiẓ,
+  élèves sans halaqa, cotisations impayées, absence de présences dans la semaine.
+
+### D49. Impressions et cartes aux paramètres de l'école
+- Fenêtre d'impression commune (`src/print/printWindow.ts`) : polices de la charte,
+  styles de l'application recopiés (les aperçus rendus à l'écran s'impriment tels
+  quels), plus de CDN Tailwind ; titre échappé (C-01).
+- Cartes d'élève (`src/print/cards/StudentCards.tsx`) : nom, logo, devise,
+  adresse, téléphone et saison lus dans les paramètres de l'école. Supprimés : l'adresse
+  et le téléphone d'Al Fajr codés en dur, le nom latin « Association El Fajr Jadid »,
+  la saison « 1448 » figée. Le QR reste généré par `api.qrserver.com` (inchangé ;
+  l'identifiant de l'élève y est transmis : à remplacer par une génération locale).
+
+### D50. Bandeau de quota
+- Il affiche le projet et la base de la configuration (`src/config/env.ts`) au lieu
+  des identifiants de production codés en dur (constat F4) ; le lien vers la console
+  de la production est retiré.
