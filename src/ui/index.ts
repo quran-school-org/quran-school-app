@@ -25,3 +25,4 @@ export type { SyncState } from "./Topbar";
 export { AppShell } from "./AppShell";
 export { Ltr, WhatsAppIcon, DropdownMenu, InfoRow } from "./Misc";
 export type { MenuItem } from "./Misc";
+export { QrCode, qrPath } from "./QrCode";

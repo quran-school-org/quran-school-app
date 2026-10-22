@@ -210,6 +210,8 @@ export default function StaffList() {
                     <div className="flex items-center gap-1.5">
                       {/* Print Badge Button */}
                       <button
+                        type="button"
+                        data-action="open-staff-badge"
                         onClick={() => openBadgeModal(staff)}
                         className="flex-1 py-1.5 bg-sand-100 hover:bg-sand-200 text-ink-2 text-[12.5px] font-bold rounded-lg transition flex items-center justify-center gap-1 border border-line"
                         title="طباعة بطاقة العمل أو شارة الصدر"
@@ -357,6 +359,9 @@ export default function StaffList() {
                       <td className="p-3.5 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           <button
+                            type="button"
+                            data-action="open-staff-badge"
+                            aria-label="شارة العمل"
                             onClick={() => openBadgeModal(staff)}
                             className="p-1.5 hover:bg-sand-100 text-ink-2 rounded-lg transition"
                             title="شارة العمل"

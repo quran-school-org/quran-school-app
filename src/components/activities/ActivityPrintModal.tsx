@@ -80,7 +80,7 @@ export default function ActivityPrintModal() {
                       {systemSettings?.associationAddress || "مقر الجمعية الرئيسي"}
                     </p>
                     <p className="text-[12.5px] text-ink-2 font-mono">
-                      الهاتف: {systemSettings?.associationPhone || "06.74.633.108"} {systemSettings?.associationEmail ? ` | البريد: ${systemSettings.associationEmail}` : ""}
+                      الهاتف: {systemSettings?.associationPhone || "—"} {systemSettings?.associationEmail ? ` | البريد: ${systemSettings.associationEmail}` : ""}
                     </p>
                   </div>
 

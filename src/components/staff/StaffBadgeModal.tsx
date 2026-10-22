@@ -4,6 +4,7 @@
  */
 import { X, Printer } from "lucide-react";
 import { STAFF_CATEGORIES_CONFIG, DEFAULT_STAFF_ICON } from "./shared";
+import { QrCode } from "../../ui/QrCode";
 import { useStaff } from "./StaffContext";
 
 export default function StaffBadgeModal() {
@@ -18,7 +19,7 @@ export default function StaffBadgeModal() {
     <>
       {/* PRINT STAFF BADGE / ID CARD MODAL */}
       {showBadgeModal && badgeStaff && (
-        <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]">
+        <div data-modal="staff-badge" className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]">
           <div className="bg-surface w-full max-w-md overflow-hidden my-6 flex flex-col rounded-3xl border border-line shadow-pop" dir="rtl">
             <div className="p-4 bg-sand-900 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
@@ -94,18 +95,14 @@ export default function StaffBadgeModal() {
                     </div>
 
                     <div className="w-14 h-14 bg-white p-1 rounded-lg border border-line">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(`STAFF:${badgeStaff.id}:${badgeStaff.fullName}:${badgeStaff.category || "Staff"}`)}`}
-                        alt="QR Code"
-                        className="w-full h-full"
-                      />
+                      <QrCode value={`STAFF:${badgeStaff.id}:${badgeStaff.fullName}:${badgeStaff.category || "Staff"}`} label={`رمز QR لـ ${badgeStaff.fullName}`} className="w-full h-full" />
                     </div>
                   </div>
                 </div>
 
                 {/* Badge Bottom Stripe */}
                 <div className="bg-sand-900 text-white text-[11.5px] py-1 text-center font-mono">
-                  ID: {badgeStaff.id} • {systemSettings?.associationPhone || "06.74.633.108"}
+                  ID: {badgeStaff.id} • {systemSettings?.associationPhone || "—"}
                 </div>
               </div>
             </div>

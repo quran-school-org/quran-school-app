@@ -10,6 +10,7 @@ import { Calendar, MapPin, Phone } from "lucide-react";
 import type { Payment, Student, SystemSettings } from "../../types";
 import { StudentAvatar } from "../../utils/studentAvatar";
 import { Emblem, GeometricPattern } from "../../ui";
+import { QrCode } from "../../ui/QrCode";
 
 export interface CardContext {
   settings: SystemSettings | null;
@@ -242,14 +243,8 @@ export function DigitalCardBack({ student, ctx }: { student: Student; ctx: CardC
         </ul>
         <div className="flex items-center gap-4 w-full bg-black/20 p-3 rounded-2xl border border-night-line justify-around">
           <div className="flex flex-col items-center gap-1 bg-white p-1.5 rounded-xl shrink-0">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(student.id)}`}
-              alt={`رمز QR للطالب ${student.fullName}`}
-              className="w-14 h-14 object-contain rounded-md"
-              crossOrigin="anonymous"
-              referrerPolicy="no-referrer"
-            />
-            <span className="text-[6px] text-ink font-bold select-all" dir="ltr">ALFAJR ID-{student.id}</span>
+            <QrCode value={student.id} label={`رمز QR للطالب ${student.fullName}`} className="w-14 h-14 rounded-md" />
+            <span className="text-[6px] text-ink font-bold select-all" dir="ltr">ID-{student.id}</span>
           </div>
           <div className="flex flex-col items-center">
             <div className="flex items-center bg-white p-2 rounded-lg py-3" aria-hidden="true">
