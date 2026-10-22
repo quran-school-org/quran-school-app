@@ -5,7 +5,7 @@
  */
 import { HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 
-import { adminDb } from "../admin.js";
+import { adminAuth, adminDb } from "../admin.js";
 import { SCHOOL_ID_PATTERN } from "../shared/schoolDefaults.js";
 
 export interface Caller {
@@ -51,4 +51,18 @@ export async function hasAnyActiveMembership(uid: string): Promise<boolean> {
     if (m?.isActive === true) return true;
   }
   return false;
+}
+
+/**
+ * Vrai si le compte porte le claim super-admin. Un tel compte n'est JAMAIS
+ * désactivé automatiquement (retrait de sa dernière école, archivage d'une
+ * fiche liée) : sinon le directeur d'une école dont le super-admin est membre
+ * pourrait bloquer l'administration de la plateforme (revue, D59).
+ */
+export async function isSuperAdminAccount(uid: string): Promise<boolean> {
+  try {
+    return (await adminAuth().getUser(uid)).customClaims?.superAdmin === true;
+  } catch {
+    return false;
+  }
 }

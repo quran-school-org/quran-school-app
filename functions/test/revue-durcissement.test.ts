@@ -12,6 +12,8 @@ process.env.FIRESTORE_DATABASE_ID ||= "(default)";
 
 let admin: typeof import("../src/admin.js");
 let api: typeof import("../src/tenant/api.js");
+let accounts: typeof import("../src/tenant/accounts.js");
+let archive: typeof import("../src/tenant/archiveSync.js");
 
 const PROJECT = () => process.env.GCLOUD_PROJECT!;
 const LIMITS = { perUserDaily: 2, perUserPerMinute: 100, perSchoolDaily: 3, globalDaily: 1000 };
@@ -52,6 +54,8 @@ beforeAll(async () => {
   expect(process.env.FIRESTORE_EMULATOR_HOST, "lancer via firebase emulators:exec").toBeTruthy();
   admin = await import("../src/admin.js");
   api = await import("../src/tenant/api.js");
+  accounts = await import("../src/tenant/accounts.js");
+  archive = await import("../src/tenant/archiveSync.js");
 });
 
 beforeEach(clear);
@@ -114,5 +118,40 @@ describe("D54 : réponses du proxy IA jamais mises en cache", () => {
     const limited = await call(token, { schoolId: "alfajr", studentName: "x" });
     expect(limited.status).toBe(429);
     expect(limited.headers["Cache-Control"]).toBe("private, no-store");
+  });
+});
+
+describe("D59 : un directeur ne peut pas bloquer le compte du super-admin", () => {
+  async function setup() {
+    const db = admin.adminDb();
+    const auth = admin.adminAuth();
+    const sup = (await auth.createUser({ email: "plateforme@comptes.kuttab.local", password: "motdepasse-2026" })).uid;
+    await auth.setCustomUserClaims(sup, { superAdmin: true });
+    const dir = (await auth.createUser({ email: "dir_nouvelle@comptes.kuttab.local", password: "motdepasse-2026" })).uid;
+    const prof = (await auth.createUser({ email: "prof_nouvelle@comptes.kuttab.local", password: "motdepasse-2026" })).uid;
+    // École créée par le super-admin avec makeMeDirector (parcours de l'interface), puis vrai directeur.
+    for (const [uid, role] of [[sup, "مدير"], [dir, "مدير"], [prof, "مدرس"]] as const) {
+      await db.doc(`schools/nouvelle/members/${uid}`).set({ uid, schoolId: "nouvelle", role, isActive: true, isArchived: false, linkedStudentIds: [], linkedTeacherId: null });
+      await db.doc(`users/${uid}`).set({ schoolIds: ["nouvelle"], lastSchoolId: "nouvelle" });
+    }
+    return { sup, dir, prof };
+  }
+
+  it("retrait du super-admin de sa seule école : appartenance supprimée, compte Auth NON désactivé", async () => {
+    const { sup, dir, prof } = await setup();
+    await accounts.setMemberRoleCore({ uid: dir, superAdmin: false }, "nouvelle", sup, {}, true);
+    expect((await admin.adminDb().doc(`schools/nouvelle/members/${sup}`).get()).exists).toBe(false);
+    expect((await admin.adminAuth().getUser(sup)).disabled).toBe(false);
+    // Comportement normal conservé pour un compte ordinaire.
+    await accounts.setMemberRoleCore({ uid: dir, superAdmin: false }, "nouvelle", prof, {}, true);
+    expect((await admin.adminAuth().getUser(prof)).disabled).toBe(true);
+  });
+
+  it("archivage d'une fiche liée au super-admin : membre suspendu dans l'école, compte Auth NON désactivé", async () => {
+    const { sup } = await setup();
+    const member = { uid: sup, data: (await admin.adminDb().doc(`schools/nouvelle/members/${sup}`).get()).data()! };
+    expect(await archive.setMemberArchived("nouvelle", member, true)).toBe(true);
+    expect((await admin.adminDb().doc(`schools/nouvelle/members/${sup}`).get()).data()?.isActive).toBe(false);
+    expect((await admin.adminAuth().getUser(sup)).disabled).toBe(false);
   });
 });

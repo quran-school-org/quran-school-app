@@ -812,3 +812,20 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   l'intervalle entre les deux opérations. Test documentaire conservé :
   `tests/emulator/revue-rules.test.ts` (Lot 0) › R-06.
 - **Retour arrière** : sans objet.
+
+### D59. Le compte super-admin n'est jamais désactivé automatiquement
+- **Constat (revue, moyenne)**, découvert en préparant l'accueil d'une
+  deuxième école : l'interface crée une école avec `makeMeDirector` (le
+  super-admin en devient directeur pour y créer le vrai directeur). Quand on
+  retire ensuite le super-admin de cette école, `setMemberRole` (retrait)
+  désactive le compte Auth s'il n'a plus aucune école ; c'est le cas d'un
+  super-admin dédié (D25, recommandé). Le parcours normal d'accueil bloquait
+  donc le compte de l'administrateur de la plateforme. De même, un directeur
+  pouvait le bloquer volontairement : retrait, ou lien vers une fiche du
+  personnel puis archivage de la fiche (trigger d'archivage). Démontré par
+  `functions/test/revue-durcissement.test.ts` › D59 (échouait avant).
+- **Décision** : `isSuperAdminAccount(uid)` (claim `superAdmin`) : jamais de
+  désactivation automatique d'un tel compte, ni au retrait de sa dernière
+  école, ni à l'archivage. L'appartenance est bien retirée ou suspendue. Le
+  super-admin se désactive seulement à la main (console, par un humain).
+- **Retour arrière** : retirer les deux appels à `isSuperAdminAccount`.

@@ -26,7 +26,7 @@ import {
 } from "../shared/accounts.js";
 import { FAMILY_ROLES, isRole, type UserRole } from "../shared/roles.js";
 import { defaultSchoolSettings } from "../shared/schoolDefaults.js";
-import { assertSchoolId, getMember, requireAuth, requireSchoolRole } from "./access.js";
+import { assertSchoolId, getMember, isSuperAdminAccount, requireAuth, requireSchoolRole } from "./access.js";
 import { APPCHECK_ENFORCE, noteCallableAppCheck } from "../appCheck.js";
 
 const FLAG_KEYS = [
@@ -309,7 +309,7 @@ export async function setMemberRoleCore(caller: { uid: string; superAdmin: boole
       schoolIds: FieldValue.arrayRemove(schoolId),
       ...(user?.lastSchoolId === schoolId ? { lastSchoolId: remaining[0] ?? null } : {}),
     }, { merge: true });
-    if (remaining.length === 0) {
+    if (remaining.length === 0 && !(await isSuperAdminAccount(uid))) {
       await adminAuth().updateUser(uid, { disabled: true }).catch(() => undefined);
       await adminAuth().revokeRefreshTokens(uid).catch(() => undefined);
     }
