@@ -234,7 +234,7 @@ triggers y sont ignorés.
 | Branche (commit) | Lint app / functions | Build prod | Unitaires | Émulateurs | Functions | Hosting | Playwright |
 |---|---|---|---|---|---|---|---|
 | `fix/revue-durcissement` (`9258aca`, après fusion de `main` et de `feat/workflows-ops`) | OK / OK | OK | 92/92 | 253 réussis, 2 ignorés | 45/45 | 5/5 | 27/27 sous CSP |
-| `fix/revue-durcissement-lot0` (`8fe8ab2`) | OK / OK | OK | 29/29 | 221 réussis, 4 ignorés | 8/8 | — | — (pas de Playwright sur cette branche) |
+| `fix/revue-durcissement-lot0` (`d0e3d8c`, après fusion de `release/lot0`) | OK / OK | OK | 29/29 | 221 réussis, 4 ignorés | 8/8 | — | — (pas de Playwright sur cette branche) |
 
 Workflows : `actionlint` sans erreur ; `zizmor --offline` sans constat
 (3 constats « suppressed » de faible confiance). Les anciens workflows
@@ -269,8 +269,9 @@ Avant d'activer la CI de déploiement, l'humain doit :
 7. pour App Check : jeton de débogage dans `.env.development.local` seulement.
 
 **Lot 0** : il reste **prêt pour la production depuis
-`fix/revue-durcissement-lot0`**, à fusionner dans `release/lot0` (la branche
-part de `fix/revue-securite-lot0`, déjà fusionnée dans `release/lot0`). Cette branche n'ajoute qu'une règle (R-07). Les
+`fix/revue-durcissement-lot0`**, à fusionner dans `release/lot0`. La branche
+contient déjà `release/lot0` (D53), fusionné en `d0e3d8c` : la fusion inverse
+est sans conflit. Cette branche n'ajoute qu'une règle (R-07). Les
 conditions de la revue précédente restent toutes valables. R-06 est accepté
 jusqu'à la bascule (D71) : il faut garder court l'intervalle entre le Lot 0 et
 la bascule.
