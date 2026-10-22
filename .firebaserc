@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "gen-lang-client-0481880143"
+    "default": "demo-quran-school",
+    "demo": "demo-quran-school",
+    "prod": "gen-lang-client-0481880143"
   }
 }
