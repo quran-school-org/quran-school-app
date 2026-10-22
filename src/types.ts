@@ -171,6 +171,13 @@ export interface SystemSettings {
   receiptPrefixFormat?: string;
   internalBylaws?: string;
   footerNotice?: string;
+
+  // 4. Paramètres métier par école (multi-écoles) — voir src/school/businessRules.ts
+  // (la cotisation mensuelle par défaut est `subscriptionFee`)
+  feeOverrides?: FeeOverride[]; // tarifs particuliers par mois
+  openingYear?: number; // ouverture officielle : aucun paiement généré avant
+  openingMonth?: string;
+  studentAccountMinAge?: number; // âge minimal pour un compte élève (défaut 15)
 }
 
 export type ModuleId =
@@ -360,8 +367,9 @@ export function checkUserPermission(
 ): boolean {
   if (!user) return false;
   
-  // Root Super Admin always has full permissions
-  if (user.username === "admin_alfajr") return true;
+  // (Plus de super-utilisateur codé en dur « admin_alfajr » : le super-admin de
+  // la plateforme est un claim Firebase, et les droits réels sont imposés par
+  // les règles Firestore. Le directeur a tous les droits via son rôle.)
 
   // If user has specific CRUD matrix permissions object defined
   if (user.permissions) {
@@ -496,6 +504,39 @@ export interface AppUser {
   passwordChangedAt?: string;
   linkedTeacherId?: string; // fiche du personnel liée (rôles du personnel)
   linkedStudentIds?: string[]; // élèves liés (élève : lui-même ; parent : ses enfants)
+
+  // Multi-écoles : un compte = un membre `schools/{schoolId}/members/{uid}` (id = uid)
+  uid?: string;
+  schoolId?: string;
+  legacyAppUserId?: string; // identifiant historique dans appUsers (ex. "u1", "p_S-101")
+}
+
+/** Profil global `users/{uid}` (aucun mot de passe). */
+export interface UserProfile {
+  uid: string;
+  username: string;
+  displayName?: string;
+  schoolIds: string[];
+  lastSchoolId?: string | null;
+  mustChangePassword?: boolean;
+  passwordChangedAt?: string;
+  lastLogin?: string;
+}
+
+/** École `schools/{schoolId}`. */
+export interface SchoolInfo {
+  id: string;
+  name: string;
+  slug?: string;
+  status?: "active" | "suspended";
+  createdAt?: string;
+}
+
+/** Tarif particulier d'un mois (ex. offre d'ouverture). */
+export interface FeeOverride {
+  year: number;
+  month: string; // nom arabe marocain du mois (يناير … دجنبر)
+  amount: number;
 }
 
 /**

@@ -50,6 +50,17 @@ jobs:
       - name: Installation (Cloud Functions)
         run: npm ci --prefix functions
 
+      # Audit des dépendances (D45) : bloquant pour ce qui part en production,
+      # informatif pour les outils de développement (firebase-tools…).
+      - name: Audit des dépendances de production
+        run: |
+          npm audit --omit=dev --audit-level=high
+          npm audit --omit=dev --audit-level=high --prefix functions
+
+      - name: Audit complet (informatif)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
       - name: Lint (tsc)
         run: npm run lint
 
@@ -67,3 +78,55 @@ jobs:
 
       - name: Tests sur émulateurs (règles Firestore, scripts)
         run: npm run test:rules
+
+      # Rewrite Hosting /api/** → fonction api et en-têtes de sécurité (D48, D49).
+      - name: Tests Hosting (rewrite /api, en-têtes)
+        run: npm run test:hosting
+
+  e2e:
+    # Test de fumée Playwright contre les émulateurs (données fictives).
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verifier
+    env:
+      GCLOUD_PROJECT: demo-quran-school
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Cache des émulateurs Firebase
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/firebase/emulators
+          key: firebase-emulators-${{ hashFiles('package-lock.json') }}
+
+      - name: Installation
+        run: |
+          npm ci
+          npm ci --prefix functions
+
+      - name: Navigateur Chromium pour Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Tests de fumée (Playwright + émulateurs)
+        run: npm run test:e2e
+
+      - name: Traces en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

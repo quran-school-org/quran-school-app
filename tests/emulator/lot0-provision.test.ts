@@ -202,7 +202,9 @@ describe("exécution sur les émulateurs", () => {
     expect((await admin.db.collection("appUsers").doc("t_t2").get()).data()?.password).toBeUndefined();
   });
 
-  it("les utilisateurs se connectent avec leur mot de passe connu, et les règles s'appliquent", async () => {
+  it("les utilisateurs se connectent avec leur mot de passe connu ; la racine reste fermée", async () => {
+    // Depuis la bascule multi-écoles, les règles ferment la racine : les données
+    // ne sont lisibles que sous schools/{id} (voir tenant-rules.test.ts).
     const app = initClientApp({ projectId: PROJECT, apiKey: "demo-api-key" }, `client-${Date.now()}`);
     const auth = getClientAuth(app);
     connectAuthEmulator(auth, `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}`, { disableWarnings: true });
@@ -212,19 +214,16 @@ describe("exécution sur les émulateurs", () => {
     try {
       // Directeur : mot de passe long, inchangé.
       await signInWithEmailAndPassword(auth, "admin_alfajr@alfajr.local", normalizeAuthPassword(DEMO_PASSWORDS.director));
-      expect((await getDoc(doc(db, "payments", "p_init_S-101"))).exists()).toBe(true);
+      await expect(getDoc(doc(db, "payments", "p_init_S-101"))).rejects.toThrow();
       await signOut(auth);
 
       // Enseignant dont le compte Auth existait avec un mot de passe périmé : réaligné sur « 123 ».
       await signInWithEmailAndPassword(auth, "youssef_baqali@alfajr.local", normalizeAuthPassword("123"));
-      expect((await getDoc(doc(db, "students", "S-105"))).exists()).toBe(true);
-      await expect(getDoc(doc(db, "payments", "p_init_S-101"))).rejects.toThrow();
       await signOut(auth);
 
-      // Parent (« 123 » + suffixe historique) : ses enfants seulement.
+      // Parent (« 123 » + suffixe historique).
       await signInWithEmailAndPassword(auth, "mohammed_alami@alfajr.local", "123_secure_fajr");
-      expect((await getDoc(doc(db, "students", "S-102"))).exists()).toBe(true);
-      await expect(getDoc(doc(db, "students", "S-103"))).rejects.toThrow();
+      await expect(getDoc(doc(db, "students", "S-102"))).rejects.toThrow();
       await signOut(auth);
 
       // Compte suspendu (enfant archivé) : connexion refusée par Firebase Auth.

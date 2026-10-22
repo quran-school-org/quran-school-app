@@ -15,12 +15,13 @@
     "lint:functions": "npm --prefix functions run lint",
     "test": "vitest run --dir tests/unit",
     "test:rules": "npm run build:functions && firebase emulators:exec --only firestore,auth,functions --project demo-quran-school \"vitest run --dir tests/emulator && npm --prefix functions test\"",
+    "test:hosting": "npm run build:dev && npm run build:functions && firebase emulators:exec --only hosting,functions,auth,firestore --project demo-quran-school \"vitest run --dir tests/hosting\"",
     "test:all": "npm run test && npm run test:rules",
     "emulators:persist": "npm run build:functions && firebase emulators:start --project demo-quran-school --import=./emulator-data --export-on-exit=./emulator-data",
-    "seed:emulator": "tsx scripts/dev/seed-emulator.ts"
+    "seed:emulator": "tsx scripts/dev/seed-emulator.ts",
+    "test:e2e": "npm run build:functions && firebase emulators:exec --only auth,firestore,functions --project demo-quran-school \"npm run seed:emulator && E2E_CSP=1 playwright test\""
   },
   "dependencies": {
-    "@google/genai": "^2.4.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
@@ -36,6 +37,7 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
+    "@playwright/test": "1.56.1",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
@@ -50,5 +52,13 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "@firebase/firestore": {
+      "@grpc/grpc-js": "^1.14.6"
+    },
+    "gaxios@6": {
+      "uuid": "^11.1.1"
+    }
   }
 }
