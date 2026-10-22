@@ -767,3 +767,20 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
     le compte de sauvegarde ; accès aux exports réservé.
 - **Retour arrière** : retirer le filtre dans `runBackup` ; retirer la politique
   de conservation (`--clear-retention-period`, impossible une fois verrouillée).
+
+### D57. Build de production : refus d'un jeton de débogage App Check venu de `.env.local`
+- **Constat (revue, moyenne)** : le runbook App Check (§2) et `.env.example`
+  demandaient de mettre le jeton de débogage dans `.env.local`. Or Vite charge
+  `.env.local` dans tous les modes, y compris `npm run build`, et le runbook
+  (§3) fait construire la prod sur le même poste. Le jeton serait alors publié
+  dans le bundle et le client basculerait sur le fournisseur de débogage :
+  si ce jeton est enregistré sur le projet visé, App Check est contourné par
+  quiconque lit le bundle ; sinon, toutes les requêtes sont « non vérifiées »
+  et l'application cesse de fonctionner le jour où App Check est appliqué.
+  Démontré par `tests/unit/buildGuards.test.ts` (chargement réel par `loadEnv`).
+- **Décision** : `vite.config.ts` refuse un build de production qui porte
+  `VITE_APPCHECK_DEBUG_TOKEN` (ou des émulateurs avec un vrai projet), sauf
+  `ALLOW_APPCHECK_DEBUG_IN_BUILD=true` explicite dans l'environnement du
+  processus (projet de dev seulement). Le jeton va dans
+  `.env.development.local` (runbook et `.env.example` corrigés).
+- **Retour arrière** : retirer l'appel à `productionBuildProblems` dans `vite.config.ts`.

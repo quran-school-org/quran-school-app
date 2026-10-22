@@ -38,9 +38,11 @@ Enterprise** › coller la clé de site › durée de vie du jeton : 1 h (défau
 Ne **pas** cliquer « Appliquer » (Enforce) sur aucun service à ce stade.
 
 Projet de dev seulement : App Check › application web › menu › **Gérer les
-jetons de débogage** › ajouter un jeton (UUID) ; le mettre dans `.env.local`
-(`VITE_APPCHECK_DEBUG_TOKEN=…`) et, pour la CI, dans la variable de
-l'environnement GitHub `dev`. Jamais de jeton de débogage sur la prod.
+jetons de débogage** › ajouter un jeton (UUID) ; le mettre dans
+`.env.development.local` (`VITE_APPCHECK_DEBUG_TOKEN=…`), **jamais dans
+`.env.local`** : Vite charge `.env.local` aussi pour `npm run build`, et le jeton
+serait publié dans le bundle de la prod (revue, D57 ; le build de production
+échoue désormais dans ce cas). Jamais de jeton de débogage sur la prod.
 
 ## 3. Déploiement du client avec la clé (observation)
 Ajouter à `.env.production` (valeur publique) puis déployer le Hosting :
