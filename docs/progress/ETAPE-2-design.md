@@ -25,7 +25,7 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Harmonisation automatique des écrans hérités (surfaces, champs 44 px, boutons) | fait |
 | Présences (+ scan QR, relevé mensuel et son impression) | fait |
 | Examens et شهادات (+ fenêtre de note) | fait (impression de l'attestation : avec les impressions) |
-| Comptabilité (sections) | à faire |
+| Comptabilité (en-tête, indicateurs, sections, fenêtres) | fait |
 | Activités (en-tête, indicateurs, liste ; espace de travail et fenêtres : harmonisation) | fait |
 | Halaqas (ClassManagement) + fenêtre | fait |
 | Notifications | à faire |
@@ -37,7 +37,7 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Comptabilité : `src/components/finance/` (FinanceHeader, sections, fenêtres)
+Notifications : `src/screens/NotificationsScreen.tsx`
 (PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
 
 ## Commandes utiles
