@@ -10,7 +10,7 @@
 > - `fix/revue-durcissement` (depuis `feat/durcissement`, 9e4f601) : multi-écoles ;
 > - `fix/revue-durcissement-lot0` (depuis `fix/revue-securite-lot0`, 3a719e9) : Lot 0.
 >
-> Décisions : `docs/DECISIONS.md`, D65 à D73 (D52 à D64 sont pris sur
+> Décisions : `docs/DECISIONS.md`, D65 à D74 (D52 à D64 sont pris sur
 > `main` : design intégré et workflows de mise en prod ; sur la branche Lot 0 : D54 = R-07, D55 = R-06). Avancement : `docs/progress/ETAPE-2-revue2.md`.
 > Revue précédente : `docs/revues/REVUE-SECURITE-ETAPE-2.md` (constats R-, C-, F-, O-).
 
@@ -20,10 +20,13 @@
   `fix/revue-securite` (`staffPrivate`, quotas du proxy IA, App Check,
   workflows de déploiement, sauvegardes, CSP et en-têtes, rewrite `/api/**`,
   recompression des photos), plus R-07 et R-06 (Lot 0) de la revue précédente.
-- **14 constats** : aucun critique ni élevé, 3 moyens, 11 faibles (§3).
+  Après fusion de `main` (design intégré) et de `feat/workflows-ops`
+  (`deploy-lot0.yml`, `ops.yml`, entrée `force`, D64), ces workflows ont été
+  revus aussi (§3, RD-14 et RD-15).
+- **16 constats** : aucun critique, 1 élevé, 4 moyens, 11 faibles (§3).
   À cela s'ajoute R-06 sur le Lot 0, déjà connu (moyen), évalué et accepté
   jusqu'à la bascule (D71).
-- **Corrigés** : les 3 constats moyens et 7 des faibles, dont R-07 sur les deux
+- **Corrigés** : le constat élevé, les 4 moyens et 7 des faibles, dont R-07 sur les deux
   branches. Chaque correctif a son test, qui échouait avant le correctif, ou
   une vérification statique. Pour les workflows : `zizmor` passe de 27 constats
   à 0, et `tests/unit/workflows.test.ts` échoue sur 7 points avec les anciens
@@ -34,6 +37,15 @@
   - les compteurs de quota ne sont ni lisibles ni falsifiables par un client,
     et une école ne peut pas faire payer une autre ;
   - la rétention des sauvegardes ne supprime jamais un export récent.
+- **Constat élevé** :
+  - **RD-14** : le projet de dev reçoit une copie des données réelles
+    (`ops.yml` › `import-firestore`). Or le fournisseur WIF délivrait un jeton
+    à toute branche qui déclare `environment: dev`, puisqu'un workflow lancé à
+    la main exécute le fichier de la branche choisie. Toute personne, ou tout
+    agent, capable de pousser une branche pouvait donc lire cette copie : des
+    données de mineurs. Corrigé dans la procédure de mise en place : seuls
+    `main` et les trois workflows prévus obtiennent un jeton, pour le dev comme
+    pour la prod.
 - **Constats moyens** :
   - **RD-01** : l'environnement GitHub `dev` acceptait toutes les branches et
     servait aussi aux aperçus. Toute personne capable de pousser une branche
@@ -46,6 +58,8 @@
   - **RD-13** (trouvé en préparant l'accueil d'une deuxième école) : retirer
     le super-admin de l'école qu'il vient de créer désactivait son compte. Un
     directeur pouvait aussi le bloquer volontairement.
+  - **RD-15** : les rapports d'`ops.yml` et les mots de passe temporaires
+    étaient des artefacts en clair, lisibles par tout compte qui lit le dépôt.
 - **Verdict (§8)** : le durcissement est prêt à être fusionné **avec**
   `fix/revue-durcissement`. Le Lot 0 reste prêt depuis
   `fix/revue-durcissement-lot0`, qui n'ajoute à `fix/revue-securite-lot0`
@@ -79,7 +93,9 @@ Branches : **MT** = `fix/revue-durcissement`, **L0** = `fix/revue-durcissement-l
 
 | ID | Gravité | Constat | Branches | État |
 |---|---|---|---|---|
-| RD-01 | **Moyenne** | Environnement `dev` ouvert à toutes les branches et partagé avec les aperçus : tout contributeur pouvait déployer règles et fonctions sur le projet de dev, donc lire ses données (réelles lors d'une répétition) | MT (workflow + runbook) | Corrigé (D68), actions humaines |
+| RD-14 | **Élevée** | Projet de dev alimenté par une copie de la prod (`ops.yml` › `import-firestore`) ; condition WIF sans branche ni fichier de workflow : toute branche déclarant `environment: dev` (ou `production`) obtenait le jeton du compte (`github-ops`, `github-deploy`) | MT (guide, runbook) | Corrigé dans la procédure (D74), action humaine |
+| RD-15 | **Moyenne** | Rapports des scripts (identifiants, anomalies) et mots de passe temporaires envoyés en artefacts GitHub en clair, lisibles par tout compte qui lit le dépôt | MT (`ops.yml`) | Corrigé (D74) : chiffrement GnuPG, refus sans clé pour les mots de passe |
+| RD-01 | **Moyenne** | Environnement `dev` ouvert à toutes les branches et partagé avec les aperçus : tout contributeur pouvait déployer règles et fonctions sur le projet de dev, donc lire ses données (réelles lors d'une répétition) | MT (workflow + runbook) | Corrigé (D68, D74), actions humaines |
 | RD-02 | **Moyenne** | Jeton de débogage App Check placé dans `.env.local` (runbook, `.env.example`), donc publié dans le bundle de production | MT | Corrigé (D70) |
 | RD-13 | **Moyenne** | Le compte super-admin était désactivé quand on le retirait de sa dernière école (parcours normal d'accueil d'une école) ou à l'archivage d'une fiche qu'un directeur lui avait liée : blocage de l'administration de la plateforme | MT | Corrigé (D72) |
 | RD-03 | Faible | Actions non épinglées par SHA (dont `google-github-actions/auth`) ; dans le job qui détient le jeton OIDC, scripts d'installation npm exécutés et cache partagé | MT | Corrigé (D68) |
@@ -99,7 +115,9 @@ Branches : **MT** = `fix/revue-durcissement`, **L0** = `fix/revue-durcissement-l
 
 | ID | Preuve | Correctif | Commits |
 |---|---|---|---|
-| RD-01 | Analyse : un `workflow_dispatch` exécute le fichier **de la branche choisie** ; l'environnement `dev` (runbook §4 : « toutes les branches ») délivrait le jeton OIDC du compte `github-deploy` du projet de dev | `preview.yml` passe sur un environnement `preview` au compte limité au Hosting (`github-preview`), avec le build dans un job sans jeton OIDC ; `dev` réservé aux branches protégées ; répétitions avec un export réel dans un projet sans fournisseur WIF ; garde-fou `tests/unit/workflows.test.ts` (aperçu jamais en `dev` ni en `production`) | MT `6aab5ad` |
+| RD-14 | Analyse des workflows et du guide : `import-firestore` (dev), agent de service du dev lecteur du bucket de la prod, condition `repository && environment` seule ; forfait gratuit sans règle de branche d'environnement | Condition WIF : `ref == refs/heads/main` et `job_workflow_ref` dans {`deploy.yml`, `deploy-lot0.yml`, `ops.yml`}`@main`, identique dev et prod ; aperçus par un second fournisseur (`environment == preview`) et `github-preview` (Hosting seul) | MT `a6d1ece` |
+| RD-15 | `tests/unit/workflows.test.ts` › ops.yml (échoue sur la version de `feat/workflows-ops`) ; chiffrement puis déchiffrement essayés localement avec GnuPG 2.4 | Étape « Chiffrement des artefacts » avant tout envoi ; garde-fou : `rotate_passwords` ≠ `none` appliqué refusé sans `ARTIFACT_GPG_PUBLIC_KEY` | MT `a6d1ece` |
+| RD-01 | Analyse : un `workflow_dispatch` exécute le fichier **de la branche choisie** ; l'environnement `dev` (runbook §4 : « toutes les branches ») délivrait le jeton OIDC du compte `github-deploy` du projet de dev | `preview.yml` passe sur un environnement `preview` au compte limité au Hosting (`github-preview`), avec le build dans un job sans jeton OIDC ; `dev` réservé aux branches protégées, puis, avec `ops.yml`, à `main` et aux trois workflows prévus par la condition WIF (RD-14, D74) ; garde-fou `tests/unit/workflows.test.ts` (aperçu jamais en `dev` ni en `production`) | MT `6aab5ad` |
 | RD-02 | `tests/unit/buildGuards.test.ts` : `loadEnv("production")` lit bien `.env.local` ; un build avec le jeton dans `.env.local` est refusé (vérifié à la main : « Build de production refusé ») | `scripts/dev/buildGuards.ts` appelé par `vite.config.ts` : refus d'un jeton de débogage, ou d'émulateurs avec un vrai projet, en mode production (échappatoire explicite `ALLOW_APPCHECK_DEBUG_IN_BUILD=true`) ; runbook App Check et `.env.example` : `.env.development.local` | MT `12b6e25` |
 | RD-03 | `zizmor` : 18 `unpinned-uses` ; lecture du job `deployer` | SHA de commit relevés par `git ls-remote` (tag en commentaire) ; `npm ci --ignore-scripts` (aucun script n'est utile : build, build et chargement des Functions et CLI Firebase vérifiés sur une copie) ; plus de `cache: npm` dans les jobs à jeton OIDC ; `persist-credentials: false` | MT `6aab5ad` |
 | RD-04 | `zizmor` : 4 `template-injection` | Toute expression passe par `env` ; liste blanche de l'environnement et de la durée d'expiration ; test statique « aucune expression dans `run:` » | MT `6aab5ad` |
@@ -138,7 +156,13 @@ conditions WIF, protection de `main`, mise à jour des SHA), `SAUVEGARDES.md`
   exactes doivent être vérifiées sur un vrai projet. Ne pas le faire en
   aveugle, car une connexion bloquée casse l'application. `*.run.app` ne
   semble pas utilisé (callables par `cloudfunctions.net`, `api` sur la même
-  origine) : point à vérifier en premier.
+  origine) : point à vérifier en premier. Sur `main`, le design intégré a déjà
+  retiré `cdn.tailwindcss.com` et `api.qrserver.com` de la CSP (D61, D62) ;
+  `'unsafe-inline'` reste dans `script-src`.
+- **Forfait gratuit (lié à RD-14)** : sans protection de branche, quiconque
+  peut pousser sur `main` peut modifier les trois workflows autorisés et les
+  lancer. La condition WIF ne protège pas contre cela : le droit d'écriture
+  reste la frontière de confiance (D64, D74). Forfait Team recommandé.
 - **RD-10** (photos) : borner la taille dans les règles bloquerait aussi
   l'enregistrement d'une fiche existante dont la photo dépasse la limite, si la
   recompression échoue dans le navigateur. Le passage à Cloud Storage (D51)
@@ -227,29 +251,33 @@ Non vérifié (exige un vrai projet ou GitHub) :
 
 **Durcissement (multi-écoles)** : **prêt à fusionner avec `fix/revue-durcissement`**
 (`fix/revue-durcissement` → `feat/durcissement`). Aucune faille critique ni
-élevée. Les deux constats moyens sont corrigés dans le code. RD-01 demande en
-plus des réglages humains.
+élevée dans le code. Le constat élevé (RD-14) porte sur la mise en place
+de la CI. Il est corrigé dans la procédure (guide, étape 2), qui doit donc
+être suivie dans sa version de cette branche.
 
 Avant d'activer la CI de déploiement, l'humain doit :
-1. créer l'environnement `preview` et le compte `github-preview` (Hosting seulement) ;
-2. réserver `dev` aux branches protégées ;
-3. poser les conditions WIF par identifiants numériques, et pour la prod, la
-   condition branche plus fichier de workflow ;
-4. protéger `main` (`CODEOWNERS` conseillé) ;
-5. ne jamais placer un export réel dans un projet relié à GitHub ;
+1. poser la condition WIF « `main` + trois workflows » sur le dev **et** sur la
+   prod (`update-oidc` si le fournisseur existe déjà) ;
+2. ne créer l'environnement `preview` qu'avec son propre fournisseur et le
+   compte `github-preview` (Hosting seulement) ;
+3. poser `ARTIFACT_GPG_PUBLIC_KEY` dans chaque environnement avant toute
+   répétition avec `rotate_passwords=all` ;
+4. limiter le droit d'écriture sur le dépôt (forfait gratuit : aucune
+   protection de `main`) ; forfait Team recommandé ;
+5. vider la copie des données réelles du dev après la dernière répétition ;
 6. pour les sauvegardes : rôle « export seul » et conservation de 28 jours ;
 7. pour App Check : jeton de débogage dans `.env.development.local` seulement.
 
 **Lot 0** : il reste **prêt pour la production depuis
-`fix/revue-durcissement-lot0`**, après fusion dans `fix/revue-securite-lot0`
-puis `fix/lot0-securite`. Cette branche n'ajoute qu'une règle (R-07). Les
+`fix/revue-durcissement-lot0`**, à fusionner dans `release/lot0` (la branche
+part de `fix/revue-securite-lot0`, déjà fusionnée dans `release/lot0`). Cette branche n'ajoute qu'une règle (R-07). Les
 conditions de la revue précédente restent toutes valables. R-06 est accepté
 jusqu'à la bascule (D71) : il faut garder court l'intervalle entre le Lot 0 et
 la bascule.
 
 **Bascule multi-écoles** : les conditions précédentes sont inchangées. Les
-répétitions avec un export réel doivent se faire dans un projet sans
-fournisseur WIF (RD-01). R-06 est réglé par `staffPrivate` (D42), à vérifier
+répétitions avec une copie réelle (`ops.yml`) n'ont lieu qu'une fois la
+condition WIF de RD-14 en place. R-06 est réglé par `staffPrivate` (D42), à vérifier
 par la ligne `staffPrivate` des comptages. L'éventuelle anomalie
 `STAFF_PRIVATE_CONFLICT` est à examiner avec l'école.
 

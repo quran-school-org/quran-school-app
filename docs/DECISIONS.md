@@ -1067,7 +1067,8 @@ là-bas (R-06).
   - aperçus : environnement `preview` et compte `github-preview` limité au
     Hosting ; build et tests dans un job sans jeton OIDC, publication dans un
     second job qui récupère `dist/` ; durée d'expiration validée ;
-  - environnement `dev` (déploiement complet) : branches protégées seulement ;
+  - environnement `dev` (déploiement complet) : branches protégées seulement
+    (remplacé par D74 : `main` et les trois workflows prévus, par la condition WIF) ;
     répétitions avec un export réel dans un projet dédié sans fournisseur WIF ;
   - fournisseur WIF : `repository_id` et `repository_owner_id` ; pour la prod,
     en plus `ref == refs/heads/main` et `job_workflow_ref == …/deploy.yml@refs/heads/main` ;

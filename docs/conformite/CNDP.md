@@ -57,10 +57,13 @@ consentement et l'exercice des droits passent par le représentant légal
       - Google : Firebase Auth, Firestore, Hosting, Cloud Functions, Cloud
         Storage, Cloud Logging, reCAPTCHA Enterprise si App Check est activé,
         API Gemini ;
-      - GitHub : code et déploiement, sans données personnelles ;
-      - `api.qrserver.com`, **à retirer** : les QR codes des cartes envoient
-        identifiant, nom et catégorie d'un élève ou d'un membre du personnel
-        à ce tiers (O-05, D49) ;
+      - GitHub : code et déploiement ; rapports des scripts de données
+        (artefacts de 1 à 3 jours, chiffrés pour le propriétaire depuis D74).
+        Les journaux n'affichent que des compteurs ;
+      - `api.qrserver.com` : les QR codes des cartes y envoyaient identifiant,
+        nom et catégorie (O-05, D49). Retiré par le nouveau design (QR codes
+        générés localement, D61) : vérifier que la version en production
+        l'inclut ;
       - Google Fonts : adresse IP des visiteurs.
 - [ ] Le super-admin de la plateforme n'a **aucun accès implicite** aux
       données des écoles (D25). Il ne les voit que s'il est rattaché, ce qui
@@ -124,6 +127,7 @@ obligations légales, comptables, sociales]**.
 | Compteurs `aiQuota` | 2 jours | TTL (`PROXY-IA.md` §3) |
 | Sauvegardes | PITR 7 jours ; exports 30 jours (au plus 45) | `SAUVEGARDES.md` |
 | Exports manuels (`manuel/…`), CSV d'import, rapports de scripts | supprimés dès la fin de l'opération | runbooks |
+| Copie des données réelles dans le projet de dev (répétitions de la bascule, `ops.yml` › `import-firestore`) | supprimée après la dernière répétition | base du dev à vider par un humain ; accès limité (D74) |
 | Cache des navigateurs | jusqu'à la déconnexion | purge automatique (D40) |
 
 - [ ] Une revue annuelle (à la rentrée) des élèves partis, des comptes et des archives.
@@ -170,7 +174,8 @@ personne. Seulement ce qui est utile au suivi pédagogique.
       transfert hors du Maroc. La loi 09-08 l'encadre (pays assurant une
       protection suffisante, ou autorisation de la CNDP)
       **[À VÉRIFIER : régime applicable, liste des pays reconnus, formalités]**.
-- [ ] Retirer `api.qrserver.com` (génération locale des QR codes, O-05).
+- [ ] Vérifier que la version en production génère les QR codes localement
+      (D61) : plus d'envoi de noms à `api.qrserver.com` (O-05).
 
 ## 8. Sécurité (état au 22/10/2026)
 
@@ -235,7 +240,7 @@ bonne pratique, qu'il soit ou non exigé par la loi **[À VÉRIFIER]**.
 | T5 | Comptes et sécurité | authentification, droits, traces | utilisateurs | identifiant, rôle, connexions, journaux | directeur, exploitant | §5 | Google (UE) | intérêt légitime ou nécessité [À VÉRIFIER] | |
 | T6 | Rapport IA (optionnel) | aide à l'appréciation pédagogique | élèves | §1 « Rapport IA » | enseignant, bureau | non conservé par l'application (affiché seulement) | Google Gemini (hors Maroc) | consentement [À VÉRIFIER] | |
 | T7 | Sauvegardes | continuité, restauration | toutes | copie de la base | exploitant | 7 j (PITR), 30 à 45 j (exports) | Google (UE) | sécurité | |
-| T8 | Photos et cartes | dossier, badges, cartes | élèves, personnel | photo, nom, catégorie | personnel habilité | jusqu'au départ | Google (UE) ; **qrserver.com à retirer** | consentement | |
+| T8 | Photos et cartes | dossier, badges, cartes | élèves, personnel | photo, nom, catégorie | personnel habilité | jusqu'au départ | Google (UE) ; QR codes locaux (D61) | consentement | |
 
 Tenir aussi :
 - [ ] la liste des sous-traitants (§2) et leurs conditions ;
