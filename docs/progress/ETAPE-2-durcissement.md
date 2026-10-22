@@ -18,12 +18,14 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 4. **Dépendances / D45** : `npm audit fix` + 2 surcharges (grpc-js, uuid) :
    22 → 5 vulnérabilités (toutes dans firebase-tools, outil de dev) ;
    production 0 ; functions 0 ; audit dans la CI.
+5. **Déploiement GitHub Actions / D46** : `deploy.yml`, `preview.yml`
+   (workflow_dispatch, WIF, environnements dev / production), runbook
+   `docs/runbooks/CI-DEPLOIEMENT.md` ; validés par actionlint.
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-5. `deploy.yml` (workflow_dispatch, WIF) + runbook CI-DEPLOIEMENT.
 6. Sauvegardes planifiées + runbook PITR / restauration.
 7. Rewrite Hosting `/api/**` : test local ou job CI.
 8. `index.html` générique, en-têtes de sécurité, cache, Playwright avec CSP.
@@ -32,4 +34,4 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 5 : `.github/workflows/deploy.yml` (workflow_dispatch, WIF) + `docs/runbooks/CI-DEPLOIEMENT.md`.
+Point 6 : fonction planifiée d'export Firestore (`functions/src/backup.ts`) + runbook SAUVEGARDES.

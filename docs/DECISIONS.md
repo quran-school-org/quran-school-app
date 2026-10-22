@@ -447,3 +447,25 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
 - **Functions** : `npm audit` = 0.
 - **Suivi** : le job CI `audit` (non bloquant pour les outils de dev) relance
   `npm audit --omit=dev` (bloquant) et `npm audit` (informatif).
+
+### D46. Déploiement depuis GitHub Actions : manuel, WIF, environnements
+- **Décision** : `deploy.yml` et `preview.yml` en `workflow_dispatch` seulement ;
+  authentification `google-github-actions/auth` par Workload Identity
+  Federation (aucune clé JSON, aucun secret GitHub : uniquement des variables
+  d'environnement) ; fournisseur OIDC restreint au dépôt ET à l'environnement
+  GitHub (`assertion.environment`), compte de service emprunté par le seul
+  sujet `repo:…:environment:<env>` ; environnement `production` avec relecteur
+  obligatoire, auto-validation interdite et branche `main` seulement, plus un
+  garde-fou dans le job (branche, recopie de l'identifiant du projet) ;
+  environnement `dev` pour le projet de développement (config web injectée par
+  `.env.production.local`, jamais commitée). Cible unique possible
+  (`firestore-rules`, `functions`, `hosting`). Le job `verifier` rejoue lint,
+  build, audit et tests sur émulateurs avant tout déploiement.
+- **Aperçus** : canal Hosting `br-<branche>` sur le projet de dev, expiration
+  7 jours par défaut ; refusé si le projet est la prod.
+- **Rôles** : liste minimale documentée (runbook §3), sans `owner`/`editor` ;
+  `serviceAccountUser` sur le seul compte d'exécution des Functions.
+- **Non testé** : aucun projet ni pool n'existe ; workflows validés par
+  `actionlint` seulement.
+- **Retour arrière** : `gh workflow disable`, désactivation du fournisseur WIF
+  (runbook `CI-DEPLOIEMENT.md` §8).
