@@ -784,3 +784,31 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   processus (projet de dev seulement). Le jeton va dans
   `.env.development.local` (runbook et `.env.example` corrigés).
 - **Retour arrière** : retirer l'appel à `productionBuildProblems` dans `vite.config.ts`.
+
+### D58. R-06 sur le Lot 0 : pas de mesure minimale par les règles, décision documentée
+- **Question** : sur `fix/lot0-securite`, les salaires et CIN restent dans
+  `teachers`, lisible par `isEducator()` (مدير, إداري, مؤطر, مدرس). Une mesure
+  courte serait-elle sûre, par exemple ne plus lire `teachers` hors bureau ?
+- **Analyse du code du Lot 0** (`src/App.tsx`) :
+  - le tableau de bord de l'enseignant (مدرس) retrouve SA fiche
+    (`activeTeacher`) dans la liste `teachers`, par `linkedTeacherId` ou, à
+    défaut, par nom identique ; ses halaqas (`teacherClasses`) en dépendent ;
+  - les noms des enseignants s'affichent pour la pédagogie dans les halaqas,
+    les examens (`examinerId`), les cartes et attestations ;
+  - le مؤطر crée les halaqas et choisit leur enseignant dans cette liste.
+  Fermer `teachers` hors bureau casse donc le tableau de bord de l'enseignant
+  et l'affectation des halaqas. Une lecture « sa seule fiche » (`get` sur
+  `linkedTeacherId` d'`authLinks`) exigerait de remplacer l'abonnement à la
+  collection pour ces rôles et de supprimer le repli par nom : c'est une
+  modification de l'interface et de la session, pas un correctif court ; et la
+  fiche de l'enseignant contiendrait toujours son propre salaire. Les règles
+  ne filtrent pas des champs : seule la scission (D42) corrige vraiment.
+- **Décision** : aucune modification du Lot 0 pour R-06 ; risque accepté pour
+  la seule durée entre le Lot 0 et la bascule (qui apporte `staffPrivate`,
+  D42). Mesures d'organisation recommandées au directeur : informer le
+  personnel que ces champs sont visibles par l'équipe pédagogique jusqu'à la
+  bascule ; ne pas compléter de nouvelles CIN ni de nouveaux salaires dans
+  l'application avant la bascule si ce n'est pas nécessaire ; garder court
+  l'intervalle entre les deux opérations. Test documentaire conservé :
+  `tests/emulator/revue-rules.test.ts` (Lot 0) › R-06.
+- **Retour arrière** : sans objet.

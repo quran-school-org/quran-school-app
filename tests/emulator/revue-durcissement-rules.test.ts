@@ -69,3 +69,10 @@ describe("hypothèses réfutées : fiches RH (staffPrivate)", () => {
     await assertFails(setDoc(doc(db, "schools", A, "staffPrivate", "t1"), { password: "x", schoolId: A }, { merge: true }));
   });
 });
+
+describe("constat accepté (faible) : taille des photos non bornée par les règles", () => {
+  it("un enseignant peut écrire une photo base64 de ~900 Ko (le filet de recompression D51 est côté client)", async () => {
+    const photo = `data:image/jpeg;base64,${"A".repeat(900_000)}`;
+    await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "students", "S-photo"), { fullName: "x", photo, schoolId: A }));
+  });
+});
