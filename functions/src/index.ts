@@ -5,6 +5,8 @@
  *   createSchool, createSchoolUser, resetUserPassword, setMemberRole
  * HTTP : api (proxy Gemini authentifié, /api/** via Hosting)
  * Triggers Firestore : suspension des comptes à l'archivage des fiches.
+ * Planifiée : scheduledFirestoreExport (sauvegarde quotidienne, omise tant que
+ * BACKUP_ENABLED n'est pas true ; D47).
  */
 import { setGlobalOptions } from "firebase-functions/v2";
 
@@ -15,6 +17,7 @@ setGlobalOptions({ region: FUNCTIONS_REGION, maxInstances: 10 });
 
 export { createSchool, createSchoolUser, resetUserPassword, setMemberRole } from "./tenant/accounts.js";
 export { api } from "./tenant/api.js";
+export { scheduledFirestoreExport } from "./backup.js";
 
 /**
  * Dans certains environnements (proxy sortant qui intercepte même 127.0.0.1),
