@@ -273,3 +273,30 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
   jusqu'au premier changement par leur titulaire (voir le runbook, §2).
 - **Retour arrière** : relancer le script avec `--rotate-passwords=weak` ou `all`.
 
+## Revue adversariale du durcissement (branche `fix/revue-durcissement-lot0`)
+
+Rapport complet et décisions détaillées : branche `fix/revue-durcissement`,
+`docs/revues/REVUE-SECURITE-DURCISSEMENT.md` et `docs/DECISIONS.md` (D65 pour R-07,
+D71 pour R-06). Numérotation : D53 est pris par `release/lot0` ; cette branche
+utilise D54 et D55.
+
+### D54 (Lot 0). Les familles ne créent plus de notification (R-07)
+- **Décision** : `notifications` : `create` réservé au personnel (`isStaff()`)
+  au lieu de tout compte lié actif. Lecture, mise à jour et suppression
+  inchangées (correctif court).
+- **Effet** : la notification automatique écrite après la modification du
+  profil d'un parent ou d'un élève est refusée (erreur journalisée dans la
+  console, rien d'affiché à l'utilisateur) ; aucun autre écran famille n'écrit
+  de notification.
+- **Tests** : `tests/emulator/revue-rules.test.ts` › R-07 et matrice de
+  `tests/emulator/lot0-rules.test.ts`.
+- **Retour arrière** : rétablir `active()` pour `create`.
+
+### D55 (Lot 0). R-06 : pas de mesure minimale par les règles
+- Fermer `teachers` hors bureau casserait le tableau de bord de l'enseignant
+  (sa fiche est cherchée dans la liste), l'affichage des noms d'enseignants et
+  l'affectation des halaqas par le مؤطر ; une lecture « sa seule fiche »
+  modifierait l'interface et la session. Risque accepté jusqu'à la bascule
+  (qui apporte `staffPrivate`) ; mesures d'organisation : prévenir le
+  personnel, ne pas saisir de nouvelles CIN ni de nouveaux salaires avant la
+  bascule, garder l'intervalle court.
