@@ -118,6 +118,9 @@
   /* Tableaux dans une zone défilante : largeur minimale lisible sur mobile
      (défilement horizontal dans la carte, jamais de la page). */
   .overflow-x-auto > table { min-width: 40rem; }
+  /* Les éléments absolus (sr-only…) d'une zone défilante restent dans la zone :
+     sinon ils élargissent la page en mobile. */
+  .overflow-x-auto { position: relative; }
   /* Tailwind 4 : bordure par défaut = couleur courante ; la charte veut un filet sable. */
   *, ::after, ::before, ::backdrop, ::file-selector-button {
     border-color: var(--color-line-soft);
