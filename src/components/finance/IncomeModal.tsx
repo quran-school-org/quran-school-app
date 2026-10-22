@@ -2,7 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Coins } from "lucide-react";
+import { Coins, X } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 
 export default function IncomeModal() {
@@ -37,22 +37,24 @@ export default function IncomeModal() {
       {showIncomeModal && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn bg-night/55 backdrop-blur-[2px]" style={{ direction: "rtl" }}>
           <div className="bg-surface border border-line w-full max-w-md overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col rounded-3xl shadow-pop">
-            <div className="bg-night p-5 text-night-text flex justify-between items-center shrink-0 border-b border-night-line">
-              <h3 className="font-bold text-base flex items-center gap-2">
-                <Coins className="w-5 h-5 text-gold-300" />
+            <div className="flex items-center justify-between gap-4 px-6 pt-5 pb-4 border-b border-line-soft shrink-0">
+              <h3 className="m-0 font-display font-semibold text-[20px] text-primary flex items-center gap-2">
+                <Coins className="w-5 h-5 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
                 <span>{editingIncome ? "تعديل سجل دخل / تبرع" : "تسجيل دخل أو تبرع جديد"}</span>
               </h3>
               <button
                 onClick={() => setShowIncomeModal(false)}
-                className="text-white/80 hover:text-white p-1 rounded-lg transition"
+                type="button"
+                aria-label="إغلاق"
+                className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-line bg-white text-ink-2 hover:border-primary hover:text-primary cursor-pointer transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" strokeWidth={1.75} />
               </button>
             </div>
 
             <form onSubmit={handleSaveIncome} className="p-6 space-y-4 text-[13px] text-ink-2 overflow-y-auto">
               <div>
-                <label className="block font-bold mb-1">بيان / عنوان الدخل *</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">بيان / عنوان الدخل *</label>
                 <input
                   type="text"
                   required
@@ -65,7 +67,7 @@ export default function IncomeModal() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold mb-1">نوع الدخل</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نوع الدخل</label>
                   <select
                     value={incomeCategory}
                     onChange={(e) => setIncomeCategory(e.target.value as any)}
@@ -80,7 +82,7 @@ export default function IncomeModal() {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1">المبلغ (بالدرهم) *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ (بالدرهم) *</label>
                   <input
                     type="number"
                     required
@@ -94,7 +96,7 @@ export default function IncomeModal() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold mb-1">مكان الإيداع / المصدر</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">مكان الإيداع / المصدر</label>
                   <select
                     value={incomeSource}
                     onChange={(e) => setIncomeSource(e.target.value as any)}
@@ -106,7 +108,7 @@ export default function IncomeModal() {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1">تاريخ الاستلام</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تاريخ الاستلام</label>
                   <input
                     type="date"
                     value={incomeDate}
@@ -118,7 +120,7 @@ export default function IncomeModal() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold mb-1">اسم المتبرع / الجهة</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم المتبرع / الجهة</label>
                   <input
                     type="text"
                     placeholder="اختياري (مثال: المحسن حاج إبراهيم)"
@@ -129,7 +131,7 @@ export default function IncomeModal() {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1">رقم الإيصال</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الإيصال</label>
                   <input
                     type="text"
                     placeholder="مثال: REC-2026-05"
@@ -141,7 +143,7 @@ export default function IncomeModal() {
               </div>
 
               <div>
-                <label className="block font-bold mb-1">ملاحظات إضافية</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">ملاحظات إضافية</label>
                 <textarea
                   rows={2}
                   placeholder="ملاحظات توضيحية حول طبيعة المداخيل..."

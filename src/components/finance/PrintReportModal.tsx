@@ -2,7 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Printer, FileText } from "lucide-react";
+import { Printer, FileText, X } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 
 export default function PrintReportModal() {
@@ -33,17 +33,17 @@ export default function PrintReportModal() {
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]" style={{ direction: "rtl" }}>
           <div className="bg-surface w-full max-w-4xl overflow-hidden my-8 border border-line max-h-[90vh] flex flex-col rounded-3xl shadow-pop">
             {/* Modal Actions Bar (hidden when printing) */}
-            <div className="p-4 bg-sand-900 text-white flex justify-between items-center print:hidden shrink-0">
+            <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-line-soft print:hidden shrink-0">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gold-400" />
-                <span className="font-bold text-sm">معاينة التقرير المالي والختامي المعتمد</span>
+                <FileText className="w-5 h-5 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
+                <h2 className="m-0 font-display font-semibold text-[20px] text-primary">معاينة التقرير المالي والختامي المعتمد</h2>
               </div>
 
               <div className="flex items-center gap-3">
                 {canPrint && (
                   <button
                     onClick={handlePrint}
-                    className="bg-gold-400 hover:bg-gold-500 text-ink font-bold px-4 py-1.5 rounded-xl text-[13px] transition flex items-center gap-1.5"
+                    className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer"
                   >
                     <Printer className="w-4 h-4" />
                     <span>طباعة فورية / حفظ PDF</span>
@@ -52,9 +52,11 @@ export default function PrintReportModal() {
 
                 <button
                   onClick={() => setShowPrintReportModal(false)}
-                  className="text-sand-400 hover:text-white p-1 rounded-lg text-lg"
+                  type="button"
+                  aria-label="إغلاق"
+                  className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-line bg-white text-ink-2 hover:border-primary hover:text-primary cursor-pointer transition-colors"
                 >
-                  ✕
+                  <X className="w-5 h-5" strokeWidth={1.75} />
                 </button>
               </div>
             </div>

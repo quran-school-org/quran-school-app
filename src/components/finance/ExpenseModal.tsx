@@ -2,7 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Receipt } from "lucide-react";
+import { Receipt, X } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 
 export default function ExpenseModal() {
@@ -37,22 +37,24 @@ export default function ExpenseModal() {
       {showExpenseModal && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn bg-night/55 backdrop-blur-[2px]" style={{ direction: "rtl" }}>
           <div className="bg-surface border border-line w-full max-w-md overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col rounded-3xl shadow-pop">
-            <div className="bg-gradient-to-r from-danger-900 to-sand-900 p-5 text-white flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-base flex items-center gap-2">
-                <Receipt className="w-5 h-5 text-danger-300" />
+            <div className="flex items-center justify-between gap-4 px-6 pt-5 pb-4 border-b border-line-soft shrink-0">
+              <h3 className="m-0 font-display font-semibold text-[20px] text-primary flex items-center gap-2">
+                <Receipt className="w-5 h-5 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
                 <span>{editingExpense ? "تعديل سجل النفقة" : "تسجيل نفقة أو فاتورة جديدة"}</span>
               </h3>
               <button
                 onClick={() => setShowExpenseModal(false)}
-                className="text-white/80 hover:text-white p-1 rounded-lg transition"
+                type="button"
+                aria-label="إغلاق"
+                className="w-10 h-10 inline-flex items-center justify-center rounded-xl border border-line bg-white text-ink-2 hover:border-primary hover:text-primary cursor-pointer transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" strokeWidth={1.75} />
               </button>
             </div>
 
             <form onSubmit={handleSaveExpense} className="p-6 space-y-4 text-[13px] text-ink-2 overflow-y-auto">
               <div>
-                <label className="block font-bold mb-1">بيان النفقة / المشتريات *</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">بيان النفقة / المشتريات *</label>
                 <input
                   type="text"
                   required
@@ -65,7 +67,7 @@ export default function ExpenseModal() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold mb-1">نوع / فئة النفقة</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نوع / فئة النفقة</label>
                   <select
                     value={expenseCategory}
                     onChange={(e) => setExpenseCategory(e.target.value as any)}
@@ -81,7 +83,7 @@ export default function ExpenseModal() {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1">المبلغ (د.م) *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ (د.م) *</label>
                   <input
                     type="number"
                     required
@@ -95,7 +97,7 @@ export default function ExpenseModal() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold mb-1">المصدر المالي</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المصدر المالي</label>
                   <select
                     value={expenseSource}
                     onChange={(e) => setExpenseSource(e.target.value as any)}
@@ -107,7 +109,7 @@ export default function ExpenseModal() {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1">تاريخ النفقة</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تاريخ النفقة</label>
                   <input
                     type="date"
                     value={expenseDate}
@@ -119,7 +121,7 @@ export default function ExpenseModal() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold mb-1">اسم المورد / الشركات</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم المورد / الشركات</label>
                   <input
                     type="text"
                     placeholder="مثال: شركة الكهرباء / مكتبة النجاح"
@@ -130,7 +132,7 @@ export default function ExpenseModal() {
                 </div>
 
                 <div>
-                  <label className="block font-bold mb-1">رقم الفاتورة / الوصل</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الفاتورة / الوصل</label>
                   <input
                     type="text"
                     placeholder="مثال: INV-2026-102"
@@ -142,7 +144,7 @@ export default function ExpenseModal() {
               </div>
 
               <div>
-                <label className="block font-bold mb-1">ملاحظات توضيحية</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">ملاحظات توضيحية</label>
                 <textarea
                   rows={2}
                   placeholder="ملاحظات حول سبب وسياق هذه النفقة..."
