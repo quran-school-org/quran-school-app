@@ -31,6 +31,7 @@ import type { SystemSettings, AppUser, UserProfile, SchoolInfo } from "./types";
 import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, apiBaseUrl, appCheckConfig } from "./config/env";
 import { loginEmailCandidates, normalizeAuthPassword, normalizeUsername } from "./security/accounts";
 import { getCacheScope, scopedKey } from "./cache/localCache";
+import { shrinkInlinePhotos } from "./utils/imageCompression";
 import { STAFF_PRIVATE_COLLECTION, STAFF_PRIVATE_FIELDS, mergeStaffRecords, splitStaffRecord, stripStaffPrivate } from "./security/staffPrivate";
 
 /** Région des Cloud Functions (identique à functions/src/config.ts). */
@@ -397,7 +398,8 @@ export function sanitizeForFirestore(obj: any): any {
  */
 export async function saveToFirestore(schoolId: string, collectionName: string, id: string, data: any) {
   try {
-    const sanitizedData = sanitizeForFirestore(stripPassword({ ...data }));
+    // Photos base64 trop lourdes recompressées (limite de 1 Mio par document, D51).
+    const sanitizedData = sanitizeForFirestore(await shrinkInlinePhotos(stripPassword({ ...data })));
     await setDoc(schoolDocRef(schoolId, collectionName, id), { ...sanitizedData, schoolId }, { merge: true });
   } catch (error) {
     console.error(`Error saving to Firestore ${schoolId}/${collectionName}/${id}:`, error);
@@ -565,7 +567,7 @@ export function subscribeToSettings(
  */
 export async function saveStaffToFirestore(schoolId: string, staff: { id: string; [k: string]: any }) {
   try {
-    const { publicData, privateData } = splitStaffRecord(stripPassword({ ...staff }));
+    const { publicData, privateData } = splitStaffRecord(await shrinkInlinePhotos(stripPassword({ ...staff })));
     const batch = writeBatch(db);
     const removed: Record<string, unknown> = {};
     for (const k of STAFF_PRIVATE_FIELDS) removed[k] = deleteField();
