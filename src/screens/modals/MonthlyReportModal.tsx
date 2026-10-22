@@ -155,7 +155,7 @@ export default function MonthlyReportModal() {
 
                 <div id="printable-monthly-report" className="bg-white rounded-xl border border-line-soft p-5 text-[13.5px] text-ink">
                   <div className="flex flex-col gap-5">
-                    <header className="flex justify-between items-start gap-4 border-b-2 border-primary pb-4">
+                    <div className="flex justify-between items-start gap-4 border-b-2 border-primary pb-4">
                       <div className="flex items-center gap-3">
                         {logo ? <img src={logo} alt="" className="w-14 h-14 object-contain" /> : <Emblem size={48} />}
                         <div className="flex flex-col gap-0.5">
@@ -168,7 +168,7 @@ export default function MonthlyReportModal() {
                         <span className="inline-block bg-night text-gold-100 font-semibold text-[13px] px-3 py-1.5 rounded-lg">كشف الحضور والغياب الشهري</span>
                         <span className="text-[12px] text-ink-3">تاريخ الإصدار: {new Date().toLocaleDateString("ar-MA-u-nu-latn")}</span>
                       </div>
-                    </header>
+                    </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl bg-surface-2 border border-line-soft p-4">
                       <div className="flex flex-col gap-0.5">

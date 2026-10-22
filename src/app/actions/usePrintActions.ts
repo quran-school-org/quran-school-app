@@ -1,13 +1,16 @@
 /**
- * Extrait mécaniquement d'App.tsx (Lot 2, sans changement de comportement).
+ * Impressions (reçu, attestation, rapports, cartes) : fenêtres ouvertes par
+ * openPrintWindow (titre échappé, polices de la charte, plus de CDN Tailwind).
+ * Toute donnée insérée dans un gabarit est échappée (C-01).
  */
 import { escapeHtml } from "../../security/html";
-import { receiptHtml } from "../../print/receipt";
-import { certificateHtml } from "../../print/certificate";
+import { RECEIPT_CSS, receiptHtml } from "../../print/receipt";
+import { CERTIFICATE_CSS, certificateHtml } from "../../print/certificate";
 import { paymentsReportHtml } from "../../print/paymentsReport";
 import { studentsReportHtml } from "../../print/studentsReport";
-import { singleCardHtml } from "../../print/idCards";
-import { bulkCardsHtml } from "../../print/idCards";
+import { bulkCardsHtml, idCardsCss, singleCardHtml } from "../../print/idCards";
+import { DOC_CSS } from "../../print/docStyles";
+import { openPrintWindow } from "../../print/printWindow";
 import { Payment } from "../../types";
 import { getYearAndMonthFromDate } from "../helpers";
 import type { DerivedScope } from "../scope";
@@ -31,40 +34,31 @@ export function usePrintActions(s: DerivedScope) {
     const stud = students.find(s => s.id === p.studentId);
     if (!stud) return;
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      alert("يرجى السماح بالنوافذ المنبثقة لطباعة الإيصال.");
-      return;
-    }
-
-    printWindow.document.write(receiptHtml(p, stud, systemSettings, schoolName));
-    printWindow.document.close();
+    openPrintWindow({
+      title: "إيصال استلام رسوم - " + stud.fullName,
+      body: receiptHtml(p, stud, systemSettings, schoolName),
+      css: DOC_CSS + RECEIPT_CSS,
+      blockedMessage: "يرجى السماح بالنوافذ المنبثقة لطباعة الإيصال.",
+    });
   };
   const handlePrintCertificate = (stud: any, gr: any) => {
     if (!stud) return;
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      alert("يرجى السماح بالنوافذ المنبثقة لطباعة الشهادة.");
-      return;
-    }
-
     const associationName = schoolName;
     const associationLogo = systemSettings?.associationLogo || "";
 
-    printWindow.document.write(certificateHtml(stud, gr, associationName, associationLogo, systemSettings));
-    printWindow.document.close();
+    openPrintWindow({
+      title: "شهادة تقديرية - " + stud.fullName,
+      body: certificateHtml(stud, gr, associationName, associationLogo, systemSettings),
+      css: DOC_CSS + CERTIFICATE_CSS,
+      blockedMessage: "يرجى السماح بالنوافذ المنبثقة لطباعة الشهادة.",
+      closeAfter: false,
+    });
   };
 
   const handlePrintFinancialReport = () => {
     if (filteredPayments.length === 0) {
       alert("لا توجد بيانات لتصديرها.");
-      return;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      alert("يرجى السماح بالنوافذ المنبثقة لطباعة التقرير.");
       return;
     }
 
@@ -74,14 +68,14 @@ export function usePrintActions(s: DerivedScope) {
     const tableRows = filteredPayments.map(p => {
       const stud = students.find(s => s.id === p.studentId);
       return `
-        <tr class="border-b border-slate-100 text-xs">
-          <td class="p-2 text-right" style="padding: 8px; text-align: right;">${escapeHtml(stud?.fullName || "طالب مجهول")}<br/><span class="text-[9px] text-slate-400">ولي الأمر: ${escapeHtml(stud?.parentName || "—")}</span></td>
-          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${escapeHtml(p.month)} / ${escapeHtml(p.year)}</td>
-          <td class="p-2 text-center font-mono font-bold" style="padding: 8px; text-align: center;">${escapeHtml(p.amount)} درهم</td>
-          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${escapeHtml(p.status === "مدفوع" ? "مدفوع ✓" : "غير مدفوع ❌")}</td>
-          <td class="p-2 text-center font-mono" style="padding: 8px; text-align: center;">${escapeHtml(p.paymentDate || "—")}</td>
-          <td class="p-2 text-center" style="padding: 8px; text-align: center;">${escapeHtml(p.paymentMethod || "—")}</td>
-          <td class="p-2 text-center font-mono" style="padding: 8px; text-align: center;">${escapeHtml(p.receiptNo || "—")}</td>
+        <tr>
+          <td><span class="strong">${escapeHtml(stud?.fullName || "طالب مجهول")}</span><br/><span class="muted">ولي الأمر: ${escapeHtml(stud?.parentName || "—")}</span></td>
+          <td class="c">${escapeHtml(p.month)} / ${escapeHtml(p.year)}</td>
+          <td class="c strong">${escapeHtml(p.amount)} درهم</td>
+          <td class="c"><span class="pill ${escapeHtml(p.status === "مدفوع" ? "ok" : "ko")}">${escapeHtml(p.status === "مدفوع" ? "مدفوع" : "غير مدفوع")}</span></td>
+          <td class="c ltr">${escapeHtml(p.paymentDate || "—")}</td>
+          <td class="c">${escapeHtml(p.paymentMethod || "—")}</td>
+          <td class="c ltr">${escapeHtml(p.receiptNo || "—")}</td>
         </tr>
       `;
     }).join("");
@@ -89,18 +83,16 @@ export function usePrintActions(s: DerivedScope) {
     const totalCollected = filteredPayments.filter(p => p.status === "مدفوع").reduce((sum, p) => sum + p.amount, 0);
     const totalPending = filteredPayments.filter(p => p.status === "غير مدفوع").reduce((sum, p) => sum + p.amount, 0);
 
-    printWindow.document.write(paymentsReportHtml(reportTitle, tableRows, filteredPayments, totalCollected, totalPending, systemSettings, schoolName));
-    printWindow.document.close();
+    openPrintWindow({
+      title: reportTitle,
+      body: paymentsReportHtml(reportTitle, tableRows, filteredPayments, totalCollected, totalPending, systemSettings, schoolName),
+      css: DOC_CSS,
+      blockedMessage: "يرجى السماح بالنوافذ المنبثقة لطباعة التقرير.",
+    });
   };
   const handlePrintStudentsReport = () => {
     if (filteredStudents.length === 0) {
       alert("لا توجد بيانات طلاب لتصديرها.");
-      return;
-    }
-
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      alert("يرجى السماح بالنوافذ المنبثقة لطباعة التقرير.");
       return;
     }
 
@@ -115,31 +107,33 @@ export function usePrintActions(s: DerivedScope) {
       const parentName = s.parentName || "—";
       const parentPhone = s.parentPhone || "—";
       const statusText = s.isArchived ? "مؤرشف" : "نشط";
-      const statusColor = s.isArchived ? "color: #b45309; background-color: #fffbeb;" : "color: #047857; background-color: #ecfdf5;";
+      const statusClass = s.isArchived ? "warn" : "ok";
 
       return `
-        <tr class="border-b border-slate-100 text-xs">
-          <td class="p-3 text-right font-bold text-slate-800" style="padding: 12px; text-align: right;">${escapeHtml(s.fullName)}</td>
-          <td class="p-3 text-center text-slate-600" style="padding: 12px; text-align: center;">${escapeHtml(s.birthDate)}</td>
-          <td class="p-3 text-center text-slate-600" style="padding: 12px; text-align: center;">${escapeHtml(s.gender)}</td>
-          <td class="p-3 text-right text-slate-600" style="padding: 12px; text-align: right;">
-            <div class="font-medium text-slate-700">${escapeHtml(parentName)}</div>
-            <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(parentPhone)}</div>
+        <tr>
+          <td class="strong">${escapeHtml(s.fullName)}</td>
+          <td class="c ltr">${escapeHtml(s.birthDate)}</td>
+          <td class="c">${escapeHtml(s.gender)}</td>
+          <td>
+            <div>${escapeHtml(parentName)}</div>
+            <div class="muted ltr">${escapeHtml(parentPhone)}</div>
           </td>
-          <td class="p-3 text-right" style="padding: 12px; text-align: right;">
-            <div class="font-bold text-emerald-800">${escapeHtml(s.hizbCount)} حزب</div>
-            <div class="text-[10px] text-amber-600 font-medium">${escapeHtml(s.currentSurah || "—")}</div>
+          <td>
+            <div class="accent">${escapeHtml(s.hizbCount)} حزب</div>
+            <div class="muted gold">${escapeHtml(s.currentSurah || "—")}</div>
           </td>
-          <td class="p-3 text-center font-bold text-slate-700" style="padding: 12px; text-align: center;">${escapeHtml(s.tajweedLevel)}</td>
-          <td class="p-3 text-center" style="padding: 12px; text-align: center;">
-            <span class="px-2 py-1 rounded text-[10px] font-bold" style="padding: 4px 8px; border-radius: 4px; font-weight: 700; ${escapeHtml(statusColor)}">${escapeHtml(statusText)}</span>
-          </td>
+          <td class="c strong">${escapeHtml(s.tajweedLevel)}</td>
+          <td class="c"><span class="pill ${escapeHtml(statusClass)}">${escapeHtml(statusText)}</span></td>
         </tr>
       `;
     }).join("");
 
-    printWindow.document.write(studentsReportHtml(reportTitle, tableRows, totalCount, maleCount, femaleCount, avgHizb, systemSettings, schoolName));
-    printWindow.document.close();
+    openPrintWindow({
+      title: reportTitle,
+      body: studentsReportHtml(reportTitle, tableRows, totalCount, maleCount, femaleCount, avgHizb, systemSettings, schoolName),
+      css: DOC_CSS,
+      blockedMessage: "يرجى السماح بالنوافذ المنبثقة لطباعة التقرير.",
+    });
   };
 
   const handlePrintLabCard = (printSide: "both" | "front" | "back" = "both") => {
@@ -162,14 +156,15 @@ export function usePrintActions(s: DerivedScope) {
         return;
       }
 
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        alert("يرجى السماح بالنوافذ المنبثقة لطباعة الكارت.");
-        return;
-      }
-
-      printWindow.document.write(singleCardHtml(labStudent, sideSuffix, printSide, labScale, printContent));
-      printWindow.document.close();
+      const w = openPrintWindow({
+        title: "بطاقة الطالب - " + labStudent.fullName + sideSuffix,
+        body: singleCardHtml(labScale, printContent),
+        css: idCardsCss(printSide, "single"),
+        withAppStyles: true,
+        blockedMessage: "يرجى السماح بالنوافذ المنبثقة لطباعة الكارت.",
+        delay: 600,
+      });
+      if (!w) return;
 
       addSysNotification(
         "طباعة بطاقة الهوية",
@@ -188,14 +183,15 @@ export function usePrintActions(s: DerivedScope) {
         return;
       }
 
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        alert("يرجى السماح بالنوافذ المنبثقة لطباعة الكروت.");
-        return;
-      }
-
-      printWindow.document.write(bulkCardsHtml(sideSuffix, printSide, labScale, printContent));
-      printWindow.document.close();
+      const w = openPrintWindow({
+        title: "الطباعة الجماعية للبطاقات" + sideSuffix,
+        body: bulkCardsHtml(labScale, printContent),
+        css: idCardsCss(printSide, "bulk"),
+        withAppStyles: true,
+        blockedMessage: "يرجى السماح بالنوافذ المنبثقة لطباعة الكروت.",
+        delay: 800,
+      });
+      if (!w) return;
 
       addSysNotification(
         "الطباعة الجماعية",
