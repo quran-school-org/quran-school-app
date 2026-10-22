@@ -45,7 +45,7 @@ gcloud iam workload-identity-pools create $POOL --location=global \
   --display-name="GitHub Actions" --project=$PROJECT
 
 # Seuls les jobs de CE dépôt (identifiants numériques), dans les environnements
-# GitHub prévus, sont acceptés (revue, D55) :
+# GitHub prévus, sont acceptés (revue, D67) :
 #  - projet de DEV : environnements dev (déploiement complet) et preview (Hosting) ;
 #  - PROD : environnement production, branche main ET fichier deploy.yml de main
 #    (défense en profondeur si la règle de branche de l'environnement était retirée).
@@ -110,7 +110,7 @@ Pourquoi ces rôles :
 | `serviceusage.serviceUsageConsumer`, `firebaseextensions.viewer` | contrôles faits par la CLI Firebase |
 | `iam.serviceAccountUser` (sur le seul compte d'exécution) | déployer des fonctions qui s'exécutent sous ce compte |
 
-**Compte des aperçus (projet de dev seulement, revue D55)** : l'environnement
+**Compte des aperçus (projet de dev seulement, revue D67)** : l'environnement
 `preview` accepte toutes les branches ; son compte ne peut que publier le
 Hosting (canaux), jamais les règles ni les fonctions, et ne lit pas Firestore.
 ```bash
@@ -149,7 +149,7 @@ npx firebase functions:artifacts:setpolicy --project $PROJECT --location europe-
 gh api -X PUT repos/$REPO/environments/preview
 
 # dev : déploiement complet du projet de dev (règles, fonctions), donc accès à
-# ses données : branches protégées seulement (revue, D55). Si le projet de dev
+# ses données : branches protégées seulement (revue, D67). Si le projet de dev
 # reçoit un jour un export RÉEL (répétition de bascule), ajouter un relecteur,
 # ou mieux : répéter dans un projet dédié, sans fournisseur WIF, supprimé ensuite.
 gh api -X PUT repos/$REPO/environments/dev --input - <<'JSON'

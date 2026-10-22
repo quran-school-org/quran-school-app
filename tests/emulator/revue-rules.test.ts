@@ -143,7 +143,7 @@ describe("R-06 corrigé (D42) : fiches RH du personnel", () => {
   });
 });
 
-describe("R-07 corrigé (D52) : notifications réservées au personnel", () => {
+describe("R-07 corrigé (D64) : notifications réservées au personnel", () => {
   beforeEach(async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: false, schoolId: A });

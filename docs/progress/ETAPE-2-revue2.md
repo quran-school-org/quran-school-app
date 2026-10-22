@@ -4,7 +4,7 @@ Branches :
 - `fix/revue-durcissement` (depuis `origin/feat/durcissement` 9e4f601), worktree `/home/user/wt-revue2` ;
 - `fix/revue-durcissement-lot0` (depuis `origin/fix/revue-securite-lot0` 3a719e9), worktree `/home/user/wt-revue2-lot0`.
 
-Décisions : `docs/DECISIONS.md` à partir de D52. Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`.
+Décisions : `docs/DECISIONS.md` à partir de D64. Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`.
 
 Commandes (conteneur à proxy, toujours sous verrou) :
 - `EMULATOR_SKIP_FIRESTORE_TRIGGERS=true flock /home/user/.emulators.lock npm run test:rules`
@@ -14,13 +14,13 @@ Commandes (conteneur à proxy, toujours sous verrou) :
   `zizmor --offline .github/workflows/` (`pip install --user zizmor`).
 
 ## Fait (Partie 1, poussé)
-- D52 R-07 : notifications réservées au personnel (MT + Lot 0).
-- D53 : migration, la scission des fiches à la relance ne perd plus de champ RH.
-- D54 : quotas IA éprouvés (tests d'attaque), `Cache-Control: private, no-store`.
-- D55 : workflows (SHA, env, OIDC confiné, environnement preview), runbook CI, garde-fou `tests/unit/workflows.test.ts`.
-- D56 : sauvegardes, suppression bornée aux dossiers d'export ; runbook (export seul, conservation 28 j).
-- D57 : build de production refuse un jeton de débogage App Check (`.env.local`).
-- D58 : R-06 Lot 0 évalué, pas de mesure courte sûre (documenté MT + Lot 0).
+- D64 R-07 : notifications réservées au personnel (MT + Lot 0).
+- D65 : migration, la scission des fiches à la relance ne perd plus de champ RH.
+- D66 : quotas IA éprouvés (tests d'attaque), `Cache-Control: private, no-store`.
+- D67 : workflows (SHA, env, OIDC confiné, environnement preview), runbook CI, garde-fou `tests/unit/workflows.test.ts`.
+- D68 : sauvegardes, suppression bornée aux dossiers d'export ; runbook (export seul, conservation 28 j).
+- D69 : build de production refuse un jeton de débogage App Check (`.env.local`).
+- D70 : R-06 Lot 0 évalué, pas de mesure courte sûre (documenté MT + Lot 0).
 - Rapport `docs/revues/REVUE-SECURITE-DURCISSEMENT.md` (13 constats, verdict).
 - Tests au dernier push MT (d5ec153) : lint OK/OK, build OK, unitaires 68/68,
   émulateurs 242 + 2 ignorés, Functions 43/43, Playwright 11/11 ; Hosting 5/5 (e3ee428).

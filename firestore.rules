@@ -251,7 +251,7 @@ service cloud.firestore {
       }
 
       // ------------------------------------------------------- notifications
-      // Personnel seulement (R-07, D52) : les familles ne lisent ni n'écrivent
+      // Personnel seulement (R-07, D64) : les familles ne lisent ni n'écrivent
       // de notifications. Hors bureau, une mise à jour ne peut que marquer
       // la notification comme lue (pas de réécriture du titre ou du message).
       match /notifications/{notificationId} {

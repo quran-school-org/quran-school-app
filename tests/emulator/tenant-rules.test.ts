@@ -149,7 +149,7 @@ const MATRIX: Record<string, { list: Role[]; write: Role[]; remove: Role[] }> = 
   activities: { list: ROLES, write: EDUCATORS, remove: OFFICE },
   activityParticipants: { list: [...EDUCATORS, "متطوع"], write: EDUCATORS, remove: EDUCATORS },
   activityExpenses: { list: EDUCATORS, write: EDUCATORS, remove: EDUCATORS },
-  notifications: { list: STAFF, write: STAFF, remove: OFFICE }, // R-07 (D52) : plus les familles
+  notifications: { list: STAFF, write: STAFF, remove: OFFICE }, // R-07 (D64) : plus les familles
   settings: { list: ROLES, write: ["مدير"], remove: [] },
 };
 

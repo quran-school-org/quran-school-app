@@ -1,4 +1,4 @@
-# Canal de prévisualisation Hosting par branche, sur le projet de DEV (D46, D55).
+# Canal de prévisualisation Hosting par branche, sur le projet de DEV (D46, D67).
 # PRÉPARÉ, INACTIF : déclenchement manuel uniquement, environnement GitHub
 # `preview` (WIF, sans clé), dont le compte de service n'a que le rôle Hosting :
 # un aperçu ne peut publier ni règles, ni fonctions, ni lire Firestore.
@@ -6,7 +6,7 @@
 # limité à l'environnement production, runbook CI-DEPLOIEMENT.md §2).
 # Le canal sert le Hosting de la branche ; /api/** est réécrit vers la fonction
 # `api` déjà déployée sur le projet de dev, Firestore et Auth sont ceux du dev.
-# Durcissement (revue, D55) : build et tests dans un job SANS jeton OIDC ; le
+# Durcissement (revue, D67) : build et tests dans un job SANS jeton OIDC ; le
 # job de publication ne fait qu'installer la CLI (sans scripts npm) et publier.
 name: Prévisualisation (dev, manuel)
 

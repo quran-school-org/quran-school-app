@@ -138,7 +138,7 @@ describe("migration racine → schools/alfajr", () => {
 
   it("une fiche publique cible encore porteuse de champs RH est scindée à la relance, sans écraser la fiche RH", async () => {
     // Fiche saisie par une version antérieure à D42 (t2 : fiche RH déjà présente ; t5 : aucune).
-    // t2 : emergencyContact n'existe que dans la fiche publique (revue D53 : il ne doit pas être perdu).
+    // t2 : emergencyContact n'existe que dans la fiche publique (revue D65 : il ne doit pas être perdu).
     await admin.db.doc(`schools/${S}/teachers/t2`).update({ monthlySalary: 9999, cinNumber: "ANCIEN", emergencyContact: "0612000000" });
     await admin.db.doc(`schools/${S}/teachers/t5`).update({ monthlySalary: 1800, address: "عنوان" });
     await admin.db.doc(`schools/${S}/staffPrivate/t1`).update({ monthlySalary: 2700 }); // saisie après la bascule

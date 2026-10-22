@@ -1,5 +1,5 @@
 /**
- * Revue adversariale du durcissement — sauvegarde planifiée (D47, D56).
+ * Revue adversariale du durcissement — sauvegarde planifiée (D47, D68).
  * Hypothèses : suppression d'exports par des préfixes plantés ou un listage
  * inattendu, rétention mal paramétrée, panne prolongée. Appel direct.
  */
@@ -43,7 +43,7 @@ describe("hypothèses réfutées : sauvegarde et rétention", () => {
   });
 });
 
-describe("D56 : seuls les dossiers d'export exacts sont supprimables", () => {
+describe("D68 : seuls les dossiers d'export exacts sont supprimables", () => {
   it("isExportPrefixUnder", () => {
     expect(isExportPrefixUnder(ROOT, p("2026-01-01T00-00-00Z"))).toBe(true);
     for (const bad of ["", ROOT, "firestore/", `manuel/2026-01-01T00-00-00Z/`, `${ROOT}manuel/2026-01-01T00-00-00Z/`, `${ROOT}2026-01-01T00-00-00Z`, `firestore/autre-base/2026-01-01T00-00-00Z/`]) {

@@ -24,7 +24,7 @@ function e2eCspMeta(): Plugin {
 }
 
 export default defineConfig(({mode}) => {
-  // Garde-fous du build de production (D57) : pas de jeton de débogage App Check
+  // Garde-fous du build de production (D69) : pas de jeton de débogage App Check
   // ni d'émulateurs venus de .env.local dans le bundle publié.
   const problems = productionBuildProblems(mode, loadEnv(mode, process.cwd(), 'VITE_'), process.env);
   if (problems.length) throw new Error(`Build de production refusé :\n- ${problems.join('\n- ')}`);

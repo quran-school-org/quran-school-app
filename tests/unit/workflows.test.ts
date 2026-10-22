@@ -1,5 +1,5 @@
 /**
- * Garde-fou statique des workflows GitHub Actions (revue du durcissement, D55).
+ * Garde-fou statique des workflows GitHub Actions (revue du durcissement, D67).
  * Complète actionlint et zizmor (non installés dans la CI) par des règles
  * simples, vérifiées à chaque `npm test` :
  *  - toute action est épinglée par SHA de commit ;
@@ -54,7 +54,7 @@ function jobs(text: string): Map<string, string[]> {
   return map;
 }
 
-describe("workflows GitHub Actions (D55)", () => {
+describe("workflows GitHub Actions (D67)", () => {
   it("trouve les workflows", () => {
     expect(files).toEqual(expect.arrayContaining(["ci.yml", "deploy.yml", "preview.yml"]));
   });

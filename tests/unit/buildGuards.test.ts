@@ -1,4 +1,4 @@
-/** Garde-fous du build de production (D57). */
+/** Garde-fous du build de production (D69). */
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
