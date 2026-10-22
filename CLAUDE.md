@@ -27,7 +27,15 @@ Les données de prod sont **réelles** (élèves mineurs, paiements, salaires).
   export de données (`*.json` d'export, `auth-users.json`, rapports de scripts).
 - Ne pas toucher au design (couleurs, mise en page) au-delà du strict nécessaire.
 - Les opérations sur la prod (déploiement, scripts de données) sont décrites dans
-  `docs/runbooks/` et **exécutées par un humain**, jamais par un agent.
+  `docs/runbooks/`. Les agents n'exécutent toujours **AUCUNE** commande vers la
+  prod depuis le conteneur. La mise en prod passe **uniquement** par les
+  workflows `deploy-lot0.yml`, `ops.yml` et `deploy.yml`, déclenchés par
+  l'orchestrateur (`gh workflow run`, `docs/runbooks/OPERATIONS-CLAUDE.md`)
+  après le « go » du propriétaire aux trois étapes de
+  `docs/GUIDE-MISE-EN-PROD.md` (simulation du Lot 0, rapport de répétition, date
+  de bascule). Ne jamais télécharger dans le conteneur les artefacts de rapports
+  ou de mots de passe. Les retours arrière qui importent dans la prod restent
+  exécutés par un humain (D59).
 
 ## Lancer le projet
 

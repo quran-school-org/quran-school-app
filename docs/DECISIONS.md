@@ -639,3 +639,112 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
      0,5 ; migration : 0,5 ; intégration écrans : 0,5).
 - **Retour arrière du filet de sécurité** : retirer l'appel à
   `shrinkInlinePhotos` dans `src/firebase.ts`.
+
+## Mise en production par l'orchestrateur (branche `feat/workflows-ops`)
+
+### D59. Mise en prod par workflows déclenchés par l'orchestrateur
+- **Numéro** : D59, le plus élevé trouvé étant D58 (`origin/fix/revue-durcissement-lot0`) ;
+  `main` s'arrête à D51, `fix/revue-durcissement` à D56, `integration/design` à D52.
+- **Contexte** : le propriétaire ne déroule plus lui-même les runbooks. Il ouvre
+  les accès une fois (`docs/GUIDE-MISE-EN-PROD.md` : WIF, comptes
+  `github-deploy` et `github-ops`, environnements `dev` et `production`, bucket
+  de sauvegarde) ; l'orchestrateur (Claude) lance ensuite des workflows par
+  `gh workflow run`, après son « go » à trois moments (simulation du Lot 0,
+  rapport de répétition, date de bascule). Dépôt privé sur le forfait GitHub
+  gratuit : ni relecteur obligatoire, ni protection de branche. Le Lot 0 vit sur
+  `release/lot0` (sans workflows de déploiement, Functions et `firebase.json`
+  différents) ; `main` porte le multi-écoles, qui ne doit pas partir avant la bascule.
+- **Décision** :
+  - les agents n'exécutent toujours aucune commande vers la prod depuis un
+    conteneur (CLAUDE.md) ; la prod ne change que par `deploy-lot0.yml`,
+    `ops.yml` et `deploy.yml`, séquence et critères d'arrêt dans
+    `docs/runbooks/OPERATIONS-CLAUDE.md` ;
+  - **garde-fous dans les workflows** (faute de protections GitHub) : production
+    lancée depuis le workflow de `main` seulement ; `confirm` = identifiant du
+    projet pour toute écriture en prod (et, dans `ops.yml`, pour toute action de
+    prod autre que `describe-db` et `verify-counts`, qui lisent des données
+    personnelles) ; simulation par défaut ; références de code **fixes**
+    (`release/lot0` ou `main`), jamais en entrée ; contrôle que le compte de
+    service appartient au projet visé et que `dev` ne vise pas la prod ;
+  - `deploy-lot0.yml` : le job sans jeton OIDC extrait `release/lot0`, rejoue
+    lint, build et tests présents dans la branche (dont `lint:functions` et les
+    tests sur émulateurs), et transmet son SHA au job de déploiement, qui
+    déploie exactement ce SHA. Vérifié sur `release/lot0` (625c324) :
+    `firebase.json` vise la base nommée, Functions en `europe-west1` codé en
+    dur, triggers dans `FIRESTORE_TRIGGER_REGION` lu dans
+    `functions/.env.<projet>` (versionné pour la prod seulement : le workflow le
+    crée pour le dev ; la variable `FUNCTIONS_TRIGGER_REGION` le surcharge si
+    elle est posée) ; aucun secret (la fonction `api` du Lot 0 n'utilise pas
+    Gemini) ; build et CLI fonctionnent avec `npm ci --ignore-scripts`. Le
+    bundle est contrôlé sur la configuration inlinée par Vite
+    (`VITE_FIREBASE_PROJECT_ID`, `VITE_FIRESTORE_DATABASE_ID`,
+    `VITE_USE_EMULATORS`), pas sur le texte : `App.tsx` de `release/lot0`
+    affiche l'identifiant de la prod dans un bandeau d'aide. Cible `all`
+    refusée en prod (ordre du runbook Lot 0 : functions, script, règles, hosting) ;
+  - `--force` seulement sur demande (`force=true`) : sans lui, la CLI refuse en
+    mode non interactif de supprimer des fonctions absentes du code, ce qui
+    protège la prod d'une suppression inattendue ; à la bascule, `deploy.yml`
+    doit supprimer `createUserAccount` (Lot 0) : seule modification de
+    `deploy.yml`, une entrée `force` (défaut `false`). Sans politique de
+    nettoyage des images, la CLI échoue après un déploiement réussi des
+    fonctions : `deploy-lot0.yml` change ce seul cas en avertissement ;
+  - `ops.yml` : entrées en `choice` (et un booléen), sauf `confirm` (comparé,
+    jamais exécuté) et `import_source`, validé par
+    `^[0-9]{8}-[0-9]{6}Z-(manuel|avant-lot0-provision|avant-migrate-to-tenants)$`
+    avant usage (nom d'export affiché par un run précédent). Aucune expression
+    `${{ }}` dans les scripts. `import-firestore` refusé en production. Avant
+    `lot0-provision` ou `migrate-to-tenants` appliqués : export complet
+    `<horodatage>-avant-<action>` puis, en prod, PITR exigé.
+    `rotate_passwords` vaut `none` par défaut (D53) et est passé explicitement
+    au script (dont la valeur par défaut est `all`). Super-admin de la
+    migration : variable d'environnement `SUPER_ADMIN_USERNAME` (validée), pas
+    une entrée ; école migrée fixée à `alfajr` ;
+  - **données personnelles** : la sortie des scripts (qui liste les comptes) va
+    dans un fichier, jamais dans le journal ; le journal n'affiche qu'une liste
+    blanche de champs de `resume.json` (`RESUME_JSON=`, compteurs et codes
+    d'anomalie) et, en cas d'échec, les lignes d'erreur générales avec adresses
+    et numéros masqués. Rapports : artefact de 3 jours ; mots de passe
+    temporaires : artefact séparé d'un jour. Nouveau script
+    `scripts/ops/count-collections.ts` (`verify-counts`) : noms de collections,
+    identifiants d'école conformes et nombres seulement (test sur émulateurs) ;
+  - répétitions sur le dev avec `rotate_passwords=all` : la copie des données
+    réelles n'est jamais accessible avec les anciens mots de passe ;
+  - `concurrency` : `deploy-<env>` (partagé par `deploy.yml` et
+    `deploy-lot0.yml`) et `ops-<env>`, sans annulation en cours ; l'orchestrateur
+    attend la fin de chaque run (`gh run watch`) ;
+  - actions épinglées par SHA (mêmes versions que D55, plus
+    `actions/upload-artifact` v4.6.2), `persist-credentials: false`, jobs à jeton
+    OIDC sans cache npm et `npm ci --ignore-scripts` : les deux nouveaux
+    workflows passent le garde-fou statique `tests/unit/workflows.test.ts` de
+    `fix/revue-durcissement` (essayé localement, non commité ici).
+- **Limites** :
+  - **forfait gratuit** : selon la documentation GitHub, un dépôt privé ne peut
+    pas configurer d'environnements (ni leurs variables) sans GitHub Team ou
+    Pro. Si l'étape 3 du guide est impossible, les workflows restent inertes ;
+    solution la plus simple : forfait Team pour l'organisation (à décider par
+    le propriétaire) ;
+  - sans protection de branche, quiconque peut pousser sur `main` peut modifier
+    ces workflows : la liste des collaborateurs est la frontière de confiance ;
+  - Firebase Auth n'est ni exporté ni copié vers le dev (hachages = secrets) :
+    la répétition 1 part de l'export d'avant le Lot 0 (mots de passe encore dans
+    `appUsers`), la répétition 2 d'un export frais (comptes absents d'Auth
+    comptés dans `pendingAuth`) ; l'import ne purge pas la base de dev ;
+  - les retours arrière qui importent dans la prod et les contrôles directs des
+    API de la prod (runbook Lot 0 §5.1-5.2) restent faits par un humain ;
+  - probable droit manquant à `github-deploy` pour les triggers Firestore
+    (`datastore.databases.getMetadata`, lu par la CLI) : à ajouter sur erreur,
+    sur le dev d'abord (CI-DEPLOIEMENT.md §3) ;
+  - si la condition WIF durcie de D55 est adoptée, y ajouter
+    `deploy-lot0.yml` et `ops.yml` (CI-DEPLOIEMENT.md §2) ; fusion à prévoir
+    avec `deploy.yml` de `fix/revue-durcissement` (entrée `force`).
+- **Non testé sur GitHub** : aucun workflow déclenché. Vérifié localement :
+  `actionlint` 1.7.7 (avec shellcheck 0.10.0) sans constat ; garde-fous des
+  deux workflows simulés avec des variables factices ; configuration, build et
+  contrôle du bundle de `release/lot0` (dev et prod) ; étape de script
+  d'`ops.yml` jouée sur les émulateurs (simulation, application avec
+  rotation, relance, migration, comptage) sans aucune donnée personnelle dans
+  la sortie ; entrées des commandes `gh workflow run` du runbook confrontées
+  aux définitions des workflows.
+- **Retour arrière** : `gh workflow disable deploy-lot0.yml` / `ops.yml`, ou
+  désactivation du fournisseur WIF ; revenir à l'exécution humaine des runbooks
+  (`git revert` des commits de `feat/workflows-ops`).
