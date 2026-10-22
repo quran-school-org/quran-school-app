@@ -10,12 +10,14 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 ## Fait
 1. **R-06 / D42** : fiches RH `staffPrivate` (règles, couche données, migration,
    peuplement, tests unitaires / règles / migration / Playwright).
+2. **Proxy IA / D43** : quotas transactionnels (utilisateur jour/minute, école,
+   global), corps ≤ 32 Kio, journaux sans données personnelles, `requestAiReport`
+   côté client, runbook `docs/runbooks/PROXY-IA.md`.
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-2. Proxy IA `api` : limitation de débit (utilisateur, école, global), taille des entrées, journaux sans données personnelles.
 3. App Check préparé, désactivé par défaut.
 4. `npm audit` (app, functions).
 5. `deploy.yml` (workflow_dispatch, WIF) + runbook CI-DEPLOIEMENT.
@@ -27,4 +29,4 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 2 : `functions/src/tenant/api.ts` (limitation de débit transactionnelle).
+Point 3 : App Check (client `src/firebase.ts` + `src/config/env.ts`, Functions, runbook).

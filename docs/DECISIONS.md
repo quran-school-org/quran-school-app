@@ -382,3 +382,26 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
   - branche Lot 0 (`fix/lot0-securite`) non traitée : R-06 y reste accepté.
 - **Retour arrière** : recopier les champs de `staffPrivate` dans `teachers`
   (Admin SDK, par un humain), puis redéployer les règles et le front précédents.
+
+### D43. Proxy IA : quotas transactionnels, taille des entrées, journaux sans données personnelles
+- **Contexte** : O-03 (D30, D41) : `api` n'avait aucune limite ; un compte
+  pédagogique compromis pouvait faire exploser la facture Gemini. Les journaux
+  d'erreur contenaient `String(error)`, qui peut citer l'invite (nom d'élève).
+- **Décision** :
+  - compteurs Firestore `aiQuota/*` (racine, fermée aux clients) incrémentés
+    dans une transaction unique : utilisateur/jour (30), utilisateur/minute (5),
+    école/jour (300), global/jour (1000), paramètres `defineInt` modifiables
+    sans changer le code ; 0 = service fermé (coupure d'urgence) ; un refus ne
+    consomme rien ; jours en UTC ; `expiresAt` pour une politique TTL ;
+  - le quota est consommé avant l'appel au modèle, même si l'appel échoue
+    (le coût a pu être engagé) ; compteur indisponible → 503 (fermé par défaut) ;
+  - corps limité à 32 Kio (413) avant toute vérification ; les champs restent
+    tronqués dans l'invite ;
+  - journaux structurés `ai.analyze` : issue, école, pseudonyme SHA-256 de
+    l'uid, durée ; aucune donnée d'élève, ni invite, ni réponse, ni message
+    d'erreur brut (nom et statut HTTP seulement) ;
+  - client : l'appel passe par `requestAiReport` (`src/firebase.ts`), qui
+    traduit 429 / 413 / 401 / 403 en messages arabes.
+- **Retour arrière** : limites très hautes dans `functions/.env.<projet>` (les
+  compteurs restent), ou revenir au commit précédent de `api.ts`.
+- Runbook : `docs/runbooks/PROXY-IA.md` (paramètres, TTL, coupure d'urgence).
