@@ -1,12 +1,23 @@
 /**
  * Dossier pédagogique d'un élève côté enseignant (charte « لوحة الكتّاب »). Même logique qu'auparavant.
  */
-import { checkUserPermission } from "../../types";
+import { checkUserPermission, TajweedLevel } from "../../types";
 import { StudentAvatar } from "../../utils/studentAvatar";
 import React from "react";
 import { BookOpen, Award, Trash2, Check, FileText } from "lucide-react";
 import { Button, EmptyState, FormField, IconButton, Input, Ltr, Modal, Pill, Select, Textarea, cx } from "../../ui";
 import { useApp } from "../../app/AppContext";
+
+const TAJWEED_LEVELS: TajweedLevel[] = ["ممتاز", "متوسط", "ضعيف"];
+
+/**
+ * Valeur affichée dans la liste : seuls les niveaux du modèle (constat F5). Une
+ * ancienne valeur « مبتدئ », proposée autrefois ici, s'affichait déjà « ضعيف ».
+ */
+function tajweedSelectValue(level: string | undefined): TajweedLevel {
+  if (TAJWEED_LEVELS.includes(level as TajweedLevel)) return level as TajweedLevel;
+  return level === "مبتدئ" ? "ضعيف" : "متوسط";
+}
 
 export default function TeacherStudentFileModal() {
   const {
@@ -69,10 +80,10 @@ export default function TeacherStudentFileModal() {
                   </FormField>
                   <FormField label="مستوى التجويد الحالي">
                     {(id) => (
-                      <Select id={id} value={teacherSelectedStudent.tajweedLevel || "متوسط"} onChange={(e: any) => update({ tajweedLevel: e.target.value as any })}>
+                      <Select id={id} value={tajweedSelectValue(teacherSelectedStudent.tajweedLevel)} onChange={(e: any) => update({ tajweedLevel: e.target.value as TajweedLevel })}>
                         <option value="ممتاز">ممتاز (مخارج صحيحة وأحكام كاملة)</option>
                         <option value="متوسط">متوسط (يحتاج لبعض التوجيه)</option>
-                        <option value="مبتدئ">مبتدئ (يتعلم القواعد الأساسية)</option>
+                        <option value="ضعيف">ضعيف (يتعلم القواعد الأساسية)</option>
                       </Select>
                     )}
                   </FormField>
