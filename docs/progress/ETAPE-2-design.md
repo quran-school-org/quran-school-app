@@ -43,6 +43,7 @@ Décisions : D56 à D62 dans `docs/DECISIONS.md`.
 Partie 2 terminée. Reste hors périmètre interface : constats F1, F5, téléphone par
 défaut codé en dur dans la logique du personnel et des activités (D61), CSP (D62) ;
 report des changements de `feat/durcissement` par l'agent d'intégration.
+**Fait** sur `integration/design` (D63, `docs/progress/ETAPE-2-integration.md`).
 
 ## Commandes utiles
 - Tests : `npm run lint && npm run build && npm test`, puis

@@ -812,3 +812,53 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
   - les fenêtres `about:blank` héritent de la CSP de l'application : la tester sur
     l'émulateur Hosting (`npm run build:dev`) avant tout déploiement.
 - Retour arrière : réintroduire le script d'impression dans `printDocument`.
+
+## Intégration du design et du durcissement (branche `integration/design`)
+
+Avancement et reprise : `docs/progress/ETAPE-2-integration.md`.
+
+### D63. Fusion de `main` dans le design, constats F1 et F5, valeurs codées en dur
+- **Numérotation** : `main` (durcissement) et `feat/design` avaient tous deux
+  utilisé D42 à D51/D52. Les numéros de `main` sont conservés (déjà cités par les
+  runbooks et le code) ; ceux du découpage et du design deviennent D52 à D62
+  (ancien + 10), renvois mis à jour dans `docs/design/AVANCEMENT.md` et
+  `docs/progress/ETAPE-2-design.md`. Les messages de commit antérieurs gardent
+  les anciens numéros.
+- **Report du durcissement dans l'App découpée** : `subscribeToStaff(schoolId,
+  canReadStaffPrivate(role), …)` dans `src/data/useSchoolSync.ts` ;
+  `requestAiReport` et `AiReportError.userMessage` dans
+  `src/app/actions/useAiActions.ts`. Tests e2e de `main` (`smoke`, `csp`)
+  adaptés au nouveau cadre (`loginAs`, `data-tab`). `capture:screens` tourne
+  aussi sous la CSP (`E2E_CSP=1`).
+- **CSP** : `https://cdn.tailwindcss.com` (script-src) et `https://api.qrserver.com`
+  (img-src) retirés, inutiles depuis D61-D62 ; Google Fonts reste autorisé.
+  `'unsafe-inline'` est **conservé** dans `script-src` : l'application et ses
+  impressions n'en ont plus besoin, mais le retirer demande de vérifier dans un
+  navigateur, sur l'émulateur Hosting puis en dev, le build de production et
+  reCAPTCHA (App Check) ; le serveur de développement de la suite e2e injecte un
+  script en ligne (React Refresh), la variante e2e de la CSP devrait alors
+  l'autoriser à part. À faire dans un lot dédié.
+- **F1** (D55) : les synchronisations automatiques du nom du directeur
+  (`handleSaveProfile`, `handleSaveAppUser`) n'écrivent plus tout l'objet des
+  paramètres mais seulement `directorName` (`RealmSimDB.updateSystemSettingsFields`,
+  écriture en fusion). Preuve : `tests/e2e/settings-f1.spec.ts` retient
+  l'abonnement aux paramètres jusqu'à l'enregistrement du profil ; il échoue sur
+  l'ancien code (cotisation 100 → 0) et passe avec le correctif. L'attente de 2 s
+  ajoutée dans `tests/e2e/helpers.ts` est retirée. L'enregistrement explicite de
+  l'écran des paramètres reste un enregistrement complet (formulaire affiché).
+- **F5** (D58) : le dossier de l'enseignant ne propose plus `مبتدئ` ; une valeur
+  `مبتدئ` déjà enregistrée s'affiche `ضعيف` (comme ailleurs) jusqu'à la prochaine
+  modification. Le modèle `TajweedLevel` est inchangé.
+- **Téléphone « 06.74.633.108 »** (D61) : fiches synthétiques du directeur et du
+  superviseur (personnel, activités) : téléphone de l'école, sinon vide.
+- **Mot de passe par défaut « 123 »** : retiré du bandeau de l'écran des
+  utilisateurs, qui décrit désormais ce que fait la mise en correspondance des
+  rôles (aucun compte créé ; mot de passe temporaire à la création, par les
+  Functions). Garde-fous : `tests/unit/uiGuards.test.ts`.
+- **Personnel hors bureau** : les fiches synthétiques portaient des valeurs RH par
+  défaut (salaire de 3 500 du directeur, type de contrat) visibles par un
+  enseignant autorisé à l'écran du personnel. Les champs RH sont retirés de la
+  liste pour les rôles hors bureau (`useStaffState`, `stripStaffPrivate`).
+  Preuve : `tests/e2e/integration.spec.ts`.
+- **Retour arrière** : `git revert` des commits de `integration/design` postérieurs
+  à la fusion (aucune donnée ni règle modifiée).

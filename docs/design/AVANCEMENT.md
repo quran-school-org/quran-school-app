@@ -141,4 +141,4 @@ Captures produites avec des **données fictives** sur les émulateurs (`npm run 
 ## Écarts et constats
 
 - Écarts assumés avec la maquette : D58 (pas de niveau `مبتدئ`, présences actives, pied du menu selon la synchronisation réelle, aucun nom de personne de la maquette).
-- Constats ouverts : F1 (enregistrement du profil du directeur pouvant réécrire les paramètres par défaut), F5 (`مبتدئ` proposé dans le dossier de l'enseignant), téléphone par défaut codé en dur dans la logique du personnel et des activités (D61), CSP à resserrer (D62).
+- Constats F1, F5, téléphone codé en dur : corrigés à l'intégration (D63). CSP : origines inutiles retirées, `'unsafe-inline'` des scripts à retirer dans un lot dédié (D62, D63).
