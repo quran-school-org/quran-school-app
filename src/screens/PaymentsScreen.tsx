@@ -1,503 +1,201 @@
 /**
- * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
+ * Frais mensuels et reçus (charte « لوحة الكتّاب ») : indicateurs, flux mensuel,
+ * filtres, registre triable. Mêmes données, mêmes actions et mêmes droits.
  */
-import { Student, Payment, checkUserPermission } from "../types";
-import { StudentAvatar } from "../utils/studentAvatar";
+import React from "react";
 import { ResponsiveContainer, BarChart as RechartsBarChart, Bar as RechartsBar, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
-import { CreditCard, Plus, Search, Trash2, Edit3, Phone, Download, Printer, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, CreditCard, Download, Edit3, Plus, Printer, RotateCcw, Search, Trash2, Undo2 } from "lucide-react";
+import { checkUserPermission } from "../types";
+import { StudentAvatar } from "../utils/studentAvatar";
 import { getYearAndMonthFromDate } from "../app/helpers";
 import { useApp } from "../app/AppContext";
+import {
+  Button, Card, CardHeader, EmptyState, FormField, IconButton, Input, KpiGrid, KpiTile, Legend, Ltr, PageHeader, Pill,
+  SearchInput, Select, Table, TableWrap, Td, Th, Tr, WhatsAppIcon,
+} from "../ui";
+
+const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} />;
 
 export default function PaymentsScreen() {
   const {
-    students,
-    payments,
-    systemSettings,
-    currentUser,
-    paymentSortKey,
-    paymentSortDir,
-    handleTogglePaymentSort,
-    paymentSearchQuery,
-    setPaymentSearchQuery,
-    paymentFilterStatus,
-    setPaymentFilterStatus,
-    paymentFilterDate,
-    setPaymentFilterDate,
-    currentRole,
-    getSubscriptionAmount,
-    totalPaymentsCollected,
-    totalUnpaidCount,
-    totalUnpaidAmount,
-    sortedPayments,
-    paymentChartData,
-    handleTogglePayment,
-    handleOpenPaymentForm,
-    handleDeletePayment,
-    handleWhatsAppShare,
-    handleExportPaymentsToCSV,
-    handlePrintReceipt,
-    handlePrintFinancialReport,
+    students, systemSettings, currentUser, currentRole, paymentSortKey, paymentSortDir, handleTogglePaymentSort,
+    paymentSearchQuery, setPaymentSearchQuery, paymentFilterStatus, setPaymentFilterStatus, paymentFilterDate, setPaymentFilterDate,
+    getSubscriptionAmount, totalPaymentsCollected, totalUnpaidCount, totalUnpaidAmount, sortedPayments, paymentChartData,
+    handleTogglePayment, handleOpenPaymentForm, handleDeletePayment, handleWhatsAppShare, handleExportPaymentsToCSV,
+    handlePrintReceipt, handlePrintFinancialReport,
   } = useApp();
+  const can = (a: "create" | "update" | "delete" | "print") => checkUserPermission(currentUser, currentRole, "payments", a);
+  const year = getYearAndMonthFromDate(paymentFilterDate).year || new Date().getFullYear();
+  const overrides = systemSettings?.feeOverrides || [];
+
+  const SortTh = ({ k, children, center }: { k: string; children: React.ReactNode; center?: boolean }) => {
+    const on = paymentSortKey === k;
+    return (
+      <Th aria-sort={on ? (paymentSortDir === "asc" ? "ascending" : "descending") : "none"} className={center ? "text-center" : undefined}>
+        <button type="button" onClick={() => handleTogglePaymentSort(k)} className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 font-semibold text-ink-2 cursor-pointer min-h-8 hover:text-primary">
+          {children}
+          {on ? (paymentSortDir === "asc" ? ic(ArrowUp, "w-3.5 h-3.5 text-primary") : ic(ArrowDown, "w-3.5 h-3.5 text-primary")) : ic(ArrowUpDown, "w-3.5 h-3.5 text-ink-4")}
+        </button>
+      </Th>
+    );
+  };
 
   return (
-    <div data-screen="payments" className="space-y-6">
+    <div data-screen="payments" className="flex flex-col gap-6">
+      <PageHeader
+        title="الرسوم والمدفوعات"
+        description="تتبع رسوم الاشتراك الشهري، تفاصيل الدفع، طباعة الإيصالات، ومشاركة التنبيهات مع أولياء الأمور."
+        actions={
+          <>
+            {can("print") && (
+              <>
+                <Button onClick={handleExportPaymentsToCSV} title="تصدير السجل المالي الحالي كملف CSV المتوافق مع إكسيل" icon={ic(Download, "w-[18px] h-[18px]")}>تصدير CSV</Button>
+                <Button onClick={handlePrintFinancialReport} title="عرض وطباعة كشف مالي تفصيلي PDF" icon={ic(Printer, "w-[18px] h-[18px]")}>تصدير PDF / طباعة</Button>
+              </>
+            )}
+            {can("create") && (
+              <Button variant="primary" data-action="open-payment-form" onClick={() => handleOpenPaymentForm()} icon={ic(Plus, "w-[18px] h-[18px]")}>إضافة سجل دفع جديد</Button>
+            )}
+          </>
+        }
+      />
 
-      {/* PAGE HEADER */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-sand-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-sand-800 flex items-center gap-2">
-            <CreditCard className="w-6 h-6 text-primary-700" />
-            إدارة المصروفات ومستحقات أولياء الأمور الشاملة
-          </h2>
-          <p className="text-xs text-sand-500">تتبع رسوم الاشتراك الشهري، تفاصيل الدفع، طباعة الإيصالات، ومشاركة التنبيهات مع أولياء الأمور.</p>
-        </div>
+      <KpiGrid label="ملخص الرسوم" min={200}>
+        <KpiTile label="إجمالي المقبوضات" value={totalPaymentsCollected.toLocaleString("en-US")} unit="درهم" />
+        <KpiTile label="إجمالي المستحقات المتأخرة" value={totalUnpaidAmount.toLocaleString("en-US")} unit="درهم" hint={totalUnpaidAmount > 0 ? "بانتظار السداد" : "لا مستحقات متأخرة"} hintTone={totalUnpaidAmount > 0 ? "danger" : "success"} />
+        <KpiTile label="الفواتير المعلقة" value={totalUnpaidCount} unit="مطالبة" />
+        <KpiTile label="المداخيل المتوقعة" value={(totalPaymentsCollected + totalUnpaidAmount).toLocaleString("en-US")} unit="درهم" />
+      </KpiGrid>
 
-        <div className="flex flex-wrap gap-2">
-          {checkUserPermission(currentUser, currentRole, "payments", "print") && (
-            <>
-              <button
-                onClick={handleExportPaymentsToCSV}
-                className="bg-sand-100 hover:bg-sand-200 text-sand-700 border border-sand-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-                title="تصدير السجل المالي الحالي كملف CSV المتوافق مع إكسيل"
-              >
-                <Download className="w-4 h-4 text-sand-500" />
-                <span>تصدير CSV</span>
-              </button>
-
-              <button
-                onClick={handlePrintFinancialReport}
-                className="bg-sand-100 hover:bg-sand-200 text-sand-700 border border-sand-300 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-                title="عرض وطباعة كشف مالي تفصيلي PDF"
-              >
-                <Printer className="w-4 h-4 text-sand-500" />
-                <span>تصدير PDF / طباعة</span>
-              </button>
-            </>
-          )}
-
-          {checkUserPermission(currentUser, currentRole, "payments", "create") && (
-            <button
-              data-action="open-payment-form"
-              onClick={() => handleOpenPaymentForm()}
-              className="bg-primary-700 hover:bg-primary-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              إضافة سجل دفع جديد
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* STATS PANEL */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Collected */}
-        <div className="bg-white p-4 rounded-2xl border border-sand-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center text-xl font-bold shrink-0">
-            🪙
-          </div>
-          <div>
-            <span className="text-[10px] text-sand-500 font-bold block">إجمالي المقبوضات</span>
-            <span className="text-lg font-black font-mono text-primary-700">{totalPaymentsCollected} درهم</span>
-          </div>
-        </div>
-
-        {/* Unpaid Amount */}
-        <div className="bg-white p-4 rounded-2xl border border-sand-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-danger-50 text-danger-700 flex items-center justify-center text-xl font-bold shrink-0">
-            ⏳
-          </div>
-          <div>
-            <span className="text-[10px] text-sand-500 font-bold block">إجمالي المستحقات المتأخرة</span>
-            <span className="text-lg font-black font-mono text-danger-700">{totalUnpaidAmount} درهم</span>
-          </div>
-        </div>
-
-        {/* Unpaid Count */}
-        <div className="bg-white p-4 rounded-2xl border border-sand-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gold-50 text-gold-700 flex items-center justify-center text-xl font-bold shrink-0">
-            📑
-          </div>
-          <div>
-            <span className="text-[10px] text-sand-500 font-bold block">الفواتير المعلقة</span>
-            <span className="text-lg font-black font-mono text-gold-700">{totalUnpaidCount} مطالبة</span>
-          </div>
-        </div>
-
-        {/* Expected Total */}
-        <div className="bg-white p-4 rounded-2xl border border-sand-200 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center text-xl font-bold shrink-0">
-            📊
-          </div>
-          <div>
-            <span className="text-[10px] text-sand-500 font-bold block">المداخيل المتوقعة</span>
-            <span className="text-lg font-black font-mono text-primary-700">{totalPaymentsCollected + totalUnpaidAmount} درهم</span>
-          </div>
-        </div>
-      </div>
-
-      {/* FINANCIAL FLOW CHART */}
-      <div className="bg-white rounded-2xl shadow-sm border border-sand-200 p-6 space-y-6 animate-fade-in" id="financial-flow-chart-widget">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4">
-          <div>
-            <h3 className="font-bold text-sand-800 text-sm flex items-center gap-2">
-              📊 التدفق المالي والمداخيل الشهرية لعام {getYearAndMonthFromDate(paymentFilterDate).year || new Date().getFullYear()}
-            </h3>
-            <p className="text-[11px] text-sand-500 font-medium">
-              متابعة إجمالي الاشتراكات والمبالغ المحصلة شهرياً مقارنة بالمستحقات المعلقة
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 bg-primary-600 rounded-md"></span>
-              <span className="text-[11px] text-sand-600 font-bold">المداخيل المحصلة</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 bg-gold-500 rounded-md"></span>
-              <span className="text-[11px] text-sand-600 font-bold">المستحقات المعلقة</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="h-72 w-full animate-fade-in" dir="ltr">
+      <Card id="financial-flow-chart-widget" className="flex flex-col gap-5" aria-labelledby="flow-title">
+        <CardHeader
+          id="flow-title"
+          title={`التدفق المالي والمداخيل الشهرية لعام ${year}`}
+          description="إجمالي الاشتراكات المحصلة شهرياً مقارنة بالمستحقات المعلقة."
+          actions={<Legend columns={2} items={[{ label: "المداخيل المحصلة", color: "#1B3A6B" }, { label: "المستحقات المعلقة", color: "#D4A017" }]} />}
+        />
+        <div className="h-72 w-full" role="img" aria-label={`مخطط المداخيل الشهرية لعام ${year}`}>
           <ResponsiveContainer width="100%" height="100%">
-            <RechartsBarChart data={paymentChartData} margin={{ top: 20, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }}
-                stroke="#cbd5e1"
-              />
-              <YAxis 
-                tickFormatter={(val) => `${val} د.م.`}
-                tick={{ fill: '#475569', fontSize: 10, fontWeight: 500 }}
-                stroke="#cbd5e1"
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  direction: 'rtl', 
-                  textAlign: 'right', 
-                  borderRadius: '12px', 
-                  borderColor: '#cbd5e1',
-                  boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' 
-                }}
+            <RechartsBarChart data={paymentChartData} margin={{ top: 12, right: 4, left: 4, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E1E3D8" />
+              <XAxis dataKey="name" reversed interval={0} tick={{ fill: "#4A5060", fontSize: 11.5, fontFamily: "IBM Plex Sans Arabic" }} stroke="#D0D3C6" tickLine={false} />
+              <YAxis orientation="right" tickFormatter={(val) => `${val}`} width={44} tick={{ fill: "#6B7080", fontSize: 11.5 }} stroke="#D0D3C6" tickLine={false} axisLine={false} />
+              <Tooltip
+                cursor={{ fill: "rgba(212, 160, 23, 0.08)" }}
+                contentStyle={{ direction: "rtl", textAlign: "right", borderRadius: 12, borderColor: "#D9DBD0", background: "#F8F8F3", fontFamily: "IBM Plex Sans Arabic" }}
                 formatter={(value: any, name: string) => [`${value} درهم`, name]}
               />
-              <RechartsBar dataKey="المداخيل المحصلة" fill="#059669" radius={[4, 4, 0, 0]} />
-              <RechartsBar dataKey="المستحقات المعلقة" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              <RechartsBar dataKey="المداخيل المحصلة" fill="#1B3A6B" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <RechartsBar dataKey="المستحقات المعلقة" fill="#D4A017" radius={[4, 4, 0, 0]} maxBarSize={28} />
             </RechartsBarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </Card>
 
-      {/* SEARCH & FILTER CONTROLS */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-sand-200 flex flex-wrap gap-4 items-end justify-between">
-        <div className="flex flex-wrap gap-4 items-center w-full md:w-auto">
-          {/* Search bar */}
-          <div className="space-y-1 w-full sm:w-64">
-            <label className="block text-[10px] font-bold text-sand-500">البحث السريع عن الطلاب:</label>
-            <div className="relative">
-              <span className="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-sand-500">
-                <Search className="w-3.5 h-3.5" />
-              </span>
-              <input
-                type="text"
-                value={paymentSearchQuery}
-                onChange={(e) => setPaymentSearchQuery(e.target.value)}
-                placeholder="ابحث باسم الطالب، ولي الأمر، أو الإيصال..."
-                className="w-full text-xs font-medium bg-sand-50 border border-sand-300 rounded-lg pr-8 pl-3 py-1.5 text-sand-700 focus:outline-none focus:ring-1 focus:ring-primary-700 focus:bg-white transition"
-              />
-            </div>
-          </div>
-
-          {/* Date picker */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mt-1">
-              <input
-                type="month"
-                value={paymentFilterDate}
-                onChange={(e) => setPaymentFilterDate(e.target.value)}
-                className="p-2 border border-sand-300 rounded-xl font-mono text-xs font-bold text-sand-700 bg-white focus:outline-none focus:ring-1 focus:ring-primary-700 cursor-pointer shadow-sm"
-              />
-              <span className="text-[10px] text-sand-500 font-medium">اختر شهر الرصد</span>
-            </div>
-          </div>
-
-          {/* Status dropdown */}
-          <div className="space-y-1">
-            <label className="block text-[10px] font-bold text-sand-500">حالة الدفع:</label>
-            <select
-              value={paymentFilterStatus}
-              onChange={(e) => setPaymentFilterStatus(e.target.value)}
-              className="bg-sand-50 border border-sand-300 rounded-lg p-1.5 text-xs font-bold text-primary-800 focus:outline-none"
-            >
+      <div className="flex flex-wrap items-end gap-3">
+        <FormField label="البحث السريع عن الطلاب" className="flex-[1_1_260px] max-w-md">
+          {(id) => (
+            <SearchInput id={id} icon={ic(Search)} value={paymentSearchQuery} onChange={(e: any) => setPaymentSearchQuery(e.target.value)} placeholder="ابحث باسم الطالب، ولي الأمر، أو الإيصال..." />
+          )}
+        </FormField>
+        <FormField label="شهر الرصد">
+          {(id) => <Input id={id} type="month" value={paymentFilterDate} onChange={(e: any) => setPaymentFilterDate(e.target.value)} className="w-auto" />}
+        </FormField>
+        <FormField label="حالة الدفع">
+          {(id) => (
+            <Select id={id} value={paymentFilterStatus} onChange={(e: any) => setPaymentFilterStatus(e.target.value)} className="w-auto">
               <option value="all">كل حالات السداد</option>
-              <option value="مدفوع">مدفوع ✅</option>
-              <option value="غير مدفوع">غير مدفوع ❌</option>
-            </select>
-          </div>
-        </div>
-
+              <option value="مدفوع">مدفوع</option>
+              <option value="غير مدفوع">غير مدفوع</option>
+            </Select>
+          )}
+        </FormField>
         {(paymentSearchQuery || paymentFilterDate !== "" || paymentFilterStatus !== "all") && (
-          <button
-            onClick={() => {
-              setPaymentSearchQuery("");
-              setPaymentFilterDate("");
-              setPaymentFilterStatus("all");
-            }}
-            className="text-[10px] text-danger-600 font-bold hover:underline self-end flex items-center gap-1"
-          >
-            إعادة تعيين الفلاتر 🔄
-          </button>
+          <Button variant="ghost" onClick={() => { setPaymentSearchQuery(""); setPaymentFilterDate(""); setPaymentFilterStatus("all"); }} icon={ic(RotateCcw)}>
+            إعادة تعيين الفلاتر
+          </Button>
         )}
       </div>
 
-      {/* PAYMENTS LEDGER TABLE */}
-      <div className="bg-white rounded-2xl shadow-sm border border-sand-200 overflow-hidden">
-        <div className="p-4 bg-sand-50 border-b flex justify-between items-center text-xs font-bold text-sand-700">
-          <span>سجل المعاملات والمدفوعات ({sortedPayments.length} سجل مطابق)</span>
-          <span className="text-[10px] text-sand-500 font-medium">مبلغ الاشتراك الأساسي: {getSubscriptionAmount("", 0)} {systemSettings?.currency || "درهم"} / شهر{(systemSettings?.feeOverrides || []).length > 0 ? ` (تعريفات خاصة: ${(systemSettings?.feeOverrides || []).map((o) => `${o.month} ${o.year}: ${o.amount}`).join("، ")})` : ""}</span>
+      <Card padded={false} className="overflow-hidden" aria-labelledby="ledger-title">
+        <div className="flex flex-wrap justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
+          <h2 id="ledger-title" className="m-0 font-display font-semibold text-[20px] text-primary">سجل المعاملات والمدفوعات <span className="font-sans text-[14px] text-ink-2 font-normal">({sortedPayments.length} سجل مطابق)</span></h2>
+          <span className="text-[13px] text-ink-3">
+            مبلغ الاشتراك الأساسي: <strong className="text-ink">{getSubscriptionAmount("", 0)}</strong> {systemSettings?.currency || "درهم"} / شهر
+            {overrides.length > 0 ? ` (تعريفات خاصة: ${overrides.map((o) => `${o.month} ${o.year}: ${o.amount}`).join("، ")})` : ""}
+          </span>
         </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-right text-xs">
-            <thead className="bg-sand-50/50 text-sand-500 uppercase text-[10px] border-b">
-              <tr>
-                <th 
-                  onClick={() => handleTogglePaymentSort("studentName")}
-                  className="p-3 cursor-pointer select-none hover:bg-sand-100 transition-colors text-right"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>الطالب وعائلته</span>
-                    {paymentSortKey === "studentName" ? (
-                      paymentSortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 text-sand-400 shrink-0" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleTogglePaymentSort("monthYear")}
-                  className="p-3 cursor-pointer select-none hover:bg-sand-100 transition-colors text-right"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>فترة الاشتراك</span>
-                    {paymentSortKey === "monthYear" ? (
-                      paymentSortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 text-sand-400 shrink-0" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleTogglePaymentSort("amount")}
-                  className="p-3 cursor-pointer select-none hover:bg-sand-100 transition-colors text-right"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>المبلغ المستحق</span>
-                    {paymentSortKey === "amount" ? (
-                      paymentSortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 text-sand-400 shrink-0" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleTogglePaymentSort("paymentDate")}
-                  className="p-3 cursor-pointer select-none hover:bg-sand-100 transition-colors text-right"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>تفاصيل السداد والمعاملة</span>
-                    {paymentSortKey === "paymentDate" ? (
-                      paymentSortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 text-sand-400 shrink-0" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleTogglePaymentSort("receiptNo")}
-                  className="p-3 cursor-pointer select-none hover:bg-sand-100 transition-colors text-right"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span>رقم الوصل</span>
-                    {paymentSortKey === "receiptNo" ? (
-                      paymentSortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 text-sand-400 shrink-0" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  onClick={() => handleTogglePaymentSort("status")}
-                  className="p-3 cursor-pointer select-none hover:bg-sand-100 transition-colors text-center"
-                >
-                  <div className="flex items-center justify-center gap-1.5">
-                    <span>حالة الدفع</span>
-                    {paymentSortKey === "status" ? (
-                      paymentSortDir === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-primary-600 shrink-0" /> : <ArrowDown className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                    ) : (
-                      <ArrowUpDown className="w-3 h-3 text-sand-400 shrink-0" />
-                    )}
-                  </div>
-                </th>
-                <th className="p-3 text-center">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-sand-100">
-              {sortedPayments.length > 0 ? (
-                sortedPayments.map((p) => {
-                  const stud = students.find(s => s.id === p.studentId);
-
-                  return (
-                    <tr key={p.id} className="hover:bg-sand-50/40 transition-colors">
-                      {/* Student Column */}
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full border border-sand-200 overflow-hidden shrink-0 bg-sand-100 flex items-center justify-center font-bold text-sand-600">
-                            <StudentAvatar student={stud} alt={stud?.fullName} className="w-full h-full object-cover" />
-                          </div>
-                          <div>
-                            <p className="font-bold text-sand-800">{stud?.fullName || "طالب مجهول"}</p>
-                            <p className="text-[9px] text-sand-500 font-medium">ولي الأمر: {stud?.parentName || "—"} • {stud?.parentPhone || "—"}</p>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Month & Year */}
-                      <td className="p-3">
-                        <span className="bg-sand-100 text-sand-700 px-2 py-1 rounded-lg font-bold text-[10px]">
-                          {p.month} / {p.year}
-                        </span>
-                      </td>
-
-                      {/* Amount */}
-                      <td className="p-3">
-                        <span className="font-bold font-mono text-sand-800 text-sm">{p.amount}</span>
-                        <span className="text-[10px] text-sand-500 mr-1">درهم</span>
-                      </td>
-
-                      {/* Payment details (method + notes) */}
-                      <td className="p-3 space-y-1">
-                        {p.status === "مدفوع" ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-sand-600 text-[10px]">
-                              <span>تاريخ الدفع:</span>
-                              <span className="font-mono font-medium text-sand-800">{p.paymentDate || "—"}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="bg-primary-50 text-primary-800 font-bold px-1.5 py-0.5 rounded text-[9px] border border-primary-100">
-                                💰 {p.paymentMethod || "نقداً"}
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-sand-500 italic text-[10px]">بانتظار سداد رسوم الشهر</span>
-                        )}
-
-                        {p.notes && (
-                          <p className="text-[9px] bg-gold-50 text-gold-800 border border-gold-100 p-1 rounded max-w-xs leading-relaxed italic">
-                            💬 {p.notes}
-                          </p>
-                        )}
-                      </td>
-
-                      {/* Receipt Number */}
-                      <td className="p-3">
-                        <span className="font-mono text-sand-600 font-bold bg-sand-50 px-2 py-0.5 rounded border border-sand-100 text-[10px]">
-                          {p.receiptNo || "—"}
-                        </span>
-                      </td>
-
-                      {/* Status badge */}
-                      <td className="p-3 text-center">
-                        <span className={`px-2 py-1 rounded-full text-[9px] font-bold inline-block border ${
-                          p.status === "مدفوع" 
-                            ? "bg-primary-50 text-primary-800 border-primary-100" 
-                            : "bg-danger-50 text-danger-800 border-danger-100"
-                        }`}>
-                          {p.status === "مدفوع" ? "مكتمل السداد ✓" : "معلق / غير مدفوع"}
-                        </span>
-                      </td>
-
-                      {/* Actions Column */}
-                      <td className="p-3">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {/* Quick toggle payment status */}
-                          {checkUserPermission(currentUser, currentRole, "payments", "update") && (
-                            <button
-                              onClick={() => handleTogglePayment(p.id)}
-                              title={p.status === "مدفوع" ? "تحديد كغير مدفوع" : "تحديد كمدفوع"}
-                              className={`p-1.5 rounded-lg border transition ${
-                                p.status === "مدفوع"
-                                  ? "bg-danger-50 border-danger-100 text-danger-600 hover:bg-danger-100"
-                                  : "bg-primary-50 border-primary-100 text-primary-700 hover:bg-primary-100"
-                              }`}
-                            >
-                              {p.status === "مدفوع" ? "❌ إلغاء" : "✅ تسديد"}
-                            </button>
-                          )}
-
-                          {/* Print Receipt (PDF) */}
-                          {p.status === "مدفوع" && checkUserPermission(currentUser, currentRole, "payments", "print") && (
-                            <button
-                              onClick={() => handlePrintReceipt(p)}
-                              title="طباعة وصل مالي رسمي"
-                              className="p-1.5 bg-sand-50 border border-sand-200 text-sand-700 hover:bg-sand-100 rounded-lg transition"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-
-                          {/* WhatsApp notification link */}
-                          {stud && (
-                            <button
-                              onClick={() => handleWhatsAppShare(p)}
-                              title="مشاركة إيصال / تنبيه دفع على الواتساب لولي الأمر"
-                              className="p-1.5 bg-primary-50 border border-primary-100 text-primary-700 hover:bg-primary-100 rounded-lg transition"
-                            >
-                              <Phone className="w-3.5 h-3.5 text-primary-600" />
-                            </button>
-                          )}
-
-                          {/* Edit */}
-                          {checkUserPermission(currentUser, currentRole, "payments", "update") && (
-                            <button
-                              onClick={() => handleOpenPaymentForm(p)}
-                              title="تعديل تفاصيل الدفعة"
-                              className="p-1.5 bg-primary-50 border border-primary-100 text-primary-700 hover:bg-primary-100 rounded-lg transition"
-                            >
-                              <Edit3 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-
-                          {/* Delete */}
-                          {checkUserPermission(currentUser, currentRole, "payments", "delete") && (
-                            <button
-                              onClick={() => handleDeletePayment(p.id)}
-                              title="حذف السجل نهائياً"
-                              className="p-1.5 bg-danger-50 border border-danger-100 text-danger-600 hover:bg-danger-100 rounded-lg transition"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
+        {sortedPayments.length === 0 ? (
+          <div className="p-5">
+            <EmptyState icon={ic(CreditCard, "w-8 h-8")} title="لا نتائج">لا توجد أي مدفوعات مطابقة لمعايير التصفية والبحث الحالية.</EmptyState>
+          </div>
+        ) : (
+          <TableWrap label="سجل المدفوعات">
+            <Table>
+              <thead>
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-sand-500 font-medium">
-                    لا توجد أي مدفوعات مطابقة لمعايير التصفية والبحث الحالية.
-                  </td>
+                  <SortTh k="studentName">الطالب وعائلته</SortTh>
+                  <SortTh k="monthYear">فترة الاشتراك</SortTh>
+                  <SortTh k="amount">المبلغ المستحق</SortTh>
+                  <SortTh k="paymentDate">تفاصيل السداد والمعاملة</SortTh>
+                  <SortTh k="receiptNo">رقم الوصل</SortTh>
+                  <SortTh k="status" center>حالة الدفع</SortTh>
+                  <Th className="text-center">الإجراءات</Th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
+              </thead>
+              <tbody>
+                {sortedPayments.map((p) => {
+                  const stud = students.find((s) => s.id === p.studentId);
+                  const paid = p.status === "مدفوع";
+                  return (
+                    <Tr key={p.id}>
+                      <Td>
+                        <div className="flex items-center gap-2.5 min-w-[200px]">
+                          <span className="w-9 h-9 rounded-full border border-line overflow-hidden shrink-0 bg-sunken">
+                            <StudentAvatar student={stud} alt={stud?.fullName} className="w-full h-full object-cover" />
+                          </span>
+                          <span className="flex flex-col">
+                            <span className="font-semibold">{stud?.fullName || "طالب مجهول"}</span>
+                            <span className="text-[12.5px] text-ink-3">ولي الأمر: {stud?.parentName || "—"} • <Ltr>{stud?.parentPhone || "—"}</Ltr></span>
+                          </span>
+                        </div>
+                      </Td>
+                      <Td className="whitespace-nowrap"><Pill tone="neutral">{p.month} / {p.year}</Pill></Td>
+                      <Td className="whitespace-nowrap"><strong className="tabular-nums">{p.amount}</strong> <span className="text-[12.5px] text-ink-3">درهم</span></Td>
+                      <Td>
+                        {paid ? (
+                          <span className="flex flex-col gap-1">
+                            <span className="text-[12.5px] text-ink-2">تاريخ الدفع: <Ltr className="text-ink">{p.paymentDate || "—"}</Ltr></span>
+                            <Pill tone="primary" className="self-start">{p.paymentMethod || "نقداً"}</Pill>
+                          </span>
+                        ) : (
+                          <span className="text-[12.5px] text-ink-3">بانتظار سداد رسوم الشهر</span>
+                        )}
+                        {p.notes && <p className="m-0 mt-1.5 text-[12.5px] bg-gold-100 text-gold-800 px-2 py-1 rounded-lg max-w-xs leading-relaxed">{p.notes}</p>}
+                      </Td>
+                      <Td><Ltr className="text-[12.5px] font-semibold text-ink-2">{p.receiptNo || "—"}</Ltr></Td>
+                      <Td className="text-center"><Pill tone={paid ? "success" : "danger"} dot>{paid ? "مكتمل السداد" : "معلق / غير مدفوع"}</Pill></Td>
+                      <Td>
+                        <div className="flex items-center justify-center gap-1.5">
+                          {can("update") && (
+                            <Button size="xs" variant={paid ? "danger" : "success"} onClick={() => handleTogglePayment(p.id)} title={paid ? "تحديد كغير مدفوع" : "تحديد كمدفوع"} icon={paid ? ic(Undo2, "w-3.5 h-3.5") : ic(CheckCircle2, "w-3.5 h-3.5")}>
+                              {paid ? "إلغاء" : "تسديد"}
+                            </Button>
+                          )}
+                          {paid && can("print") && <IconButton size="sm" label="طباعة وصل مالي رسمي" onClick={() => handlePrintReceipt(p)}>{ic(Printer)}</IconButton>}
+                          {stud && <IconButton size="sm" tone="success" label="مشاركة إيصال / تنبيه دفع على الواتساب لولي الأمر" onClick={() => handleWhatsAppShare(p)}><WhatsAppIcon className="w-4 h-4" /></IconButton>}
+                          {can("update") && <IconButton size="sm" tone="primary" label="تعديل تفاصيل الدفعة" onClick={() => handleOpenPaymentForm(p)}>{ic(Edit3)}</IconButton>}
+                          {can("delete") && <IconButton size="sm" tone="danger" label="حذف السجل نهائياً" onClick={() => handleDeletePayment(p.id)}>{ic(Trash2)}</IconButton>}
+                        </div>
+                      </Td>
+                    </Tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </TableWrap>
+        )}
+      </Card>
     </div>
   );
 }
