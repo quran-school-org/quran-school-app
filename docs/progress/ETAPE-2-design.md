@@ -1,6 +1,6 @@
 # Étape 2 — découpage (Lot 2) et nouveau design : avancement
 
-Mis à jour à chaque écran. Reprise : lire ce fichier, puis `docs/DECISIONS.md` (D42+ ; D34-D41 = revue de sécurité).
+Mis à jour à chaque écran. Reprise : lire ce fichier, puis `docs/DECISIONS.md` (D52+ ; D42-D51 = durcissement ; D34-D41 = revue de sécurité).
 
 ## Partie 1 — `refactor/decoupage-app` (sans changement de comportement)
 - [x] Repères `data-*` et tests e2e par rôle et par écran (`tests/e2e/screens.spec.ts`)
@@ -11,7 +11,7 @@ Mis à jour à chaque écran. Reprise : lire ce fichier, puis `docs/DECISIONS.md
 - [x] Comparaison pixel à pixel avant / après : identique (hors animations, ordre des membres)
 
 ## Partie 2 — `feat/design`
-Décisions : D46 à D50 dans `docs/DECISIONS.md`.
+Décisions : D56 à D62 dans `docs/DECISIONS.md`.
 
 | Écran / chantier | État |
 |---|---|
@@ -36,12 +36,12 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Impressions (reçu, attestation, rapports, cartes, présence mensuelle) + @media print | fait (tests/e2e/print.spec.ts) |
 | Personnel : icônes de catégories, libellés sans émojis | fait |
 | Test mobile 360 px (`tests/e2e/mobile.spec.ts`) | fait |
-| QR locaux (O-05, `tests/e2e/qr.spec.ts`) ; impressions sans script ni CDN (D52) | fait |
+| QR locaux (O-05, `tests/e2e/qr.spec.ts`) ; impressions sans script ni CDN (D62) | fait |
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | fait |
 
 ## Prochaine action
 Partie 2 terminée. Reste hors périmètre interface : constats F1, F5, téléphone par
-défaut codé en dur dans la logique du personnel et des activités (D51), CSP (D52) ;
+défaut codé en dur dans la logique du personnel et des activités (D61), CSP (D62) ;
 report des changements de `feat/durcissement` par l'agent d'intégration.
 
 ## Commandes utiles

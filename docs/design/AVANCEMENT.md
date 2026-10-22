@@ -1,7 +1,7 @@
 # Nouveau design : avancement et captures
 
 Branche `feat/design` (depuis `refactor/decoupage-app`). Charte d'après `design/Main.dc.html`, `Nav.dc.html`, `Topbar.dc.html` ;
-décisions et écarts : `docs/DECISIONS.md` (D46 à D52). Suivi détaillé : `docs/progress/ETAPE-2-design.md`.
+décisions et écarts : `docs/DECISIONS.md` (D56 à D62). Suivi détaillé : `docs/progress/ETAPE-2-design.md`.
 
 Captures produites avec des **données fictives** sur les émulateurs (`npm run capture:screens`, `tests/e2e/print.spec.ts`),
 à 1440 px (« bureau ») et 390 px (« mobile ») ; « avant » = `refactor/decoupage-app` (identique à l'application d'origine),
@@ -140,5 +140,5 @@ Captures produites avec des **données fictives** sur les émulateurs (`npm run 
 
 ## Écarts et constats
 
-- Écarts assumés avec la maquette : D48 (pas de niveau `مبتدئ`, présences actives, pied du menu selon la synchronisation réelle, aucun nom de personne de la maquette).
-- Constats ouverts : F1 (enregistrement du profil du directeur pouvant réécrire les paramètres par défaut), F5 (`مبتدئ` proposé dans le dossier de l'enseignant), téléphone par défaut codé en dur dans la logique du personnel et des activités (D51), CSP à resserrer (D52).
+- Écarts assumés avec la maquette : D58 (pas de niveau `مبتدئ`, présences actives, pied du menu selon la synchronisation réelle, aucun nom de personne de la maquette).
+- Constats ouverts : F1 (enregistrement du profil du directeur pouvant réécrire les paramètres par défaut), F5 (`مبتدئ` proposé dans le dossier de l'enseignant), téléphone par défaut codé en dur dans la logique du personnel et des activités (D61), CSP à resserrer (D62).

@@ -343,7 +343,11 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 
 ## Lot 2 — découpage d'App.tsx (branche `refactor/decoupage-app`)
 
-### D42. Un contrôleur unique composé de hooks successifs, lu par contexte
+> Numérotation : ces décisions portaient les numéros D42 à D52 sur `refactor/decoupage-app`
+> et `feat/design` ; elles ont été renumérotées D52 à D62 à l'intégration avec `main`
+> (dont le durcissement occupe D42 à D51). Ancien → nouveau : ajouter 10.
+
+### D52. Un contrôleur unique composé de hooks successifs, lu par contexte
 - **Contexte** : `App.tsx` (~8 500 lignes) contenait ~180 états, ~120 fonctions et
   10 effets dans une seule portée ; les écrans en dépendaient directement.
 - **Décision** : l'état et la logique sont déplacés **tels quels** dans des hooks
@@ -368,7 +372,7 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
   `usePrintActions` ouvrent la fenêtre comme avant.
 - **Retour arrière** : `git revert` des commits du Lot 2 (aucune donnée touchée).
 
-### D43. Modules extraits volumineux : état → hook + contexte, JSX → sections
+### D53. Modules extraits volumineux : état → hook + contexte, JSX → sections
 - `FinanceManagement`, `ActivitiesManagement`, `TeacherManagement`,
   `SettingsManagement` (1 700 à 3 000 lignes) gardent leur interface (props) et leur
   fichier ; leur état part dans `src/components/{finance,activities,staff,settings}/use*State`
@@ -378,13 +382,13 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 - **Résultat** : plus aucun fichier au-delà de 800 lignes (le plus long :
   `src/db.ts`, 758 lignes, non modifié).
 
-### D44. Repères de test `data-*`
+### D54. Repères de test `data-*`
 - `data-tab` (boutons du menu), `data-nav` (menu bureau / mobile), `data-screen`
   (racine de chaque écran), `data-modal` (fenêtres), `data-action` (boutons qui
   ouvrent une fenêtre), `data-subtab`, `data-app-shell`. Sans effet visible ;
   servent aux tests e2e et aux captures, et survivent au changement de design.
 
-### D45. Constats faits pendant le découpage (non corrigés : hors périmètre « sans changement »)
+### D55. Constats faits pendant le découpage (non corrigés : hors périmètre « sans changement »)
 - **F1 — écrasement possible des paramètres de l'école** : à la première connexion
   du directeur historique, l'enregistrement du profil (`handleSaveProfile`) recopie
   `systemSettings` en changeant `directorName`. Si les paramètres n'ont pas encore été
@@ -403,7 +407,7 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 
 ## Nouveau design (branche `feat/design`)
 
-### D46. Jetons de la charte et remplacement des anciennes palettes
+### D56. Jetons de la charte et remplacement des anciennes palettes
 - **Décision** : thème Tailwind 4 (`@theme` de `src/index.css`) repris de
   `design/Main.dc.html` : fond `#ECEDE6`, surfaces `#F8F8F3` / `#F1F2EB`, nuit
   `#102446`, primaire `#1B3A6B`, or `#D4A017`, texte `#1A1F2B` / `#4A5060` /
@@ -420,7 +424,7 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
   à la place) ; le vert `#3F8A2E` sert aux pastilles, `#2F5523` au texte.
 - **Retour arrière** : revert des commits de `feat/design`.
 
-### D47. Menu de la charte et accès aux écrans
+### D57. Menu de la charte et accès aux écrans
 - Groupes et libellés de la maquette (التعليم / المالية / الإدارة) ; les libellés
   qui dépendent du rôle sont conservés (« متابعة أبنائي », « ملفي وسجل الحفظ »…).
   Mêmes droits qu'avant pour chaque onglet, avec deux corrections :
@@ -433,7 +437,7 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 - Présences pour les rôles sans écran de saisie (constat F3) : état vide
   explicatif au lieu d'une page blanche (pas de nouvelle fonction).
 
-### D48. Écarts assumés avec la maquette
+### D58. Écarts assumés avec la maquette
 - Niveaux de tajwīd : seuls `ممتاز`, `متوسط`, `ضعيف` (le modèle n'a pas `مبتدئ`).
   Constat F5 (non corrigé, comportement existant) : le dossier de suivi de
   l'enseignant propose encore la valeur `مبتدئ`, hors du type `TajweedLevel` ;
@@ -449,14 +453,14 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 - Bloc « تحتاج إجراءً » calculé : documents manquants, halaqas sans muḥaffiẓ,
   élèves sans halaqa, cotisations impayées, absence de présences dans la semaine.
 
-### D49. Impressions et cartes aux paramètres de l'école
+### D59. Impressions et cartes aux paramètres de l'école
 - Fenêtre d'impression commune (`src/print/printWindow.ts`) : polices de la charte,
   styles de l'application recopiés (les aperçus rendus à l'écran s'impriment tels
   quels), plus de CDN Tailwind ; titre échappé (C-01).
 - Cartes d'élève (`src/print/cards/StudentCards.tsx`) : nom, logo, devise,
   adresse, téléphone et saison lus dans les paramètres de l'école. Supprimés : l'adresse
   et le téléphone d'Al Fajr codés en dur, le nom latin « Association El Fajr Jadid »,
-  la saison « 1448 » figée. Le QR est désormais généré localement (voir D51).
+  la saison « 1448 » figée. Le QR est désormais généré localement (voir D61).
 - Reçu, attestation, rapports (élèves, cotisations) et relevé mensuel de présence :
   gabarits refaits aux couleurs de la charte avec une feuille commune
   (`src/print/docStyles.ts`), le nom, le logo, la devise, le nom du directeur et le
@@ -468,12 +472,12 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 - Retour arrière : revenir aux fichiers de `src/print/` et à `usePrintActions.ts`
   de `refactor/decoupage-app`.
 
-### D50. Bandeau de quota
+### D60. Bandeau de quota
 - Il affiche le projet et la base de la configuration (`src/config/env.ts`) au lieu
   des identifiants de production codés en dur (constat F4) ; le lien vers la console
   de la production est retiré.
 
-### D51. Codes QR générés localement (constat O-05)
+### D61. Codes QR générés localement (constat O-05)
 - Contexte : cartes d'élève et badges du personnel appelaient `api.qrserver.com`,
   qui recevait l'identifiant de l'élève, et le nom et la catégorie du membre du
   personnel.
@@ -491,7 +495,7 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 - Retour arrière : revenir à la balise `<img>` d'origine dans
   `src/print/cards/StudentCards.tsx` et `StaffBadgeModal.tsx`.
 
-### D52. Impressions compatibles avec une CSP stricte
+### D62. Impressions compatibles avec une CSP stricte
 - Plus de CDN Tailwind ni de script dans les documents imprimés : `openPrintWindow`
   écrit le document puis c'est la fenêtre de l'application qui appelle `print()`
   et `close()` une fois le document et les polices chargés. Seul
