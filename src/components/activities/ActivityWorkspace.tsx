@@ -356,8 +356,8 @@ export default function ActivityWorkspace() {
                             <td className="p-3 font-bold text-ink">
                               {part.fullName}
                               {part.medicalNotes && (
-                                <span className="block text-[11.5px] text-gold-700 font-normal mt-0.5">
-                                  ⚠️ {part.medicalNotes}
+                                <span className="block text-[11.5px] text-gold-800 font-normal mt-0.5">
+                                  <span className="sr-only">ملاحظة صحية: </span>{part.medicalNotes}
                                 </span>
                               )}
                             </td>

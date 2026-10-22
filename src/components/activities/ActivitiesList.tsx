@@ -1,10 +1,12 @@
 /**
  * Module activités et sorties (participants, dépenses, lien comptable).
- * Découpé mécaniquement depuis ActivitiesManagement.tsx (Lot 2, sans changement de comportement).
+ * Liste filtrable des activités (charte « لوحة الكتّاب »), même logique qu'auparavant.
  */
+import React from "react";
 import { Compass, MapPin, Calendar, CheckCircle2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { ACTIVITY_TYPES, ACTIVITY_STATUSES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
+import { Button, Card, CountBadge, EmptyState, IconButton, Ltr, Pill, SearchInput, Select, cx } from "../../ui";
 
 export default function ActivitiesList() {
   const {
@@ -27,189 +29,98 @@ export default function ActivitiesList() {
     handleOpenAddActivity,
   } = useActivities();
 
+  const TYPE_TONE = (t: string) => (t.includes("مخيم") ? "warn" : "primary");
+  const STATUS_TONE: Record<string, any> = { "مكتمل": "neutral", "قيد التسجيل": "primary", "قيد التنفيذ": "success", "ملغى": "danger", "مخطط له": "warn" };
+
   return (
-    <>
-      {/* Left Column: Activities List (5 cols) */}
-      <div className="lg:col-span-4 space-y-4">
-        <div className="bg-surface rounded-2xl border border-sand-200/80 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-primary flex items-center gap-2">
-              <span>سجل الأنشطة والرحلات</span>
-              <span className="bg-sand-100 text-ink-2 text-[13px] px-2 py-0.5 rounded-full font-semibold">
-                {filteredActivities.length}
-              </span>
-            </h2>
-          </div>
+    <div className="lg:col-span-4">
+      <Card className="flex flex-col gap-3" aria-labelledby="activities-list-title">
+        <h2 id="activities-list-title" className="m-0 flex items-center gap-2 font-display font-semibold text-[20px] text-primary">
+          سجل الأنشطة والرحلات <CountBadge value={filteredActivities.length} tone="gold" />
+        </h2>
 
-          {/* Search and Filters */}
-          <div className="space-y-2">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="بحث باسم النشاط أو الوجهة..."
-                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pl-3 pr-9"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-              >
-                <option value="all">كل الأنواع</option>
-                {ACTIVITY_TYPES.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-              >
-                <option value="all">كل الحالات</option>
-                {ACTIVITY_STATUSES.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sorting Bar */}
-            <div className="flex items-center gap-1.5 pt-1 text-[13px]">
-              <span className="text-ink-3 text-[12.5px] font-medium shrink-0 flex items-center gap-1">
-                <ArrowUpDown className="w-3 h-3 text-primary-700" />
-                <span>ترتيب:</span>
-              </span>
-              <select
-                value={activitySortKey}
-                onChange={(e) => setActivitySortKey(e.target.value)}
-                className="flex-1 py-1 px-2 text-[13px] bg-sand-50 border border-line rounded-lg text-ink-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="startDate">تاريخ الانطلاق</option>
-                <option value="title">الاسم الأبجدي</option>
-                <option value="contributionFee">قيمة المساهمة</option>
-                <option value="participantsCount">عدد المشاركين</option>
-                <option value="status">الحالة</option>
-              </select>
-              <button
-                onClick={() => setActivitySortDir(prev => prev === "asc" ? "desc" : "asc")}
-                className="p-1.5 bg-sand-100 hover:bg-sand-200 text-ink-2 rounded-lg transition border border-line flex items-center justify-center shrink-0"
-                title={activitySortDir === "asc" ? "ترتيب تصاعدي (انقر للتبديل إلى تنازلي)" : "ترتيب تنازلي (انقر للتبديل إلى تصاعدي)"}
-              >
-                {activitySortDir === "asc" ? (
-                  <ArrowUp className="w-3.5 h-3.5 text-primary-700 font-bold" />
-                ) : (
-                  <ArrowDown className="w-3.5 h-3.5 text-primary-700 font-bold" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Activities List Cards */}
-          <div className="space-y-2.5 max-h-[620px] overflow-y-auto pr-0.5">
-            {filteredActivities.length === 0 ? (
-              <div className="text-center py-10 bg-sand-50 rounded-xl border border-dashed border-line p-4">
-                <Compass className="w-8 h-8 text-sand-400 mx-auto mb-2" />
-                <p className="text-[13px] text-ink-3 font-medium">لا توجد أنشطة مطابقة للبحث</p>
-                {canCreateActivity && (
-                  <button
-                    onClick={handleOpenAddActivity}
-                    className="mt-2 text-[13px] text-primary-700 hover:text-primary-800 font-semibold underline"
-                  >
-                    إضافة أول نشاط
-                  </button>
-                )}
-              </div>
-            ) : (
-              filteredActivities.map((act) => {
-                const isSelected = selectedActivityId === act.id;
-                const actParts = participants.filter(p => p.activityId === act.id);
-                const actExps = activityExpenses.filter(e => e.activityId === act.id);
-                const totalPaid = actParts.reduce((s, p) => s + (Number(p.paidAmount) || 0), 0);
-                const totalExp = actExps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-                const net = totalPaid - totalExp;
-
-                return (
-                  <div
-                    key={act.id}
-                    data-action="open-activity"
-                    onClick={() => setSelectedActivityId(act.id)}
-                    className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                      isSelected 
-                        ? "bg-primary-50/70 border-primary-500 ring-1 ring-primary-500" 
-                        : "bg-white border-line hover:border-primary-300 hover:bg-sand-50/70"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className={`text-[12.5px] font-bold px-2 py-0.5 rounded-md ${
-                          act.type === "رحلة استكشافية" ? "bg-primary-100 text-primary-800" :
-                          act.type.includes("مخيم") ? "bg-gold-100 text-gold-800" :
-                          act.type.includes("رياضي") ? "bg-primary-100 text-primary-800" :
-                          "bg-primary-100 text-primary-800"
-                        }`}>
-                          {act.type}
-                        </span>
-                        <h3 className="font-bold text-primary text-sm mt-1.5 line-clamp-1">{act.title}</h3>
-                      </div>
-
-                      <span className={`text-[11.5px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-                        act.status === "مكتمل" ? "bg-sand-100 text-ink-2" :
-                        act.status === "قيد التسجيل" ? "bg-primary-100 text-primary-800" :
-                        act.status === "قيد التنفيذ" ? "bg-primary-100 text-primary-800" :
-                        act.status === "ملغى" ? "bg-danger-100 text-danger-800" :
-                        "bg-gold-100 text-gold-800"
-                      }`}>
-                        {act.status}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-[13px] text-ink-3 mt-2">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-ink-3" />
-                        <span className="line-clamp-1">{act.location}</span>
-                      </span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Calendar className="w-3.5 h-3.5 text-ink-3" />
-                        <span>{act.startDate}</span>
-                      </span>
-                    </div>
-
-                    {/* Mini Metrics Bar */}
-                    <div className="grid grid-cols-3 gap-1 bg-white/80 rounded-lg p-1.5 mt-2.5 border border-line-soft text-center text-[12.5px]">
-                      <div>
-                        <div className="text-ink-3 text-[11.5px]">المشاركون</div>
-                        <div className="font-bold text-ink-2">{actParts.length} {act.maxCapacity ? `/${act.maxCapacity}` : ""}</div>
-                      </div>
-                      <div>
-                        <div className="text-ink-3 text-[11.5px]">المساهمة</div>
-                        <div className="font-bold text-primary-700">{act.contributionFee} د.م</div>
-                      </div>
-                      <div>
-                        <div className="text-ink-3 text-[11.5px]">الصافي</div>
-                        <div className={`font-bold ${net >= 0 ? "text-primary-700" : "text-danger-700"}`}>
-                          {net > 0 ? `+${net}` : net} د.م
-                        </div>
-                      </div>
-                    </div>
-
-                    {act.syncedToFinance && (
-                      <div className="flex items-center gap-1 text-[11.5px] text-primary-700 font-semibold mt-2 pt-1 border-t border-primary-100">
-                        <CheckCircle2 className="w-3 h-3 text-primary-600" />
-                        <span>تم الربط المالي وتصدير النتائج للمحاسبة الجمعوية</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
+        <SearchInput aria-label="بحث في الأنشطة" icon={<Search className="w-4 h-4" strokeWidth={1.75} />} value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} placeholder="بحث باسم النشاط أو الوجهة..." />
+        <div className="grid grid-cols-2 gap-2">
+          <Select aria-label="نوع النشاط" value={typeFilter} onChange={(e: any) => setTypeFilter(e.target.value)}>
+            <option value="all">كل الأنواع</option>
+            {ACTIVITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </Select>
+          <Select aria-label="حالة النشاط" value={statusFilter} onChange={(e: any) => setStatusFilter(e.target.value)}>
+            <option value="all">كل الحالات</option>
+            {ACTIVITY_STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
+          </Select>
         </div>
-      </div>
-    </>
+        <div className="flex items-center gap-2 text-[13px]">
+          <span className="text-ink-3 shrink-0 flex items-center gap-1"><ArrowUpDown className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />ترتيب</span>
+          <Select aria-label="ترتيب الأنشطة" value={activitySortKey} onChange={(e: any) => setActivitySortKey(e.target.value)} className="flex-1">
+            <option value="startDate">تاريخ الانطلاق</option>
+            <option value="title">الاسم الأبجدي</option>
+            <option value="contributionFee">قيمة المساهمة</option>
+            <option value="participantsCount">عدد المشاركين</option>
+            <option value="status">الحالة</option>
+          </Select>
+          <IconButton
+            label={activitySortDir === "asc" ? "ترتيب تصاعدي (انقر للتبديل إلى تنازلي)" : "ترتيب تنازلي (انقر للتبديل إلى تصاعدي)"}
+            onClick={() => setActivitySortDir((prev: string) => (prev === "asc" ? "desc" : "asc"))}
+          >
+            {activitySortDir === "asc" ? <ArrowUp className="w-4 h-4" strokeWidth={1.75} /> : <ArrowDown className="w-4 h-4" strokeWidth={1.75} />}
+          </IconButton>
+        </div>
+
+        <div className="flex flex-col gap-2.5 max-h-[620px] overflow-y-auto">
+          {filteredActivities.length === 0 ? (
+            <EmptyState
+              icon={<Compass className="w-8 h-8" strokeWidth={1.5} />}
+              title="لا توجد أنشطة مطابقة للبحث"
+              action={canCreateActivity ? <Button size="sm" onClick={handleOpenAddActivity}>إضافة أول نشاط</Button> : undefined}
+            />
+          ) : (
+            filteredActivities.map((act) => {
+              const isSelected = selectedActivityId === act.id;
+              const actParts = participants.filter((p) => p.activityId === act.id);
+              const actExps = activityExpenses.filter((e) => e.activityId === act.id);
+              const totalPaid = actParts.reduce((s, p) => s + (Number(p.paidAmount) || 0), 0);
+              const totalExp = actExps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+              const net = totalPaid - totalExp;
+              return (
+                <button
+                  type="button"
+                  key={act.id}
+                  data-action="open-activity"
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedActivityId(act.id)}
+                  className={cx(
+                    "w-full text-start p-3.5 rounded-xl border cursor-pointer transition-colors flex flex-col gap-2",
+                    isSelected ? "bg-primary-50 border-primary ring-1 ring-primary" : "bg-white border-line hover:border-ink-4",
+                  )}
+                >
+                  <span className="flex items-start justify-between gap-2 w-full">
+                    <span className="flex flex-col gap-1.5 min-w-0">
+                      <Pill tone={TYPE_TONE(act.type)} className="self-start">{act.type}</Pill>
+                      <span className="font-semibold text-[15px] text-ink line-clamp-1">{act.title}</span>
+                    </span>
+                    <Pill tone={STATUS_TONE[act.status] || "neutral"} className="shrink-0">{act.status}</Pill>
+                  </span>
+                  <span className="flex flex-wrap items-center gap-3 text-[13px] text-ink-3">
+                    <span className="flex items-center gap-1 min-w-0"><MapPin className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" /><span className="line-clamp-1">{act.location}</span></span>
+                    <span className="flex items-center gap-1 shrink-0"><Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" /><Ltr>{act.startDate}</Ltr></span>
+                  </span>
+                  <span className="grid grid-cols-3 gap-1 w-full rounded-lg bg-surface-2 border border-line-soft p-1.5 text-center text-[12.5px]">
+                    <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">المشاركون</span><strong className="text-ink-2 tabular-nums">{actParts.length} {act.maxCapacity ? `/${act.maxCapacity}` : ""}</strong></span>
+                    <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">المساهمة</span><strong className="text-primary tabular-nums">{act.contributionFee} د.م</strong></span>
+                    <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">الصافي</span><strong className={cx("tabular-nums", net >= 0 ? "text-success-700" : "text-danger")}><bdi>{net > 0 ? `+${net}` : net}</bdi> د.م</strong></span>
+                  </span>
+                  {act.syncedToFinance && (
+                    <span className="flex items-center gap-1 text-[12px] text-success-700 font-semibold pt-1.5 border-t border-line-soft w-full">
+                      <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />تم الربط المالي وتصدير النتائج للمحاسبة الجمعوية
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </Card>
+    </div>
   );
 }
