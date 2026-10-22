@@ -1,110 +1,226 @@
 rules_version = '2';
+
+// =============================================================================
+// Règles Firestore — Lot 0 (correctif de sécurité sur la structure actuelle)
+// =============================================================================
+// Principe : un compte Firebase Auth ne donne accès à RIEN par lui-même.
+// L'accès passe par un lien d'autorisation `authLinks/{uid}` :
+//   { appUserId, role, isActive, linkedStudentIds?, linkedTeacherId? }
+// écrit uniquement par le script Admin SDK (scripts/admin/lot0-provision-auth.ts),
+// par les Cloud Functions, ou par un directeur (مدير).
+//
+// Groupes de rôles (valeurs en arabe, identiques à src/types.ts) :
+//   bureau      : مدير, إداري
+//   pédagogie   : bureau + مؤطر, مدرس
+//   personnel   : pédagogie + متطوع, عامل نظافة / صيانة, أخرى
+//   famille     : طالب, ولي أمر (accès limité à linkedStudentIds)
+//
+// La matrice détaillée est testée dans tests/emulator/lot0-rules.test.ts.
+// =============================================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Global Safety Net
-    match /{document=**} {
-      allow read, write: if false;
+
+    // ---------------------------------------------------------------- outils
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
+    function linkPath() {
+      return /databases/$(database)/documents/authLinks/$(request.auth.uid);
+    }
+
+    function link() {
+      return get(linkPath()).data;
+    }
+
+    // Compte authentifié ET lié ET actif.
+    function active() {
+      return signedIn() && exists(linkPath()) && link().isActive == true;
+    }
+
+    function roleIn(roles) {
+      return active() && link().role in roles;
+    }
+
+    function isDirector() {
+      return roleIn(['مدير']);
+    }
+
+    function isOffice() {
+      return roleIn(['مدير', 'إداري']);
+    }
+
+    function isEducator() {
+      return roleIn(['مدير', 'إداري', 'مؤطر', 'مدرس']);
+    }
+
+    function isCoordinator() {
+      return roleIn(['مدير', 'إداري', 'مؤطر']);
+    }
+
+    function isStaff() {
+      return roleIn(['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع', 'عامل نظافة / صيانة', 'أخرى']);
+    }
+
+    function isFamily() {
+      return roleIn(['طالب', 'ولي أمر']);
+    }
+
+    function linkedStudents() {
+      return link().get('linkedStudentIds', []);
+    }
+
+    function allRoles() {
+      return ['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع', 'عامل نظافة / صيانة', 'أخرى', 'طالب', 'ولي أمر'];
     }
 
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
 
-    // Rules for students collection
-    match /students/{studentId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(studentId);
+    // Aucun mot de passe ne doit plus jamais être écrit dans Firestore.
+    function noPassword() {
+      return !('password' in request.resource.data);
     }
 
-    // Rules for teachers collection
-    match /teachers/{teacherId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(teacherId);
+    // Document de la famille : l'élève concerné est lié au compte.
+    function familyOwnsDoc() {
+      return isFamily() && resource.data.studentId in linkedStudents();
     }
 
-    // Rules for classes collection
-    match /classes/{classId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(classId);
+    // ------------------------------------------------- liens d'autorisation
+    match /authLinks/{uid} {
+      // Chacun peut lire SON lien (même inactif, pour afficher « compte suspendu »).
+      allow get: if (signedIn() && request.auth.uid == uid) || isDirector();
+      allow list: if isDirector();
+      // Seul un directeur actif écrit un lien : personne ne peut se lier ou se promouvoir seul.
+      allow create, update: if isDirector()
+        && request.resource.data.appUserId is string
+        && request.resource.data.role in allRoles()
+        && request.resource.data.isActive is bool
+        && request.resource.data.get('linkedStudentIds', []) is list
+        && request.resource.data.get('linkedStudentIds', []).size() <= 30;
+      allow delete: if isDirector();
     }
 
-    // Rules for attendance collection
-    match /attendance/{attendanceId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(attendanceId);
-    }
-
-    // Rules for grades collection
-    match /grades/{gradeId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(gradeId);
-    }
-
-    // Rules for payments collection
-    match /payments/{paymentId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(paymentId);
-    }
-
-    // Rules for notifications collection
-    match /notifications/{notificationId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(notificationId);
-    }
-
-    // Rules for settings collection
-    match /settings/{settingsId} {
-      allow read: if true;
-      allow write: if isSignedIn() && isValidId(settingsId);
-    }
-
-    // Rules for appUsers collection
+    // ---------------------------------------------------- comptes applicatifs
     match /appUsers/{userId} {
-      allow read: if true;
-      allow write: if isSignedIn() && isValidId(userId);
+      // Un utilisateur ne modifie que des champs anodins de SON compte
+      // (jamais role, permissions, isActive, username, liens…), et ne peut
+      // que lever (jamais poser) l'obligation de changer son mot de passe.
+      function selfUpdate() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return active()
+          && link().appUserId == userId
+          && noPassword()
+          && changed.hasOnly(['mustChangePassword', 'lastLogin', 'fullName', 'phone', 'passwordChangedAt'])
+          && (!('mustChangePassword' in changed) || request.resource.data.mustChangePassword == false);
+      }
+
+      allow get: if isOffice() || (active() && link().appUserId == userId);
+      allow list: if isOffice();
+      allow create: if isDirector() && isValidId(userId) && noPassword();
+      allow update: if (isDirector() && noPassword()) || selfUpdate();
+      allow delete: if isDirector() && userId != 'u1';
     }
 
-    // Rules for dailyProgress collection
+    // ------------------------------------------------------------ paramètres
+    match /settings/{settingsId} {
+      allow read: if active();
+      allow write: if isDirector() && isValidId(settingsId);
+    }
+
+    // ---------------------------------------------------------------- élèves
+    match /students/{studentId} {
+      allow get: if isEducator() || (isFamily() && studentId in linkedStudents());
+      allow list: if isEducator();
+      allow create, update: if isEducator() && isValidId(studentId);
+      allow delete: if isOffice();
+    }
+
+    // ------------------------------------------------- personnel et halaqas
+    match /teachers/{teacherId} {
+      allow read: if isEducator();
+      allow write: if isOffice() && isValidId(teacherId);
+    }
+
+    match /classes/{classId} {
+      allow read: if active();
+      allow create, update: if isCoordinator() && isValidId(classId);
+      allow delete: if isOffice();
+    }
+
+    // ------------------------------------------------------------ pédagogie
+    match /attendance/{attendanceId} {
+      allow read: if isEducator() || familyOwnsDoc();
+      allow create, update: if isEducator() && isValidId(attendanceId);
+      allow delete: if isOffice();
+    }
+
+    match /grades/{gradeId} {
+      allow read: if isEducator() || familyOwnsDoc();
+      allow create, update: if isEducator() && isValidId(gradeId);
+      allow delete: if isOffice();
+    }
+
     match /dailyProgress/{progressId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(progressId);
+      allow read: if isEducator() || familyOwnsDoc();
+      allow create, update, delete: if isEducator() && isValidId(progressId);
     }
 
-    // Rules for accounting & finance collections
+    // -------------------------------------------- finances : bureau seulement
+    match /payments/{paymentId} {
+      allow read: if isOffice();
+      allow write: if isOffice() && isValidId(paymentId);
+    }
+
     match /otherIncomes/{incomeId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(incomeId);
+      allow read: if isOffice();
+      allow write: if isOffice() && isValidId(incomeId);
     }
 
     match /salaryPayments/{salaryId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(salaryId);
+      allow read: if isOffice();
+      allow write: if isOffice() && isValidId(salaryId);
     }
 
     match /expenses/{expenseId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(expenseId);
+      allow read: if isOffice();
+      allow write: if isOffice() && isValidId(expenseId);
     }
 
-    // Rules for activities & trips collections
+    // ------------------------------------------------- activités et sorties
     match /activities/{activityId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(activityId);
+      allow read: if active();
+      allow create, update: if isEducator() && isValidId(activityId);
+      allow delete: if isOffice();
     }
 
     match /activityParticipants/{participantId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(participantId);
+      allow read: if roleIn(['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع']);
+      allow create, update: if isEducator() && isValidId(participantId);
+      allow delete: if isEducator();
     }
 
     match /activityExpenses/{expenseId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && isValidId(expenseId);
+      allow read: if isEducator();
+      allow create, update: if isEducator() && isValidId(expenseId);
+      allow delete: if isEducator();
+    }
+
+    // --------------------------------------------------------- notifications
+    match /notifications/{notificationId} {
+      allow read: if isStaff();
+      allow create: if active() && isValidId(notificationId);
+      allow update: if isStaff() && isValidId(notificationId);
+      allow delete: if isOffice();
+    }
+
+    // Tout le reste est fermé (la règle la plus permissive l'emporte : aucune
+    // règle ci-dessus ne s'applique en dehors de ses collections).
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

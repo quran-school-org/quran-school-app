@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { SystemSettings, AppUser, UserRole, UserPermissions, getDefaultPermissionsForRole, Teacher } from "../types";
+import { SystemSettings, AppUser, UserRole, UserPermissions, getDefaultPermissionsForRole, Teacher, Student } from "../types";
+import { MIN_NEW_PASSWORD_LENGTH } from "../security/accounts";
 import { PermissionMatrixEditor } from "./PermissionMatrixEditor";
 import { generateUniqueUsername } from "../db";
 import { 
@@ -7,19 +8,24 @@ import {
   Check, X, DollarSign, ToggleLeft, ToggleRight, Save, UserCheck, AlertTriangle,
   Upload, Image as ImageIcon, Search, Landmark, FileCheck, CreditCard, Users,
   Award, Scroll, Calendar, Tag, Info, FileText, Plus, Sparkles, RefreshCw,
-  LayoutGrid, List, Table, CheckCircle2, XCircle, Clock, ShieldCheck, Eye, EyeOff, Activity, Filter
+  LayoutGrid, List, Table, CheckCircle2, XCircle, Clock, ShieldCheck, Eye, EyeOff, Activity, Filter, KeyRound
 } from "lucide-react";
 
 interface SettingsManagementProps {
   settings: SystemSettings;
   appUsers: AppUser[];
   teachers?: Teacher[];
+  students?: Student[];
+  /** Gestion des comptes (création, modification, réinitialisation) : directeur uniquement. */
+  canManageAccounts?: boolean;
   canCreateSettings?: boolean;
   canUpdateSettings?: boolean;
   canDeleteSettings?: boolean;
   onSaveSettings: (settings: SystemSettings) => void;
-  onSaveAppUser: (user: AppUser) => void;
-  onDeleteAppUser: (userId: string) => void;
+  onSaveAppUser: (user: AppUser) => void | Promise<void>;
+  onCreateAppUser?: (user: AppUser, password: string) => Promise<boolean>;
+  onResetUserPassword?: (user: AppUser, newPassword: string) => Promise<boolean>;
+  onDeleteAppUser: (userId: string) => void | Promise<void>;
   onSaveTeacher?: (teacher: Teacher, assignedClassIds?: string[]) => void;
   onNavigateToStaff?: () => void;
   onHarmonizeUsers?: () => void;
@@ -29,11 +35,15 @@ export default function SettingsManagement({
   settings,
   appUsers,
   teachers = [],
+  students = [],
+  canManageAccounts = false,
   canCreateSettings,
   canUpdateSettings,
   canDeleteSettings,
   onSaveSettings,
   onSaveAppUser,
+  onCreateAppUser,
+  onResetUserPassword,
   onDeleteAppUser,
   onSaveTeacher,
   onNavigateToStaff,
@@ -42,6 +52,10 @@ export default function SettingsManagement({
   const canCreate = canCreateSettings ?? true;
   const canUpdate = canUpdateSettings ?? true;
   const canDelete = canDeleteSettings ?? true;
+  // Les règles Firestore réservent l'écriture des comptes au directeur.
+  const canCreateAccounts = canCreate && canManageAccounts;
+  const canUpdateAccounts = canUpdate && canManageAccounts;
+  const canDeleteAccounts = canDelete && canManageAccounts;
 
   // Tabs for sub-settings
   const [subTab, setSubTab] = useState<"general" | "users">("general");
@@ -52,7 +66,7 @@ export default function SettingsManagement({
   const [userStatusFilter, setUserStatusFilter] = useState<string>("all");
   const [userViewMode, setUserViewMode] = useState<"table" | "cards">("table");
   const [showFormPassword, setShowFormPassword] = useState(false);
-  const [revealedUserPasswords, setRevealedUserPasswords] = useState<Record<string, boolean>>({});
+  const [userFormSaving, setUserFormSaving] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccessMsg, setSyncSuccessMsg] = useState("");
 
@@ -68,11 +82,15 @@ export default function SettingsManagement({
     }, 600);
   };
 
-  const toggleRevealPassword = (userId: string) => {
-    setRevealedUserPasswords((prev) => ({
-      ...prev,
-      [userId]: !prev[userId],
-    }));
+  // Lot 0 : les mots de passe ne sont plus stockés ni affichables. Le directeur
+  // peut seulement définir un mot de passe provisoire (Cloud Function).
+  const handleResetPassword = async (user: AppUser) => {
+    if (!onResetUserPassword) return;
+    const newPassword = window.prompt(
+      `كلمة مرور مؤقتة جديدة لحساب ${user.fullName} (${MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل). سيُطلب من المستخدم تغييرها عند الدخول:`
+    );
+    if (newPassword === null) return;
+    await onResetUserPassword(user, newPassword);
   };
 
   const formatLastLogin = (lastLoginStr?: string) => {
@@ -188,6 +206,10 @@ export default function SettingsManagement({
   const [formUsername, setFormUsername] = useState("");
   const [formFullName, setFormFullName] = useState("");
   const [formPassword, setFormPassword] = useState("");
+  // Liens explicites (Lot 0) : fiche du personnel ou élèves rattachés au compte
+  const [formLinkedTeacherId, setFormLinkedTeacherId] = useState("");
+  const [formLinkedStudentIds, setFormLinkedStudentIds] = useState<string[]>([]);
+  const [linkedStudentSearch, setLinkedStudentSearch] = useState("");
   const [formRole, setFormRole] = useState<UserRole>("مدرس");
   const [formIsActive, setFormIsActive] = useState(true);
   const [formCanEditStudents, setFormCanEditStudents] = useState(true);
@@ -272,7 +294,14 @@ export default function SettingsManagement({
       setEditingUser(user);
       setFormUsername(user.username);
       setFormFullName((user.id === "u1" || user.username === "admin_alfajr") && directorName ? directorName : user.fullName);
-      setFormPassword(user.password || "");
+      setFormPassword("");
+      setFormLinkedTeacherId(user.linkedTeacherId || (user.id.startsWith("t_") ? user.id.slice(2) : ""));
+      setFormLinkedStudentIds(
+        user.linkedStudentIds && user.linkedStudentIds.length > 0
+          ? user.linkedStudentIds
+          : (user.id.startsWith("s_") || user.id.startsWith("p_")) ? [user.id.slice(2)] : []
+      );
+      setLinkedStudentSearch("");
       setFormRole(user.role);
       setFormIsActive(user.isActive);
       setFormCanEditStudents(user.canEditStudents);
@@ -303,6 +332,9 @@ export default function SettingsManagement({
       setFormUsername("");
       setFormFullName("");
       setFormPassword("");
+      setFormLinkedTeacherId("");
+      setFormLinkedStudentIds([]);
+      setLinkedStudentSearch("");
       setFormRole("مدرس");
       setFormIsActive(true);
       setFormCanEditStudents(true);
@@ -332,10 +364,14 @@ export default function SettingsManagement({
   };
 
   // Save app user
-  const handleUserSubmit = (e: React.FormEvent) => {
+  const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formFullName) {
       alert("الرجاء ملء الاسم الكامل.");
+      return;
+    }
+    if (!editingUser && formPassword.length < MIN_NEW_PASSWORD_LENGTH) {
+      alert(`يجب أن تتكون كلمة المرور من ${MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل.`);
       return;
     }
 
@@ -345,16 +381,23 @@ export default function SettingsManagement({
       .map(u => u.username);
 
     let finalUsername = (formUsername || "").trim().toLowerCase();
-    if (!finalUsername || existingUsernames.includes(finalUsername)) {
+    if (editingUser) {
+      // Le nom d'utilisateur d'un compte existant ne change pas (il porte l'email de connexion).
+      finalUsername = editingUser.username;
+    } else if (!finalUsername || existingUsernames.includes(finalUsername)) {
       finalUsername = generateUniqueUsername(formFullName, existingUsernames);
     }
 
+    const isFamilyRole = formRole === "طالب" || formRole === "ولي أمر";
     const userToSave: AppUser = {
+      // On conserve les champs techniques du compte (authUid, liens, lastLogin…).
+      ...(editingUser || {}),
       id: editingUser ? editingUser.id : `u_${Date.now()}`,
       username: finalUsername,
       fullName: formFullName,
-      password: formPassword || "123",
       role: formRole,
+      linkedTeacherId: !isFamilyRole && formLinkedTeacherId ? formLinkedTeacherId : undefined,
+      linkedStudentIds: isFamilyRole ? formLinkedStudentIds.slice(0, 30) : [],
       isActive: formIsActive,
       canEditStudents: Boolean(formPermissions?.students?.create || formPermissions?.students?.update),
       canEditTeachers: Boolean(formPermissions?.teachers?.create || formPermissions?.teachers?.update),
@@ -384,8 +427,18 @@ export default function SettingsManagement({
       setDirectorName(formFullName.trim());
     }
 
-    onSaveAppUser(userToSave);
-    setShowUserModal(false);
+    setUserFormSaving(true);
+    try {
+      if (editingUser) {
+        await onSaveAppUser(userToSave);
+        setShowUserModal(false);
+      } else if (onCreateAppUser) {
+        const ok = await onCreateAppUser(userToSave, formPassword);
+        if (ok) setShowUserModal(false);
+      }
+    } finally {
+      setUserFormSaving(false);
+    }
   };
 
   return (
@@ -815,7 +868,7 @@ export default function SettingsManagement({
               </h3>
               <p className="text-xs text-slate-500 mt-1">إضافة وإدارة حسابات المعلمين والمدراء والطلاب وأولياء الأمور مع التحكم الدقيق في مستويات الوصول.</p>
             </div>
-            {canCreate && (
+            {canCreateAccounts && (
               <button
                 onClick={() => openUserModal()}
                 className="bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-800 hover:to-teal-900 text-white font-bold text-xs px-5 py-3 rounded-2xl flex items-center justify-center gap-2 transition shadow-md hover:shadow-emerald-900/20 active:scale-95 cursor-pointer shrink-0"
@@ -1074,17 +1127,19 @@ export default function SettingsManagement({
                                 @{user.username}
                               </span>
                               <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg text-[10px]">
-                                <span className="text-slate-600 font-bold tracking-wider">
-                                  {revealedUserPasswords[user.id] ? (user.password || "123") : "••••••••"}
+                                <span className={`font-bold tracking-wider ${user.mustChangePassword ? "text-amber-700" : "text-slate-600"}`} title={user.mustChangePassword ? "يجب على المستخدم تغيير كلمة المرور عند الدخول" : "كلمة المرور محفوظة بشكل آمن ولا يمكن عرضها"}>
+                                  {user.mustChangePassword ? "تغيير إلزامي" : "••••••••"}
                                 </span>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleRevealPassword(user.id)}
-                                  className="text-slate-400 hover:text-emerald-700 transition cursor-pointer p-0.5 rounded"
-                                  title={revealedUserPasswords[user.id] ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-                                >
-                                  {revealedUserPasswords[user.id] ? <EyeOff className="w-3.5 h-3.5 text-rose-500" /> : <Eye className="w-3.5 h-3.5 text-emerald-600" />}
-                                </button>
+                                {canUpdateAccounts && onResetUserPassword && user.authUid && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleResetPassword(user)}
+                                    className="text-slate-400 hover:text-emerald-700 transition cursor-pointer p-0.5 rounded"
+                                    title="إعادة تعيين كلمة المرور"
+                                  >
+                                    <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -1183,7 +1238,7 @@ export default function SettingsManagement({
                           {/* Actions */}
                           <td className="py-3.5 px-4 text-center">
                             <div className="flex items-center justify-center gap-1.5">
-                              {canUpdate && (
+                              {canUpdateAccounts && (
                                 <button
                                   onClick={() => openUserModal(user)}
                                   className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200/60 rounded-xl transition cursor-pointer"
@@ -1192,7 +1247,7 @@ export default function SettingsManagement({
                                   <Edit2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                              {canDelete && user.username !== "admin_alfajr" && (
+                              {canDeleteAccounts && user.id !== "u1" && user.username !== "admin_alfajr" && (
                                 <button
                                   onClick={() => {
                                     if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
@@ -1269,17 +1324,19 @@ export default function SettingsManagement({
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-xs text-slate-500 font-mono">@{user.username}</p>
                       <div className="flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md font-mono text-[10px]">
-                        <span className="text-slate-700 font-bold">
-                          {revealedUserPasswords[user.id] ? (user.password || "123") : "••••••••"}
+                        <span className={`font-bold ${user.mustChangePassword ? "text-amber-700" : "text-slate-700"}`}>
+                          {user.mustChangePassword ? "تغيير إلزامي" : "••••••••"}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => toggleRevealPassword(user.id)}
-                          className="text-slate-400 hover:text-emerald-700 transition cursor-pointer p-0.5 rounded"
-                          title={revealedUserPasswords[user.id] ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
-                        >
-                          {revealedUserPasswords[user.id] ? <EyeOff className="w-3 h-3 text-rose-500" /> : <Eye className="w-3 h-3 text-emerald-600" />}
-                        </button>
+                        {canUpdateAccounts && onResetUserPassword && user.authUid && (
+                          <button
+                            type="button"
+                            onClick={() => handleResetPassword(user)}
+                            className="text-slate-400 hover:text-emerald-700 transition cursor-pointer p-0.5 rounded"
+                            title="إعادة تعيين كلمة المرور"
+                          >
+                            <KeyRound className="w-3 h-3 text-emerald-600" />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -1318,7 +1375,7 @@ export default function SettingsManagement({
                   </div>
 
                   <div className="flex gap-2 border-t border-slate-100 pt-3 mt-4 justify-end">
-                    {canUpdate && (
+                    {canUpdateAccounts && (
                       <button
                         onClick={() => openUserModal(user)}
                         className="p-2 text-blue-600 hover:bg-blue-50 border border-blue-200/60 rounded-xl transition cursor-pointer"
@@ -1327,7 +1384,7 @@ export default function SettingsManagement({
                         <Edit2 className="w-4 h-4" />
                       </button>
                     )}
-                    {canDelete && user.username !== "admin_alfajr" && (
+                    {canDeleteAccounts && user.id !== "u1" && user.username !== "admin_alfajr" && (
                       <button
                         onClick={() => {
                           if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
@@ -1382,7 +1439,7 @@ export default function SettingsManagement({
                 <div className="space-y-1">
                   <div className="flex items-center justify-between gap-1 mb-1">
                     <label className="block text-xs font-bold text-slate-700">اسم المستخدم (Username) <span className="text-rose-500">*</span></label>
-                    {editingUser?.username !== "admin_alfajr" && (
+                    {!editingUser && (
                       <button
                         type="button"
                         onClick={handleAutoGenerateUsername}
@@ -1397,22 +1454,25 @@ export default function SettingsManagement({
                   <input
                     type="text"
                     required
-                    disabled={editingUser?.username === "admin_alfajr"}
+                    disabled={!!editingUser}
                     value={formUsername}
                     onChange={(e) => setFormUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                     placeholder="mustafa_alawi"
                     className="w-full p-2.5 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none font-mono text-left"
                   />
-                  <p className="text-[10px] text-slate-500">يتم توليده تلقائياً بشكل فريد من الاسم الكامل لمنع التشابه.</p>
+                  <p className="text-[10px] text-slate-500">{editingUser ? "اسم المستخدم هو معرّف الدخول ولا يمكن تغييره بعد إنشاء الحساب." : "يتم توليده تلقائياً بشكل فريد من الاسم الكامل لمنع التشابه."}</p>
                 </div>
 
+                {!editingUser ? (
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700">كلمة المرور / الرمز السري <span className="text-rose-500">*</span></label>
+                  <label className="block text-xs font-bold text-slate-700">كلمة المرور المؤقتة <span className="text-rose-500">*</span></label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-slate-400 pointer-events-none"><Lock className="w-3.5 h-3.5" /></span>
                     <input
                       type={showFormPassword ? "text" : "password"}
                       required
+                      minLength={MIN_NEW_PASSWORD_LENGTH}
+                      autoComplete="new-password"
                       value={formPassword}
                       onChange={(e) => setFormPassword(e.target.value)}
                       placeholder="••••••••"
@@ -1427,7 +1487,26 @@ export default function SettingsManagement({
                       {showFormPassword ? <EyeOff className="w-4 h-4 text-rose-500" /> : <Eye className="w-4 h-4 text-emerald-600" />}
                     </button>
                   </div>
+                  <p className="text-[10px] text-slate-500">{MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل. سيُطلب من المستخدم تغييرها عند أول دخول.</p>
                 </div>
+                ) : (
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700">كلمة المرور</label>
+                  <div className="p-2.5 border border-slate-200 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-center justify-between gap-2">
+                    <span>لا تُخزَّن كلمات المرور في المنظومة ولا يمكن عرضها.</span>
+                    {onResetUserPassword && editingUser.authUid && (
+                      <button
+                        type="button"
+                        onClick={() => handleResetPassword(editingUser)}
+                        className="text-[10px] text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer shrink-0"
+                      >
+                        <KeyRound className="w-3 h-3" />
+                        <span>إعادة تعيين</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 border-t pt-4">
@@ -1594,6 +1673,66 @@ export default function SettingsManagement({
                 </div>
               </div>
 
+              {/* Liens explicites du compte (Lot 0) */}
+              <div className="border-t pt-4 space-y-2" dir="rtl">
+                {(formRole === "طالب" || formRole === "ولي أمر") ? (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-700">
+                      {formRole === "طالب" ? "ملف الطالب المرتبط بهذا الحساب" : "الأبناء المرتبطون بهذا الحساب"}
+                      <span className="text-slate-400 font-medium"> ({formLinkedStudentIds.length})</span>
+                    </label>
+                    <p className="text-[10px] text-slate-500">لا يرى صاحب الحساب إلا ملفات الطلاب المحددة هنا.</p>
+                    <input
+                      type="text"
+                      value={linkedStudentSearch}
+                      onChange={(e) => setLinkedStudentSearch(e.target.value)}
+                      placeholder="بحث باسم الطالب أو ولي الأمر..."
+                      className="w-full p-2 border border-slate-300 rounded-xl text-xs focus:border-emerald-600 focus:outline-none"
+                    />
+                    <div className="max-h-40 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100">
+                      {students
+                        .filter((st) => {
+                          const q = linkedStudentSearch.trim();
+                          return formLinkedStudentIds.includes(st.id) || !q || (st.fullName || "").includes(q) || (st.parentName || "").includes(q) || (st.parentPhone || "").includes(q);
+                        })
+                        .slice(0, 50)
+                        .map((st) => (
+                          <label key={st.id} className="flex items-center gap-2 px-3 py-1.5 text-xs cursor-pointer hover:bg-slate-50">
+                            <input
+                              type="checkbox"
+                              checked={formLinkedStudentIds.includes(st.id)}
+                              onChange={(e) => {
+                                setFormLinkedStudentIds((prev) => {
+                                  if (!e.target.checked) return prev.filter((id) => id !== st.id);
+                                  return formRole === "طالب" ? [st.id] : [...prev, st.id];
+                                });
+                              }}
+                            />
+                            <span className="font-bold text-slate-700">{st.fullName}</span>
+                            <span className="text-slate-400">— {st.parentName} {st.parentPhone}</span>
+                            <span className="text-slate-300 font-mono mr-auto">{st.id}</span>
+                          </label>
+                        ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700">ملف العامل / المدرس المرتبط</label>
+                    <select
+                      value={formLinkedTeacherId}
+                      onChange={(e) => setFormLinkedTeacherId(e.target.value)}
+                      className="w-full p-2.5 border border-slate-300 rounded-xl text-xs"
+                    >
+                      <option value="">— بدون ربط —</option>
+                      {teachers.map((t) => (
+                        <option key={t.id} value={t.id}>{t.fullName}{t.roleTitle ? ` (${t.roleTitle})` : ""}</option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-500">يُستعمل لعرض حلقات المدرس وإيقاف الحساب تلقائياً عند أرشفة الملف.</p>
+                  </div>
+                )}
+              </div>
+
               {/* Odoo CRUD Permission Matrix */}
               <div className="border-t pt-4 text-right" dir="rtl">
                 <PermissionMatrixEditor
@@ -1621,10 +1760,11 @@ export default function SettingsManagement({
                 </button>
                 <button
                   type="submit"
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow"
+                  disabled={userFormSaving}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow disabled:bg-emerald-400"
                   id="btn-confirm-save-user"
                 >
-                  حفظ الحساب
+                  {userFormSaving ? "جاري الحفظ..." : "حفظ الحساب"}
                 </button>
               </div>
             </form>

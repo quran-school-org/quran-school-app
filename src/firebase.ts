@@ -1,25 +1,34 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getFirestore, 
+import {
+  getFirestore,
   connectFirestoreEmulator,
-  collection, 
-  doc, 
-  setDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  writeBatch,
-  getDocs,
-  getDoc
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  deleteField,
+  onSnapshot,
+  getDoc,
+  query,
+  where,
+  type DocumentData,
 } from "firebase/firestore";
-import { 
-  getAuth, 
+import {
+  getAuth,
   connectAuthEmulator,
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut as firebaseSignOut
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from "firebase/auth";
-import { Student, Teacher, Class, Attendance, Grade, Payment, Notification, SystemSettings, AppUser } from "./types";
+import { getFunctions, connectFunctionsEmulator, httpsCallable } from "firebase/functions";
+import { SystemSettings, AppUser, AuthLink } from "./types";
 import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig } from "./config/env";
+import { normalizeAuthPassword, normalizeUsername, usernameToEmail } from "./security/accounts";
+
+/** Région des Cloud Functions (identique à functions/src/config.ts). */
+export const FUNCTIONS_REGION = "europe-west1";
 
 // Configuration web Firebase lue depuis les variables VITE_* (voir .env.example).
 const app = initializeApp(firebaseWebConfig);
@@ -32,73 +41,155 @@ export const db = firestoreDatabaseId === "(default)"
 // Initialize Firebase Auth
 export const auth = getAuth(app);
 
+export const functions = getFunctions(app, FUNCTIONS_REGION);
+
 // Connexion automatique aux émulateurs locaux (VITE_USE_EMULATORS=true).
 if (emulatorConfig.enabled) {
   connectFirestoreEmulator(db, emulatorConfig.host, emulatorConfig.firestorePort);
   connectAuthEmulator(auth, `http://${emulatorConfig.host}:${emulatorConfig.authPort}`, { disableWarnings: true });
+  connectFunctionsEmulator(functions, emulatorConfig.host, emulatorConfig.functionsPort);
   console.info(`[firebase] Émulateurs actifs (projet ${firebaseWebConfig.projectId}).`);
 }
 
-// Helper function to sign in or create a user in Firebase Auth
-export async function loginWithFirebaseAuth(username: string, password: string) {
-  const email = `${username.toLowerCase().trim()}@alfajr.local`;
-  // Firebase Auth requires passwords to be at least 6 characters
-  const authPassword = password.length >= 6 ? password : `${password}_secure_fajr`;
+// ---------------------------------------------------------------------------
+// Authentification (Lot 0)
+// ---------------------------------------------------------------------------
+// La connexion se fait TOUJOURS par Firebase Auth, avant toute lecture de
+// données. Aucun mot de passe n'est comparé ni stocké côté client, et aucun
+// compte n'est plus créé automatiquement à la connexion.
 
+/**
+ * Connexion par nom d'utilisateur : email technique `{username}@alfajr.local`,
+ * mot de passe complété par `_secure_fajr` s'il fait moins de 6 caractères
+ * (compatibilité avec les comptes existants).
+ */
+export async function signInWithUsername(username: string, password: string) {
+  const email = usernameToEmail(normalizeUsername(username));
+  const candidates = Array.from(new Set([password, password.trim()])).filter((p) => p.length > 0);
+  let lastError: unknown = null;
+  for (const candidate of candidates) {
+    try {
+      return await signInWithEmailAndPassword(auth, email, normalizeAuthPassword(candidate));
+    } catch (error: any) {
+      lastError = error;
+      // Seule une erreur d'identifiants justifie d'essayer la variante suivante.
+      if (error?.code !== "auth/invalid-credential" && error?.code !== "auth/wrong-password") break;
+    }
+  }
+  throw lastError;
+}
+
+/** Déconnexion réelle de Firebase Auth. */
+export async function signOutUser() {
+  await firebaseSignOut(auth);
+}
+
+/**
+ * Changement de SON propre mot de passe. Firebase exige parfois une
+ * authentification récente : on la refait avec le mot de passe actuel si fourni.
+ */
+export async function changeOwnPassword(newPassword: string, currentPassword?: string) {
+  const user = auth.currentUser;
+  if (!user || !user.email) throw new Error("not-signed-in");
   try {
-    // Attempt standard sign-in
-    await signInWithEmailAndPassword(auth, email, authPassword);
-    console.log("Logged into Firebase Auth successfully:", email);
+    await updatePassword(user, newPassword);
   } catch (error: any) {
-    if (
-      error.code === "auth/network-request-failed" ||
-      String(error?.message || "").includes("network-request-failed")
-    ) {
-      console.warn("Firebase Auth network request failed. Operating in offline/local mode.", error);
+    if (error?.code === "auth/requires-recent-login" && currentPassword) {
+      const credential = EmailAuthProvider.credential(user.email, normalizeAuthPassword(currentPassword));
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
       return;
     }
-    // If user does not exist or credentials fail, we attempt auto-creation
-    // because Firestore relies on request.auth != null and we want zero friction.
-    if (
-      error.code === "auth/user-not-found" || 
-      error.code === "auth/invalid-credential" ||
-      error.code === "auth/wrong-password"
-    ) {
-      try {
-        // Let's attempt to create the user on the fly if they don't exist
-        await createUserWithEmailAndPassword(auth, email, authPassword);
-        console.log("Created and logged into brand new Firebase Auth user:", email);
-      } catch (createError: any) {
-        if (
-          createError.code === "auth/network-request-failed" ||
-          String(createError?.message || "").includes("network-request-failed")
-        ) {
-          console.warn("Firebase Auth network request failed during creation. Operating in offline/local mode.", createError);
-          return;
-        }
-        // If it's a wrong-password error for an existing user, let's rethrow the initial error
-        if (createError.code === "auth/email-already-in-use") {
-          console.error("Firebase Auth credential failure for existing user:", error);
-          throw error;
-        }
-        console.error("Error auto-creating Firebase Auth user:", createError);
-        throw createError;
-      }
-    } else {
-      console.error("Firebase Auth sign-in error:", error);
-      throw error;
-    }
+    throw error;
   }
 }
 
-// Helper function to sign out of Firebase Auth
-export async function logoutFromFirebaseAuth() {
-  try {
-    await firebaseSignOut(auth);
-    console.log("Logged out from Firebase Auth.");
-  } catch (error) {
-    console.error("Error logging out from Firebase Auth:", error);
+/** Lien d'autorisation du compte connecté (lisible par son propriétaire). */
+export async function fetchAuthLink(uid: string): Promise<AuthLink | null> {
+  const snap = await getDoc(doc(db, "authLinks", uid));
+  return snap.exists() ? (snap.data() as AuthLink) : null;
+}
+
+/** Compte applicatif (profil) par identifiant. */
+export async function fetchAppUser(appUserId: string): Promise<AppUser | null> {
+  const snap = await getDoc(doc(db, "appUsers", appUserId));
+  return snap.exists() ? stripPassword({ id: snap.id, ...snap.data() } as AppUser) : null;
+}
+
+/** Retire tout champ `password` hérité d'un objet compte. */
+export function stripPassword<T extends Record<string, any>>(user: T): T {
+  if (user && "password" in user) {
+    const { password: _ignored, ...rest } = user as any;
+    return rest as T;
   }
+  return user;
+}
+
+/**
+ * Écrit un compte applicatif SANS mot de passe (le champ hérité est supprimé
+ * explicitement). Réservé au directeur par les règles, sauf champs anodins de
+ * son propre compte.
+ */
+export async function saveAppUserDoc(user: AppUser) {
+  const data = sanitizeForFirestore(stripPassword(user));
+  await setDoc(doc(db, "appUsers", user.id), { ...data, password: deleteField() }, { merge: true });
+}
+
+/** Met à jour des champs anodins de son propre compte (lastLogin, mustChangePassword…). */
+export async function updateOwnAppUserFields(appUserId: string, fields: Partial<Pick<AppUser, "lastLogin" | "mustChangePassword" | "fullName" | "phone" | "passwordChangedAt">>) {
+  await setDoc(doc(db, "appUsers", appUserId), sanitizeForFirestore(fields), { merge: true });
+}
+
+/** Écrit le lien d'autorisation d'un compte (directeur uniquement). */
+export async function saveAuthLink(uid: string, link: AuthLink) {
+  await setDoc(doc(db, "authLinks", uid), sanitizeForFirestore(link), { merge: true });
+}
+
+export async function deleteAuthLink(uid: string) {
+  await deleteDoc(doc(db, "authLinks", uid));
+}
+
+// ---------------------------------------------------------------------------
+// Cloud Functions callables (gestion des comptes, directeur uniquement)
+// ---------------------------------------------------------------------------
+
+export interface CreateUserAccountInput {
+  username: string;
+  password: string;
+  fullName: string;
+  role: AppUser["role"];
+  isActive?: boolean;
+  phone?: string;
+  email?: string;
+  permissions?: AppUser["permissions"];
+  linkedTeacherId?: string;
+  linkedStudentIds?: string[];
+  flags?: Record<string, boolean>;
+}
+
+export async function createUserAccountRemote(input: CreateUserAccountInput): Promise<{ appUserId: string; uid: string }> {
+  const callable = httpsCallable<CreateUserAccountInput, { appUserId: string; uid: string }>(functions, "createUserAccount");
+  const res = await callable(input);
+  return res.data;
+}
+
+export async function resetUserPasswordRemote(appUserId: string, newPassword: string): Promise<void> {
+  const callable = httpsCallable<{ appUserId: string; newPassword: string }, { ok: boolean }>(functions, "resetUserPassword");
+  await callable({ appUserId, newPassword });
+}
+
+/** Traduit une erreur Firebase (Auth, Functions) en message arabe lisible. */
+export function describeFirebaseError(error: any): string {
+  const code: string = error?.code || "";
+  if (code.includes("already-exists") || code === "auth/email-already-exists") return "اسم المستخدم مستعمل من قبل حساب آخر.";
+  if (code.includes("permission-denied")) return "ليست لديك صلاحية تنفيذ هذه العملية.";
+  if (code.includes("invalid-argument")) return error?.message || "بيانات غير صالحة.";
+  if (code.includes("unauthenticated")) return "يجب تسجيل الدخول أولاً.";
+  if (code === "auth/weak-password") return "كلمة المرور ضعيفة جداً.";
+  if (code === "auth/requires-recent-login") return "يرجى إدخال كلمة المرور الحالية لتأكيد العملية.";
+  if (code === "auth/network-request-failed" || code.includes("unavailable")) return "تعذر الاتصال بالخادم. تحقق من الاتصال بالإنترنت.";
+  if (code === "auth/too-many-requests") return "محاولات كثيرة. يرجى المحاولة لاحقاً.";
+  return "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
 }
 
 // Global state to track Firestore Quota Exceeded
@@ -162,7 +253,7 @@ export function sanitizeForFirestore(obj: any): any {
 export async function saveToFirestore(collectionName: string, id: string, data: any) {
   try {
     const docRef = doc(db, collectionName, id);
-    const sanitizedData = sanitizeForFirestore(data);
+    const sanitizedData = sanitizeForFirestore(collectionName === "appUsers" ? stripPassword(data) : data);
     await setDoc(docRef, sanitizedData, { merge: true });
   } catch (error) {
     console.error(`Error saving to Firestore collection ${collectionName} with ID ${id}:`, error);
@@ -181,43 +272,15 @@ export async function deleteFromFirestore(collectionName: string, id: string) {
   }
 }
 
-// Upload local data to Firestore if Firestore collection is empty
-export async function bootstrapCollectionIfEmpty<T extends { id: string }>(
-  collectionName: string,
-  localData: T[]
-) {
-  if (localData.length === 0) return;
+function writeCache(localStorageKey: string, items: unknown) {
   try {
-    const colRef = collection(db, collectionName);
-    const snapshot = await getDocs(colRef);
-    if (snapshot.empty) {
-      console.log(`Firestore collection '${collectionName}' is empty. Uploading local data...`);
-      const batch = writeBatch(db);
-      localData.forEach((item) => {
-        const docRef = doc(db, collectionName, item.id);
-        batch.set(docRef, sanitizeForFirestore(item));
-      });
-      await batch.commit();
-      console.log(`Uploaded ${localData.length} items to Firestore collection '${collectionName}'.`);
+    let sanitizedItems: any = items;
+    if (localStorageKey === "alfajr_notifications" && Array.isArray(items)) {
+      sanitizedItems = items.slice(-20);
     }
-  } catch (error) {
-    console.error(`Error bootstrapping Firestore collection '${collectionName}':`, error);
-    checkAndHandleQuotaError(error);
-  }
-}
-
-// Upload system settings to Firestore if empty
-export async function bootstrapSettingsIfEmpty(settings: SystemSettings) {
-  try {
-    const docRef = doc(db, "settings", "system");
-    const snapshot = await getDocs(collection(db, "settings"));
-    if (snapshot.empty) {
-      console.log("Firestore settings collection is empty. Uploading system settings...");
-      await setDoc(docRef, sanitizeForFirestore(settings));
-    }
-  } catch (error) {
-    console.error("Error bootstrapping system settings:", error);
-    checkAndHandleQuotaError(error);
+    localStorage.setItem(localStorageKey, JSON.stringify(sanitizedItems));
+  } catch (e) {
+    console.error(`Error saving synced data to LocalStorage (${localStorageKey}):`, e);
   }
 }
 
@@ -228,26 +291,102 @@ export function subscribeToCollection<T extends { id: string }>(
   localStorageKey: string
 ) {
   const colRef = collection(db, collectionName);
-  
+
   return onSnapshot(colRef, (snapshot) => {
     const items: T[] = [];
     snapshot.forEach((doc) => {
-      items.push({ id: doc.id, ...doc.data() } as T);
+      const data = { id: doc.id, ...doc.data() } as T;
+      items.push(collectionName === "appUsers" ? stripPassword(data as any) : data);
     });
-    
+
     // Save to localStorage so it works offline and during loading
-    try {
-      let sanitizedItems: any = items;
-      if (localStorageKey === "alfajr_notifications") {
-        sanitizedItems = items.slice(-20);
-      }
-      localStorage.setItem(localStorageKey, JSON.stringify(sanitizedItems));
-    } catch (e) {
-      console.error(`Error saving synced ${collectionName} to LocalStorage:`, e);
-    }
+    writeCache(localStorageKey, items);
     onUpdate(items);
   }, (error) => {
     console.error(`Error in real-time sync for ${collectionName}:`, error);
+    checkAndHandleQuotaError(error);
+  });
+}
+
+/**
+ * Abonnement à une liste de documents précis (comptes famille : élèves liés).
+ * Les règles n'autorisent que la lecture document par document.
+ */
+export function subscribeToDocumentsByIds<T extends { id: string }>(
+  collectionName: string,
+  ids: string[],
+  onUpdate: (data: T[]) => void,
+  localStorageKey: string
+) {
+  const current = new Map<string, T>();
+  const emit = () => {
+    const items = ids.map((id) => current.get(id)).filter((x): x is T => !!x);
+    writeCache(localStorageKey, items);
+    onUpdate(items);
+  };
+  if (ids.length === 0) {
+    emit();
+    return () => {};
+  }
+  const unsubs = ids.map((id) =>
+    onSnapshot(doc(db, collectionName, id), (snap) => {
+      if (snap.exists()) current.set(id, { id: snap.id, ...(snap.data() as DocumentData) } as T);
+      else current.delete(id);
+      emit();
+    }, (error) => {
+      console.error(`Error in real-time sync for ${collectionName}/${id}:`, error);
+      checkAndHandleQuotaError(error);
+    })
+  );
+  return () => unsubs.forEach((u) => u());
+}
+
+/**
+ * Abonnement filtré `where(field, "in", values)` (comptes famille : présences,
+ * notes, suivi des élèves liés). Firestore limite `in` à 30 valeurs : la liste
+ * est découpée en paquets.
+ */
+export function subscribeToQueryIn<T extends { id: string }>(
+  collectionName: string,
+  field: string,
+  values: string[],
+  onUpdate: (data: T[]) => void,
+  localStorageKey: string
+) {
+  if (values.length === 0) {
+    writeCache(localStorageKey, []);
+    onUpdate([]);
+    return () => {};
+  }
+  const chunks: string[][] = [];
+  for (let i = 0; i < values.length; i += 30) chunks.push(values.slice(i, i + 30));
+  const parts = new Map<number, T[]>();
+  const unsubs = chunks.map((chunk, index) =>
+    onSnapshot(query(collection(db, collectionName), where(field, "in", chunk)), (snapshot) => {
+      const items: T[] = [];
+      snapshot.forEach((d) => items.push({ id: d.id, ...d.data() } as T));
+      parts.set(index, items);
+      const all = Array.from(parts.values()).flat();
+      writeCache(localStorageKey, all);
+      onUpdate(all);
+    }, (error) => {
+      console.error(`Error in filtered sync for ${collectionName}:`, error);
+      checkAndHandleQuotaError(error);
+    })
+  );
+  return () => unsubs.forEach((u) => u());
+}
+
+/** Abonnement à un document unique (profil, lien d'autorisation). */
+export function subscribeToDocument<T>(
+  collectionName: string,
+  id: string,
+  onUpdate: (data: T | null) => void
+) {
+  return onSnapshot(doc(db, collectionName, id), (snap) => {
+    onUpdate(snap.exists() ? ({ id: snap.id, ...snap.data() } as T) : null);
+  }, (error) => {
+    console.error(`Error in real-time sync for ${collectionName}/${id}:`, error);
     checkAndHandleQuotaError(error);
   });
 }
@@ -258,7 +397,7 @@ export function subscribeToSettings(
   localStorageKey: string
 ) {
   const docRef = doc(db, "settings", "system");
-  
+
   return onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
       const data = docSnap.data() as SystemSettings;
@@ -273,49 +412,4 @@ export function subscribeToSettings(
     console.error("Error in real-time sync for settings:", error);
     checkAndHandleQuotaError(error);
   });
-}
-
-// Fetch all appUsers directly from Firestore (useful during login on new browsers)
-export async function fetchAppUsersFromFirestore(): Promise<AppUser[]> {
-  try {
-    const colRef = collection(db, "appUsers");
-    const snapshot = await getDocs(colRef);
-    const users: AppUser[] = [];
-    snapshot.forEach((docSnap) => {
-      users.push({ id: docSnap.id, ...docSnap.data() } as AppUser);
-    });
-    if (users.length > 0) {
-      try {
-        localStorage.setItem("alfajr_settings_users", JSON.stringify(users));
-      } catch (e) {
-        console.error("Failed to write appUsers to localStorage:", e);
-      }
-    }
-    return users;
-  } catch (error) {
-    console.error("Error fetching appUsers directly from Firestore:", error);
-    checkAndHandleQuotaError(error);
-    return [];
-  }
-}
-
-// Fetch system settings directly from Firestore
-export async function fetchSystemSettingsFromFirestore(): Promise<SystemSettings | null> {
-  try {
-    const docRef = doc(db, "settings", "system");
-    const snapshot = await getDoc(docRef);
-    if (snapshot.exists()) {
-      const data = snapshot.data() as SystemSettings;
-      try {
-        localStorage.setItem("alfajr_settings_system", JSON.stringify(data));
-      } catch (e) {
-        console.error("Failed to write system settings to localStorage:", e);
-      }
-      return data;
-    }
-  } catch (error) {
-    console.error("Error fetching settings directly from Firestore:", error);
-    checkAndHandleQuotaError(error);
-  }
-  return null;
 }

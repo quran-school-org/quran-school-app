@@ -4,165 +4,9 @@ import {
   Expense, UserRole, ActivityTrip, ActivityParticipant, ActivityExpense,
   getDefaultPermissionsForRole
 } from "./types";
-import { saveToFirestore, deleteFromFirestore } from "./firebase";
+import { saveToFirestore, deleteFromFirestore, saveAppUserDoc, saveAuthLink, deleteAuthLink, stripPassword } from "./firebase";
 
-// Helper function to smartly determine role and permissions based on staff category and title
-export function getRoleAndPermissionsForStaff(teacher: Teacher): {
-  role: UserRole;
-  canEditStudents: boolean;
-  canEditTeachers: boolean;
-  canEditGrades: boolean;
-  canEditPayments: boolean;
-  teacherTakeAttendance: boolean;
-  teacherRecordGrades: boolean;
-  teacherWriteBehaviorReports: boolean;
-  teacherEditOwnStudents: boolean;
-  teacherSendAlertsToParents: boolean;
-} {
-  const cat = (teacher.category || "").trim();
-  const title = (teacher.roleTitle || "").trim().toLowerCase();
-  const spec = (teacher.specialty || "").trim().toLowerCase();
-
-  // 1. Executive Board & Directors (عضو مكتب تنفيذي / مسير)
-  if (cat.includes("مكتب") || cat.includes("مسير") || cat.includes("تنفيذي")) {
-    if (title.includes("رئيس") || title.includes("مدير") || title.includes("مسير") || title.includes("عام") || spec.includes("رئيس") || spec.includes("مدير")) {
-      return {
-        role: "مدير",
-        canEditStudents: true,
-        canEditTeachers: true,
-        canEditGrades: true,
-        canEditPayments: true,
-        teacherTakeAttendance: true,
-        teacherRecordGrades: true,
-        teacherWriteBehaviorReports: true,
-        teacherEditOwnStudents: true,
-        teacherSendAlertsToParents: true,
-      };
-    }
-    // Treasurer (أمين مال)
-    if (title.includes("أمين") || title.includes("مال") || title.includes("حساب") || spec.includes("مال")) {
-      return {
-        role: "إداري",
-        canEditStudents: true,
-        canEditTeachers: true,
-        canEditGrades: true,
-        canEditPayments: true,
-        teacherTakeAttendance: true,
-        teacherRecordGrades: true,
-        teacherWriteBehaviorReports: true,
-        teacherEditOwnStudents: true,
-        teacherSendAlertsToParents: true,
-      };
-    }
-    // Secretary General (الكاتب العام) / Advisors (مستشار) / General Executive Board
-    return {
-      role: "إداري",
-      canEditStudents: true,
-      canEditTeachers: true,
-      canEditGrades: true,
-      canEditPayments: true,
-      teacherTakeAttendance: true,
-      teacherRecordGrades: true,
-      teacherWriteBehaviorReports: true,
-      teacherEditOwnStudents: true,
-      teacherSendAlertsToParents: true,
-    };
-  }
-
-  // 2. Administrative & Clerical Staff (إداري / كاتب)
-  if (cat.includes("إداري") || cat.includes("كاتب") || title.includes("إداري") || title.includes("كاتب") || spec.includes("إداري") || spec.includes("سكرتار")) {
-    return {
-      role: "إداري",
-      canEditStudents: true,
-      canEditTeachers: true,
-      canEditGrades: true,
-      canEditPayments: true,
-      teacherTakeAttendance: true,
-      teacherRecordGrades: true,
-      teacherWriteBehaviorReports: true,
-      teacherEditOwnStudents: true,
-      teacherSendAlertsToParents: true,
-    };
-  }
-
-  // 3. Mentors & Activity Supervisors (مؤطر / مشرف تربوي)
-  if (cat.includes("مؤطر") || cat.includes("مشرف") || title.includes("مؤطر") || title.includes("مشرف") || spec.includes("مؤطر") || spec.includes("تأطير")) {
-    return {
-      role: "مؤطر",
-      canEditStudents: true,
-      canEditTeachers: false,
-      canEditGrades: true,
-      canEditPayments: false,
-      teacherTakeAttendance: true,
-      teacherRecordGrades: true,
-      teacherWriteBehaviorReports: true,
-      teacherEditOwnStudents: true,
-      teacherSendAlertsToParents: true,
-    };
-  }
-
-  // 4. Volunteers (متطوع) - Explicitly respect the volunteer role
-  if (cat.includes("متطوع") || title.includes("متطوع") || spec.includes("تطوع")) {
-    return {
-      role: "متطوع",
-      canEditStudents: false,
-      canEditTeachers: false,
-      canEditGrades: false,
-      canEditPayments: false,
-      teacherTakeAttendance: false,
-      teacherRecordGrades: false,
-      teacherWriteBehaviorReports: false,
-      teacherEditOwnStudents: false,
-      teacherSendAlertsToParents: false,
-    };
-  }
-
-  // 5. Cleaning & Maintenance staff (عامل نظافة / صيانة)
-  if (cat.includes("نظافة") || cat.includes("صيانة") || title.includes("نظافة") || title.includes("صيانة") || spec.includes("نظافة") || spec.includes("صيانة")) {
-    return {
-      role: "عامل نظافة / صيانة",
-      canEditStudents: false,
-      canEditTeachers: false,
-      canEditGrades: false,
-      canEditPayments: false,
-      teacherTakeAttendance: false,
-      teacherRecordGrades: false,
-      teacherWriteBehaviorReports: false,
-      teacherEditOwnStudents: false,
-      teacherSendAlertsToParents: false,
-    };
-  }
-
-  // 6. Other (أخرى)
-  if (cat === "أخرى") {
-    return {
-      role: "أخرى",
-      canEditStudents: false,
-      canEditTeachers: false,
-      canEditGrades: false,
-      canEditPayments: false,
-      teacherTakeAttendance: false,
-      teacherRecordGrades: false,
-      teacherWriteBehaviorReports: false,
-      teacherEditOwnStudents: false,
-      teacherSendAlertsToParents: false,
-    };
-  }
-
-  // 7. Teachers & Quran instructors (أستاذ / محفظ)
-  return {
-    role: "مدرس",
-    canEditStudents: false,
-    canEditTeachers: false,
-    canEditGrades: true,
-    canEditPayments: false,
-    teacherTakeAttendance: true,
-    teacherRecordGrades: true,
-    teacherWriteBehaviorReports: true,
-    teacherEditOwnStudents: true,
-    teacherSendAlertsToParents: true,
-  };
-}
+export { getRoleAndPermissionsForStaff } from "./security/staffRoles";
 
 // Key definitions for LocalStorage
 const STORAGE_KEYS = {
@@ -433,167 +277,15 @@ function setStoredItem<T>(key: string, data: T): void {
   }
 }
 
-// Dynamic generation helper functions
-export const translitArabicToEnglish = (name: string): string => {
-  if (!name || !name.trim()) return "user";
-
-  // Clean titles and common Arabic honorific prefixes
-  let clean = name.trim().toLowerCase()
-    .replace(/^(د\.|ذ\.|أ\.|م\.|الشيخ|الأستاذ|الأستاذة|الدكتور|الدكتورة|المعلم|المعلمة|الحاج|الحاجة|الآنسة|السيد|السيدة)\s+/gi, "");
-
-  const knownWords: { [key: string]: string } = {
-    "عبد الرحمن": "abderrahmane",
-    "عبد الله": "abdellah",
-    "عبد العزيز": "abdelaziz",
-    "عبد العالي": "abdelali",
-    "عبد القادر": "abdelkader",
-    "عبد الكريم": "abdelkarim",
-    "عبد السلام": "abdessalam",
-    "عبد الوهاب": "abdelouahab",
-    "فاطمة الزهراء": "fatimazohra",
-    "نور الدين": "noureddine",
-    "صلاح الدين": "salaheddine",
-    "تاج الدين": "tajeddine",
-    "عز الدين": "ezzeddine",
-    "زينب": "zainab",
-    "مريم": "mariam",
-    "محمد": "mohammed",
-    "سعيد": "said",
-    "ياسين": "yassine",
-    "سارة": "sara",
-    "إبراهيم": "ibrahim",
-    "مصطفى": "mustafa",
-    "عمر": "omar",
-    "عثمان": "osman",
-    "علي": "ali",
-    "أحمد": "ahmed",
-    "حسن": "hassan",
-    "حسين": "houssein",
-    "خالد": "khalid",
-    "يوسف": "youssef",
-    "حمزة": "hamza",
-    "أيوب": "ayoub",
-    "طارق": "tariq",
-    "انس": "anas",
-    "أنس": "anas",
-    "التازي": "tazi",
-    "الفاسي": "fassi",
-    "السلاوي": "slaoui",
-    "الفيلالي": "filali",
-    "العلمي": "alami",
-    "البقالي": "baqali",
-    "الإدريسي": "idrissi",
-    "الناصري": "naciri",
-    "المرابط": "morabit",
-    "بنجلون": "benjelloun",
-    "الرباطي": "rebati",
-    "الطنطاوي": "tantawi",
-    "السوسي": "soussi"
-  };
-
-  const arabicToLatinMap: { [key: string]: string } = {
-    'أ': 'a', 'إ': 'a', 'آ': 'a', 'ا': 'a', 'ء': 'a', 'ؤ': 'o', 'ئ': 'e',
-    'ب': 'b',
-    'ت': 't', 'ة': 'a',
-    'ث': 'th',
-    'ج': 'j',
-    'ح': 'h',
-    'خ': 'kh',
-    'د': 'd',
-    'ذ': 'dh',
-    'ر': 'r',
-    'ز': 'z',
-    'س': 's',
-    'ش': 'sh',
-    'ص': 's',
-    'ض': 'd',
-    'ط': 't',
-    'ظ': 'z',
-    'ع': 'a',
-    'غ': 'gh',
-    'ف': 'f',
-    'ق': 'q',
-    'ك': 'k',
-    'ل': 'l',
-    'م': 'm',
-    'ن': 'n',
-    'ه': 'h',
-    'و': 'w',
-    'ي': 'y', 'ى': 'a'
-  };
-
-  for (const [ar, en] of Object.entries(knownWords)) {
-    clean = clean.replace(new RegExp(ar, 'g'), en);
-  }
-
-  let result = "";
-  for (let i = 0; i < clean.length; i++) {
-    const char = clean[i];
-    if (arabicToLatinMap[char]) {
-      result += arabicToLatinMap[char];
-    } else {
-      result += char;
-    }
-  }
-
-  result = result
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9_]/g, '')
-    .replace(/_+/g, '_')
-    .replace(/^_+|_+$/g, '');
-
-  return result.toLowerCase() || "user";
-};
-
-export const generateUniqueUsername = (
-  fullName: string,
-  existingUsernames: string[],
-  currentUserId?: string
-): string => {
-  const base = translitArabicToEnglish(fullName);
-  let candidate = base;
-  let counter = 1;
-
-  const usedSet = new Set(
-    existingUsernames
-      .filter(u => u && u.trim() !== "")
-      .map(u => u.toLowerCase().trim())
-  );
-
-  while (usedSet.has(candidate)) {
-    candidate = `${base}_${counter}`;
-    counter++;
-  }
-
-  return candidate;
-};
-
-export const getUsernameForTeacher = (teacher: Teacher): string => {
-  if (teacher.email) {
-    const prefix = teacher.email.split('@')[0].toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
-    if (prefix && prefix !== "user") return prefix;
-  }
-  return translitArabicToEnglish(teacher.fullName);
-};
-
-export const getUsernameForParent = (student: Student): string => {
-  if (student.parentEmail) {
-    const prefix = student.parentEmail.split('@')[0].toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
-    if (prefix && prefix !== "user") return prefix;
-  }
-  return translitArabicToEnglish(student.parentName);
-};
-
-export const getUsernameForStudent = (student: Student): string => {
-  const studentPrefix = translitArabicToEnglish(student.fullName);
-  if (student.parentEmail) {
-    const parentPrefix = student.parentEmail.split('@')[0].toLowerCase().trim().replace(/[^a-z0-9_]/g, '_');
-    if (parentPrefix) {
-      return `${studentPrefix}_${parentPrefix}`.substring(0, 25);
-    }
-  }
-  return studentPrefix;
-};
+// Les utilitaires de noms d'utilisateur sont purs (sans Firebase) pour être
+// réutilisables par les scripts d'administration Node.
+export {
+  translitArabicToEnglish,
+  generateUniqueUsername,
+  getUsernameForTeacher,
+  getUsernameForParent,
+  getUsernameForStudent,
+} from "./utils/usernames";
 
 // RealmDB-like interface wrapping LocalStorage
 export const RealmSimDB = {
@@ -611,81 +303,15 @@ export const RealmSimDB = {
     }
     setStoredData(STORAGE_KEYS.STUDENTS, students);
     saveToFirestore("students", student.id, student);
-
-    // Also sync Parent AppUser!
-    const parentKey = student.parentPhone || student.parentName;
-    if (parentKey) {
-      const parentGenId = `p_${student.id}`;
-      const savedUsers = getStoredData<AppUser>(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
-      const existingParent = savedUsers.find(u => u.id !== "u1" && (u.id === parentGenId || (u.role === "ولي أمر" && u.fullName === student.parentName)));
-      const parentId = (existingParent?.id && existingParent.id.startsWith("p_") && existingParent.id !== "u1") ? existingParent.id : parentGenId;
-      let parentUsername = (existingParent?.username && existingParent.username !== "user" && existingParent.username !== "admin_alfajr") ? existingParent.username : getUsernameForParent(student);
-      if (parentUsername === "admin_alfajr") {
-        parentUsername = `parent_${parentUsername}`;
-      }
-
-      const parentUser: AppUser = {
-        id: parentId,
-        username: parentUsername,
-        fullName: student.parentName,
-        phone: student.parentPhone,
-        password: existingParent?.password || "123",
-        role: "ولي أمر",
-        isActive: existingParent !== undefined ? existingParent.isActive : true,
-        canEditStudents: false,
-        canEditTeachers: false,
-        canEditGrades: false,
-        canEditPayments: false,
-        parentViewOwnStats: existingParent?.parentViewOwnStats !== undefined ? existingParent.parentViewOwnStats : true,
-        parentViewOwnAttendance: existingParent?.parentViewOwnAttendance !== undefined ? existingParent.parentViewOwnAttendance : true,
-        parentViewCertificates: existingParent?.parentViewCertificates !== undefined ? existingParent.parentViewCertificates : true,
-        parentViewOwnPayments: existingParent?.parentViewOwnPayments !== undefined ? existingParent.parentViewOwnPayments : true,
-        parentUpdateContactInfo: existingParent?.parentUpdateContactInfo !== undefined ? existingParent.parentUpdateContactInfo : true,
-        parentRegisterInActivities: existingParent?.parentRegisterInActivities !== undefined ? existingParent.parentRegisterInActivities : true,
-      };
-      
-      this.saveAppUser(parentUser);
-    }
-
-    // Also sync Student AppUser if age >= 15
-    const birthYear = student.birthDate ? parseInt(student.birthDate.split('-')[0]) : 2015;
-    const age = 2026 - birthYear;
-    if (age >= 15) {
-      const studentGenId = `s_${student.id}`;
-      const savedUsers = getStoredData<AppUser>(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
-      const existingStudent = savedUsers.find(u => u.id === studentGenId);
-      const studentUsername = (existingStudent?.username && existingStudent.username !== "user") ? existingStudent.username : getUsernameForStudent(student);
-      
-      const studentUser: AppUser = {
-        id: studentGenId,
-        username: studentUsername,
-        fullName: student.fullName,
-        password: existingStudent?.password || "123",
-        role: "طالب",
-        isActive: existingStudent !== undefined ? existingStudent.isActive : true,
-        canEditStudents: false,
-        canEditTeachers: false,
-        canEditGrades: false,
-        canEditPayments: false,
-        parentViewOwnStats: existingStudent?.parentViewOwnStats !== undefined ? existingStudent.parentViewOwnStats : true,
-        parentViewOwnAttendance: existingStudent?.parentViewOwnAttendance !== undefined ? existingStudent.parentViewOwnAttendance : true,
-        parentViewCertificates: existingStudent?.parentViewCertificates !== undefined ? existingStudent.parentViewCertificates : true,
-        parentViewOwnPayments: existingStudent?.parentViewOwnPayments !== undefined ? existingStudent.parentViewOwnPayments : true,
-      };
-      
-      this.saveAppUser(studentUser);
-    }
+    // Lot 0 : plus aucune création automatique de compte (parent / élève) depuis
+    // le navigateur. Les comptes sont créés explicitement par un directeur
+    // (Paramètres > المستخدمين) via la Cloud Function createUserAccount.
   },
   deleteStudent(id: string): void {
     const students = this.getStudents().filter((s) => s.id !== id);
     setStoredData(STORAGE_KEYS.STUDENTS, students);
     deleteFromFirestore("students", id);
-
-    // Also delete parent's and student's AppUser!
-    const parentGenId = `p_${id}`;
-    const studentGenId = `s_${id}`;
-    this.deleteAppUser(parentGenId);
-    this.deleteAppUser(studentGenId);
+    // Les comptes liés ne sont plus supprimés implicitement (action du directeur).
   },
 
   // --- Teachers ---
@@ -702,56 +328,14 @@ export const RealmSimDB = {
     }
     setStoredData(STORAGE_KEYS.TEACHERS, teachers);
     saveToFirestore("teachers", teacher.id, teacher);
-
-    // Also sync the teacher's AppUser
-    const genId = `t_${teacher.id}`;
-    const savedUsers = getStoredData<AppUser>(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
-    const existing = savedUsers.find(u => u.id === genId || (teacher.fullName && u.fullName?.trim() === teacher.fullName.trim()));
-    const teacherUsername = (existing?.username && existing.username !== "user") ? existing.username : getUsernameForTeacher(teacher);
-    const staffDefaults = getRoleAndPermissionsForStaff(teacher);
-    
-    // Archiving status: If archived, the account MUST be suspended (isActive: false)
-    const isArchived = Boolean(teacher.isArchived);
-    const shouldBeActive = isArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
-
-    // Synchronize role directly with staff defaults
-    let userRole = staffDefaults.role;
-    if (existing && existing.role === "مدير" && staffDefaults.role !== "مدير") {
-      userRole = "مدير";
-    }
-    
-    const teacherUser: AppUser = {
-      id: existing?.id || genId,
-      username: teacherUsername,
-      fullName: teacher.fullName,
-      password: existing?.password || "123",
-      role: userRole,
-      roleTitle: teacher.roleTitle,
-      category: teacher.category,
-      isActive: shouldBeActive,
-      isArchived: isArchived,
-      canEditStudents: existing?.canEditStudents !== undefined && existing.role === userRole ? existing.canEditStudents : staffDefaults.canEditStudents,
-      canEditTeachers: existing?.canEditTeachers !== undefined && existing.role === userRole ? existing.canEditTeachers : staffDefaults.canEditTeachers,
-      canEditGrades: existing?.canEditGrades !== undefined ? existing.canEditGrades : staffDefaults.canEditGrades,
-      canEditPayments: existing?.canEditPayments !== undefined && existing.role === userRole ? existing.canEditPayments : staffDefaults.canEditPayments,
-      teacherTakeAttendance: existing?.teacherTakeAttendance !== undefined ? existing.teacherTakeAttendance : staffDefaults.teacherTakeAttendance,
-      teacherRecordGrades: existing?.teacherRecordGrades !== undefined ? existing.teacherRecordGrades : staffDefaults.teacherRecordGrades,
-      teacherWriteBehaviorReports: existing?.teacherWriteBehaviorReports !== undefined ? existing.teacherWriteBehaviorReports : staffDefaults.teacherWriteBehaviorReports,
-      teacherEditOwnStudents: existing?.teacherEditOwnStudents !== undefined ? existing.teacherEditOwnStudents : staffDefaults.teacherEditOwnStudents,
-      teacherSendAlertsToParents: existing?.teacherSendAlertsToParents !== undefined ? existing.teacherSendAlertsToParents : staffDefaults.teacherSendAlertsToParents,
-      permissions: existing?.permissions || getDefaultPermissionsForRole(userRole),
-    };
-    
-    this.saveAppUser(teacherUser);
+    // Lot 0 : le compte lié n'est plus créé ni réécrit automatiquement. La
+    // suspension à l'archivage est faite par la Cloud Function
+    // syncAccountsOnArchive (et par le directeur depuis l'interface).
   },
   deleteTeacher(id: string): void {
     const teachers = this.getTeachers().filter((t) => t.id !== id);
     setStoredData(STORAGE_KEYS.TEACHERS, teachers);
     deleteFromFirestore("teachers", id);
-
-    // Also delete their AppUser!
-    const genId = `t_${id}`;
-    this.deleteAppUser(genId);
   },
 
   // --- Classes ---
@@ -950,7 +534,7 @@ export const RealmSimDB = {
       setStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, backupData.settings);
     }
     if (backupData.appUsers && Array.isArray(backupData.appUsers)) {
-      setStoredData(STORAGE_KEYS.SETTINGS_USERS, backupData.appUsers);
+      setStoredData(STORAGE_KEYS.SETTINGS_USERS, backupData.appUsers.map((u: AppUser) => stripPassword(u)));
     }
   },
   getSystemSettings(): SystemSettings {
@@ -972,345 +556,67 @@ export const RealmSimDB = {
   saveSystemSettings(settings: SystemSettings): void {
     setStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, settings);
     saveToFirestore("settings", "system", settings);
-
-    if (settings.directorName && settings.directorName.trim()) {
-      const newDirectorName = settings.directorName.trim();
-      const savedUsers = getStoredData<AppUser>(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
-      const adminIdx = savedUsers.findIndex(u => u.id === "u1" || u.username === "admin_alfajr");
-      if (adminIdx >= 0) {
-        savedUsers[adminIdx].fullName = newDirectorName;
-        setStoredData(STORAGE_KEYS.SETTINGS_USERS, savedUsers);
-        saveToFirestore("appUsers", savedUsers[adminIdx].id, savedUsers[adminIdx]);
-      }
-    }
   },
   getAppUsers(): AppUser[] {
-    const savedUsers = getStoredData(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
-    const syncedUsers = this.syncAppUsers(savedUsers);
-    
-    // Save to LocalStorage if changed to persist updated/migrated users
-    if (JSON.stringify(savedUsers) !== JSON.stringify(syncedUsers)) {
-      setStoredData(STORAGE_KEYS.SETTINGS_USERS, syncedUsers);
+    // Lot 0 : liste telle que synchronisée depuis Firestore (bureau uniquement),
+    // sans aucune synthèse de comptes ni écriture. Les mots de passe hérités
+    // éventuellement présents dans un vieux cache sont retirés.
+    const savedUsers = getStoredData<AppUser>(STORAGE_KEYS.SETTINGS_USERS, INITIAL_SETTINGS_USERS);
+    const cleaned = savedUsers.map((u) => stripPassword(u));
+    if (cleaned.some((u, i) => u !== savedUsers[i])) {
+      setStoredData(STORAGE_KEYS.SETTINGS_USERS, cleaned);
     }
-    return syncedUsers;
+    return cleaned;
   },
-  syncAppUsers(savedUsers: AppUser[]): AppUser[] {
-    const oldDefaultUsernames = ["director", "mariam", "said_benjelloun", "anas_al_morabit"];
-    const currentSysSettings = getStoredItem<SystemSettings>(STORAGE_KEYS.SETTINGS_SYSTEM, INITIAL_SETTINGS_SYSTEM);
-    const targetDirectorName = currentSysSettings?.directorName?.trim();
-    
-    // Filter out old default/mock accounts
-    let filtered = savedUsers.filter(u => {
-      if (u.id === "u1") {
-        return true; // Keep admin
-      }
-      if (oldDefaultUsernames.includes(u.username.toLowerCase())) {
-        return false;
-      }
-      if (u.id.startsWith("t_") || u.id.startsWith("p_") || u.id.startsWith("s_")) {
-        return false; // Recreated dynamically below
-      }
-      return true;
-    });
-
-    // Migrate or repair the u1 admin account
-    const adminIdx = filtered.findIndex(u => u.id === "u1" || u.username === "admin_alfajr");
-    if (adminIdx >= 0) {
-      const admin = filtered[adminIdx];
-      let needsSave = false;
-      if (admin.id !== "u1") {
-        admin.id = "u1";
-        needsSave = true;
-      }
-      if (admin.role !== "مدير") {
-        admin.role = "مدير";
-        needsSave = true;
-      }
-      if (admin.username === "director" || admin.password === "123") {
-        admin.username = "admin_alfajr";
-        admin.password = "FajrAcademy@2026!";
-        needsSave = true;
-      }
-      if (targetDirectorName && admin.fullName !== targetDirectorName) {
-        admin.fullName = targetDirectorName;
-        needsSave = true;
-      }
-      admin.canEditStudents = true;
-      admin.canEditTeachers = true;
-      admin.canEditGrades = true;
-      admin.canEditPayments = true;
-      admin.isActive = true;
-      admin.isArchived = false;
-      if (needsSave) {
-        saveToFirestore("appUsers", admin.id, admin);
-      }
-    } else {
-      // Re-add u1 if it doesn't exist
-      const defaultAdmin: AppUser = {
-        id: "u1",
-        username: "admin_alfajr",
-        fullName: targetDirectorName || "الشيخ عبد الرحمن السلاوي",
-        password: "FajrAcademy@2026!",
-        role: "مدير",
-        isActive: true,
-        canEditStudents: true,
-        canEditTeachers: true,
-        canEditGrades: true,
-        canEditPayments: true,
-        teacherTakeAttendance: true,
-        teacherRecordGrades: true,
-        teacherWriteBehaviorReports: true,
-        teacherEditOwnStudents: true,
-        teacherSendAlertsToParents: true,
-        parentViewOwnStats: true,
-        parentViewOwnAttendance: true,
-        parentViewCertificates: true,
-        parentViewOwnPayments: true,
-        parentUpdateContactInfo: true,
-        parentRegisterInActivities: true,
-      };
-      filtered.unshift(defaultAdmin);
-      saveToFirestore("appUsers", "u1", defaultAdmin);
-    }
-
-    // 1. Generate Teacher & Staff users
-    const teachersList = getStoredData<Teacher>(STORAGE_KEYS.TEACHERS, INITIAL_TEACHERS);
-    teachersList.forEach(teacher => {
-      const genId = `t_${teacher.id}`;
-      const isArchived = Boolean(teacher.isArchived);
-      const existing = savedUsers.find(u =>
-        u.id !== "u1" && (
-          u.id === genId ||
-          (u.role === "مدرس" && teacher.fullName && u.fullName?.trim() === teacher.fullName.trim()) ||
-          (teacher.email && u.email?.trim().toLowerCase() === teacher.email.trim().toLowerCase())
-        )
-      );
-      
-      const staffDefaults = getRoleAndPermissionsForStaff(teacher);
-      
-      let userRole = staffDefaults.role;
-      if (existing && existing.role === "مدير" && staffDefaults.role !== "مدير") {
-        userRole = "مدير";
-      }
-
-      const shouldBeActive = isArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
-      const teacherId = (existing?.id && existing.id.startsWith("t_") && existing.id !== "u1") ? existing.id : genId;
-      
-      let teacherUsername = (existing?.username && existing.username !== "user" && existing.username !== "admin_alfajr")
-        ? existing.username
-        : getUsernameForTeacher(teacher);
-
-      if (teacherUsername === "admin_alfajr") {
-        teacherUsername = `staff_${teacherUsername}`;
-      }
-
-      const teacherUser: AppUser = {
-        id: teacherId,
-        username: teacherUsername,
-        fullName: teacher.fullName,
-        password: existing?.password || "123",
-        role: userRole,
-        roleTitle: teacher.roleTitle,
-        category: teacher.category,
-        isActive: shouldBeActive,
-        isArchived: isArchived,
-        canEditStudents: staffDefaults.canEditStudents,
-        canEditTeachers: staffDefaults.canEditTeachers,
-        canEditGrades: staffDefaults.canEditGrades,
-        canEditPayments: staffDefaults.canEditPayments,
-        teacherTakeAttendance: staffDefaults.teacherTakeAttendance,
-        teacherRecordGrades: staffDefaults.teacherRecordGrades,
-        teacherWriteBehaviorReports: staffDefaults.teacherWriteBehaviorReports,
-        teacherEditOwnStudents: staffDefaults.teacherEditOwnStudents,
-        teacherSendAlertsToParents: staffDefaults.teacherSendAlertsToParents,
-        permissions: existing?.permissions || getDefaultPermissionsForRole(userRole),
-      };
-      
-      const existingIdx = filtered.findIndex(u => u.id === teacherUser.id && u.id !== "u1");
-      if (existingIdx >= 0) {
-        filtered[existingIdx] = teacherUser;
-      } else {
-        filtered.push(teacherUser);
-      }
-
-      // Synchronize changes to Firestore if out of sync
-      if (existing && (existing.role !== userRole || existing.isActive !== shouldBeActive || existing.roleTitle !== teacher.roleTitle || existing.isArchived !== isArchived)) {
-        saveToFirestore("appUsers", teacherUser.id, teacherUser);
-      }
-    });
-
-    // 2. Generate Parent users
-    const studentsList = getStoredData<Student>(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
-    const processedParents = new Set<string>();
-    studentsList.forEach(student => {
-      const parentKey = student.parentPhone || student.parentName;
-      if (!parentKey || processedParents.has(parentKey)) return;
-      processedParents.add(parentKey);
-
-      // Check if all children associated with this parent are archived
-      const parentChildren = studentsList.filter(s => (s.parentPhone && s.parentPhone === student.parentPhone) || (s.parentName && s.parentName === student.parentName));
-      const areAllChildrenArchived = parentChildren.length > 0 && parentChildren.every(s => Boolean(s.isArchived));
-
-      const genId = `p_${student.id}`;
-      // CRITICAL GUARD: Only match parent accounts (role === "ولي أمر" or id starts with "p_"). NEVER match director (u1) or other roles!
-      const existing = savedUsers.find(u =>
-        u.id !== "u1" && (
-          u.id === genId ||
-          (u.role === "ولي أمر" && (
-            (student.parentPhone && u.phone && u.phone === student.parentPhone) ||
-            (student.parentName && u.fullName?.trim() === student.parentName.trim())
-          ))
-        )
-      );
-      
-      const shouldBeActive = areAllChildrenArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
-      const parentId = (existing?.id && existing.id.startsWith("p_") && existing.id !== "u1") ? existing.id : genId;
-
-      let parentUsername = (existing?.username && existing.username !== "user" && existing.username !== "admin_alfajr")
-        ? existing.username
-        : getUsernameForParent(student);
-
-      if (parentUsername === "admin_alfajr") {
-        parentUsername = `parent_${parentUsername}`;
-      }
-
-      const parentUser: AppUser = {
-        id: parentId,
-        username: parentUsername,
-        fullName: student.parentName,
-        phone: student.parentPhone,
-        password: existing?.password || "123",
-        role: "ولي أمر",
-        isActive: shouldBeActive,
-        isArchived: areAllChildrenArchived,
-        canEditStudents: false,
-        canEditTeachers: false,
-        canEditGrades: false,
-        canEditPayments: false,
-        parentViewOwnStats: existing?.parentViewOwnStats !== undefined ? existing.parentViewOwnStats : true,
-        parentViewOwnAttendance: existing?.parentViewOwnAttendance !== undefined ? existing.parentViewOwnAttendance : true,
-        parentViewCertificates: existing?.parentViewCertificates !== undefined ? existing.parentViewCertificates : true,
-        parentViewOwnPayments: existing?.parentViewOwnPayments !== undefined ? existing.parentViewOwnPayments : true,
-        parentUpdateContactInfo: existing?.parentUpdateContactInfo !== undefined ? existing.parentUpdateContactInfo : true,
-        parentRegisterInActivities: existing?.parentRegisterInActivities !== undefined ? existing.parentRegisterInActivities : true,
-        permissions: existing?.permissions || getDefaultPermissionsForRole("ولي أمر"),
-      };
-
-      // Safeguard: NEVER overwrite u1 or any non-parent user
-      const existingIdx = filtered.findIndex(u => u.id === parentUser.id && u.id !== "u1");
-      if (existingIdx >= 0) {
-        filtered[existingIdx] = parentUser;
-      } else {
-        filtered.push(parentUser);
-      }
-
-      if (existing && (existing.isActive !== shouldBeActive || existing.isArchived !== areAllChildrenArchived)) {
-        saveToFirestore("appUsers", parentUser.id, parentUser);
-      }
-    });
-
-    // 3. Generate Student users (only for age >= 15)
-    studentsList.forEach(student => {
-      const birthYear = student.birthDate ? parseInt(student.birthDate.split('-')[0]) : 2015;
-      const age = 2026 - birthYear;
-      if (age < 15) return;
-
-      const genId = `s_${student.id}`;
-      const isArchived = Boolean(student.isArchived);
-      const existing = savedUsers.find(u =>
-        u.id !== "u1" && (
-          u.id === genId ||
-          (u.role === "طالب" && student.fullName && u.fullName?.trim() === student.fullName.trim())
-        )
-      );
-
-      const shouldBeActive = isArchived ? false : (existing !== undefined ? (existing.isArchived ? true : existing.isActive) : true);
-      const studentId = (existing?.id && existing.id.startsWith("s_") && existing.id !== "u1") ? existing.id : genId;
-
-      let studentUsername = (existing?.username && existing.username !== "user" && existing.username !== "admin_alfajr")
-        ? existing.username
-        : getUsernameForStudent(student);
-
-      if (studentUsername === "admin_alfajr") {
-        studentUsername = `student_${studentUsername}`;
-      }
-
-      const studentUser: AppUser = {
-        id: studentId,
-        username: studentUsername,
-        fullName: student.fullName,
-        password: existing?.password || "123",
-        role: "طالب",
-        isActive: shouldBeActive,
-        isArchived: isArchived,
-        canEditStudents: false,
-        canEditTeachers: false,
-        canEditGrades: false,
-        canEditPayments: false,
-        parentViewOwnStats: existing?.parentViewOwnStats !== undefined ? existing.parentViewOwnStats : true,
-        parentViewOwnAttendance: existing?.parentViewOwnAttendance !== undefined ? existing.parentViewOwnAttendance : true,
-        parentViewCertificates: existing?.parentViewCertificates !== undefined ? existing.parentViewCertificates : true,
-        parentViewOwnPayments: existing?.parentViewOwnPayments !== undefined ? existing.parentViewOwnPayments : true,
-        permissions: existing?.permissions || getDefaultPermissionsForRole("طالب"),
-      };
-
-      const existingIdx = filtered.findIndex(u => u.id === studentUser.id && u.id !== "u1");
-      if (existingIdx >= 0) {
-        filtered[existingIdx] = studentUser;
-      } else {
-        filtered.push(studentUser);
-      }
-
-      if (existing && (existing.isActive !== shouldBeActive || existing.isArchived !== isArchived)) {
-        saveToFirestore("appUsers", studentUser.id, studentUser);
-      }
-    });
-
-    // Enforce distinct, globally unique usernames across all users
-    const seenUsernames = new Map<string, string>(); // username -> userId
-    // Register u1 first so admin always owns its username and cannot be shadowed
-    const adminUser = filtered.find(u => u.id === "u1");
-    if (adminUser) {
-      const aName = (adminUser.username || "admin_alfajr").trim().toLowerCase();
-      seenUsernames.set(aName, "u1");
-    }
-
-    filtered.forEach((u) => {
-      if (u.id === "u1") return; // Admin username is already registered and protected
-      let uname = (u.username || "").trim().toLowerCase();
-      if (!uname || uname === "user" || uname === "admin_alfajr" || (seenUsernames.has(uname) && seenUsernames.get(uname) !== u.id)) {
-        uname = generateUniqueUsername(u.fullName || "user", Array.from(seenUsernames.keys()), u.id);
-        u.username = uname;
-        saveToFirestore("appUsers", u.id, u);
-      }
-      seenUsernames.set(uname, u.id);
-    });
-
-    return filtered;
-  },
-  saveAppUser(user: AppUser): void {
+  /**
+   * Enregistre un compte existant (directeur uniquement, imposé par les règles).
+   * Met aussi à jour le lien d'autorisation `authLinks/{authUid}` lu par les
+   * règles Firestore : rôle, statut et liens explicites.
+   */
+  async saveAppUser(user: AppUser): Promise<void> {
     // Permanent guard: u1 must always remain a "مدير"
     if (user.id === "u1") {
       user.role = "مدير";
     }
+    const clean = stripPassword(user);
     const list = this.getAppUsers();
-    const idx = list.findIndex(u => u.id === user.id);
+    const idx = list.findIndex(u => u.id === clean.id);
     if (idx >= 0) {
-      list[idx] = user;
+      list[idx] = clean;
     } else {
-      list.push(user);
+      list.push(clean);
     }
     setStoredData(STORAGE_KEYS.SETTINGS_USERS, list);
-    saveToFirestore("appUsers", user.id, user);
+    await saveAppUserDoc(clean);
+    if (clean.authUid) {
+      await saveAuthLink(clean.authUid, {
+        appUserId: clean.id,
+        role: clean.role,
+        isActive: clean.isActive !== false,
+        username: clean.username,
+        linkedStudentIds: clean.linkedStudentIds || [],
+        linkedTeacherId: clean.linkedTeacherId || null,
+        updatedAt: new Date().toISOString(),
+      });
+    }
   },
-  deleteAppUser(userId: string): void {
+  async deleteAppUser(userId: string): Promise<void> {
     if (userId === "u1") {
       console.warn("Attempt to delete primary administrator u1 blocked.");
       return;
     }
-    const list = this.getAppUsers().filter(u => u.id !== userId);
-    setStoredData(STORAGE_KEYS.SETTINGS_USERS, list);
+    const all = this.getAppUsers();
+    const target = all.find(u => u.id === userId);
+    setStoredData(STORAGE_KEYS.SETTINGS_USERS, all.filter(u => u.id !== userId));
+    // Sans lien d'autorisation, le compte Auth restant n'ouvre plus aucun accès.
+    if (target?.authUid) {
+      await deleteAuthLink(target.authUid);
+    }
     deleteFromFirestore("appUsers", userId);
+  },
+  /** Remplace le cache local des comptes (après création via Cloud Function). */
+  setCachedAppUsers(users: AppUser[]): void {
+    setStoredData(STORAGE_KEYS.SETTINGS_USERS, users.map((u) => stripPassword(u)));
   },
   getDailyProgress(): DailyProgress[] {
     return getStoredData(STORAGE_KEYS.DAILY_PROGRESS, []);
@@ -1544,3 +850,56 @@ export const RealmSimDB = {
     }
   }
 };
+
+// ---------------------------------------------------------------------------
+// Hygiène du cache local (Lot 0, faille S6)
+// ---------------------------------------------------------------------------
+const LEGACY_SESSION_KEY = "alfajr_logged_user";
+const CACHE_OWNER_KEY = "alfajr_cache_owner";
+
+/** Vide tout le cache local des données (à la déconnexion, au changement de compte). */
+export function clearLocalCache(): void {
+  if (typeof window === "undefined") return;
+  try {
+    Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
+    localStorage.removeItem(LEGACY_SESSION_KEY);
+    localStorage.removeItem(CACHE_OWNER_KEY);
+  } catch (e) {
+    console.error("Error clearing local cache:", e);
+  }
+}
+
+/**
+ * Le cache local appartient à un seul compte : s'il a été rempli par un autre
+ * utilisateur (PC partagé de l'école), il est purgé avant d'afficher quoi que ce soit.
+ */
+export function ensureCacheOwner(uid: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const owner = localStorage.getItem(CACHE_OWNER_KEY);
+    if (owner !== uid) {
+      clearLocalCache();
+      localStorage.setItem(CACHE_OWNER_KEY, uid);
+    }
+  } catch (e) {
+    console.error("Error checking cache owner:", e);
+  }
+}
+
+/**
+ * Supprime au démarrage les traces sensibles laissées par les anciennes
+ * versions : session complète avec mot de passe, et cache des comptes
+ * contenant des mots de passe en clair.
+ */
+export function purgeLegacySensitiveStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(LEGACY_SESSION_KEY);
+    const rawUsers = localStorage.getItem(STORAGE_KEYS.SETTINGS_USERS);
+    if (rawUsers && rawUsers.includes('"password"')) {
+      localStorage.removeItem(STORAGE_KEYS.SETTINGS_USERS);
+    }
+  } catch (e) {
+    console.error("Error purging legacy storage:", e);
+  }
+}

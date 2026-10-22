@@ -14,9 +14,10 @@
     "lint": "tsc --noEmit",
     "lint:functions": "npm --prefix functions run lint",
     "test": "vitest run --dir tests/unit",
-    "test:rules": "firebase emulators:exec --only firestore,auth --project demo-quran-school \"vitest run --dir tests/emulator\"",
+    "test:rules": "npm run build:functions && firebase emulators:exec --only firestore,auth,functions --project demo-quran-school \"vitest run --dir tests/emulator && npm --prefix functions test\"",
     "test:all": "npm run test && npm run test:rules",
-    "emulators:persist": "npm run build:functions && firebase emulators:start --project demo-quran-school --import=./emulator-data --export-on-exit=./emulator-data"
+    "emulators:persist": "npm run build:functions && firebase emulators:start --project demo-quran-school --import=./emulator-data --export-on-exit=./emulator-data",
+    "seed:emulator": "tsx scripts/dev/seed-emulator.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

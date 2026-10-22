@@ -1,24 +1,34 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { RealmSimDB } from "./db";
+import { onAuthStateChanged } from "firebase/auth";
+import { RealmSimDB, clearLocalCache, ensureCacheOwner, purgeLegacySensitiveStorage } from "./db";
 import { 
-  bootstrapCollectionIfEmpty, 
-  bootstrapSettingsIfEmpty, 
   subscribeToCollection, 
   subscribeToSettings,
-  loginWithFirebaseAuth,
-  logoutFromFirebaseAuth,
+  subscribeToDocument,
+  subscribeToDocumentsByIds,
+  subscribeToQueryIn,
   subscribeToQuotaState,
-  fetchAppUsersFromFirestore,
-  fetchSystemSettingsFromFirestore,
-  db
+  signInWithUsername,
+  signOutUser,
+  changeOwnPassword,
+  fetchAuthLink,
+  fetchAppUser,
+  updateOwnAppUserFields,
+  createUserAccountRemote,
+  resetUserPasswordRemote,
+  describeFirebaseError,
+  stripPassword,
+  auth
 } from "./firebase";
 import { 
   Student, Teacher, Class, Attendance, Grade, Payment, Notification, 
-  UserRole, TajweedLevel, SystemSettings, AppUser, DailyProgress, 
+  UserRole, TajweedLevel, SystemSettings, AppUser, AuthLink, DailyProgress, 
   OtherIncome, SalaryPayment, Expense, checkUserPermission,
   ActivityTrip, ActivityParticipant, ActivityExpense
 } from "./types";
+import { isDirectorRole, isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections } from "./security/access";
+import { validateNewPassword } from "./security/accounts";
+import { computeAccountAlignment, linkedStudentIdsOf, linkedTeacherIdOf } from "./security/accountAlignment";
 import { getStudentPhoto, StudentAvatar } from "./utils/studentAvatar";
 import StudentCard from "./components/StudentCard";
 import TeacherManagement from "./components/TeacherManagement";
@@ -171,6 +181,18 @@ const parseClassSchedule = (scheduleStr: string): ParsedSchedule => {
   return { activeDays, startTime, endTime };
 };
 
+/** Fusionne compte applicatif et lien d'autorisation (le lien fait foi). */
+function mergeSessionProfile(appUser: AppUser, link: AuthLink, uid: string): AppUser {
+  return {
+    ...stripPassword(appUser),
+    role: link.role,
+    isActive: link.isActive,
+    authUid: uid,
+    linkedStudentIds: link.linkedStudentIds ?? appUser.linkedStudentIds ?? [],
+    linkedTeacherId: link.linkedTeacherId ?? appUser.linkedTeacherId ?? undefined,
+  };
+}
+
 export default function App() {
   // State from LocalStorage database
   const [students, setStudents] = useState<Student[]>([]);
@@ -198,6 +220,10 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  // Lot 0 : session restaurée par Firebase Auth (plus jamais depuis localStorage)
+  const [authChecking, setAuthChecking] = useState<boolean>(true);
+  const [authUid, setAuthUid] = useState<string | null>(null);
+  const loginInProgressRef = useRef(false);
 
   // UI state
   const currentRole: UserRole = currentUser?.role || "طالب";
@@ -280,6 +306,9 @@ export default function App() {
   const [profilePassword, setProfilePassword] = useState<string>("");
   const [profilePhone, setProfilePhone] = useState<string>("");
   const [showProfilePassword, setShowProfilePassword] = useState<boolean>(false);
+  const [profileCurrentPassword, setProfileCurrentPassword] = useState<string>("");
+  const [profileSaving, setProfileSaving] = useState<boolean>(false);
+  const [profileError, setProfileError] = useState<string>("");
 
   // Form input states
   const [formFullName, setFormFullName] = useState("");
@@ -435,218 +464,232 @@ export default function App() {
     });
   }, []);
 
-  // Load Data on Mount
-  useEffect(() => {
-    loadDatabase();
-    const savedUser = localStorage.getItem("alfajr_logged_user");
-    if (savedUser) {
-      try {
-        const u: AppUser = JSON.parse(savedUser);
-        if (u.id === "u1" || u.username === "admin_alfajr") {
-          u.role = "مدير";
-        }
-        setCurrentUser(u);
-      } catch (e) {
-        console.error(e);
-      }
+  /**
+   * Construit le profil de session : le lien d'autorisation `authLinks/{uid}`
+   * fait foi pour le rôle, le statut et les liens ; le compte applicatif
+   * fournit l'affichage et la matrice de droits de l'interface.
+   */
+  const loadSessionProfile = async (uid: string): Promise<{ user: AppUser } | { error: string }> => {
+    const link = await fetchAuthLink(uid);
+    if (!link) {
+      return { error: "هذا الحساب غير مرتبط بأي مستخدم في المنظومة. يرجى التواصل مع إدارة الجمعية." };
     }
+    if (!link.isActive) {
+      return { error: "هذا الحساب معطل حالياً. يرجى التواصل مع إدارة الجمعية." };
+    }
+    const appUser = await fetchAppUser(link.appUserId);
+    if (!appUser) {
+      return { error: "تعذر تحميل ملف المستخدم. يرجى التواصل مع إدارة الجمعية." };
+    }
+    return { user: mergeSessionProfile(appUser, link, uid) };
+  };
+
+  /** Remet à zéro tout l'état de données (déconnexion, changement de compte). */
+  const resetSessionState = () => {
+    setStudents([]);
+    setTeachers([]);
+    setClasses([]);
+    setAttendance([]);
+    setGrades([]);
+    setPayments([]);
+    setNotifications([]);
+    setAppUsers([]);
+    setDailyProgress([]);
+    setOtherIncomes([]);
+    setSalaryPayments([]);
+    setExpenses([]);
+    setActivities([]);
+    setActivityParticipants([]);
+    setActivityExpenses([]);
+    setSelectedStudent(null);
+    setSelectedLabStudentId("");
+  };
+
+  /** Déconnexion réelle : Firebase Auth + purge du cache local. */
+  const handleLogout = async (reason?: string) => {
+    try {
+      await signOutUser();
+    } catch (e) {
+      console.error("Firebase sign-out error:", e);
+    }
+    clearLocalCache();
+    resetSessionState();
+    setAuthUid(null);
+    setCurrentUser(null);
+    setActiveTab("dashboard");
+    setShowProfileEditModal(false);
+    if (reason) setLoginError(reason);
+  };
+
+  // Démarrage : purge des traces sensibles des anciennes versions, puis
+  // restauration de la session par Firebase Auth (jamais depuis localStorage).
+  useEffect(() => {
+    purgeLegacySensitiveStorage();
+    setSystemSettings(RealmSimDB.getSystemSettings());
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (!fbUser) {
+        setAuthUid(null);
+        setCurrentUser(null);
+        setAuthChecking(false);
+        return;
+      }
+      if (loginInProgressRef.current) return; // pris en charge par handleLoginSubmit
+      try {
+        const res = await loadSessionProfile(fbUser.uid);
+        if ("error" in res) {
+          await signOutUser();
+          clearLocalCache();
+          setLoginError(res.error);
+        } else {
+          ensureCacheOwner(fbUser.uid);
+          loadDatabase(res.user.role);
+          setAuthUid(fbUser.uid);
+          setCurrentUser(res.user);
+        }
+      } catch (e) {
+        console.error("Session restore error:", e);
+        setLoginError("تعذر التحقق من الحساب. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.");
+      } finally {
+        setAuthChecking(false);
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
-  // Real-time Firestore synchronization
+  // Clé de session : on ne se réabonne que si le compte, le rôle ou les liens changent.
+  const sessionKey = currentUser && authUid
+    ? `${authUid}|${currentUser.id}|${currentUser.role}|${linkedStudentIdsOf(currentUser).join(",")}`
+    : "";
+
+  // Real-time Firestore synchronization (abonnements limités à ce que le rôle peut lire)
   useEffect(() => {
+    if (!currentUser || !authUid) {
+      return;
+    }
     let active = true;
-    let unsubscribes: (() => void)[] = [];
+    const unsubscribes: (() => void)[] = [];
+    const role = currentUser.role;
+    const readable = new Set(fullyReadableCollections(role));
+    const linkedIds = linkedStudentIdsOf(currentUser);
 
-    const initSync = async () => {
-      try {
-        setSyncStatus("syncing");
-
-        if (currentUser) {
-          // Authenticate with Firebase Auth first to support secure rules (request.auth != null)
-          try {
-            await loginWithFirebaseAuth(currentUser.username, currentUser.password || "123");
-          } catch (authErr) {
-            console.warn("Failed to authenticate to Firebase Auth during sync init:", authErr);
-          }
+    setSyncStatus("syncing");
+    try {
+      // Lien d'autorisation : une suspension ou un changement de rôle s'applique immédiatement.
+      unsubscribes.push(subscribeToDocument<AuthLink & { id: string }>("authLinks", authUid, (link) => {
+        if (!active) return;
+        if (!link || !link.isActive) {
+          handleLogout("تم إيقاف هذا الحساب. يرجى التواصل مع إدارة الجمعية.");
+          return;
         }
+        setCurrentUser((prev) => {
+          if (!prev) return prev;
+          const merged = mergeSessionProfile(prev, link, authUid);
+          return JSON.stringify(merged) === JSON.stringify(prev) ? prev : merged;
+        });
+      }));
 
-        // Always subscribe to systemSettings and appUsers live from Firestore so login screen is always updated
-        const unsubSettings = subscribeToSettings((settings) => {
-          if (active && settings) setSystemSettings(settings);
-        }, "alfajr_settings_system");
-        unsubscribes.push(unsubSettings);
+      // Compte applicatif : nom, droits fins de l'interface, obligation de changer le mot de passe.
+      unsubscribes.push(subscribeToDocument<AppUser>("appUsers", currentUser.id, (u) => {
+        if (!active || !u) return;
+        setCurrentUser((prev) => {
+          if (!prev) return prev;
+          const merged: AppUser = {
+            ...stripPassword(u),
+            role: prev.role,
+            isActive: prev.isActive,
+            authUid: prev.authUid,
+            linkedStudentIds: prev.linkedStudentIds,
+            linkedTeacherId: prev.linkedTeacherId,
+          };
+          return JSON.stringify(merged) === JSON.stringify(prev) ? prev : merged;
+        });
+      }));
 
-        const unsubAppUsers = subscribeToCollection<AppUser>("appUsers", (items) => {
-          if (active && items.length > 0) {
-            const synced = RealmSimDB.syncAppUsers(items);
-            setAppUsers(synced);
-          }
-        }, "alfajr_settings_users");
-        unsubscribes.push(unsubAppUsers);
+      unsubscribes.push(subscribeToSettings((settings) => {
+        if (active && settings) setSystemSettings(settings);
+      }, "alfajr_settings_system"));
 
-        // If user is authenticated, set up full data synchronization
-        if (currentUser) {
-          // 1. Get initial local data for bootstrapping if Firestore is empty
-          const localStudents = RealmSimDB.getStudents();
-          const localTeachers = RealmSimDB.getTeachers();
-          const localClasses = RealmSimDB.getClasses();
-          const localAttendance = RealmSimDB.getAttendance();
-          const localGrades = RealmSimDB.getGrades();
-          const localPayments = RealmSimDB.getPayments();
-          const localNotifications = RealmSimDB.getNotifications();
-          const localSettings = RealmSimDB.getSystemSettings();
-          const localAppUsers = RealmSimDB.getAppUsers();
-          const localOtherIncomes = RealmSimDB.getOtherIncomes();
-          const localSalaryPayments = RealmSimDB.getSalaryPayments();
-          const localExpenses = RealmSimDB.getExpenses();
-          const localActivities = RealmSimDB.getActivities();
-          const localActivityParticipants = RealmSimDB.getActivityParticipants();
-          const localActivityExpenses = RealmSimDB.getActivityExpenses();
+      const sub = <T extends { id: string }>(col: string, key: string, setter: (items: T[]) => void) => {
+        if (!readable.has(col)) return;
+        unsubscribes.push(subscribeToCollection<T>(col, (items) => {
+          if (active) setter(items);
+        }, key));
+      };
 
-          // 2. Bootstrap Firestore if it is empty (to seed cloud from existing local storage)
-          await bootstrapCollectionIfEmpty("students", localStudents);
-          await bootstrapCollectionIfEmpty("teachers", localTeachers);
-          await bootstrapCollectionIfEmpty("classes", localClasses);
-          await bootstrapCollectionIfEmpty("attendance", localAttendance);
-          await bootstrapCollectionIfEmpty("grades", localGrades);
-          await bootstrapCollectionIfEmpty("payments", localPayments);
-          await bootstrapCollectionIfEmpty("notifications", localNotifications);
-          await bootstrapCollectionIfEmpty("appUsers", localAppUsers);
-          await bootstrapCollectionIfEmpty("otherIncomes", localOtherIncomes);
-          await bootstrapCollectionIfEmpty("salaryPayments", localSalaryPayments);
-          await bootstrapCollectionIfEmpty("expenses", localExpenses);
-          await bootstrapCollectionIfEmpty("activities", localActivities);
-          await bootstrapCollectionIfEmpty("activityParticipants", localActivityParticipants);
-          await bootstrapCollectionIfEmpty("activityExpenses", localActivityExpenses);
-          await bootstrapSettingsIfEmpty(localSettings);
-
-          if (!active) return;
-
-          // 3. Set up real-time subscriptions for operational data
-          const unsubStudents = subscribeToCollection<Student>("students", (items) => {
-            if (active) {
-              setStudents(items);
-              if (items.length > 0) {
-                setSelectedStudent(prev => prev ? (items.find(s => s.id === prev.id) || items[0]) : items[0]);
-                setSelectedLabStudentId(prev => prev ? (items.some(s => s.id === prev) ? prev : items[0].id) : items[0].id);
-              }
-            }
-          }, "alfajr_students");
-          unsubscribes.push(unsubStudents);
-
-          const unsubTeachers = subscribeToCollection<Teacher>("teachers", (items) => {
-            if (active) setTeachers(items);
-          }, "alfajr_teachers");
-          unsubscribes.push(unsubTeachers);
-
-          const unsubClasses = subscribeToCollection<Class>("classes", (items) => {
-            if (active) setClasses(items);
-          }, "alfajr_classes");
-          unsubscribes.push(unsubClasses);
-
-          const unsubAttendance = subscribeToCollection<Attendance>("attendance", (items) => {
-            if (active) setAttendance(items);
-          }, "alfajr_attendance");
-          unsubscribes.push(unsubAttendance);
-
-          const unsubGrades = subscribeToCollection<Grade>("grades", (items) => {
-            if (active) setGrades(items);
-          }, "alfajr_grades");
-          unsubscribes.push(unsubGrades);
-
-          const unsubPayments = subscribeToCollection<Payment>("payments", (items) => {
-            if (active) setPayments(items);
-          }, "alfajr_payments");
-          unsubscribes.push(unsubPayments);
-
-          const unsubNotifications = subscribeToCollection<Notification>("notifications", (items) => {
-            if (active) setNotifications(items);
-          }, "alfajr_notifications");
-          unsubscribes.push(unsubNotifications);
-
-          const unsubDailyProgress = subscribeToCollection<DailyProgress>("dailyProgress", (items) => {
-            if (active) setDailyProgress(items);
-          }, "alfajr_daily_progress");
-          unsubscribes.push(unsubDailyProgress);
-
-          const unsubOtherIncomes = subscribeToCollection<OtherIncome>("otherIncomes", (items) => {
-            if (active) setOtherIncomes(items);
-          }, "alfajr_other_incomes");
-          unsubscribes.push(unsubOtherIncomes);
-
-          const unsubSalaryPayments = subscribeToCollection<SalaryPayment>("salaryPayments", (items) => {
-            if (active) setSalaryPayments(items);
-          }, "alfajr_salary_payments");
-          unsubscribes.push(unsubSalaryPayments);
-
-          const unsubExpenses = subscribeToCollection<Expense>("expenses", (items) => {
-            if (active) setExpenses(items);
-          }, "alfajr_expenses");
-          unsubscribes.push(unsubExpenses);
-
-          const unsubActivities = subscribeToCollection<ActivityTrip>("activities", (items) => {
-            if (active) setActivities(items);
-          }, "alfajr_activities");
-          unsubscribes.push(unsubActivities);
-
-          const unsubActivityParticipants = subscribeToCollection<ActivityParticipant>("activityParticipants", (items) => {
-            if (active) setActivityParticipants(items);
-          }, "alfajr_activity_participants");
-          unsubscribes.push(unsubActivityParticipants);
-
-          const unsubActivityExpenses = subscribeToCollection<ActivityExpense>("activityExpenses", (items) => {
-            if (active) setActivityExpenses(items);
-          }, "alfajr_activity_expenses");
-          unsubscribes.push(unsubActivityExpenses);
+      const onStudents = (items: Student[]) => {
+        setStudents(items);
+        if (items.length > 0) {
+          setSelectedStudent(prev => prev ? (items.find(s => s.id === prev.id) || items[0]) : items[0]);
+          setSelectedLabStudentId(prev => prev ? (items.some(s => s.id === prev) ? prev : items[0].id) : items[0].id);
+        } else {
+          setSelectedStudent(null);
         }
+      };
 
-        setSyncStatus("synced");
-      } catch (err) {
-        console.error("Error setting up Firebase sync:", err);
-        if (active) {
-          setSyncStatus("error");
-          loadDatabase();
-        }
+      if (readable.has("students")) {
+        sub<Student>("students", "alfajr_students", onStudents);
+      } else if (isFamilyRole(role)) {
+        // Familles : uniquement les dossiers explicitement liés au compte.
+        unsubscribes.push(subscribeToDocumentsByIds<Student>("students", linkedIds, (items) => {
+          if (active) onStudents(items);
+        }, "alfajr_students"));
       }
-    };
 
-    initSync();
+      sub<AppUser>("appUsers", "alfajr_settings_users", setAppUsers);
+      sub<Teacher>("teachers", "alfajr_teachers", setTeachers);
+      sub<Class>("classes", "alfajr_classes", setClasses);
+      sub<Payment>("payments", "alfajr_payments", setPayments);
+      sub<Notification>("notifications", "alfajr_notifications", setNotifications);
+      sub<OtherIncome>("otherIncomes", "alfajr_other_incomes", setOtherIncomes);
+      sub<SalaryPayment>("salaryPayments", "alfajr_salary_payments", setSalaryPayments);
+      sub<Expense>("expenses", "alfajr_expenses", setExpenses);
+      sub<ActivityTrip>("activities", "alfajr_activities", setActivities);
+      sub<ActivityParticipant>("activityParticipants", "alfajr_activity_participants", setActivityParticipants);
+      sub<ActivityExpense>("activityExpenses", "alfajr_activity_expenses", setActivityExpenses);
+
+      if (readable.has("attendance")) {
+        sub<Attendance>("attendance", "alfajr_attendance", setAttendance);
+        sub<Grade>("grades", "alfajr_grades", setGrades);
+        sub<DailyProgress>("dailyProgress", "alfajr_daily_progress", setDailyProgress);
+      } else if (isFamilyRole(role)) {
+        // Familles : requêtes filtrées sur les élèves liés (vérifiées par les règles).
+        unsubscribes.push(subscribeToQueryIn<Attendance>("attendance", "studentId", linkedIds, (items) => { if (active) setAttendance(items); }, "alfajr_attendance"));
+        unsubscribes.push(subscribeToQueryIn<Grade>("grades", "studentId", linkedIds, (items) => { if (active) setGrades(items); }, "alfajr_grades"));
+        unsubscribes.push(subscribeToQueryIn<DailyProgress>("dailyProgress", "studentId", linkedIds, (items) => { if (active) setDailyProgress(items); }, "alfajr_daily_progress"));
+      }
+
+      setSyncStatus("synced");
+    } catch (err) {
+      console.error("Error setting up Firebase sync:", err);
+      if (active) {
+        setSyncStatus("error");
+        loadDatabase();
+      }
+    }
 
     return () => {
       active = false;
       unsubscribes.forEach(unsub => unsub());
     };
-  }, [currentUser]);
+  }, [sessionKey]);
 
-  // Real-time update of logged-in user's fine-grained permissions when appUsers is updated in Firestore/Settings
+  // Changement de mot de passe obligatoire (comptes provisionnés ou réinitialisés).
   useEffect(() => {
-    if (currentUser && appUsers.length > 0) {
-      // Find matching user strictly by immutable ID first, and fallback to username with matching role
-      let updated = appUsers.find(u => u.id === currentUser.id);
-      if (!updated && currentUser.username) {
-        updated = appUsers.find(u => u.username === currentUser.username && u.role === currentUser.role);
-      }
-
-      // Safeguard: Never downgrade a logged-in director to another role (like parent or student)
-      if (currentUser.role === "مدير" && updated && updated.role !== "مدير") {
-        console.warn("Prevented illegal role mutation of director:", updated);
-        return;
-      }
-
-      if (updated && JSON.stringify(updated) !== JSON.stringify(currentUser)) {
-        setCurrentUser(updated);
-        try {
-          localStorage.setItem("alfajr_logged_user", JSON.stringify(updated));
-        } catch (e) {
-          console.error("Failed to update localStorage logged user:", e);
-        }
-      }
+    if (currentUser?.mustChangePassword) {
+      setProfileFullName(currentUser.fullName || "");
+      setProfilePhone(currentUser.username || "");
+      setProfilePassword("");
+      setProfileCurrentPassword("");
+      setProfileError("");
+      setShowProfileEditModal(true);
     }
-  }, [appUsers]);
+  }, [currentUser?.mustChangePassword]);
 
   // Auto-process absences based on schedule
   useEffect(() => {
     if (students.length === 0 || classes.length === 0) return;
+    // Seuls les comptes pédagogiques écrivent les présences (règles Firestore).
+    if (!currentUser || !isEducatorRole(currentRole)) return;
 
     const dateObj = new Date(attendanceDate);
     // Get day of the week for selected date
@@ -709,7 +752,7 @@ export default function App() {
     }
   }, [attendanceDate, students.length, classes.length]);
 
-  const loadDatabase = () => {
+  const loadDatabase = (roleForMigrations: UserRole | null = currentUser ? currentRole : null) => {
     const s = RealmSimDB.getStudents();
     const t = RealmSimDB.getTeachers();
     const c = RealmSimDB.getClasses();
@@ -719,8 +762,10 @@ export default function App() {
     const n = RealmSimDB.getNotifications();
 
     // Migrate legacy payments: filter out months before July 2026 without resetting payment statuses
+    // Lot 0 : réservé au bureau (seul autorisé à écrire les paiements), et plus
+    // jamais déclenché par un cache vide (qui écrasait des paiements réels).
     const hasPreJuly = p.some(pay => isMonthBeforeJuly2026(pay.month, pay.year));
-    if (hasPreJuly || p.length === 0) {
+    if (hasPreJuly && isOfficeRole(roleForMigrations)) {
       const cleanPayments: Payment[] = p.filter(pay => !isMonthBeforeJuly2026(pay.month, pay.year));
 
       // Make sure every student has a July 2026 payment record
@@ -747,8 +792,10 @@ export default function App() {
       }
     }
 
-    // Auto-sync activities finances with accounting records
-    RealmSimDB.syncAllActivitiesToFinance();
+    // Auto-sync activities finances with accounting records (bureau uniquement)
+    if (isOfficeRole(roleForMigrations)) {
+      RealmSimDB.syncAllActivitiesToFinance();
+    }
 
     setStudents(s);
     setTeachers(t);
@@ -794,7 +841,7 @@ export default function App() {
       oldRevisionPart: progressOldRevision,
       rating: progressRating,
       notes: progressNotes,
-      teacherId: activeTeacher?.id || "t1"
+      teacherId: activeTeacher?.id || currentUser?.linkedTeacherId || currentUser?.id || ""
     };
 
     RealmSimDB.saveDailyProgress(newProgress);
@@ -997,15 +1044,20 @@ export default function App() {
       const updated = { ...student, isArchived: isArchivedNow };
       RealmSimDB.saveStudent(updated);
 
-      // Also explicitly sync matching Student AppUser (if age >= 15)
-      const studentUser = appUsers.find(u => u.id === `s_${student.id}` || (u.fullName && u.fullName.trim() === student.fullName.trim() && u.role === "طالب"));
-      if (studentUser) {
-        const updatedStudentUser: AppUser = {
-          ...studentUser,
-          isActive: !isArchivedNow,
-          isArchived: isArchivedNow,
-        };
-        RealmSimDB.saveAppUser(updatedStudentUser);
+      // Suspension / réactivation du compte élève lié (liens explicites uniquement).
+      // Le directeur l'applique immédiatement ; pour les autres rôles, la Cloud
+      // Function syncAccountsOnArchive s'en charge côté serveur.
+      if (isDirectorRole(currentRole)) {
+        appUsers
+          .filter(u => u.role === "طالب" && linkedStudentIdsOf(u).includes(student.id))
+          .forEach((studentUser) => {
+            const updatedStudentUser: AppUser = {
+              ...studentUser,
+              isActive: !isArchivedNow,
+              isArchived: isArchivedNow,
+            };
+            RealmSimDB.saveAppUser(updatedStudentUser).catch((err) => console.error("Account status sync failed:", err));
+          });
       }
 
       addSysNotification(
@@ -1054,16 +1106,19 @@ export default function App() {
       const updated = { ...teach, isArchived: isArchivedNow };
       RealmSimDB.saveTeacher(updated);
       
-      // Also explicitly sync matching AppUser
-      const genId = `t_${teach.id}`;
-      const targetUser = appUsers.find(u => u.id === genId || (teach.fullName && u.fullName?.trim() === teach.fullName.trim()));
-      if (targetUser) {
-        const updatedUser: AppUser = {
-          ...targetUser,
-          isActive: !isArchivedNow,
-          isArchived: isArchivedNow,
-        };
-        RealmSimDB.saveAppUser(updatedUser);
+      // Suspension / réactivation du compte lié (liens explicites uniquement ;
+      // jamais le compte directeur principal). Voir aussi syncAccountsOnArchive.
+      if (isDirectorRole(currentRole)) {
+        appUsers
+          .filter(u => u.id !== "u1" && linkedTeacherIdOf(u) === teach.id)
+          .forEach((targetUser) => {
+            const updatedUser: AppUser = {
+              ...targetUser,
+              isActive: !isArchivedNow,
+              isArchived: isArchivedNow,
+            };
+            RealmSimDB.saveAppUser(updatedUser).catch((err) => console.error("Account status sync failed:", err));
+          });
       }
 
       const statusText = isArchivedNow ? "أرشفة" : "تنشيط (إلغاء أرشفة)";
@@ -2259,12 +2314,12 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     RealmSimDB.saveSystemSettings(updatedSettings);
     setSystemSettings(updatedSettings);
 
-    if (updatedSettings.directorName && updatedSettings.directorName.trim()) {
+    if (updatedSettings.directorName && updatedSettings.directorName.trim() && isDirectorRole(currentRole)) {
       const newDirectorName = updatedSettings.directorName.trim();
       const updatedUsers = RealmSimDB.getAppUsers().map(u => {
-        if (u.id === "u1" || u.username === "admin_alfajr") {
+        if ((u.id === "u1" || u.username === "admin_alfajr") && u.fullName !== newDirectorName) {
           const uUpdated = { ...u, fullName: newDirectorName };
-          RealmSimDB.saveAppUser(uUpdated);
+          RealmSimDB.saveAppUser(uUpdated).catch((err) => console.error("Director name sync failed:", err));
           return uUpdated;
         }
         return u;
@@ -2280,8 +2335,15 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     alert("تم حفظ الإعدادات وتحديث معلومات المؤسسة بنجاح!");
   };
 
-  const handleSaveAppUser = (user: AppUser) => {
-    RealmSimDB.saveAppUser(user);
+  /** Modification d'un compte existant (directeur uniquement : compte + lien d'autorisation). */
+  const handleSaveAppUser = async (user: AppUser) => {
+    try {
+      await RealmSimDB.saveAppUser(user);
+    } catch (err) {
+      console.error("Save app user failed:", err);
+      alert(describeFirebaseError(err));
+      return;
+    }
 
     if ((user.id === "u1" || user.username === "admin_alfajr") && user.fullName && systemSettings) {
       if (systemSettings.directorName !== user.fullName) {
@@ -2303,8 +2365,88 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     alert("تم حفظ حساب المستخدم والصلاحيات بنجاح!");
   };
 
-  const handleDeleteAppUser = (userId: string) => {
-    RealmSimDB.deleteAppUser(userId);
+  /**
+   * Création d'un compte : Cloud Function `createUserAccount` (compte Firebase
+   * Auth + compte applicatif + lien d'autorisation, sans mot de passe stocké).
+   */
+  const handleCreateAppUser = async (user: AppUser, password: string): Promise<boolean> => {
+    const pwError = validateNewPassword(password);
+    if (pwError) {
+      alert(pwError);
+      return false;
+    }
+    const flags: Record<string, boolean> = {};
+    ([
+      "canEditStudents", "canEditTeachers", "canEditGrades", "canEditPayments",
+      "teacherTakeAttendance", "teacherRecordGrades", "teacherWriteBehaviorReports", "teacherEditOwnStudents", "teacherSendAlertsToParents",
+      "parentViewOwnStats", "parentViewOwnAttendance", "parentViewCertificates", "parentViewOwnPayments", "parentUpdateContactInfo", "parentRegisterInActivities",
+    ] as const).forEach((k) => {
+      const v = (user as any)[k];
+      if (typeof v === "boolean") flags[k] = v;
+    });
+    try {
+      const res = await createUserAccountRemote({
+        username: user.username,
+        password,
+        fullName: user.fullName,
+        role: user.role,
+        isActive: user.isActive,
+        phone: user.phone,
+        email: user.email,
+        permissions: user.permissions,
+        linkedTeacherId: user.linkedTeacherId,
+        linkedStudentIds: user.linkedStudentIds,
+        flags,
+      });
+      const created: AppUser = { ...user, id: res.appUserId, authUid: res.uid, mustChangePassword: true };
+      const next = [...RealmSimDB.getAppUsers().filter(u => u.id !== created.id), created];
+      RealmSimDB.setCachedAppUsers(next);
+      setAppUsers(next);
+      addSysNotification(
+        "إنشاء حساب مستخدم",
+        `تم إنشاء حساب المستخدم (${user.fullName}) باسم الدخول ${user.username} بنجاح.`,
+        "إداري"
+      );
+      alert("تم إنشاء الحساب بنجاح. سيُطلب من المستخدم تغيير كلمة المرور عند أول دخول.");
+      return true;
+    } catch (err) {
+      console.error("Create user account failed:", err);
+      alert(describeFirebaseError(err));
+      return false;
+    }
+  };
+
+  /** Réinitialisation du mot de passe d'un autre compte (directeur, Cloud Function). */
+  const handleResetUserPassword = async (user: AppUser, newPassword: string): Promise<boolean> => {
+    const pwError = validateNewPassword(newPassword);
+    if (pwError) {
+      alert(pwError);
+      return false;
+    }
+    try {
+      await resetUserPasswordRemote(user.id, newPassword);
+      addSysNotification(
+        "إعادة تعيين كلمة المرور",
+        `تمت إعادة تعيين كلمة مرور حساب (${user.fullName}). سيُطلب تغييرها عند الدخول القادم.`,
+        "إداري"
+      );
+      alert("تمت إعادة تعيين كلمة المرور بنجاح.");
+      return true;
+    } catch (err) {
+      console.error("Reset password failed:", err);
+      alert(describeFirebaseError(err));
+      return false;
+    }
+  };
+
+  const handleDeleteAppUser = async (userId: string) => {
+    try {
+      await RealmSimDB.deleteAppUser(userId);
+    } catch (err) {
+      console.error("Delete app user failed:", err);
+      alert(describeFirebaseError(err));
+      return;
+    }
     setAppUsers(RealmSimDB.getAppUsers());
     addSysNotification(
       "حذف مستخدم",
@@ -2314,14 +2456,32 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     alert("تم حذف المستخدم بنجاح!");
   };
 
-  const handleHarmonizeUsersWithStaff = () => {
+  /**
+   * « مزامنة فورية للأدوار » : action EXPLICITE du directeur. Aligne rôles et
+   * statuts des comptes existants sur les fiches (liens explicites), sans créer
+   * de compte ni toucher aux mots de passe.
+   */
+  const handleHarmonizeUsersWithStaff = async () => {
+    if (!isDirectorRole(currentRole)) {
+      alert("هذه العملية مخصصة للمدير.");
+      return;
+    }
     const freshStaff = RealmSimDB.getTeachers();
     const freshUsers = RealmSimDB.getAppUsers();
-    setAppUsers(freshUsers);
+    const changes = computeAccountAlignment(freshUsers, freshStaff, RealmSimDB.getStudents());
+    try {
+      for (const u of changes) {
+        await RealmSimDB.saveAppUser(u);
+      }
+    } catch (err) {
+      console.error("Harmonize users failed:", err);
+      alert(describeFirebaseError(err));
+    }
+    setAppUsers(RealmSimDB.getAppUsers());
     setTeachers(freshStaff);
     addSysNotification(
       "مزامنة الحسابات والأدوار",
-      "تمت مزامنة وتحديث أدوار جميع المستخدمين مع شؤون العاملين وإيقاف حسابات الأشخاص المؤرشفين بنجاح.",
+      `تمت مزامنة أدوار الحسابات مع شؤون العاملين وإيقاف حسابات الأشخاص المؤرشفين (${changes.length} حساب محدث).`,
       "نجاح"
     );
   };
@@ -2706,86 +2866,26 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     }
   };
 
-  // Find current user's corresponding phone or student ID
-  const loggedParentPhone = useMemo(() => {
-    if (currentUser && currentUser.role === "ولي أمر") {
-      if (currentUser.id.startsWith("p_")) {
-        const studentId = currentUser.id.substring(2);
-        const stud = students.find((s) => s.id === studentId);
-        if (stud) return stud.parentPhone;
-      }
-      const matchByName = students.find((s) => s.parentName.trim() === currentUser.fullName.trim());
-      if (matchByName) return matchByName.parentPhone;
-
-      const matchByPhone = students.find((s) => s.parentPhone.includes(currentUser.username));
-      if (matchByPhone) return matchByPhone.parentPhone;
-    }
-    return "";
-  }, [currentUser, students]);
+  // Lot 0 : rattachement EXPLICITE aux élèves (linkedStudentIds, ou identifiant
+  // historique s_{id} / p_{id}). Plus aucune correspondance approximative par
+  // nom ou téléphone (rapport §10.3).
+  const linkedStudentIdSet = useMemo(() => new Set(linkedStudentIdsOf(currentUser)), [currentUser]);
 
   const loggedStudentId = useMemo(() => {
-    if (currentUser && (currentUser.role === "طالب" || currentRole === "طالب")) {
-      if (currentUser.id.startsWith("s_")) {
-        return currentUser.id.substring(2);
-      }
-      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
-      const normUser = clean(currentUser.fullName);
-      const matchByName = students.find((s) => clean(s.fullName) === normUser);
-      if (matchByName) return matchByName.id;
-      const matchByUsername = students.find((s) => s.id === currentUser.username || (s.parentPhone && s.parentPhone.includes(currentUser.username)));
-      if (matchByUsername) return matchByUsername.id;
+    if (currentUser && currentRole === "طالب") {
+      return linkedStudentIdsOf(currentUser)[0] || "";
     }
     return "";
-  }, [currentUser, currentRole, students]);
+  }, [currentUser, currentRole]);
 
   // Helper function to check if student belongs to logged parent or student user
-  const isStudentBelongsToUser = useCallback((
-    st: Student,
-    role: UserRole,
-    user: AppUser | null,
-    parentPhone: string,
-    studentId: string
-  ): boolean => {
-    if (role === "مدير" || role === "إداري" || role === "مؤطر" || role === "متطوع" || role === "عامل نظافة / صيانة" || role === "أخرى") return true;
-
-    if (role === "مدرس") {
-      return true; // Teachers see students in their class or overall student list if authorized
+  const isStudentBelongsToUser = useCallback((st: Student, role: UserRole): boolean => {
+    if (role === "ولي أمر" || role === "طالب") {
+      return linkedStudentIdSet.has(st.id);
     }
-
-    if (role === "ولي أمر") {
-      if (!user) return false;
-      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
-      const normUserPhone = user.username.trim();
-      const normUserFull = clean(user.fullName);
-      const normStParentPhone = st.parentPhone.trim();
-      const normStParentName = clean(st.parentName);
-
-      if (parentPhone && normStParentPhone === parentPhone.trim()) return true;
-      if (normStParentName && normUserFull && (normStParentName === normUserFull || normStParentName.includes(normUserFull) || normUserFull.includes(normStParentName))) return true;
-      if (normStParentPhone && normUserPhone && normStParentPhone.includes(normUserPhone)) return true;
-      if (user.id.startsWith("p_") && user.id.substring(2) === st.id) return true;
-
-      return false;
-    }
-
-    if (role === "طالب") {
-      if (!user) return true;
-      if (studentId && st.id === studentId) return true;
-      if (user.id.startsWith("s_") && user.id.substring(2) === st.id) return true;
-      if (user.id === st.id || user.username === st.id) return true;
-
-      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
-      const normUser = clean(user.fullName);
-      const normSt = clean(st.fullName);
-      if (normUser && normSt && (normUser === normSt || normSt.includes(normUser) || normUser.includes(normSt))) return true;
-
-      if (user.username && st.parentPhone.includes(user.username)) return true;
-
-      return false;
-    }
-
+    // Personnel : la visibilité est déjà bornée par les règles Firestore.
     return true;
-  }, []);
+  }, [linkedStudentIdSet]);
 
   // Filter students based on role or search query
   const filteredStudents = students.filter(st => {
@@ -2801,37 +2901,28 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       matchesArchive = isArchived;
     }
 
-    const belongs = isStudentBelongsToUser(st, currentRole, currentUser, loggedParentPhone, loggedStudentId);
+    const belongs = isStudentBelongsToUser(st, currentRole);
 
     return matchesSearch && matchesArchive && belongs;
   });
 
   // Parent children list & stats
   const parentStudents = useMemo(() => {
-    return students.filter(st => isStudentBelongsToUser(st, "ولي أمر", currentUser, loggedParentPhone, loggedStudentId));
-  }, [students, currentUser, loggedParentPhone, loggedStudentId, isStudentBelongsToUser]);
+    if (currentRole !== "ولي أمر") return [];
+    return students.filter(st => isStudentBelongsToUser(st, "ولي أمر"));
+  }, [students, currentRole, isStudentBelongsToUser]);
 
   const parentStudentsCount = parentStudents.length;
   const parentTotalHizbs = parentStudents.reduce((acc, s) => acc + s.hizbCount, 0);
   const parentAverageHizb = parentStudentsCount > 0 ? (parentTotalHizbs / parentStudentsCount).toFixed(1) : 0;
   const parentFurthestHizb = parentStudentsCount > 0 ? Math.max(...parentStudents.map(s => Number(s.hizbCount) || 0)) : 0;
 
-  // Single student obj for student role (reliable resolution for personal memorization summary)
+  // Single student obj for student role: UNIQUEMENT le dossier lié au compte.
+  // (L'ancien repli sur le premier élève actif affichait le dossier d'un autre élève.)
   const currentStudentObj = useMemo(() => {
-    if (currentRole !== "طالب") return null;
-    const directMatch = students.find(st => isStudentBelongsToUser(st, "طالب", currentUser, loggedParentPhone, loggedStudentId));
-    if (directMatch) return directMatch;
-
-    if (currentUser) {
-      const clean = (s: string) => (s || "").trim().toLowerCase().replace(/[إأآا]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
-      const normUser = clean(currentUser.fullName);
-      const byName = students.find(s => clean(s.fullName) === normUser);
-      if (byName) return byName;
-    }
-
-    // Fallback in preview / student view so "ملخص الحفظ الشخصي" always has data
-    return students.find(s => !s.isArchived) || students[0] || null;
-  }, [students, currentUser, currentRole, loggedParentPhone, loggedStudentId, isStudentBelongsToUser]);
+    if (currentRole !== "طالب" || !loggedStudentId) return null;
+    return students.find(st => st.id === loggedStudentId) || null;
+  }, [students, currentRole, loggedStudentId]);
 
   // Auto-select student dossier when logged in or viewing as student
   useEffect(() => {
@@ -2856,35 +2947,67 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
   const handleOpenProfileModal = () => {
     if (currentUser) {
       setProfileFullName(currentUser.fullName || "");
-      setProfilePassword(currentUser.password || "");
       setProfilePhone(currentUser.username || "");
     } else {
       setProfileFullName(accountOwnerName);
-      setProfilePassword("");
-      setProfilePhone(currentRole === "مدير" ? "admin_alfajr" : "user");
+      setProfilePhone("");
     }
+    setProfilePassword("");
+    setProfileCurrentPassword("");
+    setProfileError("");
     setShowProfileEditModal(true);
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const mustChangePassword = Boolean(currentUser?.mustChangePassword);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setProfileError("");
     if (!profileFullName.trim()) {
-      alert("يرجى إدخال الاسم الكامل.");
+      setProfileError("يرجى إدخال الاسم الكامل.");
       return;
     }
+    if (!currentUser) return;
 
-    if (currentUser) {
-      const updatedUser: AppUser = {
-        ...currentUser,
-        fullName: profileFullName.trim(),
-        password: profilePassword.trim() || currentUser.password,
-      };
-      RealmSimDB.saveAppUser(updatedUser);
-      setAppUsers(RealmSimDB.getAppUsers());
-      setCurrentUser(updatedUser);
+    const newPassword = profilePassword;
+    if (mustChangePassword && !newPassword) {
+      setProfileError("يجب اختيار كلمة مرور جديدة قبل متابعة استعمال المنظومة.");
+      return;
+    }
+    if (newPassword) {
+      const pwError = validateNewPassword(newPassword);
+      if (pwError) {
+        setProfileError(pwError);
+        return;
+      }
     }
 
-    if (currentRole === "مدير" && systemSettings) {
+    setProfileSaving(true);
+    try {
+      // 1. Mot de passe : directement dans Firebase Auth (jamais dans Firestore).
+      if (newPassword) {
+        await changeOwnPassword(newPassword, profileCurrentPassword || undefined);
+      }
+      // 2. Champs autorisés de son propre compte.
+      const fields: Parameters<typeof updateOwnAppUserFields>[1] = {};
+      if (profileFullName.trim() !== currentUser.fullName) fields.fullName = profileFullName.trim();
+      if (newPassword) {
+        fields.mustChangePassword = false;
+        fields.passwordChangedAt = new Date().toISOString();
+      }
+      if (Object.keys(fields).length > 0) {
+        await updateOwnAppUserFields(currentUser.id, fields);
+      }
+      setCurrentUser({ ...currentUser, ...fields });
+    } catch (err: any) {
+      console.error("Profile update failed:", err);
+      setProfileError(describeFirebaseError(err));
+      setProfileSaving(false);
+      return;
+    }
+    setProfileSaving(false);
+
+    if (currentRole === "مدير" && systemSettings && systemSettings.directorName !== profileFullName.trim() && currentUser.id === "u1") {
       const updatedSettings: SystemSettings = {
         ...systemSettings,
         directorName: profileFullName.trim(),
@@ -2898,17 +3021,24 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
       `تم تحديث بيانات الملف الشخصي لـ (${profileFullName.trim()}) بنجاح.`,
       "نجاح"
     );
-    alert("تم تحديث بيانات الملف الشخصي بنجاح!");
+    setProfilePassword("");
+    setProfileCurrentPassword("");
+    alert(newPassword ? "تم تغيير كلمة المرور وتحديث الملف الشخصي بنجاح!" : "تم تحديث بيانات الملف الشخصي بنجاح!");
     setShowProfileEditModal(false);
   };
 
+  // Fiche du personnel liée au compte connecté : lien explicite, identifiant
+  // historique t_{id}, ou à défaut nom identique. Plus de repli sur un autre
+  // enseignant (« t1 » ou le premier de la liste).
   const activeTeacher = useMemo(() => {
-    if (!currentUser) {
-      return teachers.find(t => t.id === "t1") || teachers[0] || null;
+    if (!currentUser) return null;
+    const linkedId = linkedTeacherIdOf(currentUser);
+    if (linkedId) {
+      const byId = teachers.find(t => t.id === linkedId);
+      if (byId) return byId;
     }
-    return teachers.find(
-      t => t.id === (currentUser.id || "").toString().replace("t_", "") || t.fullName === currentUser.fullName
-    ) || teachers.find(t => t.id === "t1") || teachers[0] || null;
+    const fullName = (currentUser.fullName || "").trim();
+    return (fullName && teachers.find(t => (t.fullName || "").trim() === fullName)) || null;
   }, [currentUser, teachers]);
 
   const teacherClasses = useMemo(() => {
@@ -3032,7 +3162,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     
     // Role based filtering
     if (currentRole === "ولي أمر" || currentRole === "طالب") {
-      if (!stud || !isStudentBelongsToUser(stud, currentRole, currentUser, loggedParentPhone, loggedStudentId)) {
+      if (!stud || !isStudentBelongsToUser(stud, currentRole)) {
         return false;
       }
     }
@@ -3109,104 +3239,78 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
     });
   }, [payments, paymentFilterDate]);
 
+  /**
+   * Connexion (Lot 0) : Firebase Auth D'ABORD, puis lecture du lien
+   * d'autorisation et du profil. Aucun mot de passe n'est comparé côté client
+   * et aucun compte n'est créé à la connexion.
+   */
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
     setLoginLoading(true);
+    loginInProgressRef.current = true;
 
     try {
-      const cleanInputUsername = loginUsername.trim().toLowerCase();
-      const rawInputUsername = loginUsername.trim();
-      const cleanInputPassword = loginPassword.trim();
+      const inputUsername = loginUsername.trim();
+      const inputPassword = loginPassword;
 
-      if (!cleanInputUsername || !cleanInputPassword) {
+      if (!inputUsername || !inputPassword.trim()) {
         setLoginError("يرجى إدخال اسم المستخدم وكلمة المرور");
         return;
       }
 
-      // 1. Gather all users from both local DB and Firestore real-time state
-      const dbUsers = RealmSimDB.getAppUsers();
-      const userMap = new Map<string, AppUser>();
-      
-      dbUsers.forEach((u) => {
-        if (u.id) userMap.set(u.id, u);
-      });
-      appUsers.forEach((u) => {
-        if (u.id) userMap.set(u.id, u);
-      });
-
-      const findUserInList = (list: AppUser[]) => {
-        const matches = list.filter((u) => {
-          const uName = (u.username || "").trim().toLowerCase();
-          const uFullName = (u.fullName || "").trim().toLowerCase();
-          const uEmail = (u.email || "").trim().toLowerCase();
-          const uPhone = (u.phone || "").trim();
-          const uId = (u.id || "").trim();
-
-          const matchIdentifier =
-            uName === cleanInputUsername ||
-            uFullName === cleanInputUsername ||
-            uEmail === cleanInputUsername ||
-            uPhone === cleanInputUsername ||
-            uId === cleanInputUsername ||
-            (u.fullName || "").trim() === rawInputUsername;
-
-          const matchPassword = (u.password || "").trim() === cleanInputPassword;
-
-          return matchIdentifier && matchPassword;
-        });
-
-        if (matches.length === 0) return undefined;
-        // Prioritize admin account if credentials match director
-        const adminMatch = matches.find(u => u.id === "u1" || u.role === "مدير");
-        return adminMatch || matches[0];
-      };
-
-      let user = findUserInList(Array.from(userMap.values()));
-
-      // 2. If user not found in local memory, query Firestore directly
-      if (!user) {
-        const firestoreUsers = await fetchAppUsersFromFirestore();
-        if (firestoreUsers.length > 0) {
-          setAppUsers(firestoreUsers);
-          firestoreUsers.forEach((u) => {
-            if (u.id) userMap.set(u.id, u);
-          });
-          user = findUserInList(Array.from(userMap.values()));
-        }
-      }
-
-      if (user) {
-        if (user.isActive === false) {
+      let credential;
+      try {
+        credential = await signInWithUsername(inputUsername, inputPassword);
+      } catch (authErr: any) {
+        const code = authErr?.code || "";
+        if (code === "auth/network-request-failed") {
+          setLoginError("تعذر الاتصال بالخادم. تحقق من الاتصال بالإنترنت ثم أعد المحاولة.");
+        } else if (code === "auth/too-many-requests") {
+          setLoginError("محاولات كثيرة غير ناجحة. يرجى الانتظار قليلاً ثم المحاولة من جديد.");
+        } else if (code === "auth/user-disabled") {
           setLoginError("هذا الحساب معطل حالياً. يرجى التواصل مع إدارة الجمعية.");
-          return;
+        } else {
+          setLoginError("اسم المستخدم أو كلمة المرور غير صحيحة");
         }
-
-        try {
-          await loginWithFirebaseAuth(user.username, user.password || "123");
-        } catch (authErr) {
-          console.warn("Firebase Auth sign in issue:", authErr);
-        }
-
-        setCurrentUser(user);
-        localStorage.setItem("alfajr_logged_user", JSON.stringify(user));
-        setLoginUsername("");
-        setLoginPassword("");
-      } else {
-        setLoginError("اسم المستخدم أو كلمة المرور غير صحيحة");
+        return;
       }
+
+      const res = await loadSessionProfile(credential.user.uid);
+      if ("error" in res) {
+        await signOutUser();
+        setLoginError(res.error);
+        return;
+      }
+
+      ensureCacheOwner(credential.user.uid);
+      loadDatabase(res.user.role);
+      setAuthUid(credential.user.uid);
+      setCurrentUser(res.user);
+      setLoginUsername("");
+      setLoginPassword("");
+      updateOwnAppUserFields(res.user.id, { lastLogin: new Date().toISOString() })
+        .catch((err) => console.warn("lastLogin update failed:", err));
     } catch (err) {
       console.error("Login error:", err);
       setLoginError("حدث خطأ أثناء تسجيل الدخول");
     } finally {
+      loginInProgressRef.current = false;
       setLoginLoading(false);
+      setAuthChecking(false);
     }
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("alfajr_logged_user");
-  };
+  if (!currentUser && authChecking) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4" dir="rtl">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
+          <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+          <span>جاري التحقق من الجلسة...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (
@@ -3258,7 +3362,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1.5 mr-1">
-                  اسم المستخدم أو معرف الدخول
+                  اسم المستخدم
                 </label>
                 <div className="relative">
                   <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 pointer-events-none">
@@ -3269,9 +3373,14 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                     value={loginUsername}
                     onChange={(e) => setLoginUsername(e.target.value)}
                     placeholder=""
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    dir="ltr"
                     className="w-full pl-3 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-medium"
                   />
                 </div>
+                <p className="text-[10px] text-slate-400 mt-1 mr-1">استخدم اسم المستخدم الذي زودتك به إدارة الجمعية (وليس الاسم الكامل أو رقم الهاتف).</p>
               </div>
 
               <div>
@@ -3287,6 +3396,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="• • • • • •"
+                    autoComplete="current-password"
                     className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all text-right font-mono"
                   />
                   <button
@@ -3452,7 +3562,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
             {/* Safe Logout Button */}
             <button
-              onClick={handleLogout}
+              onClick={() => handleLogout()}
               className="p-1.5 sm:p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl border border-rose-200 transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer shrink-0"
               title="تسجيل الخروج الآمن"
             >
@@ -3523,7 +3633,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
         </span>
         <div className="flex items-center gap-3">
           <button 
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
             className="p-1 px-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold flex items-center gap-1"
           >
             <LogOut className="w-3 h-3" />
@@ -7175,6 +7285,10 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               settings={systemSettings}
               appUsers={appUsers}
               teachers={teachers}
+              students={students}
+              canManageAccounts={isDirectorRole(currentRole)}
+              onCreateAppUser={handleCreateAppUser}
+              onResetUserPassword={handleResetUserPassword}
               onSaveTeacher={handleSaveTeacher}
               onNavigateToStaff={() => setActiveTab("teachers")}
               canCreateSettings={checkUserPermission(currentUser, currentRole, "settings", "create")}
@@ -8451,16 +8565,30 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
                   <p className="text-xs text-emerald-200 font-medium">تعديل بيانات الحساب الجاري ({currentRole})</p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowProfileEditModal(false)}
-                className="p-1.5 text-emerald-200 hover:text-white hover:bg-emerald-800/80 rounded-xl transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {!mustChangePassword && (
+                <button
+                  type="button"
+                  onClick={() => setShowProfileEditModal(false)}
+                  className="p-1.5 text-emerald-200 hover:text-white hover:bg-emerald-800/80 rounded-xl transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
             <form onSubmit={handleSaveProfile} className="p-5 space-y-4">
+              {mustChangePassword && (
+                <div className="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600" />
+                  <span>لأسباب أمنية، يجب اختيار كلمة مرور جديدة (8 أحرف على الأقل) قبل متابعة استعمال المنظومة.</span>
+                </div>
+              )}
+              {profileError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{profileError}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">الاسم الكامل لصاحب الحساب</label>
                 <div className="relative">
@@ -8491,13 +8619,27 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">تحديث كلمة المرور (اختياري)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">كلمة المرور الحالية</label>
+                <div className="relative mb-3">
+                  <Lock className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
+                  <input
+                    type={showProfilePassword ? "text" : "password"}
+                    value={profileCurrentPassword}
+                    onChange={(e) => setProfileCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
+                    className="w-full pr-9 pl-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:bg-white font-mono"
+                    placeholder="مطلوبة عند تغيير كلمة المرور إذا طال وقت الجلسة"
+                  />
+                </div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">{mustChangePassword ? "كلمة المرور الجديدة" : "تحديث كلمة المرور (اختياري)"}</label>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute right-3 top-3" />
                   <input
                     type={showProfilePassword ? "text" : "password"}
                     value={profilePassword}
                     onChange={(e) => setProfilePassword(e.target.value)}
+                    autoComplete="new-password"
+                    required={mustChangePassword}
                     className="w-full pr-9 pl-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 focus:bg-white font-mono"
                     placeholder="أدخل كلمة مرور جديدة"
                   />
@@ -8514,14 +8656,15 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
               <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setShowProfileEditModal(false)}
+                  onClick={() => (mustChangePassword ? handleLogout() : setShowProfileEditModal(false))}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
                 >
-                  إلغاء
+                  {mustChangePassword ? "خروج" : "إلغاء"}
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer"
+                  disabled={profileSaving}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer disabled:bg-emerald-400"
                 >
                   <Check className="w-4 h-4" />
                   <span>حفظ التغييرات</span>

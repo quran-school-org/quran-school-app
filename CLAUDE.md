@@ -36,6 +36,7 @@ Prérequis : Node 22, Java 21 (émulateur Firestore). Un seul gestionnaire : **n
 ```bash
 npm ci && npm ci --prefix functions   # installation
 npm run emulators                      # auth 9099, firestore 8080, functions 5001, hosting 5000, UI 4000
+npm run seed:emulator                  # données FICTIVES + comptes (admin_alfajr / demo-directeur-2026…)
 npm run dev                            # app sur http://localhost:3000, branchée sur les émulateurs
 npm run lint                           # tsc --noEmit (app, scripts, tests)
 npm run lint:functions                 # tsc des Cloud Functions
@@ -63,6 +64,12 @@ npm run build:dev                      # build branché sur les émulateurs (pou
   (`saveToFirestore`, `deleteFromFirestore`, `subscribeToCollection`, `subscribeToSettings`).
 - `src/config/env.ts` : lecture des variables `VITE_*`, garde-fou émulateurs.
 - `src/types.ts` : modèles, 9 rôles (valeurs en arabe), matrice de permissions.
+- `src/security/` : modules purs (correspondance compte ↔ Auth, groupes de rôles
+  miroirs des règles, alignement explicite des comptes).
+- Sécurité (Lot 0) : connexion Firebase Auth d'abord, puis lien
+  `authLinks/{uid}` (rôle, statut, élèves liés) lu par les règles. Aucun mot de
+  passe dans Firestore ni dans localStorage. Comptes créés / réinitialisés par
+  les callables `createUserAccount` / `resetUserPassword` (directeur).
 - `src/components/` : écrans extraits (données en props, callbacks `onSave…`).
 - `firestore.rules` : règles (appliquées à la base nommée, voir `firebase.json`).
 - `functions/` : Cloud Functions 2nd gen (Node 22, TypeScript, région `europe-west1`).
@@ -82,3 +89,8 @@ npm run build:dev                      # build branché sur les émulateurs (pou
 - Toute décision structurante est consignée dans `docs/DECISIONS.md`
   (contexte, décision, retour arrière).
 - `npm run lint`, `npm run build` et les tests doivent rester verts sur chaque branche.
+- Ne jamais réintroduire : comparaison de mot de passe côté client, création de
+  compte à la connexion, écriture de `password`, correspondance approximative
+  (`includes`) pour rattacher un élève, repli sur « le premier élève / enseignant ».
+- Conteneur avec proxy sortant : créer `functions/.env.local` avec
+  `EMULATOR_SKIP_FIRESTORE_TRIGGERS=true` (voir `docs/DECISIONS.md`, D21).
