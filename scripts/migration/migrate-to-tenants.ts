@@ -250,13 +250,33 @@ export async function runMigration(db: Firestore, auth: Auth, opts: MigrationOpt
   // une fiche RH existante) puis retirés de la fiche publique. Seule
   // modification d'un document cible existant : c'est le correctif R-06.
   let staffSplitExisting = 0;
+  // Fiche RH déjà présente : ses valeurs font foi, mais les champs qu'elle n'a
+  // pas sont complétés depuis la fiche publique (sinon ils seraient perdus) ;
+  // une valeur différente est signalée (STAFF_PRIVATE_CONFLICT, noms de champs
+  // seulement : la valeur d'origine reste dans l'export d'avant bascule).
+  const existingStaffDocs = legacyTargets.length ? new Map((await readAll(db, staffPath)).map((p) => [p.id, p])) : new Map<string, RawDoc>();
   for (const t of legacyTargets) {
     staffSplitExisting++;
     anomaly(anomalies, "info", "STAFF_PRIVATE_SPLIT", t.id, "fiche publique existante porteuse de champs RH : champs déplacés vers staffPrivate");
+    const legacyPrivate = splitStaffRecord(t).privateData as Record<string, unknown>;
+    const current = existingStaffDocs.get(t.id);
+    const missing: Record<string, unknown> = {};
+    const conflicts: string[] = [];
+    if (current) {
+      for (const [k, v] of Object.entries(legacyPrivate)) {
+        if (current[k] === undefined) missing[k] = v;
+        else if (JSON.stringify(current[k]) !== JSON.stringify(v)) conflicts.push(k);
+      }
+      if (conflicts.length) {
+        anomaly(anomalies, "avertissement", "STAFF_PRIVATE_CONFLICT", t.id, `valeurs RH différentes entre la fiche publique et la fiche RH existante (conservée) : ${conflicts.join(", ")}`);
+      }
+    }
     if (writer) {
       const privRef = db.collection(staffPath).doc(t.id);
-      if (!existingStaff.has(t.id)) {
-        track(writer.create(privRef, { ...splitStaffRecord(t).privateData, teacherId: t.id, schoolId: s, updatedAt: nowIso }), privRef.path, STAFF_PRIVATE_COLLECTION);
+      if (!current) {
+        track(writer.create(privRef, { ...legacyPrivate, teacherId: t.id, schoolId: s, updatedAt: nowIso }), privRef.path, STAFF_PRIVATE_COLLECTION);
+      } else if (Object.keys(missing).length) {
+        track(writer.update(privRef, { ...missing, updatedAt: nowIso }), privRef.path, STAFF_PRIVATE_COLLECTION);
       }
       const removed: Record<string, FieldValue> = {};
       for (const k of STAFF_PRIVATE_FIELDS) removed[k] = FieldValue.delete();

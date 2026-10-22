@@ -666,3 +666,17 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   `tests/emulator/revue-rules.test.ts` et `lot0-rules.test.ts`.
 - **Retour arrière** : rétablir `isMember(s)` (Lot 0 : `active()`) pour
   `create` et `isStaff(s)` seul pour `update`.
+
+### D53. Scission des fiches à la relance : compléter la fiche RH, ne rien perdre
+- **Constat (revue)** : à la relance de la migration, une fiche publique cible
+  encore porteuse de champs RH était vidée de ces champs ; si une fiche RH
+  existait déjà, rien n'y était recopié. Un champ présent seulement dans la
+  fiche publique (ex. contact d'urgence saisi par une version antérieure à
+  D42) était donc **supprimé sans copie**. Démontré par
+  `tests/emulator/migration.test.ts` (échouait avant le correctif).
+- **Décision** : la fiche RH existante fait toujours foi pour ses valeurs ; les
+  champs qu'elle n'a pas sont complétés depuis la fiche publique avant leur
+  retrait ; une valeur différente donne l'anomalie `STAFF_PRIVATE_CONFLICT`
+  (avertissement, noms de champs seulement, aucune valeur dans les rapports).
+- **Retour arrière** : revenir au commit précédent du script (la relance
+  redevient « fiche RH existante intacte, champs publics retirés »).
