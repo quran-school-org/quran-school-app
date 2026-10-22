@@ -27,7 +27,7 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Examens et شهادات (+ fenêtre de note) | fait (impression de l'attestation : avec les impressions) |
 | Comptabilité (sections) | à faire |
 | Activités | à faire |
-| Halaqas (ClassManagement) | à faire |
+| Halaqas (ClassManagement) + fenêtre | fait |
 | Notifications | à faire |
 | Cartes QR (laboratoire) | à faire |
 | Paramètres, utilisateurs, matrice des droits | à faire |
@@ -37,7 +37,7 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Halaqas : `src/components/ClassManagement.tsx` (+ fenêtre de halaqa)
+Activités : `src/components/activities/` (ActivitiesOverview, ActivitiesList, ActivityWorkspace, fenêtres)
 (PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
 
 ## Commandes utiles
