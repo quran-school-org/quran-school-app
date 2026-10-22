@@ -30,14 +30,14 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Halaqas (ClassManagement) + fenêtre | fait |
 | Notifications | fait |
 | Cartes QR (laboratoire) | fait (gabarits de cartes : déjà refaits avec les élèves) |
-| Paramètres, utilisateurs, matrice des droits | à faire |
+| Paramètres, utilisateurs, matrice des droits | fait |
 | Portail enseignant / parent / élève, fenêtre de profil | à faire |
 | Connexion, vérification de session, choix / création d'école | à faire |
 | Impressions (reçu, attestation, rapports, cartes, présence mensuelle) + @media print | à faire |
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Paramètres : `src/components/settings/` (GeneralSettingsSection, UsersSection, UserFormModal, PermissionMatrixEditor)
+Portail enseignant : `src/screens/TeacherDashboardScreen.tsx`, `src/screens/modals/TeacherStudentFileModal.tsx`, `ProfileModal.tsx`
 (PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
 
 ## Commandes utiles
