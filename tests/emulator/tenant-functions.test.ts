@@ -32,7 +32,7 @@ beforeAll(async () => {
   await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${PROJECT}/databases/(default)/documents`, { method: "DELETE" });
   await fetch(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/emulator/v1/projects/${PROJECT}/accounts`, { method: "DELETE" });
   await seedLegacyFixture(admin.db, admin.auth, legacyFixture());
-  await runMigration(admin.db, admin.auth, { schoolId: "alfajr", apply: true, outDir: null, superAdminUsername: "admin_alfajr" });
+  await runMigration(admin.db, admin.auth, { schoolId: "alfajr", apply: true, outDir: null, superAdminUsername: "admin_alfajr", rotatePasswords: "none" });
   await seedSecondSchool(admin.db, admin.auth);
 
   app = initializeApp({ projectId: PROJECT, apiKey: "demo-api-key" }, `tf-${Date.now()}`);

@@ -2,13 +2,14 @@
  * Certificat d'examen (fenêtre d'impression).
  * Gabarit HTML déplacé tel quel depuis App.tsx (Lot 2).
  */
+import { escapeHtml } from "../security/html";
 import type { Payment, Student, SystemSettings } from "../types";
 
 export function certificateHtml(stud: any, gr: any, associationName: string, associationLogo: string, systemSettings: SystemSettings | null): string {
   return `
       <html dir="rtl" lang="ar">
         <head>
-          <title>شهادة تقديرية - ${stud.fullName}</title>
+          <title>شهادة تقديرية - ${escapeHtml(stud.fullName)}</title>
           <script src="https://cdn.tailwindcss.com"></script>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
@@ -35,14 +36,14 @@ export function certificateHtml(stud: any, gr: any, associationName: string, ass
 
             <div class="flex justify-between items-center border-b border-amber-200 pb-6 mb-8">
               <div class="text-right">
-                <h3 class="text-sm font-bold text-amber-900 font-sans tracking-tight">${associationName}</h3>
+                <h3 class="text-sm font-bold text-amber-900 font-sans tracking-tight">${escapeHtml(associationName)}</h3>
                 <p class="text-[11px] text-amber-700 font-sans mt-1">نادي القرآن الكريم وتجويده</p>
-                <p class="text-[9px] text-slate-400 font-sans">تاريخ الاختبار: ${gr.examDate}</p>
+                <p class="text-[9px] text-slate-400 font-sans">تاريخ الاختبار: ${escapeHtml(gr.examDate)}</p>
               </div>
               
               <div class="w-20 h-20 bg-white border-2 border-amber-400 rounded-2xl flex items-center justify-center p-1.5 shadow-md overflow-hidden shrink-0">
                 ${associationLogo ? `
-                  <img src="${associationLogo}" class="max-w-full max-h-full object-contain" />
+                  <img src="${escapeHtml(associationLogo)}" class="max-w-full max-h-full object-contain" />
                 ` : `
                   <svg class="w-full h-full text-amber-600" viewBox="0 0 100 100" fill="none">
                     <circle cx="50" cy="50" r="46" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
@@ -53,7 +54,7 @@ export function certificateHtml(stud: any, gr: any, associationName: string, ass
               </div>
               
               <div class="text-left text-xs font-sans text-amber-900 font-semibold">
-                <span class="bg-amber-100 px-3 py-1.5 rounded-full border border-amber-200">الرقم الترتيبي: ${gr.id.slice(-5).toUpperCase()}</span>
+                <span class="bg-amber-100 px-3 py-1.5 rounded-full border border-amber-200">الرقم الترتيبي: ${escapeHtml(gr.id.slice(-5).toUpperCase())}</span>
               </div>
             </div>
 
@@ -69,11 +70,11 @@ export function certificateHtml(stud: any, gr: any, associationName: string, ass
 
             <div class="space-y-6 text-lg text-slate-800 max-w-2xl mx-auto leading-relaxed">
               <p>
-                بكل فخر واعتزاز، تشهد إدارة <span class="font-bold text-amber-900 font-sans">${associationName}</span> لنادي القرآن الكريم أن الطالب / الطالبة:
+                بكل فخر واعتزاز، تشهد إدارة <span class="font-bold text-amber-900 font-sans">${escapeHtml(associationName)}</span> لنادي القرآن الكريم أن الطالب / الطالبة:
               </p>
               
               <div class="my-6">
-                <h2 class="text-3xl font-black text-emerald-950 underline decoration-amber-500 decoration-wavy decoration-2 underline-offset-8 py-2 inline-block font-sans">${stud.fullName}</h2>
+                <h2 class="text-3xl font-black text-emerald-950 underline decoration-amber-500 decoration-wavy decoration-2 underline-offset-8 py-2 inline-block font-sans">${escapeHtml(stud.fullName)}</h2>
               </div>
 
               <p class="text-base">
@@ -81,21 +82,21 @@ export function certificateHtml(stud: any, gr: any, associationName: string, ass
               </p>
               
               <div class="bg-amber-50/70 border border-amber-200/50 rounded-2xl px-6 py-2.5 max-w-md mx-auto my-4 text-amber-950 font-bold text-xl">
-                [ ${gr.testedPortion} ]
+                [ ${escapeHtml(gr.testedPortion)} ]
               </div>
 
               <p class="text-base">
-                وحصل على تقدير عام <span class="font-bold text-emerald-800 font-sans">${gr.overallGrade}</span> بمعدل مشرف ينم عن جد ومثابرة:
+                وحصل على تقدير عام <span class="font-bold text-emerald-800 font-sans">${escapeHtml(gr.overallGrade)}</span> بمعدل مشرف ينم عن جد ومثابرة:
               </p>
               
               <div class="flex justify-center gap-8 text-xs font-sans font-bold my-4">
-                <span class="bg-slate-100 border px-4 py-2 rounded-xl text-slate-700">درجة الحفظ: <span class="text-emerald-700 font-mono text-sm">${gr.memorizationGrade}</span> / 20</span>
-                <span class="bg-slate-100 border px-4 py-2 rounded-xl text-slate-700">درجة التجويد: <span class="text-emerald-700 font-mono text-sm">${gr.tajweedGrade}</span> / 20</span>
+                <span class="bg-slate-100 border px-4 py-2 rounded-xl text-slate-700">درجة الحفظ: <span class="text-emerald-700 font-mono text-sm">${escapeHtml(gr.memorizationGrade)}</span> / 20</span>
+                <span class="bg-slate-100 border px-4 py-2 rounded-xl text-slate-700">درجة التجويد: <span class="text-emerald-700 font-mono text-sm">${escapeHtml(gr.tajweedGrade)}</span> / 20</span>
               </div>
 
               ${gr.notes ? `
                 <div class="p-3.5 bg-amber-50/30 rounded-xl text-sm text-amber-900 italic max-w-lg mx-auto border border-amber-100/50 mt-4">
-                  "ملاحظة وتوجيه المدرس: ${gr.notes}"
+                  "ملاحظة وتوجيه المدرس: ${escapeHtml(gr.notes)}"
                 </div>
               ` : ''}
 
@@ -110,7 +111,7 @@ export function certificateHtml(stud: any, gr: any, associationName: string, ass
                 <div class="h-16 flex items-center justify-start">
                   ${systemSettings?.showStampOnReceipts ? `
                     <div class="border border-red-500/30 text-red-600 rounded-full px-4 py-1.5 inline-block text-xs font-black rotate-[-3deg] border-dashed">
-                      ★ ${systemSettings.stampText || "إدارة النادي"} ★
+                      ★ ${escapeHtml(systemSettings.stampText || "إدارة النادي")} ★
                     </div>
                   ` : `
                     <span class="text-slate-300 italic text-xs">موقع ومعتمد</span>

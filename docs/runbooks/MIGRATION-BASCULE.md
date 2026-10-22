@@ -39,6 +39,10 @@ export STAMP=$(date +%Y%m%d-%H%M)
    (voir §0.5 du runbook Lot 0).
 4. **Super-admin** : choisir le compte qui portera le claim `superAdmin` (le
    propriétaire de la plateforme). Il doit exister dans `appUsers`.
+   **Recommandé (revue de sécurité)** : un compte **dédié** à la plateforme,
+   créé au préalable par le directeur (Paramètres › المستخدمين, rôle « أخرى »),
+   plutôt que `admin_alfajr` : le compte du directeur de l'école ne doit pas
+   cumuler la réinitialisation de tous les mots de passe de la plateforme.
 5. Prévoir une **fenêtre de maintenance** (1 h) et le **gel des déploiements AI Studio**.
 
 ## 1. Sauvegarde (avant chaque répétition et avant la bascule)
@@ -92,7 +96,8 @@ personnelles, ne pas diffuser**) :
 |---|---|
 | `resume.json` | `critical: false` ; `accounts.pendingAuth` = 0 après application |
 | `comptages.csv` | pour chaque collection : `source` = `copied` + `skippedExisting`, et après application `targetAfter` = `source` |
-| `anomalies.csv` | critiques (u1, conflits de noms d'utilisateur, écritures échouées) : à corriger avant la bascule ; avertissements (photos lourdes, parents sans enfant, identifiants renommés) : à traiter |
+| `anomalies.csv` | critiques (u1, conflits de noms d'utilisateur, écritures échouées `WRITE_FAILED`, comptes en échec `ACCOUNT_FAILED`, `UNTRUSTED_AUTH_UID`) : à corriger avant la bascule ; avertissements (photos lourdes, parents sans enfant, identifiants renommés, `AUTHLINK_MISMATCH` : `appUsers` et `authLinks` divergeaient, le lien a été retenu avec le statut le plus restrictif) : à traiter |
+| `comptes/…/mots-de-passe-temporaires.csv` | **SECRET**, seulement si des comptes n'avaient pas été provisionnés par le Lot 0 (tous remplacés par défaut, voir le runbook du Lot 0 §2) : à remettre individuellement puis à supprimer |
 | `comptes/…/liens-a-valider.csv` | rattachements parent/enfant non accordés par prudence : **à faire valider par l'école** |
 | `comptes/…/identifiants-renommes.csv` | personnes à prévenir de leur nouvel identifiant |
 
@@ -118,8 +123,12 @@ personnelles, ne pas diffuser**) :
    ```
 6. **Contrôle d'écart** : relancer la simulation. Tous les `copied` doivent valoir 0.
    Sinon, un ancien onglet a écrit à la racine entre les étapes 3 et 4 : relancer
-   `--apply` (seuls les documents manquants sont copiés ; un document racine
-   modifié après la migration n'est pas recopié — le corriger à la main).
+   `--apply` (seuls les documents manquants sont copiés, par `create` : un
+   document déjà présent dans `schools/…`, même apparu pendant la relance, n'est
+   jamais écrasé ; un document racine modifié après la migration n'est pas
+   recopié — le corriger à la main). Ne **jamais** utiliser `--overwrite` après
+   l'ouverture du nouveau front. Un code de sortie 2 signale une anomalie
+   critique (échec de compte ou d'écriture) : lire `anomalies.csv`, corriger, relancer.
 
 ## 5. Vérifications
 
@@ -149,6 +158,15 @@ Les données racine sont intactes, mais **tout ce qui a été saisi dans
 `schools/alfajr/…` après la bascule serait perdu** au retour : à exporter
 d'abord (`gcloud firestore export $BUCKET/apres-bascule-$STAMP --collection-ids=…`).
 
+0. **Avant de redéployer le Lot 0 (revue de sécurité)** : les changements de
+   comptes faits après la bascule (`setMemberRole` : rétrogradation, suspension)
+   n'existent que dans `schools/alfajr/members` ; les règles du Lot 0 relisent
+   `authLinks`, resté dans son état d'avant la bascule. Dans la console Firestore,
+   filtrer `schools/alfajr/members` sur `updatedAt` postérieur à la bascule et,
+   pour chaque compte suspendu ou rétrogradé, reporter `isActive` / `role` dans
+   `authLinks/{uid}` (et `appUsers`). Les comptes retirés ou archivés ont été
+   désactivés dans Firebase Auth et le restent. Les comptes créés après la
+   bascule n'ont pas de lien : ils n'auront aucun accès sous le Lot 0.
 1. Hosting : Console › Hosting › historique › restaurer la version du Lot 0.
 2. Règles et Functions du Lot 0 :
    ```bash

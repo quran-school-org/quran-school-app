@@ -34,6 +34,8 @@ async function main() {
       apply: true,
       superAdminUsername: "admin_alfajr",
       outDir: null,
+      // Données FICTIVES : mots de passe de démonstration conservés (jamais en prod).
+      rotatePasswords: "none",
     });
     await seedSecondSchool(admin.db, admin.auth);
     console.log("[seed] Données fictives migrées vers schools/alfajr + école annour :", JSON.stringify(summary.accounts));

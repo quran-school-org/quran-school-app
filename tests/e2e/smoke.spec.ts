@@ -77,3 +77,57 @@ test.describe.serial("parcours par rôle", () => {
     await logout(page);
   });
 });
+
+/**
+ * Revue de sécurité (étape 2) : démonstrations de bout en bout, après les
+ * parcours ci-dessus (mots de passe déjà changés). Voir
+ * docs/revues/REVUE-SECURITE-ETAPE-2.md.
+ */
+test.describe.serial("revue de sécurité", () => {
+  test("C-01 : un nom d'élève piégé par un enseignant n'exécute aucun script à l'impression du directeur", async ({ page }) => {
+    // L'enseignant (droits d'écriture sur les élèves) modifie un nom via l'API.
+    const { initializeApp, deleteApp } = await import("firebase/app");
+    const { getAuth, connectAuthEmulator, signInWithEmailAndPassword } = await import("firebase/auth");
+    const { getFirestore, connectFirestoreEmulator, doc, updateDoc } = await import("firebase/firestore");
+    const app = initializeApp({ projectId: "demo-quran-school", apiKey: "demo-api-key" }, `e2e-xss-${Date.now()}`);
+    const auth = getAuth(app);
+    connectAuthEmulator(auth, `http://${process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9099"}`, { disableWarnings: true });
+    const db = getFirestore(app);
+    const [host, port] = String(process.env.FIRESTORE_EMULATOR_HOST || "127.0.0.1:8080").split(":");
+    connectFirestoreEmulator(db, host, Number(port));
+    // Mot de passe déjà changé par un test précédent, sinon mot de passe initial.
+    await signInWithEmailAndPassword(auth, "youssef_baqali@alfajr.local", ACCOUNTS.enseignant.e2e)
+      .catch(() => signInWithEmailAndPassword(auth, "youssef_baqali@alfajr.local", ACCOUNTS.enseignant.initial));
+    await updateDoc(doc(db, "schools", "alfajr", "students", "S-103"), {
+      fullName: `أيوب<img src=x onerror="window.opener.__xss='C-01'">`,
+      parentName: `<svg onload="window.opener.__xss='C-01'"></svg>`,
+    });
+    await deleteApp(app);
+
+    await loginAs(page, ACCOUNTS.directeur);
+    await openTab(page, "students");
+    await expect(page.getByText("ياسين العلمي").first()).toBeVisible();
+    const popupPromise = page.context().waitForEvent("page");
+    await page.locator("#export-students-pdf-btn").dispatchEvent("click");
+    const popup = await popupPromise;
+    await popup.waitForLoadState("domcontentloaded").catch(() => undefined);
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate(() => (window as any).__xss ?? null)).toBeNull();
+    await popup.close().catch(() => undefined);
+    await logout(page);
+  });
+
+  test("C-02 : session Firebase terminée sans déconnexion (jeton expiré, révoqué) : le cache local est purgé", async ({ page }) => {
+    await loginAs(page, ACCOUNTS.enseignant);
+    await expect.poll(async () => (await page.evaluate(() => Object.keys(localStorage))).some((k) => k.startsWith("kuttab:alfajr:"))).toBe(true);
+    // Fin de session sans passer par le bouton « خروج » : la persistance Auth disparaît.
+    await page.evaluate(() => new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase("firebaseLocalStorageDb");
+      req.onsuccess = req.onerror = req.onblocked = () => resolve(null);
+    }));
+    await page.goto("about:blank");
+    await page.goto("/");
+    await expect(page.locator('form button[type="submit"]')).toBeVisible();
+    expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("kuttab:alfajr:")))).toEqual([]);
+  });
+});
