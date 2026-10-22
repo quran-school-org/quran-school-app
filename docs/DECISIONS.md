@@ -746,3 +746,24 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   obligatoire de l'environnement `production` restent les protections.
 - **Retour arrière** : revenir aux versions précédentes des workflows et du
   runbook (`git revert`) ; l'environnement `preview` et son compte peuvent rester.
+
+### D56. Sauvegardes : suppression bornée aux dossiers d'export, export seul, conservation verrouillable
+- **Revue** : hypothèses réfutées (`functions/test/revue-backup.test.ts`) :
+  des dossiers plantés datés du futur ne font jamais supprimer un export de
+  moins de 30 jours ; une rétention absurde (0, négative, NaN) ne supprime rien ;
+  une longue panne laisse toujours les 3 exports les plus récents.
+- **Constat (faible)** : la suppression acceptait tout préfixe renvoyé par le
+  listage dont le nom se terminait par un horodatage (y compris hors de
+  `firestore/<base>/`). Avec un listage GCS normal (délimiteur `/`), ce cas ne
+  se produit pas ; mais rien ne le garantissait dans le code.
+- **Décision** :
+  - code : seuls les préfixes de la forme exacte `firestore/<base>/<horodatage>/`
+    sont candidats (`isExportPrefixUnder`) ;
+  - runbook : rôle personnalisé « export seul » au lieu de
+    `datastore.importExportAdmin` (qui permet aussi l'import, donc l'écrasement
+    de la base en service) ; politique de conservation du bucket de 28 jours
+    (aucun export récent supprimable, même par un compte compromis), à
+    verrouiller après un mois ; rappel que le déployeur peut agir en tant que
+    le compte de sauvegarde ; accès aux exports réservé.
+- **Retour arrière** : retirer le filtre dans `runBackup` ; retirer la politique
+  de conservation (`--clear-retention-period`, impossible une fois verrouillée).

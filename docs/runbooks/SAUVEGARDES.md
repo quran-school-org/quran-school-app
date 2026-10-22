@@ -36,6 +36,14 @@ cat > /tmp/cycle-de-vie.json <<'EOF'
 EOF
 gcloud storage buckets update gs://$BUCKET --lifecycle-file=/tmp/cycle-de-vie.json
 gcloud storage buckets describe gs://$BUCKET --format="default(lifecycle_config)"
+
+# Revue D56 : politique de conservation de 28 jours (inférieure à la rétention
+# de la fonction, 30 j, et à la règle de suppression, 45 j). Un compte
+# compromis (déploiement, sauvegarde) ne peut alors supprimer AUCUN export de
+# moins de 28 jours. Ne la verrouiller (--lock-retention-period, irréversible)
+# qu'après un mois de fonctionnement sans erreur.
+gcloud storage buckets update gs://$BUCKET --retention-period=28d
+gcloud storage buckets describe gs://$BUCKET --format="default(retention_policy)"
 ```
 La fonction supprime elle-même les exports de plus de `BACKUP_RETENTION_DAYS`
 (30 jours, en gardant toujours les 3 plus récents) ; la règle à 45 jours est le
@@ -47,8 +55,18 @@ préfixe `firestore/` (ex. `gs://$BUCKET/manuel/…`).
 # Compte d'exécution dédié de la fonction planifiée.
 gcloud iam service-accounts create firestore-backup --display-name="Sauvegarde Firestore" --project=$PROJECT
 export BACKUP_SA=firestore-backup@$PROJECT.iam.gserviceaccount.com
+# Revue D56 : rôle personnalisé EXPORT SEUL. Le rôle prédéfini
+# roles/datastore.importExportAdmin permet aussi l'IMPORT, qui écrase des
+# documents de la base en service : inutile pour la sauvegarde, dangereux si
+# le compte est compromis. Noms de permissions à vérifier au moment de la
+# création (gcloud iam roles describe roles/datastore.importExportAdmin).
+gcloud iam roles create firestoreExportOnly --project=$PROJECT \
+  --title="Export Firestore seul" \
+  --permissions=datastore.databases.export,datastore.databases.getMetadata,datastore.operations.get,datastore.operations.list
 gcloud projects add-iam-policy-binding $PROJECT --member="serviceAccount:$BACKUP_SA" \
-  --role=roles/datastore.importExportAdmin --condition=None
+  --role=projects/$PROJECT/roles/firestoreExportOnly --condition=None
+# (Si l'export échoue faute de droit, revenir à roles/datastore.importExportAdmin
+#  et le noter ici ; l'import se fait toujours par un humain, jamais par ce compte.)
 gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member="serviceAccount:$BACKUP_SA" --role=roles/storage.objectAdmin
 
 # Agent de service Firestore : c'est lui qui écrit l'export dans le bucket.
@@ -59,6 +77,9 @@ gcloud storage buckets add-iam-policy-binding gs://$BUCKET \
   --member="serviceAccount:service-$PROJECT_NUMBER@gcp-sa-firestore.iam.gserviceaccount.com" --role=roles/storage.legacyBucketReader
 
 # Le déployeur (humain ou compte github-deploy, D46) doit pouvoir « agir en tant que » ce compte.
+# Conséquence (revue D56) : qui peut déployer des fonctions peut exécuter du code
+# sous ce compte, donc supprimer des exports ; la politique de conservation du
+# §2 et la suppression réversible (7 jours) bornent ce risque.
 gcloud iam service-accounts add-iam-policy-binding $BACKUP_SA --project=$PROJECT \
   --role=roles/iam.serviceAccountUser --member="serviceAccount:github-deploy@$PROJECT.iam.gserviceaccount.com"
 ```
@@ -111,6 +132,13 @@ gcloud firestore export gs://$BUCKET/manuel/pitr-$(date +%Y%m%d-%H%M) --database
   --snapshot-time=2026-10-22T08:00:00Z --project=$PROJECT
 ```
 
-## 6. Retour arrière
+## 6. Accès aux exports
+Les exports contiennent TOUTE la base (élèves mineurs, fiches RH, comptes) :
+lecture du bucket réservée aux propriétaires du projet ; ne jamais télécharger
+un export sur un poste personnel ; un export manuel (`manuel/…`) est supprimé
+dès qu'il n'est plus utile. Voir aussi `docs/conformite/CNDP.md` (durées de
+conservation, localisation).
+
+## 7. Retour arrière
 `BACKUP_ENABLED=false` puis `npx firebase deploy --only functions --project $PROJECT --force`
 (la fonction et sa tâche Cloud Scheduler sont supprimées ; les exports restent).

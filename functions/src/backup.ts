@@ -63,6 +63,12 @@ export function parseExportDate(prefix: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** Vrai si `prefix` est exactement un dossier d'export horodaté directement sous `root`. */
+export function isExportPrefixUnder(root: string, prefix: string): boolean {
+  if (!root.endsWith("/") || !prefix.startsWith(root)) return false;
+  return /^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}Z\/$/.test(prefix.slice(root.length));
+}
+
 /**
  * Préfixes d'export à supprimer : plus anciens que la rétention, en gardant
  * TOUJOURS au moins les `keepAtLeast` plus récents (une panne de plusieurs jours
@@ -109,7 +115,10 @@ export async function runBackup(deps: BackupDeps): Promise<BackupResult> {
   logger.info("backup.exported", { database: deps.databaseId, outputUriPrefix: req.outputUriPrefix, operation });
   const db = deps.databaseId === "(default)" ? "default" : deps.databaseId;
   const root = `${EXPORT_ROOT}/${db}/`;
-  const prefixes = await deps.listExportPrefixes(root);
+  // Seuls les préfixes de la forme exacte <racine><horodatage>/ sont candidats
+  // à la suppression (revue, D56) : une réponse inattendue du listage (autre
+  // dossier, préfixe vide, sous-dossier) ne supprime jamais rien d'autre.
+  const prefixes = (await deps.listExportPrefixes(root)).filter((p) => isExportPrefixUnder(root, p));
   const deleted = expiredExports(prefixes, deps.now, deps.retentionDays);
   for (const p of deleted) await deps.deletePrefix(p);
   if (deleted.length) logger.info("backup.pruned", { count: deleted.length, oldest: deleted[deleted.length - 1] });
