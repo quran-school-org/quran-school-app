@@ -190,6 +190,49 @@ export function apiUrl(path: string): string {
   return `${apiBaseUrl}${path}`;
 }
 
+/** Erreur d'appel au rapport IA, avec un message arabe prêt à afficher. */
+export class AiReportError extends Error {
+  constructor(public readonly status: number, public readonly userMessage: string) {
+    super(`ai-report-${status}`);
+  }
+}
+
+/** Message arabe selon le code HTTP de la fonction `api` (429 quota, 413 taille…). */
+export function describeAiReportStatus(status: number): string {
+  if (status === 429) return "تم بلوغ الحد المسموح به من تقارير الذكاء الاصطناعي لهذا اليوم. يرجى المحاولة لاحقاً.";
+  if (status === 413) return "بيانات الطالب طويلة جداً لإنشاء التقرير. يرجى اختصار الملاحظات.";
+  if (status === 401) return "انتهت الجلسة. يرجى تسجيل الدخول من جديد.";
+  if (status === 403) return "ليست لديك صلاحية إنشاء تقرير الذكاء الاصطناعي في هذه المدرسة.";
+  return "عذراً، حدث خطأ أثناء تشغيل محرك الذكاء الاصطناعي. الرجاء إعادة المحاولة.";
+}
+
+/**
+ * Rapport pédagogique IA d'un élève (fonction `api`, POST /api/gemini/analyze).
+ * Jeton Firebase joint ; en cas d'échec, lève AiReportError (message arabe).
+ */
+export async function requestAiReport<T = unknown>(input: {
+  schoolId: string;
+  studentName: string;
+  hizbCount?: number;
+  tajweedLevel?: string;
+  age?: number | string | null;
+  notes?: string;
+  attendanceRate?: number;
+  recentGrades?: string;
+}): Promise<T> {
+  const idToken = await getIdToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (idToken) headers.Authorization = `Bearer ${idToken}`;
+  let res: Response;
+  try {
+    res = await fetch(apiUrl("/api/gemini/analyze"), { method: "POST", headers, body: JSON.stringify(input) });
+  } catch {
+    throw new AiReportError(0, "تعذر الاتصال بالخادم. تحقق من الاتصال بالإنترنت.");
+  }
+  if (!res.ok) throw new AiReportError(res.status, describeAiReportStatus(res.status));
+  return (await res.json()) as T;
+}
+
 // ---------------------------------------------------------------------------
 // Cloud Functions callables (gestion des écoles et des comptes)
 // ---------------------------------------------------------------------------
