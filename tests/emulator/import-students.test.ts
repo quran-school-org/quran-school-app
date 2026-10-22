@@ -1,6 +1,6 @@
 /**
  * scripts/admin/import-students.ts sur les émulateurs, avec un CSV FICTIF
- * (tests/fixtures/eleves-fictifs.csv). Voir docs/runbooks/NOUVELLE-ECOLE.md, D72.
+ * (tests/fixtures/eleves-fictifs.csv). Voir docs/runbooks/NOUVELLE-ECOLE.md, D73.
  */
 import { mkdtempSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";

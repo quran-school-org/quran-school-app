@@ -57,7 +57,7 @@ export async function hasAnyActiveMembership(uid: string): Promise<boolean> {
  * Vrai si le compte porte le claim super-admin. Un tel compte n'est JAMAIS
  * désactivé automatiquement (retrait de sa dernière école, archivage d'une
  * fiche liée) : sinon le directeur d'une école dont le super-admin est membre
- * pourrait bloquer l'administration de la plateforme (revue, D71).
+ * pourrait bloquer l'administration de la plateforme (revue, D72).
  */
 export async function isSuperAdminAccount(uid: string): Promise<boolean> {
   try {

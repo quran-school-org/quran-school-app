@@ -25,7 +25,7 @@
 | Suivi pédagogique | élèves | présence, notes d'examens, progression (hizb, sourates, tajwid) | `attendance`, `grades`, `dailyProgress` | |
 | Finances des familles | parents, élèves | cotisations, montants, dates, reçus | `payments` | Obligations comptables : conservation [À VÉRIFIER] |
 | Personnel (fiche publique) | personnel, bénévoles | nom, fonction, catégorie, téléphone, WhatsApp, e-mail, horaires, affectations, photo | `teachers` | Lisible par l'équipe pédagogique |
-| Personnel (fiche RH) | personnel | **salaire, type de contrat, numéro de CIN, adresse, contact d'urgence, date de naissance** | `staffPrivate` (bureau seulement, D42) | **Lot 0 : ces champs sont encore dans `teachers`, lisibles par la pédagogie (R-06, D70)** |
+| Personnel (fiche RH) | personnel | **salaire, type de contrat, numéro de CIN, adresse, contact d'urgence, date de naissance** | `staffPrivate` (bureau seulement, D42) | **Lot 0 : ces champs sont encore dans `teachers`, lisibles par la pédagogie (R-06, D71)** |
 | Paie et dépenses | personnel, fournisseurs | salaires versés, dépenses | `salaryPayments`, `expenses`, `otherIncomes` | |
 | Comptes d'accès | tous les utilisateurs | identifiant, nom, rôle, école(s), dernière connexion ; e-mail technique et empreinte du mot de passe dans Firebase Auth | `users`, `schools/{s}/members`, `usernames`, Firebase Auth | Aucun mot de passe dans Firestore |
 | Rapport IA | élèves | nom, âge, hizb, tajwid, taux de présence, notes d'examens, **notes de l'enseignant**, envoyés à Google Gemini | fonction `api` | Voir §7 (transfert, sous-traitant) |
@@ -184,8 +184,8 @@ En place (multi-écoles) :
 - [x] purge du cache à la fin de session (D40) ;
 - [x] proxy IA authentifié, avec quotas, et journaux sans données d'élèves (D43) ;
 - [x] App Check préparé (D44) ;
-- [x] déploiement par CI sans clé, environnements protégés (D46, D67) ;
-- [x] sauvegardes et PITR préparés (D47, D68) ;
+- [x] déploiement par CI sans clé, environnements protégés (D46, D68) ;
+- [x] sauvegardes et PITR préparés (D47, D69) ;
 - [x] revues de sécurité adversariales (`docs/revues/`).
 
 À faire, ou dépend d'une action humaine :
@@ -193,7 +193,7 @@ En place (multi-écoles) :
       clés, arrêt du proxy ouvert d'AI Studio (O-01), désactivation de
       l'inscription libre (O-02) ;
 - [ ] **Lot 0** : salaires et CIN visibles par la pédagogie jusqu'à la bascule
-      (D70). Les mots de passe exposés avant le Lot 0 restent valables jusqu'à
+      (D71). Les mots de passe exposés avant le Lot 0 restent valables jusqu'à
       leur changement (`release/lot0`, D53) ;
 - [ ] photos encore stockées dans les documents (D51) ;
 - [ ] pas de double authentification pour les directeurs et le super-admin.

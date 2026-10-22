@@ -4,8 +4,8 @@
 > directeur de la nouvelle école. Aucune commande de ce document n'a été
 > lancée par un agent sur un vrai projet. Les seuls essais ont eu lieu sur les
 > émulateurs, avec des données fictives.
-> Décisions : D25 (super-admin), D27 (paramètres par école), D71 (compte
-> super-admin jamais désactivé automatiquement), D72 (import CSV).
+> Décisions : D25 (super-admin), D27 (paramètres par école), D72 (compte
+> super-admin jamais désactivé automatiquement), D73 (import CSV).
 > Modèles de messages : `docs/communication/`. Conformité : `docs/conformite/CNDP.md`.
 >
 > Les libellés de l'interface cités ici sont ceux de la version actuelle. La
@@ -16,7 +16,7 @@
 - [ ] La bascule multi-écoles est faite et vérifiée (`MIGRATION-BASCULE.md` §5).
 - [ ] Le compte super-admin dédié existe (claim `superAdmin`, recommandé dans
       `MIGRATION-BASCULE.md` §0.4) et son mot de passe est fort et personnel.
-- [ ] Les Cloud Functions déployées contiennent D71 (`fix/revue-durcissement`
+- [ ] Les Cloud Functions déployées contiennent D72 (`fix/revue-durcissement`
       ou plus récent). Sinon, ne PAS retirer le super-admin de l'école au §4.3 :
       son compte serait désactivé.
 - [ ] Accord écrit avec l'école (voir `docs/conformite/CNDP.md` §3) : l'école
@@ -122,7 +122,7 @@ mot de passe temporaire après la remise.
 Une fois que le directeur s'est connecté et a changé son mot de passe :
 le **directeur** ouvre « إدارة المستخدمين والصلاحيات », trouve le compte du
 super-admin et le supprime de l'école. Le super-admin ne doit pas garder
-d'accès implicite aux données (D25). Depuis D71, son compte reste actif même
+d'accès implicite aux données (D25). Depuis D72, son compte reste actif même
 s'il n'appartient plus à aucune école.
 
 Pour une intervention ultérieure (assistance), le directeur rattache de
@@ -191,7 +191,7 @@ l'Admin SDK, par un humain.
   avant la première cotisation enregistrée.
 - Rapport IA : chaque école dispose de 300 rapports par jour (limite
   `AI_DAILY_LIMIT_PER_SCHOOL`, `PROXY-IA.md`). Au-delà de trois écoles, revoir
-  la limite globale (D66).
+  la limite globale (D67).
 - Sauvegardes : l'export quotidien couvre toute la base, nouvelle école comprise.
 
 ## 7. Remise des identifiants

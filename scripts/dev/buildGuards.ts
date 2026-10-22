@@ -1,5 +1,5 @@
 /**
- * Garde-fous du build de production (revue du durcissement, D69).
+ * Garde-fous du build de production (revue du durcissement, D70).
  *
  * Vite charge `.env.local` dans TOUS les modes, y compris `vite build`
  * (production). Une surcharge prévue pour le poste de développement (jeton de

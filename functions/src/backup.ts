@@ -116,7 +116,7 @@ export async function runBackup(deps: BackupDeps): Promise<BackupResult> {
   const db = deps.databaseId === "(default)" ? "default" : deps.databaseId;
   const root = `${EXPORT_ROOT}/${db}/`;
   // Seuls les préfixes de la forme exacte <racine><horodatage>/ sont candidats
-  // à la suppression (revue, D68) : une réponse inattendue du listage (autre
+  // à la suppression (revue, D69) : une réponse inattendue du listage (autre
   // dossier, préfixe vide, sous-dossier) ne supprime jamais rien d'autre.
   const prefixes = (await deps.listExportPrefixes(root)).filter((p) => isExportPrefixUnder(root, p));
   const deleted = expiredExports(prefixes, deps.now, deps.retentionDays);

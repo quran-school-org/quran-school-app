@@ -1,6 +1,6 @@
 /**
  * Import d'élèves depuis un fichier CSV dans une école (Admin SDK).
- * Runbook : docs/runbooks/NOUVELLE-ECOLE.md (§5). Décision : D72.
+ * Runbook : docs/runbooks/NOUVELLE-ECOLE.md (§5). Décision : D73.
  *
  * Garde-fous (scripts/admin/lib/cli.ts) :
  * - `--project` obligatoire ; simulation (`--dry-run`) PAR DÉFAUT, `--apply` pour écrire ;

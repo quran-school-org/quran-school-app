@@ -645,13 +645,13 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
 Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
 `docs/progress/ETAPE-2-revue2.md`.
 
-Numérotation : D52 à D63 sont pris par l'intégration du design
-(`integration/design`) ; cette revue commence à D64. Sur la branche Lot 0
+Numérotation : D52 à D63 sont pris par l'intégration du design et D64 par les
+workflows de mise en prod (`main`) ; cette revue commence à D65. Sur la branche Lot 0
 (`fix/revue-durcissement-lot0`), les mêmes décisions portent d'autres numéros
-(D53 est pris par `release/lot0`) : D64 ici = D54 là-bas (R-07), D70 ici = D55
+(D53 est pris par `release/lot0`) : D65 ici = D54 là-bas (R-07), D71 ici = D55
 là-bas (R-06).
 
-### D64. Notifications réservées au personnel (R-07)
+### D65. Notifications réservées au personnel (R-07)
 - **Contexte** : R-07 (D41) : tout membre actif, familles comprises, pouvait
   créer une notification, lue ensuite par tout le personnel (hameçonnage
   interne : « réglez la cotisation sur tel compte »). Tout membre du personnel
@@ -673,7 +673,7 @@ là-bas (R-06).
 - **Retour arrière** : rétablir `isMember(s)` (Lot 0 : `active()`) pour
   `create` et `isStaff(s)` seul pour `update`.
 
-### D65. Scission des fiches à la relance : compléter la fiche RH, ne rien perdre
+### D66. Scission des fiches à la relance : compléter la fiche RH, ne rien perdre
 - **Constat (revue)** : à la relance de la migration, une fiche publique cible
   encore porteuse de champs RH était vidée de ces champs ; si une fiche RH
   existait déjà, rien n'y était recopié. Un champ présent seulement dans la
@@ -687,7 +687,7 @@ là-bas (R-06).
 - **Retour arrière** : revenir au commit précédent du script (la relance
   redevient « fiche RH existante intacte, champs publics retirés »).
 
-### D66. Proxy IA : réponses `no-store` ; hypothèses de contournement des quotas réfutées
+### D67. Proxy IA : réponses `no-store` ; hypothèses de contournement des quotas réfutées
 - **Revue** : faire payer une autre école en citant son `schoolId`, consommer
   sans droit (famille, bénévole, suspendu, requête incomplète), multiplier les
   comptes d'une école, choisir ses compteurs par le corps de la requête,
@@ -709,7 +709,7 @@ là-bas (R-06).
   unique (≈ 1 écriture/s soutenue) : au-delà, 503 (fermé par défaut).
 - **Retour arrière** : retirer la ligne `res.set?.("Cache-Control", …)`.
 
-### D67. Workflows de déploiement : épinglage, pas d'injection, jeton OIDC confiné
+### D68. Workflows de déploiement : épinglage, pas d'injection, jeton OIDC confiné
 - **Constats (revue)** : `zizmor --offline` sur `feat/durcissement` : 18
   actions non épinglées (dont `google-github-actions/auth` dans les jobs qui
   obtiennent le jeton OIDC), 4 expressions `${{ }}` dans des scripts
@@ -753,7 +753,7 @@ là-bas (R-06).
 - **Retour arrière** : revenir aux versions précédentes des workflows et du
   runbook (`git revert`) ; l'environnement `preview` et son compte peuvent rester.
 
-### D68. Sauvegardes : suppression bornée aux dossiers d'export, export seul, conservation verrouillable
+### D69. Sauvegardes : suppression bornée aux dossiers d'export, export seul, conservation verrouillable
 - **Revue** : hypothèses réfutées (`functions/test/revue-backup.test.ts`) :
   des dossiers plantés datés du futur ne font jamais supprimer un export de
   moins de 30 jours ; une rétention absurde (0, négative, NaN) ne supprime rien ;
@@ -774,7 +774,7 @@ là-bas (R-06).
 - **Retour arrière** : retirer le filtre dans `runBackup` ; retirer la politique
   de conservation (`--clear-retention-period`, impossible une fois verrouillée).
 
-### D69. Build de production : refus d'un jeton de débogage App Check venu de `.env.local`
+### D70. Build de production : refus d'un jeton de débogage App Check venu de `.env.local`
 - **Constat (revue, moyenne)** : le runbook App Check (§2) et `.env.example`
   demandaient de mettre le jeton de débogage dans `.env.local`. Or Vite charge
   `.env.local` dans tous les modes, y compris `npm run build`, et le runbook
@@ -791,7 +791,7 @@ là-bas (R-06).
   `.env.development.local` (runbook et `.env.example` corrigés).
 - **Retour arrière** : retirer l'appel à `productionBuildProblems` dans `vite.config.ts`.
 
-### D70. R-06 sur le Lot 0 : pas de mesure minimale par les règles, décision documentée
+### D71. R-06 sur le Lot 0 : pas de mesure minimale par les règles, décision documentée
 - **Question** : sur `fix/lot0-securite`, les salaires et CIN restent dans
   `teachers`, lisible par `isEducator()` (مدير, إداري, مؤطر, مدرس). Une mesure
   courte serait-elle sûre, par exemple ne plus lire `teachers` hors bureau ?
@@ -819,7 +819,7 @@ là-bas (R-06).
   `tests/emulator/revue-rules.test.ts` (Lot 0) › R-06.
 - **Retour arrière** : sans objet.
 
-### D71. Le compte super-admin n'est jamais désactivé automatiquement
+### D72. Le compte super-admin n'est jamais désactivé automatiquement
 - **Constat (revue, moyenne)**, découvert en préparant l'accueil d'une
   deuxième école : l'interface crée une école avec `makeMeDirector` (le
   super-admin en devient directeur pour y créer le vrai directeur). Quand on
@@ -829,14 +829,14 @@ là-bas (R-06).
   donc le compte de l'administrateur de la plateforme. De même, un directeur
   pouvait le bloquer volontairement : retrait, ou lien vers une fiche du
   personnel puis archivage de la fiche (trigger d'archivage). Démontré par
-  `functions/test/revue-durcissement.test.ts` › D71 (échouait avant).
+  `functions/test/revue-durcissement.test.ts` › D72 (échouait avant).
 - **Décision** : `isSuperAdminAccount(uid)` (claim `superAdmin`) : jamais de
   désactivation automatique d'un tel compte, ni au retrait de sa dernière
   école, ni à l'archivage. L'appartenance est bien retirée ou suspendue. Le
   super-admin se désactive seulement à la main (console, par un humain).
 - **Retour arrière** : retirer les deux appels à `isSuperAdminAccount`.
 
-### D72. Import d'élèves par CSV pour une nouvelle école
+### D73. Import d'élèves par CSV pour une nouvelle école
 - **Évaluation** : une école qui arrive avec 100 à 300 élèves sur un tableur
   devrait sinon les saisir un par un. Un import est simple à écrire si l'on
   s'en tient aux élèves : pas de comptes, pas de paiements réels, pas de photos.

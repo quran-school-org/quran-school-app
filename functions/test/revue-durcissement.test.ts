@@ -1,5 +1,5 @@
 /**
- * Revue adversariale du durcissement — proxy IA (fonction `api`, D43, D66).
+ * Revue adversariale du durcissement — proxy IA (fonction `api`, D43, D67).
  * Hypothèses d'attaque contre les quotas : faire payer une autre école,
  * consommer sans droit, contourner par un rôle non pédagogique, réponses mises
  * en cache. Voir docs/revues/REVUE-SECURITE-DURCISSEMENT.md.
@@ -106,7 +106,7 @@ describe("hypothèses réfutées : quotas du proxy IA", () => {
   });
 });
 
-describe("D66 : réponses du proxy IA jamais mises en cache", () => {
+describe("D67 : réponses du proxy IA jamais mises en cache", () => {
   it("Cache-Control: private, no-store sur le succès, le refus et le quota dépassé", async () => {
     const token = await member("prof_cache", "alfajr", "مدرس");
     const ok = await call(token, { schoolId: "alfajr", studentName: "x" });
@@ -121,7 +121,7 @@ describe("D66 : réponses du proxy IA jamais mises en cache", () => {
   });
 });
 
-describe("D71 : un directeur ne peut pas bloquer le compte du super-admin", () => {
+describe("D72 : un directeur ne peut pas bloquer le compte du super-admin", () => {
   async function setup() {
     const db = admin.adminDb();
     const auth = admin.adminAuth();

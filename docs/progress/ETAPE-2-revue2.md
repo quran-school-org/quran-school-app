@@ -4,7 +4,7 @@ Branches :
 - `fix/revue-durcissement` (depuis `origin/feat/durcissement` 9e4f601), worktree `/home/user/wt-revue2` ;
 - `fix/revue-durcissement-lot0` (depuis `origin/fix/revue-securite-lot0` 3a719e9), worktree `/home/user/wt-revue2-lot0`.
 
-Décisions : `docs/DECISIONS.md` à partir de D64. Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`.
+Décisions : `docs/DECISIONS.md` à partir de D65. Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`.
 
 Commandes (conteneur à proxy, toujours sous verrou) :
 - `EMULATOR_SKIP_FIRESTORE_TRIGGERS=true flock /home/user/.emulators.lock npm run test:rules`
@@ -14,11 +14,11 @@ Commandes (conteneur à proxy, toujours sous verrou) :
   `zizmor --offline .github/workflows/` (`pip install --user zizmor`).
 
 ## Fait (poussé)
-Numérotation : D52–D63 pris par `integration/design` ; revue = D64–D72 sur MT ;
+Numérotation : D52–D64 pris sur `main` (design, workflows de mise en prod) ; revue = D65–D73 sur MT ;
 Lot 0 = D54 (R-07), D55 (R-06) (D53 pris par `release/lot0`).
-- D64 R-07 (MT + Lot 0 D54) ; D65 migration staffPrivate ; D66 quotas IA + no-store ;
-  D67 workflows ; D68 sauvegardes ; D69 garde-fou build App Check ; D70 R-06 Lot 0
-  (Lot 0 D55) ; D71 super-admin jamais désactivé automatiquement ; D72 import CSV.
+- D65 R-07 (MT + Lot 0 D54) ; D66 migration staffPrivate ; D67 quotas IA + no-store ;
+  D68 workflows ; D69 sauvegardes ; D70 garde-fou build App Check ; D71 R-06 Lot 0
+  (Lot 0 D55) ; D72 super-admin jamais désactivé automatiquement ; D73 import CSV.
 - Rapport `docs/revues/REVUE-SECURITE-DURCISSEMENT.md` (14 constats, verdict).
 - `docs/runbooks/NOUVELLE-ECOLE.md`, `scripts/admin/import-students.ts` + tests.
 - Tests MT (b651d3b) : lint OK/OK, build OK, unitaires 68/68, émulateurs 252 + 2

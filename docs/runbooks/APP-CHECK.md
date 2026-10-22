@@ -41,7 +41,7 @@ Projet de dev seulement : App Check › application web › menu › **Gérer le
 jetons de débogage** › ajouter un jeton (UUID) ; le mettre dans
 `.env.development.local` (`VITE_APPCHECK_DEBUG_TOKEN=…`), **jamais dans
 `.env.local`** : Vite charge `.env.local` aussi pour `npm run build`, et le jeton
-serait publié dans le bundle de la prod (revue, D69 ; le build de production
+serait publié dans le bundle de la prod (revue, D70 ; le build de production
 échoue désormais dans ce cas). Jamais de jeton de débogage sur la prod.
 
 ## 3. Déploiement du client avec la clé (observation)

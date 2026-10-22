@@ -11,7 +11,7 @@
  *     429 + Retry-After) ;
  *   - journaux sans donnée personnelle : école, pseudonyme de l'utilisateur,
  *     issue, durée ; jamais le nom de l'élève, l'invite ni la réponse (D43) ;
- *   - réponses `Cache-Control: private, no-store` (D66).
+ *   - réponses `Cache-Control: private, no-store` (D67).
  * GET /api/health : état du service.
  */
 import { onRequest } from "firebase-functions/v2/https";
@@ -139,7 +139,7 @@ export async function handleApi(req: Req, res: Res, generate?: (prompt: string) 
   if (req.method === "POST" && path === "/gemini/analyze") {
     const startedAt = Date.now();
     // Réponse propre à un utilisateur et à un élève : jamais mise en cache (CDN
-    // Hosting, navigateur, proxy), quelle que soit l'issue (revue, D66).
+    // Hosting, navigateur, proxy), quelle que soit l'issue (revue, D67).
     res.set?.("Cache-Control", "private, no-store");
     if (bodySize(req) > MAX_BODY_BYTES) {
       logAnalyze("rejected-too-large", { startedAt });

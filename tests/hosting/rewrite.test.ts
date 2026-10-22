@@ -55,7 +55,7 @@ describe("rewrite Hosting /api/** → fonction api", () => {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body,
     });
     expect(res.status).toBe(200);
-    // D66 : rapport propre à un élève, jamais mis en cache (no-store, ou au moins pas « public »).
+    // D67 : rapport propre à un élève, jamais mis en cache (no-store, ou au moins pas « public »).
     const cache = res.headers.get("cache-control") || "";
     expect(cache).not.toContain("public");
     expect(cache).toMatch(/no-store|no-cache|private/);

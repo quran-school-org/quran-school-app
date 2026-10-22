@@ -10,7 +10,7 @@
 #   (validation manuelle obligatoire par un relecteur, branche main seulement).
 # - Aucune valeur sensible dans ce fichier : identifiants de projet, fournisseur
 #   WIF et compte de service viennent des VARIABLES de l'environnement GitHub.
-# - Durcissement (revue, D67) : actions épinglées par SHA ; aucune expression
+# - Durcissement (revue, D68) : actions épinglées par SHA ; aucune expression
 #   interpolée dans un script (tout passe par `env`) ; dans le job qui détient
 #   le jeton OIDC, installation sans scripts npm et sans cache partagé.
 #   Rappel : le fichier exécuté est celui de la branche choisie ; seules les

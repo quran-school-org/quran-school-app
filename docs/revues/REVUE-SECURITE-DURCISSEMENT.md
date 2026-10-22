@@ -10,8 +10,8 @@
 > - `fix/revue-durcissement` (depuis `feat/durcissement`, 9e4f601) : multi-écoles ;
 > - `fix/revue-durcissement-lot0` (depuis `fix/revue-securite-lot0`, 3a719e9) : Lot 0.
 >
-> Décisions : `docs/DECISIONS.md`, D64 à D72 (D52 à D63 sont pris par
-> l'intégration du design ; sur la branche Lot 0 : D54 = R-07, D55 = R-06). Avancement : `docs/progress/ETAPE-2-revue2.md`.
+> Décisions : `docs/DECISIONS.md`, D65 à D73 (D52 à D64 sont pris sur
+> `main` : design intégré et workflows de mise en prod ; sur la branche Lot 0 : D54 = R-07, D55 = R-06). Avancement : `docs/progress/ETAPE-2-revue2.md`.
 > Revue précédente : `docs/revues/REVUE-SECURITE-ETAPE-2.md` (constats R-, C-, F-, O-).
 
 ## 1. En bref
@@ -22,7 +22,7 @@
   recompression des photos), plus R-07 et R-06 (Lot 0) de la revue précédente.
 - **14 constats** : aucun critique ni élevé, 3 moyens, 11 faibles (§3).
   À cela s'ajoute R-06 sur le Lot 0, déjà connu (moyen), évalué et accepté
-  jusqu'à la bascule (D70).
+  jusqu'à la bascule (D71).
 - **Corrigés** : les 3 constats moyens et 7 des faibles, dont R-07 sur les deux
   branches. Chaque correctif a son test, qui échouait avant le correctif, ou
   une vérification statique. Pour les workflows : `zizmor` passe de 27 constats
@@ -79,21 +79,21 @@ Branches : **MT** = `fix/revue-durcissement`, **L0** = `fix/revue-durcissement-l
 
 | ID | Gravité | Constat | Branches | État |
 |---|---|---|---|---|
-| RD-01 | **Moyenne** | Environnement `dev` ouvert à toutes les branches et partagé avec les aperçus : tout contributeur pouvait déployer règles et fonctions sur le projet de dev, donc lire ses données (réelles lors d'une répétition) | MT (workflow + runbook) | Corrigé (D67), actions humaines |
-| RD-02 | **Moyenne** | Jeton de débogage App Check placé dans `.env.local` (runbook, `.env.example`), donc publié dans le bundle de production | MT | Corrigé (D69) |
-| RD-13 | **Moyenne** | Le compte super-admin était désactivé quand on le retirait de sa dernière école (parcours normal d'accueil d'une école) ou à l'archivage d'une fiche qu'un directeur lui avait liée : blocage de l'administration de la plateforme | MT | Corrigé (D71) |
-| RD-03 | Faible | Actions non épinglées par SHA (dont `google-github-actions/auth`) ; dans le job qui détient le jeton OIDC, scripts d'installation npm exécutés et cache partagé | MT | Corrigé (D67) |
-| RD-04 | Faible | Expressions `${{ }}` interpolées dans des scripts (`inputs.target`, `vars.*`, sorties d'étape) ; non exploitables aujourd'hui (valeurs `choice` ou posées par un administrateur) | MT | Corrigé (D67) |
-| RD-05 | Faible | Condition du fournisseur WIF fondée sur le nom du dépôt ; pour la prod, ni la branche ni le fichier de workflow n'y figurent (seule la règle de l'environnement GitHub protège) | MT (runbook) | Corrigé dans le runbook (D67), action humaine |
-| RD-06 | Faible | Migration relancée : une fiche publique porteuse de champs RH était vidée, sans copie vers une fiche RH déjà existante (perte de données RH) | MT | Corrigé (D65) |
-| RD-07 | Faible | Sauvegardes : rôle `datastore.importExportAdmin` (l'import écrase la base en service) ; aucune conservation minimale contre un compte compromis ; la suppression acceptait tout préfixe se terminant par une date | MT | Corrigé : code et runbook (D68) |
-| R-07 | Faible | Les familles créent des notifications lues par le personnel ; tout membre du personnel pouvait aussi réécrire une notification | MT, L0 | Corrigé (D64 ; L0 : création seulement) |
-| RD-08 | Faible | Réponses de `/api/gemini/analyze` sans `Cache-Control` explicite (rapport propre à un élève) | MT | Corrigé (D66) |
+| RD-01 | **Moyenne** | Environnement `dev` ouvert à toutes les branches et partagé avec les aperçus : tout contributeur pouvait déployer règles et fonctions sur le projet de dev, donc lire ses données (réelles lors d'une répétition) | MT (workflow + runbook) | Corrigé (D68), actions humaines |
+| RD-02 | **Moyenne** | Jeton de débogage App Check placé dans `.env.local` (runbook, `.env.example`), donc publié dans le bundle de production | MT | Corrigé (D70) |
+| RD-13 | **Moyenne** | Le compte super-admin était désactivé quand on le retirait de sa dernière école (parcours normal d'accueil d'une école) ou à l'archivage d'une fiche qu'un directeur lui avait liée : blocage de l'administration de la plateforme | MT | Corrigé (D72) |
+| RD-03 | Faible | Actions non épinglées par SHA (dont `google-github-actions/auth`) ; dans le job qui détient le jeton OIDC, scripts d'installation npm exécutés et cache partagé | MT | Corrigé (D68) |
+| RD-04 | Faible | Expressions `${{ }}` interpolées dans des scripts (`inputs.target`, `vars.*`, sorties d'étape) ; non exploitables aujourd'hui (valeurs `choice` ou posées par un administrateur) | MT | Corrigé (D68) |
+| RD-05 | Faible | Condition du fournisseur WIF fondée sur le nom du dépôt ; pour la prod, ni la branche ni le fichier de workflow n'y figurent (seule la règle de l'environnement GitHub protège) | MT (runbook) | Corrigé dans le runbook (D68), action humaine |
+| RD-06 | Faible | Migration relancée : une fiche publique porteuse de champs RH était vidée, sans copie vers une fiche RH déjà existante (perte de données RH) | MT | Corrigé (D66) |
+| RD-07 | Faible | Sauvegardes : rôle `datastore.importExportAdmin` (l'import écrase la base en service) ; aucune conservation minimale contre un compte compromis ; la suppression acceptait tout préfixe se terminant par une date | MT | Corrigé : code et runbook (D69) |
+| R-07 | Faible | Les familles créent des notifications lues par le personnel ; tout membre du personnel pouvait aussi réécrire une notification | MT, L0 | Corrigé (D65 ; L0 : création seulement) |
+| RD-08 | Faible | Réponses de `/api/gemini/analyze` sans `Cache-Control` explicite (rapport propre à un élève) | MT | Corrigé (D67) |
 | RD-09 | Faible | CSP : `*.run.app`, `*.cloudfunctions.net`, `*.googleapis.com` (`connect-src`), `*.firebaseapp.com` (`frame-src`) sont des points de sortie qu'un attaquant peut héberger ; avec `'unsafe-inline'`, la CSP ne bloque de toute façon pas une injection | MT | Non corrigé (recommandation §5) |
 | RD-10 | Faible | Taille des photos base64 non bornée par les règles (la recompression D51 n'agit que côté client) : un membre pédagogique peut alourdir la collection | MT | Accepté (plan Cloud Storage D51) |
-| RD-11 | Faible | Quota IA global : quatre écoles peuvent l'épuiser ensemble (déni de service du rapport, sans coût au-delà) ; compteur global sur un seul document (≈ 1 écriture/s), au-delà réponse 503 | MT | Accepté (D66) |
-| RD-12 | Faible | Portée réelle de `github-deploy` : déployer des fonctions revient à exécuter du code sous leur compte, qui a accès à toute la base ; le compte Compute par défaut a souvent `editor` | MT (runbook) | Documenté (D67), action humaine |
-| R-06 (L0) | Moyenne | Salaires et CIN lisibles par la pédagogie sur le Lot 0 (connu) | L0 | Accepté jusqu'à la bascule (D70) |
+| RD-11 | Faible | Quota IA global : quatre écoles peuvent l'épuiser ensemble (déni de service du rapport, sans coût au-delà) ; compteur global sur un seul document (≈ 1 écriture/s), au-delà réponse 503 | MT | Accepté (D67) |
+| RD-12 | Faible | Portée réelle de `github-deploy` : déployer des fonctions revient à exécuter du code sous leur compte, qui a accès à toute la base ; le compte Compute par défaut a souvent `editor` | MT (runbook) | Documenté (D68), action humaine |
+| R-06 (L0) | Moyenne | Salaires et CIN lisibles par la pédagogie sur le Lot 0 (connu) | L0 | Accepté jusqu'à la bascule (D71) |
 
 ## 4. Constats corrigés : preuves et correctifs
 
@@ -107,7 +107,7 @@ Branches : **MT** = `fix/revue-durcissement`, **L0** = `fix/revue-durcissement-l
 | RD-06 | `tests/emulator/migration.test.ts` › scission à la relance : `emergencyContact`, présent seulement dans la fiche publique, était perdu | La fiche RH existante garde ses valeurs ; les champs qui lui manquent sont complétés avant leur retrait de la fiche publique ; une valeur divergente produit `STAFF_PRIVATE_CONFLICT` (noms de champs seulement) | MT `5b84823` |
 | RD-07 | `functions/test/revue-backup.test.ts` : un listage qui renvoie `manuel/…`, une autre base ou un sous-dossier faisait supprimer ces dossiers (4 suppressions au lieu d'une) | `isExportPrefixUnder` : seuls les dossiers `firestore/<base>/<horodatage>/` exacts sont supprimables ; runbook : rôle personnalisé « export seul », conservation de 28 jours (verrouillable), accès aux exports | MT `1771fbc` |
 | R-07 | `tests/emulator/revue-rules.test.ts` › R-07 (2 tests échouaient avec les anciennes règles) ; matrices `tenant-rules` et `lot0-rules` | `create` réservé au personnel ; MT : hors bureau, une mise à jour ne peut toucher que `isRead` (et `id`, s'il est égal à l'identifiant du document) | MT `dd6f45f`, `942fc49`* ; L0 `c10c3f4` |
-| RD-13 | `functions/test/revue-durcissement.test.ts` › D71 (2 tests échouaient avant le correctif) | `isSuperAdminAccount` : jamais de désactivation automatique d'un compte portant le claim `superAdmin` (retrait, archivage) ; l'appartenance est bien retirée ou suspendue | MT `0e3cd91` |
+| RD-13 | `functions/test/revue-durcissement.test.ts` › D72 (2 tests échouaient avant le correctif) | `isSuperAdminAccount` : jamais de désactivation automatique d'un compte portant le claim `superAdmin` (retrait, archivage) ; l'appartenance est bien retirée ou suspendue | MT `0e3cd91` |
 | RD-08 | Appel direct et à travers le rewrite Hosting (`npm run test:hosting`) | `Cache-Control: private, no-store` sur toutes les issues de `/api/gemini/analyze` | MT `e3ee428` |
 
 \* second commit R-07 sur MT : marquage comme lu d'une notification héritée sans `id`.
@@ -120,7 +120,7 @@ conditions WIF, protection de `main`, mise à jour des SHA), `SAUVEGARDES.md`
 
 ## 5. Constats non corrigés (justification)
 
-- **R-06 sur le Lot 0** (moyen, D70) : l'interface du Lot 0 a besoin de la
+- **R-06 sur le Lot 0** (moyen, D71) : l'interface du Lot 0 a besoin de la
   liste `teachers` pour la pédagogie : tableau de bord de l'enseignant
   (`activeTeacher`), noms des enseignants dans les halaqas et les examens,
   affectation des halaqas par le مؤطر. Fermer cette lecture casserait ces
@@ -244,7 +244,7 @@ Avant d'activer la CI de déploiement, l'humain doit :
 `fix/revue-durcissement-lot0`**, après fusion dans `fix/revue-securite-lot0`
 puis `fix/lot0-securite`. Cette branche n'ajoute qu'une règle (R-07). Les
 conditions de la revue précédente restent toutes valables. R-06 est accepté
-jusqu'à la bascule (D70) : il faut garder court l'intervalle entre le Lot 0 et
+jusqu'à la bascule (D71) : il faut garder court l'intervalle entre le Lot 0 et
 la bascule.
 
 **Bascule multi-écoles** : les conditions précédentes sont inchangées. Les
