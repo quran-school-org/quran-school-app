@@ -2,15 +2,21 @@
  * Module du personnel (enseignants, encadrants, administratifs, entretien, bénévoles).
  * Découpé mécaniquement depuis TeacherManagement.tsx (Lot 2, sans changement de comportement).
  */
+import React from "react";
+import { Brush, ClipboardList, GraduationCap, HandHeart, Landmark, Star, UserRound } from "lucide-react";
 import { StaffCategory } from "../../types";
+
+/** Icône de catégorie : taille relative à la police (1em), décorative. */
+const ico = (C: any) => <C className="inline-block w-[1em] h-[1em] align-[-0.125em]" strokeWidth={1.75} aria-hidden="true" />;
+export const DEFAULT_STAFF_ICON = ico(UserRound);
 
 
 
 // Catégories du personnel et tons de la charte (pastilles, filtres)
-export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; icon: string; bg: string; text: string; border: string; badgeBg: string }> = {
+export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; icon: React.ReactNode; bg: string; text: string; border: string; badgeBg: string }> = {
   "عضو مكتب تنفيذي / مسير": {
     label: "أعضاء المكتب والمسيرون",
-    icon: "🏛️",
+    icon: ico(Landmark),
     bg: "bg-primary-100",
     text: "text-primary",
     border: "border-primary-200",
@@ -18,7 +24,7 @@ export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; ico
   },
   "أستاذ / محفظ": {
     label: "أساتذة ومحفظين",
-    icon: "👨‍🏫",
+    icon: ico(GraduationCap),
     bg: "bg-gold-100",
     text: "text-gold-800",
     border: "border-gold-200",
@@ -26,7 +32,7 @@ export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; ico
   },
   "مؤطر / مشرف تربوي": {
     label: "مؤطرون ومشرفون",
-    icon: "🌟",
+    icon: ico(Star),
     bg: "bg-success-100",
     text: "text-success-700",
     border: "border-success-200",
@@ -34,7 +40,7 @@ export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; ico
   },
   "إداري / كاتب": {
     label: "إداريون وكتاب",
-    icon: "📋",
+    icon: ico(ClipboardList),
     bg: "bg-primary-50",
     text: "text-primary-500",
     border: "border-primary-200",
@@ -42,7 +48,7 @@ export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; ico
   },
   "عامل نظافة / صيانة": {
     label: "عمال نظافة وصيانة",
-    icon: "🧹",
+    icon: ico(Brush),
     bg: "bg-sunken",
     text: "text-ink-2",
     border: "border-line-strong",
@@ -50,7 +56,7 @@ export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; ico
   },
   "متطوع": {
     label: "متطوعون",
-    icon: "🤝",
+    icon: ico(HandHeart),
     bg: "bg-danger-50",
     text: "text-danger-800",
     border: "border-danger-200",
@@ -58,7 +64,7 @@ export const STAFF_CATEGORIES_CONFIG: Record<StaffCategory, { label: string; ico
   },
   "أخرى": {
     label: "أخرى",
-    icon: "👤",
+    icon: ico(UserRound),
     bg: "bg-surface-2",
     text: "text-ink-2",
     border: "border-line",

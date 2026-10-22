@@ -3,7 +3,7 @@
  * Découpé mécaniquement depuis TeacherManagement.tsx (Lot 2, sans changement de comportement).
  */
 import { X, Printer } from "lucide-react";
-import { STAFF_CATEGORIES_CONFIG } from "./shared";
+import { STAFF_CATEGORIES_CONFIG, DEFAULT_STAFF_ICON } from "./shared";
 import { useStaff } from "./StaffContext";
 
 export default function StaffBadgeModal() {
@@ -51,7 +51,7 @@ export default function StaffBadgeModal() {
                       {badgeStaff.photo ? (
                         <img src={badgeStaff.photo} alt={badgeStaff.fullName} className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-3xl">{STAFF_CATEGORIES_CONFIG[badgeStaff.category || "أستاذ / محفظ"]?.icon || "👤"}</span>
+                        <span className="text-3xl">{STAFF_CATEGORIES_CONFIG[badgeStaff.category || "أستاذ / محفظ"]?.icon || DEFAULT_STAFF_ICON}</span>
                       )}
                     </div>
 

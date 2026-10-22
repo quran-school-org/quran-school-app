@@ -162,13 +162,13 @@ export default function StaffList() {
                           <div className="flex flex-wrap gap-1">
                             {assignedClasses.map(c => (
                               <span key={c.id} className="bg-primary-50 text-primary-800 text-[11.5px] px-2 py-0.5 rounded-lg font-bold border border-primary-100">
-                                🏫 {c.name}
+                                {c.name}
                               </span>
                             ))}
                           </div>
                         ) : (
                           <span className="text-gold-600 italic text-[12.5px] bg-gold-50 px-2 py-0.5 rounded-lg border border-gold-100/20 inline-block">
-                            ⚠️ لا توجد حلقة مسندة حالياً
+                            لا توجد حلقة مسندة حالياً
                           </span>
                         )}
                       </div>
@@ -176,7 +176,7 @@ export default function StaffList() {
                       <div className="space-y-1 text-[13px]">
                         <span className="block font-bold text-ink-3">المرافق والمهام المكلف بها:</span>
                         <div className="bg-sand-50 p-2 rounded-lg border border-line-soft text-[12.5px] text-ink-2 font-medium">
-                          📍 {staff.assignedAreas}
+                          {staff.assignedAreas}
                         </div>
                       </div>
                     ) : null}

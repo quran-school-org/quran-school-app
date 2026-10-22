@@ -4,7 +4,7 @@
  */
 import { StaffCategory, ContractType } from "../../types";
 import { UserPlus, Phone, X, Sparkles } from "lucide-react";
-import { STAFF_CATEGORIES_CONFIG } from "./shared";
+import { STAFF_CATEGORIES_CONFIG, DEFAULT_STAFF_ICON } from "./shared";
 import { useStaff } from "./StaffContext";
 
 export default function StaffFormModal() {
@@ -70,7 +70,7 @@ export default function StaffFormModal() {
                 </span>
                 <div>
                   <h3 className="font-bold text-base">
-                    {editingTeacher ? "📝 تعديل ملف الكادر / العامل" : "👤 تسجيل كادر أو عامل جديد"}
+                    {editingTeacher ? "تعديل ملف الكادر / العامل" : "تسجيل كادر أو عامل جديد"}
                   </h3>
                   <p className="text-[12.5px] text-primary-100">
                     أدخل المعلومات الإدارية والمهنية وتفاصيل التعاقد
@@ -162,7 +162,7 @@ export default function StaffFormModal() {
                     {formPhoto ? (
                       <img src={formPhoto} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-3xl">{STAFF_CATEGORIES_CONFIG[formCategory]?.icon || "👤"}</span>
+                      <span className="text-3xl">{STAFF_CATEGORIES_CONFIG[formCategory]?.icon || DEFAULT_STAFF_ICON}</span>
                     )}
                     {formPhoto && (
                       <button
@@ -396,7 +396,7 @@ export default function StaffFormModal() {
               {(formCategory === "أستاذ / محفظ" || formCategory === "مؤطر / مشرف تربوي") && (
                 <div className="space-y-2 bg-primary-50/40 p-3.5 rounded-xl border border-primary-100">
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
-                    🏫 الفصول والحلقات الدراسية المسندة:
+                    الفصول والحلقات الدراسية المسندة:
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto">
                     {classes.map(c => {
