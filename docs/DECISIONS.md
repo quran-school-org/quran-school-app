@@ -1300,6 +1300,15 @@ là-bas (R-06).
     `deploy-lot0.yml` : production égale à `gen-lang-client-0481880143` ;
   - `ARTIFACT_GPG_PUBLIC_KEY` : préfixée, sinon variable de dépôt (ou
     d'environnement en mode `environnement`) ; c'est une clé publique ;
+  - région des triggers Firestore (bases de dev et de prod en `europe-west2`) :
+    `FUNCTIONS_TRIGGER_REGION` (`DEV_` en Free) est **obligatoire** pour le dev
+    dans `deploy.yml` et `deploy-lot0.yml`, sans repli sur `europe-west1`
+    (ancienne valeur codée en dur, incompatible avec une base en
+    `europe-west2`) ; elle remplace la région du fichier
+    `functions/.env.<projet>`. En production, la région vient du fichier
+    versionné (corrigé à part par l'orchestrateur), ou de
+    `PROD_FUNCTIONS_TRIGGER_REGION` si elle est posée ; les deux workflows
+    exigent une seule ligne `FIRESTORE_TRIGGER_REGION` valide avant de déployer ;
   - `preview.yml` : job `disponibilite` (sans environnement) qui, en mode
     `prefixe`, arrête le workflow avec un message clair avant tout job qui
     déclare `environment: preview` ; inchangé en Team ;

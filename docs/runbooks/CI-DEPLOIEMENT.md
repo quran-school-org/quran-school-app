@@ -233,9 +233,13 @@ Team / Enterprise : dans l'environnement `dev` ou `production`, sans préfixe.
 Free : variables de dépôt `DEV_<nom>` et `PROD_<nom>`.
 
 Facultatives (même règle de préfixe) :
-- `FUNCTIONS_TRIGGER_REGION` (dev, et prod si la base n'est pas en
-  `eur3`/`europe-west1`) : région des triggers Firestore, valeur conseillée par
-  `ops.yml` › `describe-db` ;
+- `FUNCTIONS_TRIGGER_REGION` : région des triggers Firestore, valeur conseillée
+  par `ops.yml` › `describe-db`. **Obligatoire pour le dev** : `deploy.yml` et
+  `deploy-lot0.yml` s'arrêtent si elle manque (plus de repli implicite sur
+  `europe-west1`) et elle remplace la région du fichier `functions/.env.<projet>`.
+  En production, facultative : sinon la région vient du fichier versionné
+  `functions/.env.gen-lang-client-0481880143`, qui doit en contenir une seule,
+  valide (contrôlé avant le déploiement) ;
 - `SUPER_ADMIN_USERNAME` (avant la bascule) : compte qui reçoit le claim
   `superAdmin` lors de `migrate-to-tenants` (validé par expression régulière) ;
 - `ARTIFACT_GPG_PUBLIC_KEY` : clé publique du propriétaire ; peut aussi être

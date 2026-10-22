@@ -259,6 +259,9 @@ jobs:
             for v in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_APP_ID; do
               [ -n "${!v}" ] || fail "Variable ${VAR_PREFIX}${v} absente (dev, configuration ${CONFIG_MODE} ; guide, étape 3)."
             done
+            # Région des triggers : obligatoire pour le dev, aucune valeur par défaut
+            # (une région incompatible avec l'emplacement de la base fait échouer les triggers).
+            [ -n "${TRIGGER_REGION}" ] || fail "Variable ${VAR_PREFIX}FUNCTIONS_TRIGGER_REGION absente (dev ; région des triggers Firestore, ex. europe-west2 : guide, étape 3)."
             {
               echo "VITE_FIREBASE_API_KEY=\"${VITE_FIREBASE_API_KEY}\""
               echo "VITE_FIREBASE_AUTH_DOMAIN=\"${VITE_FIREBASE_AUTH_DOMAIN}\""
@@ -273,7 +276,7 @@ jobs:
             if [ ! -f "${ENV_FILE}" ]; then
               {
                 echo "FIRESTORE_DATABASE_ID=${DATABASE_ID}"
-                echo "FIRESTORE_TRIGGER_REGION=europe-west1"
+                echo "FIRESTORE_TRIGGER_REGION=${TRIGGER_REGION}"
               } > "${ENV_FILE}"
             fi
           else
@@ -283,13 +286,18 @@ jobs:
             [ -f "${ENV_FILE}" ] || fail "${ENV_FILE} absent de ${LOT0_BRANCH}."
           fi
           grep -qx "FIRESTORE_DATABASE_ID=\"\{0,1\}${DATABASE_ID}\"\{0,1\}" "${ENV_FILE}" || fail "${ENV_FILE} : FIRESTORE_DATABASE_ID différent de ${DATABASE_ID}."
-          # 3) Région des triggers : variable FUNCTIONS_TRIGGER_REGION (préfixée en Free) si
+          # 3) Région des triggers : variable FUNCTIONS_TRIGGER_REGION (préfixée en Free),
+          #    obligatoire en dev, prioritaire sur le fichier versionné en production si
           #    elle est posée (valeur conseillée par l'action describe-db d'ops.yml).
           if [ -n "${TRIGGER_REGION}" ]; then
-            [[ "${TRIGGER_REGION}" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || fail "FUNCTIONS_TRIGGER_REGION invalide."
+            [[ "${TRIGGER_REGION}" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || fail "${VAR_PREFIX}FUNCTIONS_TRIGGER_REGION invalide."
             sed -i '/^FIRESTORE_TRIGGER_REGION=/d' "${ENV_FILE}"
             echo "FIRESTORE_TRIGGER_REGION=${TRIGGER_REGION}" >> "${ENV_FILE}"
           fi
+          # Jamais de repli silencieux : une seule région, explicite et valide.
+          REGIONS=$(grep -c '^FIRESTORE_TRIGGER_REGION=' "${ENV_FILE}" || true)
+          [ "${REGIONS}" = "1" ] || fail "${ENV_FILE} : ${REGIONS} ligne(s) FIRESTORE_TRIGGER_REGION, une seule attendue."
+          grep -qE '^FIRESTORE_TRIGGER_REGION="?[a-z]+-[a-z]+[0-9]+"?$' "${ENV_FILE}" || fail "${ENV_FILE} : FIRESTORE_TRIGGER_REGION absente ou invalide."
           echo "Paramètres des Functions (${ENV_FILE}, aucun secret) :"
           grep -E '^[A-Z_]+=' "${ENV_FILE}"
 

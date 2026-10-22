@@ -227,7 +227,7 @@ du fournisseur Google (étape 2).
 | `VITE_FIREBASE_APP_ID` | `appId` |
 | `VITE_FIRESTORE_DATABASE_ID` | `ai-studio-a6572431-c7db-4071-82bf-a922d18511ec` |
 | `FUNCTIONS_FIRESTORE_DATABASE_ID` | idem |
-| `FUNCTIONS_TRIGGER_REGION` | l'emplacement de l'étape 1.3 ; `eur3` → `europe-west1`, `nam5` → `us-central1` |
+| `FUNCTIONS_TRIGGER_REGION` | **obligatoire** (aucune valeur par défaut) : l'emplacement de l'étape 1.3, par exemple `europe-west2` ; `eur3` → `europe-west1`, `nam5` → `us-central1` |
 
 La prod n'a pas besoin de ces valeurs : elles sont déjà dans le dépôt (`.env.production`).
 
