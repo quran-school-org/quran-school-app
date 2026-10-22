@@ -702,3 +702,47 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   sans coût au-delà de la limite) ; le compteur global est un document
   unique (≈ 1 écriture/s soutenue) : au-delà, 503 (fermé par défaut).
 - **Retour arrière** : retirer la ligne `res.set?.("Cache-Control", …)`.
+
+### D55. Workflows de déploiement : épinglage, pas d'injection, jeton OIDC confiné
+- **Constats (revue)** : `zizmor --offline` sur `feat/durcissement` : 18
+  actions non épinglées (dont `google-github-actions/auth` dans les jobs qui
+  obtiennent le jeton OIDC), 4 expressions `${{ }}` dans des scripts
+  (`inputs.target`, `vars.*`, sorties d'étape : valeurs de type `choice` ou
+  posées par un administrateur, donc non exploitables aujourd'hui, mais
+  fragiles), 5 `checkout` qui laissent le jeton GitHub dans `.git/config`.
+  Plus grave, au niveau de la conception :
+  - l'environnement `dev` acceptait **toutes les branches** et servait aux
+    aperçus comme aux déploiements complets. Or un workflow lancé à la main
+    s'exécute dans la version de la branche choisie : toute personne pouvant
+    pousser une branche pouvait déployer règles et fonctions sur le projet de
+    dev, donc lire ses données. C'est grave si ce projet reçoit un export réel
+    lors des répétitions de bascule (prévu par le rapport, §8) ;
+  - dans le job qui détient le jeton OIDC, `npm ci` exécutait les scripts
+    d'installation des paquets avec un cache npm partagé ;
+  - la condition du fournisseur WIF reposait sur le nom du dépôt
+    (réutilisable si le dépôt était supprimé puis recréé par un tiers) et, pour
+    la prod, sur la seule règle de branche de l'environnement GitHub.
+- **Décision** :
+  - actions épinglées par SHA (tag en commentaire), relevés par `git ls-remote` ;
+  - toute expression passe par `env` ; `persist-credentials: false` partout ;
+  - job à jeton OIDC : `npm ci --ignore-scripts` (aucun script n'est nécessaire,
+    vérifié : build, build des Functions, chargement des Functions, CLI
+    Firebase), pas de `cache: npm` ;
+  - aperçus : environnement `preview` et compte `github-preview` limité au
+    Hosting ; build et tests dans un job sans jeton OIDC, publication dans un
+    second job qui récupère `dist/` ; durée d'expiration validée ;
+  - environnement `dev` (déploiement complet) : branches protégées seulement ;
+    répétitions avec un export réel dans un projet dédié sans fournisseur WIF ;
+  - fournisseur WIF : `repository_id` et `repository_owner_id` ; pour la prod,
+    en plus `ref == refs/heads/main` et `job_workflow_ref == …/deploy.yml@refs/heads/main` ;
+  - garde-fou statique `tests/unit/workflows.test.ts` (épinglage, pas
+    d'expression dans `run:`, job OIDC sans cache ni scripts, déclenchement
+    manuel, aperçu hors dev/production) ; il échoue sur les workflows de
+    `feat/durcissement` (7 tests) ; `actionlint` 1.7.7 et `zizmor` 1.31.1 :
+    aucun constat.
+- **Limite** : le code des dépendances s'exécute encore dans le job de
+  déploiement (build Vite, chargement des Functions par la CLI) ; le
+  verrouillage (`package-lock.json`), l'audit en CI et la relecture
+  obligatoire de l'environnement `production` restent les protections.
+- **Retour arrière** : revenir aux versions précédentes des workflows et du
+  runbook (`git revert`) ; l'environnement `preview` et son compte peuvent rester.
