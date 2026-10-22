@@ -829,3 +829,34 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   école, ni à l'archivage. L'appartenance est bien retirée ou suspendue. Le
   super-admin se désactive seulement à la main (console, par un humain).
 - **Retour arrière** : retirer les deux appels à `isSuperAdminAccount`.
+
+### D60. Import d'élèves par CSV pour une nouvelle école
+- **Évaluation** : une école qui arrive avec 100 à 300 élèves sur un tableur
+  devrait sinon les saisir un par un. Un import est simple à écrire si l'on
+  s'en tient aux élèves : pas de comptes, pas de paiements réels, pas de photos.
+  Ces trois points restent manuels, car ils touchent la sécurité, la finance
+  ou la taille des documents.
+- **Décision** : `scripts/admin/import-students.ts` (Admin SDK). Garde-fous :
+  - ceux des scripts existants : `--project` obligatoire, simulation par
+    défaut, `--confirm-prod` et `--database` hors émulateur ;
+  - école et paramètres existants exigés ;
+  - écriture par `create` seulement, sans jamais toucher un document existant ;
+  - validation stricte : genre, dates réelles, hizb de 0 à 60, niveau de
+    tajwid, longueurs, caractères de contrôle ;
+  - halaqa désignée par son identifiant, ou par son nom EXACT et unique,
+    jamais de correspondance approximative ;
+  - refus d'une colonne de mot de passe ;
+  - doublons détectés dans le fichier et dans l'école (nom complet + date de
+    naissance), ce qui rend la relance idempotente ;
+  - une anomalie bloque tout, sauf `--skip-invalid` ;
+  - identifiants `S-<n>` selon la même règle que l'interface ;
+  - cotisations « غير مدفوع » créées seulement avec `--payments=ui`
+    (comportement de l'interface) ;
+  - rapport sans nom ni téléphone (numéros de ligne, identifiants, codes).
+- **Tests** : `tests/emulator/import-students.test.ts` (CSV fictif
+  `tests/fixtures/eleves-fictifs.csv`, modèle `scripts/admin/templates/eleves-modele.csv`).
+- **Limite** : un élève créé dans l'interface PENDANT l'import peut prendre le
+  même identifiant. Le lot échoue alors (`create`) et la relance reprend :
+  importer avant d'ouvrir l'école aux utilisateurs.
+- **Retour arrière** : les élèves importés portent `importBatch` ; les
+  supprimer par l'Admin SDK (un humain) ou depuis l'interface.
