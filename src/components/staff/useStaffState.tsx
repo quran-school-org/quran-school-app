@@ -3,9 +3,11 @@
  * Découpé mécaniquement depuis TeacherManagement.tsx (Lot 2, sans changement de comportement).
  */
 import React, { useState, useMemo } from "react";
-import { Teacher, StaffCategory, ContractType } from "../../types";
+import { Teacher, StaffCategory, ContractType, UserRole } from "../../types";
 import { Archive, Search, Filter } from "lucide-react";
 import type { TeacherManagementProps } from "../TeacherManagement";
+import { canReadStaffPrivate } from "../../security/access";
+import { stripStaffPrivate } from "../../security/staffPrivate";
 
 export function useStaffState(props: TeacherManagementProps) {
   const {
@@ -144,8 +146,12 @@ export function useStaffState(props: TeacherManagementProps) {
       return true;
     });
 
-    return [...dynamicItems, ...regularStaff];
-  }, [teachers, systemSettings]);
+    const merged = [...dynamicItems, ...regularStaff];
+    // Fiches RH (salaire, CIN, contrat…) : bureau seulement (D42). Pour les autres
+    // rôles, elles ne viennent pas du serveur ; on retire aussi les valeurs par
+    // défaut des fiches synthétiques ci-dessus (ex. salaire du directeur).
+    return canReadStaffPrivate(currentRole as UserRole) ? merged : merged.map((t) => stripStaffPrivate(t) as Teacher);
+  }, [teachers, systemSettings, currentRole]);
 
   // Statistics calculation
   const stats = useMemo(() => {
