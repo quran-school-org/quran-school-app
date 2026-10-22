@@ -1,5 +1,11 @@
 # Runbook — déploiement du Lot 0 (correctif de sécurité) en production
 
+> **Depuis D64** : les étapes de ce runbook sont exécutées par l'orchestrateur au
+> moyen des workflows GitHub Actions (`docs/runbooks/OPERATIONS-CLAUDE.md`), après
+> le « go » du propriétaire ; aucun agent ne lance de commande vers la prod depuis
+> un conteneur. Les commandes ci-dessous restent la référence technique et la
+> procédure des retours arrière, qui demeurent exécutés par un humain.
+
 > **À exécuter par un humain**, jamais par un agent. Durée estimée : 1 h 30
 > (dont 30 à 45 min de fenêtre de maintenance). Branche : `fix/lot0-securite`
 > (relue et fusionnée au préalable selon le processus habituel).

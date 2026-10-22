@@ -1,0 +1,289 @@
+# Déploiement du LOT 0 (structure à la racine) depuis la branche release/lot0 (D64).
+#
+# - Déclenchement MANUEL uniquement (workflow_dispatch), par l'orchestrateur
+#   (gh workflow run) après le « go » du propriétaire : docs/runbooks/OPERATIONS-CLAUDE.md.
+# - Ce fichier vit sur main, mais le CODE déployé est toujours celui de
+#   release/lot0 (checkout explicite, jamais une référence fournie en entrée) :
+#   main contient le multi-écoles, qui ne doit pas partir en prod avant la bascule.
+#   Le SHA vérifié par le premier job est exactement celui qui est déployé.
+# - Garde-fous dans le workflow (forfait GitHub gratuit : pas de relecteur ni de
+#   protection de branche) : production depuis main seulement, confirmation par
+#   l'identifiant du projet, cible « all » refusée en production (ordre imposé
+#   par le runbook : functions → script → règles → hosting), pas de --force
+#   sauf demande explicite.
+# - Authentification Google par WIF (compte github-deploy), sans clé JSON.
+# - Durcissement (D55) : actions épinglées par SHA, aucune expression dans les
+#   scripts (tout passe par env), job à jeton OIDC sans cache npm ni scripts
+#   d'installation, persist-credentials: false.
+name: Déploiement Lot 0 (release/lot0, manuel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement GitHub (dev ou production)"
+        type: choice
+        options: [dev, production]
+        default: dev
+      target:
+        description: "Cible (all : dev seulement)"
+        type: choice
+        options: [all, firestore-rules, functions, hosting]
+        default: functions
+      force:
+        description: "Passer --force à firebase deploy (supprime les fonctions absentes du code de release/lot0)"
+        type: boolean
+        default: false
+      confirm:
+        description: "Production : recopier l'identifiant du projet pour confirmer"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Même groupe que deploy.yml : jamais deux déploiements simultanés sur un environnement.
+concurrency:
+  group: deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  LOT0_BRANCH: release/lot0
+  PROD_PROJECT_ID: gen-lang-client-0481880143
+
+jobs:
+  verifier:
+    name: Build et tests de release/lot0
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    outputs:
+      sha: ${{ steps.code.outputs.sha }}
+    env:
+      GCLOUD_PROJECT: demo-quran-school
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: release/lot0
+          persist-credentials: false
+
+      - name: Version du code
+        id: code
+        run: |
+          set -euo pipefail
+          SHA=$(git rev-parse HEAD)
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "Code de ${LOT0_BRANCH} : ${SHA}"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      # Java est requis par l'émulateur Firestore.
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+      - run: npm ci --prefix functions
+
+      - name: Lint, build et tests (scripts présents dans release/lot0)
+        run: |
+          set -euo pipefail
+          # N'exécute que les scripts npm définis dans la branche (sa liste peut différer de main).
+          run_if_present() {
+            if node -e 'process.exit(require("./package.json").scripts?.[process.argv[1]] ? 0 : 1)' "$1"; then
+              echo "::group::npm run $1"; npm run "$1"; echo "::endgroup::"
+            else
+              echo "::notice::Script npm absent de ${LOT0_BRANCH} : $1 (ignoré)"
+            fi
+          }
+          for s in lint lint:functions build build:functions test test:rules; do run_if_present "$s"; done
+
+  deployer:
+    name: Déploiement Lot 0 (${{ inputs.environment }} / ${{ inputs.target }})
+    needs: verifier
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write # jeton OIDC pour la fédération d'identité
+    env:
+      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
+      ENVIRONMENT: ${{ inputs.environment }}
+      TARGET: ${{ inputs.target }}
+      FORCE: ${{ inputs.force }}
+      LOT0_SHA: ${{ needs.verifier.outputs.sha }}
+    steps:
+      - name: Garde-fous
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          REF: ${{ github.ref }}
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          DEPLOY_SA: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          case "${ENVIRONMENT}" in dev|production) ;; *) fail "Environnement inconnu.";; esac
+          case "${TARGET}" in all|firestore-rules|functions|hosting) ;; *) fail "Cible inconnue.";; esac
+          if [ -z "${PROJECT_ID}" ] || [ -z "${DATABASE_ID}" ] || [ -z "${WIF_PROVIDER}" ] || [ -z "${DEPLOY_SA}" ]; then
+            fail "Variables de l'environnement GitHub '${ENVIRONMENT}' absentes (FIREBASE_PROJECT_ID, FIRESTORE_DATABASE_ID, GCP_WIF_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT). Voir docs/GUIDE-MISE-EN-PROD.md, étape 3."
+          fi
+          [[ "${PROJECT_ID}" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || fail "FIREBASE_PROJECT_ID invalide."
+          [[ "${DATABASE_ID}" =~ ^(\(default\)|[a-z][a-z0-9-]{2,62})$ ]] || fail "FIRESTORE_DATABASE_ID invalide."
+          [[ "${LOT0_SHA}" =~ ^[0-9a-f]{40}$ ]] || fail "SHA de ${LOT0_BRANCH} absent."
+          case "${PROJECT_ID}" in demo-*) fail "Projet demo-* : rien à déployer.";; esac
+          case "${DEPLOY_SA}" in *"@${PROJECT_ID}.iam.gserviceaccount.com") ;; *) fail "Le compte de déploiement n'appartient pas au projet ${PROJECT_ID}.";; esac
+          if [ "${ENVIRONMENT}" = "production" ]; then
+            [ "${REF}" = "refs/heads/main" ] || fail "La production ne se lance que depuis le workflow de main (reçu : ${REF})."
+            [ "${CONFIRM}" = "${PROJECT_ID}" ] || fail "Confirmation incorrecte : recopier l'identifiant du projet de prod dans « confirm »."
+            # Ordre du runbook Lot 0 : functions (avant la fenêtre), script, règles, hosting.
+            [ "${TARGET}" != "all" ] || fail "Cible « all » refusée en production : déployer functions, puis (après lot0-provision) firestore-rules, puis hosting."
+          else
+            [ "${PROJECT_ID}" != "${PROD_PROJECT_ID}" ] || fail "L'environnement dev pointe vers la prod."
+          fi
+          echo "Déploiement de ${LOT0_BRANCH}@${LOT0_SHA} vers ${PROJECT_ID} (${ENVIRONMENT}), cible ${TARGET}, force=${FORCE}"
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.verifier.outputs.sha }}
+          persist-credentials: false
+
+      # Pas de cache npm partagé dans le job qui détient le jeton OIDC.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      # Sans scripts d'installation (vérifié : build, build des Functions et CLI
+      # Firebase de release/lot0 fonctionnent avec --ignore-scripts).
+      - run: npm ci --ignore-scripts
+      - run: npm ci --prefix functions --ignore-scripts
+
+      - name: Configuration du projet visé (base nommée, Functions)
+        env:
+          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
+          TRIGGER_REGION: ${{ vars.FUNCTIONS_TRIGGER_REGION }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          : "${VITE_FIREBASE_API_KEY:=}" "${VITE_FIREBASE_AUTH_DOMAIN:=}" "${VITE_FIREBASE_STORAGE_BUCKET:=}"
+          : "${VITE_FIREBASE_MESSAGING_SENDER_ID:=}" "${VITE_FIREBASE_APP_ID:=}" "${TRIGGER_REGION:=}"
+          # 1) firebase.json de release/lot0 : règles déployées sur la base NOMMÉE attendue.
+          RULES_DB=$(node -e 'const f=require("./firebase.json");const fs=[].concat(f.firestore||[]);console.log(fs.map(x=>x.database||"(default)").join(","))')
+          [ "${RULES_DB}" = "${DATABASE_ID}" ] || fail "firebase.json cible la base « ${RULES_DB} », attendu « ${DATABASE_ID} »."
+          ENV_FILE="functions/.env.${PROJECT_ID}"
+          if [ "${ENVIRONMENT}" = "dev" ]; then
+            # 2a) Front : .env.production.local surcharge .env.production (Vite) → projet de dev.
+            for v in VITE_FIREBASE_API_KEY VITE_FIREBASE_AUTH_DOMAIN VITE_FIREBASE_APP_ID; do
+              [ -n "${!v}" ] || fail "Variable ${v} absente de l'environnement dev (guide, étape 3)."
+            done
+            {
+              echo "VITE_FIREBASE_API_KEY=\"${VITE_FIREBASE_API_KEY}\""
+              echo "VITE_FIREBASE_AUTH_DOMAIN=\"${VITE_FIREBASE_AUTH_DOMAIN}\""
+              echo "VITE_FIREBASE_PROJECT_ID=\"${PROJECT_ID}\""
+              echo "VITE_FIREBASE_STORAGE_BUCKET=\"${VITE_FIREBASE_STORAGE_BUCKET}\""
+              echo "VITE_FIREBASE_MESSAGING_SENDER_ID=\"${VITE_FIREBASE_MESSAGING_SENDER_ID}\""
+              echo "VITE_FIREBASE_APP_ID=\"${VITE_FIREBASE_APP_ID}\""
+              echo "VITE_FIRESTORE_DATABASE_ID=\"${DATABASE_ID}\""
+              echo 'VITE_USE_EMULATORS="false"'
+            } > .env.production.local
+            # 2b) Paramètres non secrets des Functions (release/lot0 ne versionne que demo et prod).
+            if [ ! -f "${ENV_FILE}" ]; then
+              {
+                echo "FIRESTORE_DATABASE_ID=${DATABASE_ID}"
+                echo "FIRESTORE_TRIGGER_REGION=europe-west1"
+              } > "${ENV_FILE}"
+            fi
+          else
+            # 2c) Production : configuration versionnée dans release/lot0, contrôlée.
+            grep -qx "VITE_FIREBASE_PROJECT_ID=\"${PROJECT_ID}\"" .env.production || fail ".env.production ne vise pas ${PROJECT_ID}."
+            grep -qx "VITE_FIRESTORE_DATABASE_ID=\"${DATABASE_ID}\"" .env.production || fail ".env.production ne vise pas la base ${DATABASE_ID}."
+            [ -f "${ENV_FILE}" ] || fail "${ENV_FILE} absent de ${LOT0_BRANCH}."
+          fi
+          grep -qx "FIRESTORE_DATABASE_ID=\"\{0,1\}${DATABASE_ID}\"\{0,1\}" "${ENV_FILE}" || fail "${ENV_FILE} : FIRESTORE_DATABASE_ID différent de ${DATABASE_ID}."
+          # 3) Région des triggers : variable FUNCTIONS_TRIGGER_REGION de l'environnement si
+          #    elle est posée (valeur conseillée par l'action describe-db d'ops.yml).
+          if [ -n "${TRIGGER_REGION}" ]; then
+            [[ "${TRIGGER_REGION}" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || fail "FUNCTIONS_TRIGGER_REGION invalide."
+            sed -i '/^FIRESTORE_TRIGGER_REGION=/d' "${ENV_FILE}"
+            echo "FIRESTORE_TRIGGER_REGION=${TRIGGER_REGION}" >> "${ENV_FILE}"
+          fi
+          echo "Paramètres des Functions (${ENV_FILE}, aucun secret) :"
+          grep -E '^[A-Z_]+=' "${ENV_FILE}"
+
+      - name: Build de l'application
+        run: npm run build
+
+      # Contrôle sur la configuration inlinée par Vite (import.meta.env), pas sur le
+      # texte : App.tsx de release/lot0 affiche l'identifiant de la prod dans une aide.
+      - name: Contrôle du projet visé par le bundle
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          PROJECTS=$(grep -ho 'VITE_FIREBASE_PROJECT_ID:"[^"]*"' dist/assets/*.js | sort -u)
+          [ "${PROJECTS}" = "VITE_FIREBASE_PROJECT_ID:\"${PROJECT_ID}\"" ] || fail "Le bundle ne vise pas ${PROJECT_ID} (trouvé : ${PROJECTS:-rien})."
+          DATABASES=$(grep -ho 'VITE_FIRESTORE_DATABASE_ID:"[^"]*"' dist/assets/*.js | sort -u)
+          [ "${DATABASES}" = "VITE_FIRESTORE_DATABASE_ID:\"${DATABASE_ID}\"" ] || fail "Le bundle ne vise pas la base ${DATABASE_ID} (trouvé : ${DATABASES:-rien})."
+          grep -q 'VITE_USE_EMULATORS:"false"' dist/assets/*.js || fail "Bundle branché sur les émulateurs."
+
+      - name: Authentification Google (Workload Identity Federation, sans clé)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Déploiement Firebase
+        run: |
+          set -euo pipefail
+          FORCE_FLAG=()
+          [ "${FORCE}" = "true" ] && FORCE_FLAG=(--force)
+          deploy_one() {
+            local only="$1" log="${RUNNER_TEMP}/deploy-${1//:/-}.log" code
+            echo "::group::firebase deploy --only ${only}"
+            set +e
+            npx firebase deploy --only "${only}" --project "${PROJECT_ID}" --non-interactive "${FORCE_FLAG[@]}" \
+              --message "Lot 0 ${LOT0_SHA::7} (GitHub Actions, ${GITHUB_ACTOR})" 2>&1 | tee "${log}"
+            code=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            if [ "${code}" -ne 0 ]; then
+              # Fonctions DÉPLOYÉES, seule la politique de nettoyage des images manque
+              # (le compte n'a pas le droit de la poser) : avertissement, pas un échec.
+              if [ "${only}" = "functions" ] && grep -q "Functions successfully deployed but could not set up cleanup policy" "${log}"; then
+                echo "::warning::Fonctions déployées ; politique de nettoyage des images absente (CI-DEPLOIEMENT.md §3, à poser une fois par un humain)."
+                return 0
+              fi
+              if grep -q "Aborting because deletion cannot proceed in non-interactive mode" "${log}"; then
+                echo "::error::Des fonctions du projet n'existent pas dans ${LOT0_BRANCH} (liste ci-dessus). Relancer avec force=true seulement si leur suppression est voulue."
+              fi
+              return "${code}"
+            fi
+          }
+          case "${TARGET}" in
+            all) for t in functions firestore:rules hosting; do deploy_one "$t"; done ;;
+            firestore-rules) deploy_one firestore:rules ;;
+            functions) deploy_one functions ;;
+            hosting) deploy_one hosting ;;
+          esac
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "### Déploiement Lot 0 : ${ENVIRONMENT}"
+            echo "- projet : \`${PROJECT_ID}\`, base \`${DATABASE_ID}\`"
+            echo "- cible : \`${TARGET}\` (force : ${FORCE})"
+            echo "- code : \`${LOT0_BRANCH}@${LOT0_SHA}\`"
+            echo "- workflow : \`${GITHUB_REF}@${GITHUB_SHA::7}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

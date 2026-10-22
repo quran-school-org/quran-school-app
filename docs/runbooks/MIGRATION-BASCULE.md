@@ -1,5 +1,11 @@
 # Runbook — migration multi-écoles et bascule en production
 
+> **Depuis D64** : les étapes de ce runbook sont exécutées par l'orchestrateur au
+> moyen des workflows GitHub Actions (`docs/runbooks/OPERATIONS-CLAUDE.md`), après
+> le « go » du propriétaire ; aucun agent ne lance de commande vers la prod depuis
+> un conteneur. Les commandes ci-dessous restent la référence technique et la
+> procédure des retours arrière, qui demeurent exécutés par un humain.
+
 > **À exécuter par un humain**, jamais par un agent. Branche : `feat/multi-tenant`
 > (relue, fusionnée). Ce runbook suppose le Lot 0 déployé (`LOT0-DEPLOIEMENT.md`),
 > mais fonctionne aussi sans : la migration inclut le provisionnement des comptes.
