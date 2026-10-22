@@ -115,6 +115,9 @@
 }
 
 @layer base {
+  /* Tableaux dans une zone défilante : largeur minimale lisible sur mobile
+     (défilement horizontal dans la carte, jamais de la page). */
+  .overflow-x-auto > table { min-width: 40rem; }
   /* Tailwind 4 : bordure par défaut = couleur courante ; la charte veut un filet sable. */
   *, ::after, ::before, ::backdrop, ::file-selector-button {
     border-color: var(--color-line-soft);
