@@ -2,7 +2,7 @@
 
 > **Exécuté par l'orchestrateur (Claude), uniquement par `gh workflow run`**, après
 > le « go » du propriétaire aux trois moments prévus par
-> `docs/GUIDE-MISE-EN-PROD.md` (§7). Décision : D59.
+> `docs/GUIDE-MISE-EN-PROD.md` (§7). Décision : D64.
 > Aucune commande n'est lancée vers la prod depuis un conteneur : ni `gcloud`, ni
 > `firebase`, ni script Admin SDK, ni appel aux API Firebase/Firestore/Identity
 > Toolkit. Tout passe par les workflows `deploy-lot0.yml`, `ops.yml` et
@@ -20,7 +20,7 @@
 3. **Forfait GitHub gratuit** : la documentation GitHub indique que les
    environnements ne se configurent, sur un dépôt privé, qu'avec GitHub Team ou
    Pro. Si l'étape 3 du guide est impossible, s'arrêter et le signaler au
-   propriétaire (voir D59, « Limites ») : sans variables d'environnement, les
+   propriétaire (voir D64, « Limites ») : sans variables d'environnement, les
    workflows s'arrêtent dès leur premier pas, sans rien toucher.
 
 ```bash

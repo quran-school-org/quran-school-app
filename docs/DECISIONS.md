@@ -642,8 +642,8 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
 
 ## Mise en production par l'orchestrateur (branche `feat/workflows-ops`)
 
-### D59. Mise en prod par workflows déclenchés par l'orchestrateur
-- **Numéro** : D59, le plus élevé trouvé étant D58 (`origin/fix/revue-durcissement-lot0`) ;
+### D64. Mise en prod par workflows déclenchés par l'orchestrateur
+- **Numéro** : D64, D52 à D63 étant pris par le découpage et le design sur `main` ;
   `main` s'arrête à D51, `fix/revue-durcissement` à D56, `integration/design` à D52.
 - **Contexte** : le propriétaire ne déroule plus lui-même les runbooks. Il ouvre
   les accès une fois (`docs/GUIDE-MISE-EN-PROD.md` : WIF, comptes

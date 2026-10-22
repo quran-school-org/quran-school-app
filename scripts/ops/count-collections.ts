@@ -7,7 +7,7 @@
  *   - de chaque sous-collection de chaque école `schools/{schoolId}/…` (multi-écoles).
  * Seuls des noms de collections, des identifiants d'école et des nombres sont
  * produits : ni identifiant de document, ni contenu. Utilisé par l'action
- * `verify-counts` du workflow `.github/workflows/ops.yml` (D59), avant et
+ * `verify-counts` du workflow `.github/workflows/ops.yml` (D64), avant et
  * après une opération, pour comparer.
  *
  * Usage (émulateurs) :

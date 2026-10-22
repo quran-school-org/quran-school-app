@@ -179,7 +179,7 @@ jobs:
           esac
 
       # Sans --force, la CLI refuse (mode non interactif) de supprimer des fonctions
-      # absentes du code : à la bascule, celles du Lot 0 (createUserAccount). D59.
+      # absentes du code : à la bascule, celles du Lot 0 (createUserAccount). D64.
       - name: Déploiement Firebase
         env:
           FORCE: ${{ inputs.force }}

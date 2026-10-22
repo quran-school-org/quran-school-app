@@ -1,4 +1,4 @@
-# Opérations de données (D59) : sauvegardes, copie prod → dev, scripts Admin SDK.
+# Opérations de données (D64) : sauvegardes, copie prod → dev, scripts Admin SDK.
 #
 # - Déclenchement MANUEL uniquement (workflow_dispatch), par l'orchestrateur
 #   (gh workflow run) après le « go » du propriétaire : docs/runbooks/OPERATIONS-CLAUDE.md.

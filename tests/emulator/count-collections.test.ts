@@ -1,5 +1,5 @@
 /**
- * scripts/ops/count-collections.ts (action verify-counts du workflow ops.yml, D59) :
+ * scripts/ops/count-collections.ts (action verify-counts du workflow ops.yml, D64) :
  * nombres seulement, racine et écoles, aucune donnée de document.
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

@@ -35,7 +35,7 @@ Les données de prod sont **réelles** (élèves mineurs, paiements, salaires).
   `docs/GUIDE-MISE-EN-PROD.md` (simulation du Lot 0, rapport de répétition, date
   de bascule). Ne jamais télécharger dans le conteneur les artefacts de rapports
   ou de mots de passe. Les retours arrière qui importent dans la prod restent
-  exécutés par un humain (D59).
+  exécutés par un humain (D64).
 
 ## Lancer le projet
 

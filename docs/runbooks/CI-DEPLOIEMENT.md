@@ -3,7 +3,7 @@
 > **Mise en place : par un humain** (propriétaire du projet GCP et administrateur
 > du dépôt), une seule fois, en suivant **`docs/GUIDE-MISE-EN-PROD.md`** (version
 > pas à pas, à copier-coller dans Cloud Shell). Ce runbook en donne le détail
-> technique et les raisons. Décisions : D46, D59.
+> technique et les raisons. Décisions : D46, D64.
 > **Utilisation : par l'orchestrateur (Claude)**, uniquement par `gh workflow run`,
 > après le « go » du propriétaire : `docs/runbooks/OPERATIONS-CLAUDE.md`.
 > Aucun agent n'exécute de commande vers la prod depuis un conteneur.
@@ -70,7 +70,7 @@ Guide, étape 2, bloc 3. Pourquoi ces rôles :
 | `serviceusage.serviceUsageConsumer`, `firebaseextensions.viewer` | contrôles faits par la CLI Firebase |
 | `iam.serviceAccountUser` (sur le seul compte d'exécution) | déployer des fonctions qui s'exécutent sous ce compte |
 
-Points à surveiller au premier déploiement sur le dev (D59) :
+Points à surveiller au premier déploiement sur le dev (D64) :
 - **Triggers Firestore** : la CLI lit l'emplacement de la base
   (`ensureFirestoreTriggerRegion` dans firebase-tools 15.34.0), ce qui demande
   `datastore.databases.getMetadata`, qu'aucun des rôles ci-dessus ne semble
@@ -129,7 +129,7 @@ disponible. Les garde-fous sont donc dans les workflows :
 - `import-firestore` refusé en production ; export automatique avant toute
   application de script ; PITR exigé en prod avant écriture.
 
-> **À vérifier à l'étape 3 (D59)** : la documentation GitHub indique que, sur un
+> **À vérifier à l'étape 3 (D64)** : la documentation GitHub indique que, sur un
 > dépôt privé, les environnements (et leurs variables) ne se configurent qu'avec
 > GitHub Team ou Pro (« Users with GitHub Free plans can only configure
 > environments for public repositories »). Si l'interface refuse de créer les

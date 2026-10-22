@@ -1,6 +1,6 @@
 # Runbook — déploiement du Lot 0 (correctif de sécurité) en production
 
-> **Depuis D59** : les étapes de ce runbook sont exécutées par l'orchestrateur au
+> **Depuis D64** : les étapes de ce runbook sont exécutées par l'orchestrateur au
 > moyen des workflows GitHub Actions (`docs/runbooks/OPERATIONS-CLAUDE.md`), après
 > le « go » du propriétaire ; aucun agent ne lance de commande vers la prod depuis
 > un conteneur. Les commandes ci-dessous restent la référence technique et la

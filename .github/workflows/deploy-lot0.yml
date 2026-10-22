@@ -1,4 +1,4 @@
-# Déploiement du LOT 0 (structure à la racine) depuis la branche release/lot0 (D59).
+# Déploiement du LOT 0 (structure à la racine) depuis la branche release/lot0 (D64).
 #
 # - Déclenchement MANUEL uniquement (workflow_dispatch), par l'orchestrateur
 #   (gh workflow run) après le « go » du propriétaire : docs/runbooks/OPERATIONS-CLAUDE.md.
