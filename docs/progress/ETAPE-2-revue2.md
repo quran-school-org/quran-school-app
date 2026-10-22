@@ -13,27 +13,25 @@ Commandes (conteneur à proxy, toujours sous verrou) :
 - workflows : `actionlint` (binaire dans le scratchpad de la session) et
   `zizmor --offline .github/workflows/` (`pip install --user zizmor`).
 
-## Fait (Partie 1, poussé)
-- D64 R-07 : notifications réservées au personnel (MT + Lot 0).
-- D65 : migration, la scission des fiches à la relance ne perd plus de champ RH.
-- D66 : quotas IA éprouvés (tests d'attaque), `Cache-Control: private, no-store`.
-- D67 : workflows (SHA, env, OIDC confiné, environnement preview), runbook CI, garde-fou `tests/unit/workflows.test.ts`.
-- D68 : sauvegardes, suppression bornée aux dossiers d'export ; runbook (export seul, conservation 28 j).
-- D69 : build de production refuse un jeton de débogage App Check (`.env.local`).
-- D70 : R-06 Lot 0 évalué, pas de mesure courte sûre (documenté MT + Lot 0).
-- Rapport `docs/revues/REVUE-SECURITE-DURCISSEMENT.md` (13 constats, verdict).
-- Tests au dernier push MT (d5ec153) : lint OK/OK, build OK, unitaires 68/68,
-  émulateurs 242 + 2 ignorés, Functions 43/43, Playwright 11/11 ; Hosting 5/5 (e3ee428).
-- Lot 0 (c10c3f4) : lint OK/OK, build OK, unitaires 29/29, émulateurs 221 + 4 ignorés, Functions 8/8.
+## Fait (poussé)
+Numérotation : D52–D63 pris par `integration/design` ; revue = D64–D72 sur MT ;
+Lot 0 = D54 (R-07), D55 (R-06) (D53 pris par `release/lot0`).
+- D64 R-07 (MT + Lot 0 D54) ; D65 migration staffPrivate ; D66 quotas IA + no-store ;
+  D67 workflows ; D68 sauvegardes ; D69 garde-fou build App Check ; D70 R-06 Lot 0
+  (Lot 0 D55) ; D71 super-admin jamais désactivé automatiquement ; D72 import CSV.
+- Rapport `docs/revues/REVUE-SECURITE-DURCISSEMENT.md` (14 constats, verdict).
+- `docs/runbooks/NOUVELLE-ECOLE.md`, `scripts/admin/import-students.ts` + tests.
+- Tests MT (b651d3b) : lint OK/OK, build OK, unitaires 68/68, émulateurs 252 + 2
+  ignorés, Functions 45/45 ; Playwright 11/11 (d5ec153) ; Hosting 5/5 (e3ee428).
+- Lot 0 (8fe8ab2) : lint OK/OK, build OK, unitaires 29/29, émulateurs 221 + 4 ignorés, Functions 8/8.
 
 ## En cours
-- (rien)
+- Partie 2 : `docs/communication/`.
 
 ## Suivant
-1. Partie 2 : `docs/runbooks/NOUVELLE-ECOLE.md` (+ `scripts/admin/import-students.ts` et test).
-2. `docs/communication/` (modèles ar/fr, guide du directeur).
-3. `docs/conformite/CNDP.md`.
-4. `CLAUDE.md` (architecture et commandes, INTERDITS intacts).
+1. `docs/conformite/CNDP.md`.
+2. `CLAUDE.md` (architecture et commandes, INTERDITS intacts).
+3. Relancer Playwright et test:hosting, mettre à jour §7 du rapport, réponse finale.
 
 ## Prochaine action exacte
-Rédiger `docs/runbooks/NOUVELLE-ECOLE.md` et évaluer `scripts/admin/import-students.ts`.
+Rédiger `docs/communication/identifiants.md`, `maintenance.md`, `guide-directeur.md`.
