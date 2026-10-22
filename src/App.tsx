@@ -11,6 +11,7 @@ import {
   subscribeToDocumentsByIds,
   subscribeToQueryIn,
   subscribeToQuotaState,
+  subscribeToStaff,
   signInWithUsername,
   signOutUser,
   changeOwnPassword,
@@ -39,7 +40,7 @@ import {
   OtherIncome, SalaryPayment, Expense, checkUserPermission,
   ActivityTrip, ActivityParticipant, ActivityExpense
 } from "./types";
-import { isDirectorRole, isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections } from "./security/access";
+import { isDirectorRole, isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections, canReadStaffPrivate } from "./security/access";
 import { validateNewPassword } from "./security/accounts";
 import { computeAccountAlignment, linkedStudentIdsOf, linkedTeacherIdOf } from "./security/accountAlignment";
 import { escapeHtml } from "./security/html";
@@ -748,7 +749,12 @@ export default function App() {
           if (active) setAppUsers(items);
         }, "settings_users"));
       }
-      sub<Teacher>("teachers", "teachers", setTeachers);
+      if (readable.has("teachers")) {
+        // Fiches publiques ; fiches RH (salaire, CIN…) fusionnées pour le bureau seulement (D42).
+        unsubscribes.push(subscribeToStaff<Teacher>(schoolId, canReadStaffPrivate(role), (items) => {
+          if (active) setTeachers(items);
+        }, "teachers"));
+      }
       sub<Class>("classes", "classes", setClasses);
       sub<Payment>("payments", "payments", onPayments);
       sub<Notification>("notifications", "notifications", setNotifications);

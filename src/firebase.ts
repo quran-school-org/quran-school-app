@@ -6,6 +6,8 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  deleteField,
+  writeBatch,
   onSnapshot,
   getDoc,
   getDocs,
@@ -28,6 +30,7 @@ import type { SystemSettings, AppUser, UserProfile, SchoolInfo } from "./types";
 import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, apiBaseUrl } from "./config/env";
 import { loginEmailCandidates, normalizeAuthPassword, normalizeUsername } from "./security/accounts";
 import { getCacheScope, scopedKey } from "./cache/localCache";
+import { STAFF_PRIVATE_COLLECTION, STAFF_PRIVATE_FIELDS, mergeStaffRecords, splitStaffRecord, stripStaffPrivate } from "./security/staffPrivate";
 
 /** Région des Cloud Functions (identique à functions/src/config.ts). */
 export const FUNCTIONS_REGION = "europe-west1";
@@ -472,4 +475,93 @@ export function subscribeToSettings(
     console.error(`Error in real-time sync for ${schoolId}/settings:`, error);
     checkAndHandleQuotaError(error);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Personnel : fiche publique `teachers` + fiche RH `staffPrivate` (R-06, D42)
+// ---------------------------------------------------------------------------
+
+/**
+ * Enregistre une fiche du personnel en deux documents, dans un seul lot :
+ * `teachers/{id}` (partie publique, champs RH explicitement supprimés pour ne
+ * jamais les y laisser) et `staffPrivate/{id}` (partie RH, bureau seulement).
+ * Les champs RH absents de l'objet ne sont pas effacés (écriture en fusion).
+ */
+export async function saveStaffToFirestore(schoolId: string, staff: { id: string; [k: string]: any }) {
+  try {
+    const { publicData, privateData } = splitStaffRecord(stripPassword({ ...staff }));
+    const batch = writeBatch(db);
+    const removed: Record<string, unknown> = {};
+    for (const k of STAFF_PRIVATE_FIELDS) removed[k] = deleteField();
+    batch.set(schoolDocRef(schoolId, "teachers", staff.id), { ...sanitizeForFirestore(publicData), ...removed, schoolId }, { merge: true });
+    batch.set(
+      schoolDocRef(schoolId, STAFF_PRIVATE_COLLECTION, staff.id),
+      { ...sanitizeForFirestore(privateData), teacherId: staff.id, schoolId, updatedAt: new Date().toISOString() },
+      { merge: true },
+    );
+    await batch.commit();
+  } catch (error) {
+    console.error(`Error saving staff ${schoolId}/teachers/${staff.id}:`, error);
+    checkAndHandleQuotaError(error);
+  }
+}
+
+/** Supprime la fiche publique et la fiche RH d'un membre du personnel. */
+export async function deleteStaffFromFirestore(schoolId: string, id: string) {
+  try {
+    const batch = writeBatch(db);
+    batch.delete(schoolDocRef(schoolId, "teachers", id));
+    batch.delete(schoolDocRef(schoolId, STAFF_PRIVATE_COLLECTION, id));
+    await batch.commit();
+  } catch (error) {
+    console.error(`Error deleting staff ${schoolId}/teachers/${id}:`, error);
+    checkAndHandleQuotaError(error);
+  }
+}
+
+/**
+ * Abonnement aux fiches du personnel. Sans droit RH (`includePrivate` faux),
+ * seules les fiches publiques sont lues (et tout champ RH résiduel est retiré).
+ * Avec droit RH (bureau), les fiches RH sont fusionnées dans les fiches
+ * publiques : l'interface reçoit le même objet `Teacher` qu'avant la scission.
+ * La liste n'est émise qu'une fois les deux lectures arrivées ; si la lecture
+ * RH est refusée, les fiches publiques sont émises seules.
+ */
+export function subscribeToStaff<T extends { id: string }>(
+  schoolId: string,
+  includePrivate: boolean,
+  onUpdate: (data: T[]) => void,
+  cacheName: string,
+) {
+  let publicDocs: T[] | null = null;
+  let privateDocs: { id: string; [k: string]: unknown }[] | null = includePrivate ? null : [];
+  const emit = () => {
+    if (publicDocs === null || privateDocs === null) return;
+    const items = includePrivate
+      ? mergeStaffRecords(publicDocs, privateDocs)
+      : publicDocs.map((t) => stripStaffPrivate(t as T & Record<string, any>) as unknown as T);
+    writeCache(schoolId, cacheName, items);
+    onUpdate(items);
+  };
+  const unsubs = [
+    onSnapshot(schoolCollection(schoolId, "teachers"), (snapshot) => {
+      publicDocs = snapshot.docs.map((d) => stripPassword({ id: d.id, ...d.data() } as T & Record<string, any>));
+      emit();
+    }, (error) => {
+      console.error(`Error in real-time sync for ${schoolId}/teachers:`, error);
+      checkAndHandleQuotaError(error);
+    }),
+  ];
+  if (includePrivate) {
+    unsubs.push(onSnapshot(schoolCollection(schoolId, STAFF_PRIVATE_COLLECTION), (snapshot) => {
+      privateDocs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      emit();
+    }, (error) => {
+      console.error(`Error in real-time sync for ${schoolId}/${STAFF_PRIVATE_COLLECTION}:`, error);
+      privateDocs = [];
+      emit();
+      checkAndHandleQuotaError(error);
+    }));
+  }
+  return () => unsubs.forEach((u) => u());
 }

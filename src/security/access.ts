@@ -34,5 +34,8 @@ export function fullyReadableCollections(role: UserRole): string[] {
   return Array.from(cols);
 }
 
+/** Fiches RH du personnel (staffPrivate : salaire, CIN…) : bureau seulement (D42). */
+export const canReadStaffPrivate = (role: UserRole | undefined | null) => isOfficeRole(role);
+
 /** Collections lisibles par les familles, filtrées sur `studentId`. */
 export const FAMILY_FILTERED_COLLECTIONS = ["attendance", "grades", "dailyProgress"];

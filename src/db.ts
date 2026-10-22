@@ -4,7 +4,7 @@ import {
   Expense, UserRole, ActivityTrip, ActivityParticipant, ActivityExpense,
   getDefaultPermissionsForRole
 } from "./types";
-import { saveToFirestore, deleteFromFirestore, setMemberRoleRemote, stripPassword } from "./firebase";
+import { saveToFirestore, deleteFromFirestore, saveStaffToFirestore, deleteStaffFromFirestore, setMemberRoleRemote, stripPassword } from "./firebase";
 import { clearAllCaches, getCacheScope, hasCacheScope, purgeLegacyAlfajrKeys, scopedKey, setCacheScope } from "./cache/localCache";
 
 export { getRoleAndPermissionsForStaff } from "./security/staffRoles";
@@ -211,7 +211,8 @@ export const RealmSimDB = {
       teachers.push(teacher);
     }
     setStoredData(STORAGE_KEYS.TEACHERS, teachers);
-    saveToFirestore(sid(), "teachers", teacher.id, teacher);
+    // Fiche publique (teachers) + fiche RH (staffPrivate), voir D42.
+    saveStaffToFirestore(sid(), teacher);
     // Lot 0 : le compte lié n'est plus créé ni réécrit automatiquement. La
     // suspension à l'archivage est faite par la Cloud Function
     // syncAccountsOnArchive (et par le directeur depuis l'interface).
@@ -219,7 +220,7 @@ export const RealmSimDB = {
   deleteTeacher(id: string): void {
     const teachers = this.getTeachers().filter((t) => t.id !== id);
     setStoredData(STORAGE_KEYS.TEACHERS, teachers);
-    deleteFromFirestore(sid(), "teachers", id);
+    deleteStaffFromFirestore(sid(), id);
   },
 
   // --- Classes ---
