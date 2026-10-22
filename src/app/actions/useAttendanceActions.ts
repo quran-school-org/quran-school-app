@@ -1,7 +1,7 @@
 /**
  * Extrait mécaniquement d'App.tsx (Lot 2, sans changement de comportement).
  */
-import { monthlyAttendanceHtml } from "../../print/monthlyAttendance";
+import { printMonthlyAttendance } from "../../print/monthlyAttendance";
 import { useEffect, useRef } from "react";
 import { RealmSimDB } from "../../db";
 import { Student, Attendance } from "../../types";
@@ -257,21 +257,7 @@ export function useAttendanceActions(s: DerivedScope) {
     const reportElement = document.getElementById("printable-monthly-report");
     if (!reportElement) return;
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      alert("يرجى السماح بالنوافذ المنبثقة لطباعة التقرير.");
-      return;
-    }
-
-    let stylesHtml = "";
-    document.querySelectorAll("link[rel='stylesheet'], style").forEach((node) => {
-      stylesHtml += node.outerHTML;
-    });
-
-    const tailwindCdn = `<script src="https://cdn.tailwindcss.com"></script>`;
-
-    printWindow.document.write(monthlyAttendanceHtml(selectedStudentForReport, tailwindCdn, reportElement));
-    printWindow.document.close();
+    printMonthlyAttendance(selectedStudentForReport, reportElement);
   };
 
   return {

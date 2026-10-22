@@ -1,24 +1,26 @@
 /**
- * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
+ * Relevé mensuel de présence d'un élève (charte « لوحة الكتّاب ») : choix du
+ * mois, synthèse, détail jour par jour, partage WhatsApp et impression A4.
+ * Mêmes calculs qu'auparavant ; l'en-tête imprimé reprend les paramètres de l'école.
  */
+import React from "react";
+import { Calendar, Printer, X } from "lucide-react";
 import { checkUserPermission } from "../../types";
-import { X, Calendar, Info, Printer } from "lucide-react";
 import { useApp } from "../../app/AppContext";
+import { Button, Emblem, FormField, Input, Modal, Pill, WhatsAppIcon } from "../../ui";
+
+const STATUS_PILL: Record<string, { tone: any; label: string }> = {
+  "حاضر": { tone: "success", label: "حاضر" },
+  "غائب": { tone: "danger", label: "غائب" },
+  "متأخر": { tone: "warn", label: "متأخر" },
+  "عطلة": { tone: "neutral", label: "عطلة نهاية الأسبوع" },
+  "غير مرصود": { tone: "outline", label: "غير مسجل بعد" },
+};
 
 export default function MonthlyReportModal() {
   const {
-    teachers,
-    classes,
-    attendance,
-    currentUser,
-    selectedStudentForReport,
-    setSelectedStudentForReport,
-    setShowMonthlyReportModal,
-    reportYearMonth,
-    setReportYearMonth,
-    currentRole,
-    schoolName,
-    handlePrintReport,
+    teachers, classes, attendance, currentUser, selectedStudentForReport, setSelectedStudentForReport,
+    setShowMonthlyReportModal, reportYearMonth, setReportYearMonth, currentRole, schoolName, systemSettings, handlePrintReport,
   } = useApp();
 
           const [yearStr, monthStr] = reportYearMonth.split("-");
@@ -111,248 +113,133 @@ export default function MonthlyReportModal() {
             window.open(whatsappUrl, "_blank");
           };
 
+          const close = () => {
+            setShowMonthlyReportModal(false);
+            setSelectedStudentForReport(null);
+          };
+          const stats = [
+            { label: "حاضر فعلي", value: totalPresent, unit: "أيام", cls: "bg-success-100 text-success-800" },
+            { label: "تأخير مسجل", value: totalLate, unit: "مرات", cls: "bg-gold-100 text-gold-800" },
+            { label: "غياب مسجل", value: totalAbsent, unit: "أيام", cls: "bg-danger-100 text-danger-800" },
+            { label: "أيام الدراسة المقررة", value: daysInMonth - totalFridays, unit: "يوم", cls: "bg-sunken text-ink-2" },
+          ];
+          const logo = systemSettings?.associationLogo;
+
           return (
-            <div data-modal="monthly-report" className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]" style={{ direction: "rtl" }}>
-              <div className="bg-surface w-full max-w-4xl overflow-hidden my-8 border border-line-soft rounded-3xl border-line shadow-pop">
-                {/* Modal Header */}
-                <div className="p-5 bg-sand-800 text-white flex justify-between items-center no-print">
-                  <div>
-                    <h3 className="font-bold text-base flex items-center gap-2">
-                      <Printer className="w-5 h-5 text-primary-400" />
-                      <span>كشف الحضور والغياب الشهري التفصيلي</span>
-                    </h3>
-                    <p className="text-[11.5px] text-sand-400">عرض إحصائيات والتزام الطالب مع إمكانية طباعة تقرير رسمي A4 ومشاركته</p>
+            <Modal
+              modalId="monthly-report"
+              size="lg"
+              icon={<Printer className="w-6 h-6" strokeWidth={1.75} />}
+              title="كشف الحضور والغياب الشهري التفصيلي"
+              subtitle="عرض إحصائيات والتزام الطالب مع إمكانية طباعة تقرير رسمي A4 ومشاركته"
+              onClose={close}
+              footer={
+                <div className="w-full flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
+                  <Button onClick={close} icon={<X className="w-4 h-4" strokeWidth={1.75} />}>إغلاق الكشف</Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="success" onClick={handleWhatsAppShare} icon={<WhatsAppIcon className="w-4 h-4" />}>مشاركة عبر الواتساب مع ولي الأمر</Button>
+                    {checkUserPermission(currentUser, currentRole, "attendance", "print") && (
+                      <Button variant="primary" onClick={handlePrintReport} icon={<Printer className="w-4 h-4" strokeWidth={1.75} />}>طباعة الكشف على ورقة A4</Button>
+                    )}
                   </div>
-                  <button 
-                    onClick={() => {
-                      setShowMonthlyReportModal(false);
-                      setSelectedStudentForReport(null);
-                    }} 
-                    className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition text-white"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+                </div>
+              }
+            >
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-wrap items-end justify-between gap-3 rounded-xl bg-surface-2 border border-line-soft p-4 no-print">
+                  <span className="flex items-center gap-2 font-semibold text-ink-2"><Calendar className="w-4 h-4 text-primary" strokeWidth={1.75} aria-hidden="true" />تحديد الشهر والسنة للتقرير</span>
+                  <FormField label="شهر الرصد">
+                    {(id) => <Input id={id} type="month" value={reportYearMonth} onChange={(e: any) => setReportYearMonth(e.target.value)} className="w-auto" />}
+                  </FormField>
                 </div>
 
-                {/* Modal Scrollable Body */}
-                <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-[13px]">
+                <div id="printable-monthly-report" className="bg-white rounded-xl border border-line-soft p-5 text-[13.5px] text-ink">
+                  <div className="flex flex-col gap-5">
+                    <header className="flex justify-between items-start gap-4 border-b-2 border-primary pb-4">
+                      <div className="flex items-center gap-3">
+                        {logo ? <img src={logo} alt="" className="w-14 h-14 object-contain" /> : <Emblem size={48} />}
+                        <div className="flex flex-col gap-0.5">
+                          <p className="m-0 font-display font-semibold text-[18px] text-primary">{schoolName}</p>
+                          {systemSettings?.mottoVision && <p className="m-0 text-[12.5px] text-ink-2">{systemSettings.mottoVision}</p>}
+                          {systemSettings?.licenseNumber && <p className="m-0 text-[12.5px] text-ink-3">رقم الترخيص: {systemSettings.licenseNumber}</p>}
+                        </div>
+                      </div>
+                      <div className="text-end flex flex-col items-end gap-1">
+                        <span className="inline-block bg-night text-gold-100 font-semibold text-[13px] px-3 py-1.5 rounded-lg">كشف الحضور والغياب الشهري</span>
+                        <span className="text-[12px] text-ink-3">تاريخ الإصدار: {new Date().toLocaleDateString("ar-MA-u-nu-latn")}</span>
+                      </div>
+                    </header>
 
-                  {/* Report Month Picker (No-Print) */}
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-sand-50 border border-line p-4 rounded-xl no-print">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-primary-700" />
-                      <span className="font-bold text-ink-2">تحديد الشهر والسنة للتقرير:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl bg-surface-2 border border-line-soft p-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[12px] text-ink-3">معلومات الطالب</span>
+                        <span className="font-semibold text-[15px]">{selectedStudentForReport.fullName}</span>
+                        <span className="text-[12.5px] text-ink-3">مستوى التجويد: {selectedStudentForReport.tajweedLevel}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[12px] text-ink-3">الحلقة والمشرف</span>
+                        <span className="font-semibold">{studentClass?.name || "غير محدد"}</span>
+                        <span className="text-[12.5px] text-ink-3">المحفظ: {classTeacher?.fullName || "لم يتم تعيين معلّم"}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[12px] text-ink-3">الفترة الزمنية للرصد</span>
+                        <span className="font-semibold text-primary">{MONTH_NAMES_AR[month]} {year}</span>
+                        <span className="text-[12.5px] text-ink-3">الفترة المحددة: {reportYearMonth}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <input 
-                        type="month" 
-                        value={reportYearMonth} 
-                        onChange={(e) => setReportYearMonth(e.target.value)} 
-                        className="p-2 border border-line-strong rounded-lg font-mono text-[13px] font-bold text-ink-2 bg-white focus:outline-primary-600 cursor-pointer" 
-                      />
-                      <span className="text-[11.5px] text-ink-3 font-medium">اختر شهر الرصد</span>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      {stats.map((s) => (
+                        <div key={s.label} className={"rounded-xl p-3 text-center " + s.cls}>
+                          <p className="m-0 text-[12.5px] font-semibold">{s.label}</p>
+                          <p className="m-0 mt-1 text-[20px] font-bold tabular-nums">{s.value} <span className="text-[12.5px] font-medium">{s.unit}</span></p>
+                        </div>
+                      ))}
+                      <div className="col-span-2 sm:col-span-1 rounded-xl p-3 text-center bg-night text-night-text">
+                        <p className="m-0 text-[12.5px] font-semibold text-gold-100">نسبة الالتزام</p>
+                        <p className="m-0 mt-1 text-[20px] font-bold tabular-nums">{attendanceRate}%</p>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Printable Area Wrapper */}
-                  <div id="printable-monthly-report" className="bg-white p-2">
-                    <div className="space-y-6">
+                    <p className="m-0 rounded-xl bg-gold-100 text-[#5C4A1E] p-3 text-[12.5px] leading-relaxed">
+                      <strong>تنويه نظام الجمعية الحسابي:</strong> تم رصد وإعداد هذا الكشف باستبعاد <strong>أيام الجمعة ({totalFridays} أيام في هذا الشهر)</strong> تماماً من حساب الإحصائيات الحالية ومجمل أيام الدراسة، عملاً بالنظام الداخلي الذي يعتبر يوم الجمعة عطلة رسمية بالجمعية.
+                    </p>
 
-                      {/* Printable Top Decorative Header */}
-                      <div className="flex justify-between items-start border-b-2 border-primary-800 pb-4">
-                        <div className="space-y-1">
-                          <p className="font-bold text-ink text-sm">{schoolName}</p>
-                          <p className="text-[11.5px] text-primary-800 font-bold">حلقات التاج والوقار النموذجية بالمملكة المغربية</p>
-                          <p className="text-[12.5px] text-ink-3 font-mono">الرقم المرجعي للأكاديمية: AI-ACAD-2026</p>
+                    <div className="border border-line rounded-xl overflow-hidden">
+                      <table className="w-full text-start border-collapse text-[13px]">
+                        <thead>
+                          <tr className="bg-sunken text-ink-2">
+                            <th scope="col" className="p-2.5 text-start font-semibold">اليوم والتاريخ</th>
+                            <th scope="col" className="p-2.5 text-start font-semibold">حالة الرصد</th>
+                            <th scope="col" className="p-2.5 text-start font-semibold">التقييم والملاحظات</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {daysList.map((day) => {
+                            const pill = STATUS_PILL[day.status];
+                            return (
+                              <tr key={day.dayNum} className={"border-t border-line-faint " + (day.isFriday ? "bg-surface-2" : "")}>
+                                <td className="p-2.5 text-ink-2"><span className="inline-block w-6 text-ink-3 tabular-nums">{day.dayNum}</span>{day.dayName} ، <span dir="ltr">{day.dateStr}</span></td>
+                                <td className="p-2.5"><Pill tone={pill.tone}>{pill.label}</Pill></td>
+                                <td className="p-2.5 text-ink-3">{day.isFriday ? "عطلة الجمعة الرسمية" : day.notes || "لا يوجد ملاحظات مسجلة"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 pt-8 mt-6 border-t-2 border-dashed border-line text-center">
+                      {["توقيع المحفظ المشرف", "ختم الجمعية الرسمي", "توقيع إدارة الأكاديمية"].map((label) => (
+                        <div key={label} className="flex flex-col gap-10">
+                          <p className="m-0 font-semibold text-[13px]">{label}</p>
+                          <p className="m-0 text-[12px] text-ink-4">----------------------</p>
                         </div>
-                        <div className="text-left">
-                          <div className="bg-primary-800 text-white text-[13px] font-bold px-3 py-1.5 rounded-lg inline-block">
-                            كشف الحضور والغياب الشهري
-                          </div>
-                          <p className="text-[11.5px] text-ink-3 font-bold mt-1">تاريخ الإصدار: {new Date().toLocaleDateString('ar-MA')}</p>
-                        </div>
-                      </div>
-
-                      {/* Info Block Grid */}
-                      <div className="bg-sand-50 border border-line rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-1.5">
-                          <p className="text-[11.5px] text-ink-3 font-bold">معلومات الطالب:</p>
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-lg">🧒</span>
-                            <div>
-                              <p className="font-bold text-ink text-sm">{selectedStudentForReport.fullName}</p>
-                              <p className="text-[11.5px] text-ink-3">مستوى التجويد: {selectedStudentForReport.tajweedLevel}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <p className="text-[11.5px] text-ink-3 font-bold">الحلقة والمشرف:</p>
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-lg">🏫</span>
-                            <div>
-                              <p className="font-bold text-ink-2 text-[13px]">{studentClass?.name || "غير محدد"}</p>
-                              <p className="text-[11.5px] text-ink-3">المحفظ: {classTeacher?.fullName || "لم يتم تعيين معلّم"}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <p className="text-[11.5px] text-ink-3 font-bold">الفترة الزمنية للرصد:</p>
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-lg">📅</span>
-                            <div>
-                              <p className="font-bold text-primary-800 text-[13px]">{MONTH_NAMES_AR[month]} {year}</p>
-                              <p className="text-[11.5px] text-ink-3">الفترة المحددة: {reportYearMonth}</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Stat Widgets (Excluding Fridays) */}
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-
-                        <div className="bg-primary-50/60 border border-primary-100 p-3 rounded-xl text-center">
-                          <p className="text-[11.5px] text-primary-800 font-bold">حاضر فعلي</p>
-                          <p className="text-lg font-bold text-primary-900 mt-1">{totalPresent} أيام</p>
-                        </div>
-
-                        <div className="bg-gold-50/60 border border-gold-100 p-3 rounded-xl text-center">
-                          <p className="text-[11.5px] text-gold-800 font-bold">تأخير مسجل</p>
-                          <p className="text-lg font-bold text-gold-900 mt-1">{totalLate} مرات</p>
-                        </div>
-
-                        <div className="bg-danger-50/60 border border-danger-100 p-3 rounded-xl text-center">
-                          <p className="text-[11.5px] text-danger-800 font-bold">غياب مسجل</p>
-                          <p className="text-lg font-bold text-danger-900 mt-1">{totalAbsent} أيام</p>
-                        </div>
-
-                        <div className="bg-sand-50 border border-line p-3 rounded-xl text-center">
-                          <p className="text-[11.5px] text-ink-3 font-bold">أيام الدراسة المقررة</p>
-                          <p className="text-lg font-bold text-ink-2 mt-1">{daysInMonth - totalFridays} يوم</p>
-                        </div>
-
-                        <div className="col-span-2 md:col-span-1 bg-night p-3 rounded-xl text-center text-white">
-                          <p className="text-[11.5px] text-primary-100 font-bold">نسبة الالتزام</p>
-                          <p className="text-lg font-bold mt-1">{attendanceRate}%</p>
-                        </div>
-
-                      </div>
-
-                      {/* Exclude Friday Note Banner */}
-                      <div className="bg-gold-50 border border-gold-200 rounded-xl p-3 flex items-start gap-2.5">
-                        <span className="text-sm shrink-0">🕌</span>
-                        <p className="text-[11.5px] text-gold-900 font-medium leading-relaxed">
-                          <strong>تنويه نظام الجمعية الحسابي:</strong> تم رصد وإعداد هذا الكشف باستبعاد <strong>أيام الجمعة ({totalFridays} أيام في هذا الشهر)</strong> تماماً من حساب الإحصائيات الحالية ومجمل أيام الدراسة، عملاً بالنظام الداخلي الذي يعتبر يوم الجمعة عطلة رسمية بالجمعية.
-                        </p>
-                      </div>
-
-                      {/* Daily List Table */}
-                      <div className="border border-line rounded-xl overflow-hidden bg-white">
-                        <table className="w-full text-right border-collapse text-[12.5px]">
-                          <thead>
-                            <tr className="bg-sand-100 border-b border-line text-ink-2 font-bold">
-                              <th className="p-2.5">اليوم والتاريخ</th>
-                              <th className="p-2.5">حالة الرصد</th>
-                              <th className="p-2.5">التقييم والملاحظات</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-line-faint">
-                            {daysList.map((day) => {
-                              let statusBadge = null;
-                              if (day.status === "حاضر") {
-                                statusBadge = <span className="bg-primary-100 text-primary-800 px-2 py-0.5 rounded font-bold text-[11.5px]">حاضر ✅</span>;
-                              } else if (day.status === "غائب") {
-                                statusBadge = <span className="bg-danger-100 text-danger-800 px-2 py-0.5 rounded font-bold text-[11.5px]">غائب ❌</span>;
-                              } else if (day.status === "متأخر") {
-                                statusBadge = <span className="bg-gold-100 text-gold-800 px-2 py-0.5 rounded font-bold text-[11.5px]">متأخر 🕒</span>;
-                              } else if (day.status === "عطلة") {
-                                statusBadge = <span className="bg-sand-100 text-ink-3 px-2 py-0.5 rounded font-semibold italic text-[11.5px]">عطلة نهاية الأسبوع 🕌</span>;
-                              } else {
-                                statusBadge = <span className="bg-sand-50 text-ink-3 px-2 py-0.5 rounded text-[11.5px]">غير مسجل بعد ➖</span>;
-                              }
-
-                              return (
-                                <tr key={day.dayNum} className={`hover:bg-sand-50/40 transition ${day.isFriday ? "bg-sand-50/50" : ""}`}>
-                                  <td className="p-2.5 font-bold text-ink-2">
-                                    <span className="font-mono text-ink-3 text-[11.5px] ml-1.5">{day.dayNum}</span>
-                                    {day.dayName} ، {day.dateStr}
-                                  </td>
-                                  <td className="p-2.5">{statusBadge}</td>
-                                  <td className="p-2.5 text-ink-3 font-medium">
-                                    {day.isFriday ? "عطلة الجمعة الرسمية" : day.notes || "لا يوجد ملاحظات مسجلة"}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Official Signatures for Printed Sheet */}
-                      <div className="grid grid-cols-3 gap-4 pt-10 border-t-2 border-dashed border-line mt-12 text-center text-ink-2">
-                        <div className="space-y-4">
-                          <p className="font-bold text-[13px] text-ink">توقيع المحفظ المشرف</p>
-                          <div className="h-10"></div>
-                          <p className="text-[11.5px] text-ink-3">----------------------</p>
-                        </div>
-                        <div className="space-y-4">
-                          <p className="font-bold text-[13px] text-ink">ختم الجمعية الرسمي</p>
-                          <div className="h-10"></div>
-                          <p className="text-[11.5px] text-ink-3">----------------------</p>
-                        </div>
-                        <div className="space-y-4">
-                          <p className="font-bold text-[13px] text-ink">توقيع إدارة الأكاديمية</p>
-                          <div className="h-10"></div>
-                          <p className="text-[11.5px] text-ink-3">----------------------</p>
-                        </div>
-                      </div>
-
+                      ))}
                     </div>
                   </div>
-
-                  {/* Modal Actions / Print (No-Print) */}
-                  <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t no-print">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMonthlyReportModal(false);
-                        setSelectedStudentForReport(null);
-                      }}
-                      className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] border border-line-strong bg-surface hover:bg-surface-2 text-ink text-[14px] font-semibold transition-colors cursor-pointer gap-2"
-                    >
-                      <X className="w-4 h-4" />
-                      <span>إغلاق الكشف</span>
-                    </button>
-
-                    <div className="flex flex-wrap items-center gap-3">
-                      {/* WhatsApp share button */}
-                      <button
-                        type="button"
-                        onClick={handleWhatsAppShare}
-                        className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-2"
-                      >
-                        <svg className="w-4.5 h-4.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.713-1.455L0 24zm6.59-4.846c1.66.986 3.292 1.503 4.933 1.505 5.424.004 9.835-4.394 9.839-9.82.002-2.628-1.02-5.1-2.88-6.962C16.621 1.955 14.153.931 11.53.927c-5.432 0-9.843 4.403-9.847 9.827-.001 1.761.478 3.48 1.385 5.016l-.99 3.616 3.73-.976zm12.115-4.43c-.329-.165-1.947-.961-2.246-1.07-.3-.109-.518-.164-.736.164-.218.328-.844 1.07-1.034 1.289-.19.219-.38.246-.709.08-1.353-.678-2.3-1.176-3.21-2.735-.24-.411.24-.381.688-1.277.075-.15.038-.282-.019-.395-.056-.113-.518-1.249-.71-1.711-.186-.447-.373-.387-.518-.394l-.442-.008c-.15 0-.395.056-.601.282-.206.226-.785.767-.785 1.87 0 1.104.8 2.167.912 2.318.112.15 1.573 2.4 3.812 3.367.532.23 1.053.391 1.411.474.56.126 1.07.108 1.473.048.45-.067 1.473-.601 1.68-1.182.206-.581.206-1.08.145-1.183-.06-.103-.218-.164-.547-.329z"/>
-                        </svg>
-                        <span>مشاركة عبر الواتساب مع ولي الأمر</span>
-                      </button>
-
-                      {checkUserPermission(currentUser, currentRole, "attendance", "print") && (
-                        <button
-                          type="button"
-                          onClick={handlePrintReport}
-                          className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-2"
-                        >
-                          <Printer className="w-4 h-4" />
-                          <span>طباعة الكشف على ورقة A4</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
                 </div>
               </div>
-            </div>
+            </Modal>
           );
 }
