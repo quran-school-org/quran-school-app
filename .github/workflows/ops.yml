@@ -20,7 +20,12 @@
 #   (collaborateurs, jetons d'agents). Si la variable ARTIFACT_GPG_PUBLIC_KEY
 #   (clé publique du propriétaire) est posée, rapports et mots de passe sont
 #   chiffrés pour elle avant l'envoi ; un remplacement de mots de passe
-#   appliqué (rotate_passwords ≠ none) est REFUSÉ sans cette clé.
+#   appliqué (rotate_passwords ≠ none) est REFUSÉ sans cette clé. La clé peut
+#   être une variable de dépôt, préfixée (DEV_/PROD_) ou d'environnement.
+# - Configuration GitHub (D75) : environnements `dev` / `production` (Team,
+#   Enterprise : job `operation`) ou variables de dépôt préfixées DEV_ / PROD_
+#   (Free : job `operation-sans-environnement`, sans `environment:`), choisie
+#   par le job `configuration`. Mêmes étapes (ancres YAML), un seul s'exécute.
 name: Opérations de données (manuel)
 
 on:
@@ -71,49 +76,119 @@ env:
   SCHOOL_ID: alfajr
 
 jobs:
+  # D75 : environnement GitHub (Team/Enterprise) ou variables de dépôt préfixées
+  # (Free). Aucun jeton, aucune valeur sensible : ne lit que des variables.
+  configuration:
+    name: Configuration GitHub (environnement ou variables préfixées)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+      prefix: ${{ steps.mode.outputs.prefix }}
+      other_prefix: ${{ steps.mode.outputs.other_prefix }}
+    steps:
+      - name: Choix de la configuration
+        id: mode
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          USE_GITHUB_ENVIRONMENTS: ${{ vars.USE_GITHUB_ENVIRONMENTS }}
+          DEV_PROJECT: ${{ vars.DEV_FIREBASE_PROJECT_ID }}
+          PROD_PROJECT: ${{ vars.PROD_FIREBASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          case "${ENVIRONMENT}" in
+            dev) PREFIX=DEV_; OTHER=PROD_ ;;
+            production) PREFIX=PROD_; OTHER=DEV_ ;;
+            *) fail "Environnement inconnu." ;;
+          esac
+          # USE_GITHUB_ENVIRONMENTS (variable de dépôt, facultative) force le mode ;
+          # sinon, la présence d'une variable préfixée signale la configuration Free.
+          case "${USE_GITHUB_ENVIRONMENTS}" in
+            true) MODE=environnement ;;
+            false) MODE=prefixe ;;
+            "") if [ -n "${DEV_PROJECT}${PROD_PROJECT}" ]; then MODE=prefixe; else MODE=environnement; fi ;;
+            *) fail "USE_GITHUB_ENVIRONMENTS doit valoir true, false, ou être absente." ;;
+          esac
+          if [ "${MODE}" = "environnement" ]; then
+            VAR_PREFIX=""
+            MSG="environnement GitHub « ${ENVIRONMENT} » (variables sans préfixe)"
+          else
+            VAR_PREFIX="${PREFIX}"
+            MSG="variables de dépôt ${PREFIX}* (sans environnement GitHub)"
+          fi
+          { echo "mode=${MODE}"; echo "prefix=${VAR_PREFIX}"; echo "other_prefix=${OTHER}"; } >> "$GITHUB_OUTPUT"
+          echo "Configuration : ${MSG}."
+          echo "- configuration GitHub : ${MSG}" >> "$GITHUB_STEP_SUMMARY"
+
+  # Job à jeton OIDC, version « environnement GitHub » (Team/Enterprise).
   operation:
     name: ${{ inputs.action }} (${{ inputs.environment }}${{ inputs.apply && ', application' || ', simulation' }})
     runs-on: ubuntu-latest
+    needs: configuration
+    if: needs.configuration.outputs.mode == 'environnement'
     timeout-minutes: 90
     environment: ${{ inputs.environment }}
-    permissions:
+    permissions: &operation_permissions
       contents: read
       id-token: write # jeton OIDC pour la fédération d'identité
-    env:
+    # Variables lues sous le préfixe choisi par `configuration` : vide (variables
+    # de l'environnement) ou DEV_ / PROD_ selon inputs.environment, jamais l'autre.
+    env: &operation_env
       ENVIRONMENT: ${{ inputs.environment }}
       ACTION: ${{ inputs.action }}
       APPLY: ${{ inputs.apply }}
       ROTATE: ${{ inputs.rotate_passwords }}
-      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
-      DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
-      BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET }}
-    outputs:
+      CONFIG_MODE: ${{ needs.configuration.outputs.mode }}
+      VAR_PREFIX: ${{ needs.configuration.outputs.prefix }}
+      OTHER_PREFIX: ${{ needs.configuration.outputs.other_prefix }}
+      PROJECT_ID: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_FIREBASE_PROJECT_ID) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_FIREBASE_PROJECT_ID) || (needs.configuration.outputs.prefix == '' && vars.FIREBASE_PROJECT_ID) || '' }}
+      DATABASE_ID: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_FIRESTORE_DATABASE_ID) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_FIRESTORE_DATABASE_ID) || (needs.configuration.outputs.prefix == '' && vars.FIRESTORE_DATABASE_ID) || '' }}
+      BACKUP_BUCKET: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_BACKUP_BUCKET) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_BACKUP_BUCKET) || (needs.configuration.outputs.prefix == '' && vars.BACKUP_BUCKET) || '' }}
+      WIF_PROVIDER: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_GCP_WIF_PROVIDER) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_GCP_WIF_PROVIDER) || (needs.configuration.outputs.prefix == '' && vars.GCP_WIF_PROVIDER) || '' }}
+      OPS_SA: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_GCP_OPS_SERVICE_ACCOUNT) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_GCP_OPS_SERVICE_ACCOUNT) || (needs.configuration.outputs.prefix == '' && vars.GCP_OPS_SERVICE_ACCOUNT) || '' }}
+      SUPER_ADMIN_USERNAME: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_SUPER_ADMIN_USERNAME) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_SUPER_ADMIN_USERNAME) || (needs.configuration.outputs.prefix == '' && vars.SUPER_ADMIN_USERNAME) || '' }}
+      # Clé PUBLIQUE du propriétaire : préfixée, sinon variable de dépôt (ou d'environnement).
+      ARTIFACT_KEY: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_ARTIFACT_GPG_PUBLIC_KEY) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_ARTIFACT_GPG_PUBLIC_KEY) || vars.ARTIFACT_GPG_PUBLIC_KEY || '' }}
+      # Valeurs de l'AUTRE environnement (variables préfixées), pour le contrôle croisé.
+      OTHER_PROJECT_ID: ${{ (needs.configuration.outputs.other_prefix == 'DEV_' && vars.DEV_FIREBASE_PROJECT_ID) || (needs.configuration.outputs.other_prefix == 'PROD_' && vars.PROD_FIREBASE_PROJECT_ID) || '' }}
+      OTHER_WIF_PROVIDER: ${{ (needs.configuration.outputs.other_prefix == 'DEV_' && vars.DEV_GCP_WIF_PROVIDER) || (needs.configuration.outputs.other_prefix == 'PROD_' && vars.PROD_GCP_WIF_PROVIDER) || '' }}
+      OTHER_OPS_SA: ${{ (needs.configuration.outputs.other_prefix == 'DEV_' && vars.DEV_GCP_OPS_SERVICE_ACCOUNT) || (needs.configuration.outputs.other_prefix == 'PROD_' && vars.PROD_GCP_OPS_SERVICE_ACCOUNT) || '' }}
+      OTHER_BACKUP_BUCKET: ${{ (needs.configuration.outputs.other_prefix == 'DEV_' && vars.DEV_BACKUP_BUCKET) || (needs.configuration.outputs.other_prefix == 'PROD_' && vars.PROD_BACKUP_BUCKET) || '' }}
+    outputs: &operation_outputs
       export_name: ${{ steps.export.outputs.name || steps.preexport.outputs.name }}
-    steps:
+    steps: &operation_steps
       - name: Garde-fous
         id: garde
         env:
           CONFIRM: ${{ inputs.confirm }}
           IMPORT_SOURCE: ${{ inputs.import_source }}
           REF: ${{ github.ref }}
-          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
-          OPS_SA: ${{ vars.GCP_OPS_SERVICE_ACCOUNT }}
-          SUPER_ADMIN_USERNAME: ${{ vars.SUPER_ADMIN_USERNAME }}
-          ARTIFACT_KEY: ${{ vars.ARTIFACT_GPG_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           fail() { echo "::error::$1"; exit 1; }
           case "${ENVIRONMENT}" in dev|production) ;; *) fail "Environnement inconnu.";; esac
+          # D75 : les variables DEV_* ne servent jamais à la production, ni PROD_* au dev.
+          case "${CONFIG_MODE}:${ENVIRONMENT}:${VAR_PREFIX}:${OTHER_PREFIX}" in
+            environnement:dev::PROD_|environnement:production::DEV_|prefixe:dev:DEV_:PROD_|prefixe:production:PROD_:DEV_) ;;
+            *) fail "Configuration incohérente (mode « ${CONFIG_MODE} », préfixe « ${VAR_PREFIX} ») pour ${ENVIRONMENT}.";;
+          esac
           # D74 : jamais de mots de passe temporaires en clair dans un artefact.
           if [ "${APPLY}" = "true" ] && [ "${ROTATE}" != "none" ] && [ -z "${ARTIFACT_KEY}" ]; then
-            fail "rotate_passwords=${ROTATE} appliqué exige la variable ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
+            fail "rotate_passwords=${ROTATE} appliqué exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
           fi
           case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts) ;; *) fail "Action inconnue.";; esac
           case "${ROTATE}" in none|weak|all) ;; *) fail "rotate_passwords inconnu.";; esac
           case "${APPLY}" in true|false) ;; *) fail "apply invalide.";; esac
           if [ -z "${PROJECT_ID}" ] || [ -z "${DATABASE_ID}" ] || [ -z "${WIF_PROVIDER}" ] || [ -z "${OPS_SA}" ] || [ -z "${BACKUP_BUCKET}" ]; then
-            fail "Variables de l'environnement GitHub '${ENVIRONMENT}' absentes (FIREBASE_PROJECT_ID, FIRESTORE_DATABASE_ID, GCP_WIF_PROVIDER, GCP_OPS_SERVICE_ACCOUNT, BACKUP_BUCKET). Voir docs/GUIDE-MISE-EN-PROD.md, étape 3."
+            fail "Variables ${VAR_PREFIX}FIREBASE_PROJECT_ID, ${VAR_PREFIX}FIRESTORE_DATABASE_ID, ${VAR_PREFIX}GCP_WIF_PROVIDER, ${VAR_PREFIX}GCP_OPS_SERVICE_ACCOUNT ou ${VAR_PREFIX}BACKUP_BUCKET absentes (${CONFIG_MODE}, ${ENVIRONMENT}). Voir docs/GUIDE-MISE-EN-PROD.md, étape 3."
           fi
+          for v in PROJECT_ID WIF_PROVIDER OPS_SA BACKUP_BUCKET; do
+            o="OTHER_${v}"
+            if [ -n "${!o}" ] && [ "${!v}" = "${!o}" ]; then
+              fail "${v} de ${ENVIRONMENT} est égal à la variable ${OTHER_PREFIX}* de l'autre environnement : configuration croisée."
+            fi
+          done
           # Formats stricts : ces valeurs servent d'arguments à gcloud et aux scripts.
           [[ "${PROJECT_ID}" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || fail "FIREBASE_PROJECT_ID invalide."
           [[ "${DATABASE_ID}" =~ ^[a-z][a-z0-9-]{2,62}$ ]] || fail "FIRESTORE_DATABASE_ID invalide (base nommée attendue)."
@@ -156,7 +231,7 @@ jobs:
             fail "Confirmation incorrecte : recopier l'identifiant du projet visé dans « confirm »."
           fi
 
-          # Super-administrateur (migration) : variable facultative de l'environnement, validée.
+          # Super-administrateur (migration) : variable facultative (préfixée en Free), validée.
           if [ "${ACTION}" = "migrate-to-tenants" ] && [ -n "${SUPER_ADMIN_USERNAME}" ]; then
             [[ "${SUPER_ADMIN_USERNAME}" =~ ^[a-z0-9][a-z0-9._-]{1,39}$ ]] || fail "SUPER_ADMIN_USERNAME invalide."
           fi
@@ -170,7 +245,7 @@ jobs:
           echo "stamp=$(date -u +%Y%m%d-%H%M%SZ)" >> "$GITHUB_OUTPUT"
           # Rapports et secrets hors de l'espace de travail (jamais mêlés au code ni aux identifiants WIF).
           { echo "REPORTS=${RUNNER_TEMP}/rapports"; echo "SECRETS_DIR=${RUNNER_TEMP}/secret"; } >> "$GITHUB_ENV"
-          echo "${ACTION} sur ${PROJECT_ID} / ${DATABASE_ID} (${ENVIRONMENT}), apply=${APPLY}, rotate_passwords=${ROTATE}"
+          echo "${ACTION} sur ${PROJECT_ID} / ${DATABASE_ID} (${ENVIRONMENT}, configuration ${CONFIG_MODE}${VAR_PREFIX:+ ${VAR_PREFIX}*}), apply=${APPLY}, rotate_passwords=${ROTATE}"
 
       - name: Code (${{ steps.garde.outputs.code_ref }})
         if: steps.garde.outputs.code_ref != ''
@@ -196,8 +271,8 @@ jobs:
       - name: Authentification Google (Workload Identity Federation, sans clé)
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
-          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
-          service_account: ${{ vars.GCP_OPS_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.OPS_SA }}
           create_credentials_file: true
 
       - name: Emplacement de la base et PITR
@@ -298,8 +373,6 @@ jobs:
       - name: ${{ inputs.action }} (script Admin SDK, journal en artefact)
         id: script
         if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants'
-        env:
-          SUPER_ADMIN_USERNAME: ${{ vars.SUPER_ADMIN_USERNAME }}
         run: |
           set -euo pipefail
           mkdir -p "${REPORTS}"
@@ -351,8 +424,6 @@ jobs:
       # D74 : chiffrement des artefacts pour la clé publique du propriétaire.
       - name: Chiffrement des artefacts (clé publique du propriétaire)
         if: always() && steps.script.outcome != 'skipped'
-        env:
-          ARTIFACT_KEY: ${{ vars.ARTIFACT_GPG_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           if [ -z "${ARTIFACT_KEY}" ]; then
@@ -360,7 +431,8 @@ jobs:
             exit 0
           fi
           export GNUPGHOME="${RUNNER_TEMP}/gnupg"
-          mkdir -p -m 700 "${GNUPGHOME}"
+          mkdir -p "${GNUPGHOME}"
+          chmod 700 "${GNUPGHOME}"
           printf '%s\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
           FPR=$(gpg --batch --with-colons --list-keys | awk -F: '/^fpr:/ {print $10; exit}')
           [ -n "${FPR}" ] || { echo "::error::Clé publique illisible."; exit 1; }
@@ -405,3 +477,16 @@ jobs:
             echo "- apply : ${APPLY} ; rotate_passwords : ${ROTATE}"
             echo "- code : \`${CODE_REF:-aucun}\` ; workflow : \`${GITHUB_REF}@${GITHUB_SHA::7}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Même job, version « variables de dépôt préfixées » (forfait Free) : pas de
+  # mot-clé `environment:`, mêmes permissions, variables et étapes (ancres YAML).
+  operation-sans-environnement:
+    name: ${{ inputs.action }} (${{ inputs.environment }}${{ inputs.apply && ', application' || ', simulation' }}, sans environnement GitHub)
+    runs-on: ubuntu-latest
+    needs: configuration
+    if: needs.configuration.outputs.mode == 'prefixe'
+    timeout-minutes: 90
+    permissions: *operation_permissions
+    env: *operation_env
+    outputs: *operation_outputs
+    steps: *operation_steps

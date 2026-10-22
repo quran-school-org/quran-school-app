@@ -8,6 +8,11 @@
 # `api` déjà déployée sur le projet de dev, Firestore et Auth sont ceux du dev.
 # Durcissement (revue, D68) : build et tests dans un job SANS jeton OIDC ; le
 # job de publication ne fait qu'installer la CLI (sans scripts npm) et publier.
+# Forfait Free (D75) : les environnements GitHub n'existent pas sur un dépôt
+# privé, donc ni l'environnement `preview` ni la condition de son fournisseur
+# WIF (`assertion.environment == 'preview'`). Le job `disponibilite` arrête
+# alors le workflow avec un message clair, avant tout job qui déclare
+# `environment:` ; en Team ou Enterprise, rien ne change.
 name: Prévisualisation (dev, manuel)
 
 on:
@@ -26,8 +31,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  disponibilite:
+    name: Aperçus disponibles (environnement GitHub preview)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Environnements GitHub disponibles ?
+        env:
+          USE_GITHUB_ENVIRONMENTS: ${{ vars.USE_GITHUB_ENVIRONMENTS }}
+          DEV_PROJECT: ${{ vars.DEV_FIREBASE_PROJECT_ID }}
+          PROD_PROJECT: ${{ vars.PROD_FIREBASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          # Même règle que deploy.yml, deploy-lot0.yml et ops.yml (job `configuration`).
+          case "${USE_GITHUB_ENVIRONMENTS}" in
+            true) MODE=environnement ;;
+            false) MODE=prefixe ;;
+            "") if [ -n "${DEV_PROJECT}${PROD_PROJECT}" ]; then MODE=prefixe; else MODE=environnement; fi ;;
+            *) echo "::error::USE_GITHUB_ENVIRONMENTS doit valoir true, false, ou être absente."; exit 1 ;;
+          esac
+          if [ "${MODE}" != "environnement" ]; then
+            echo "::error::Aperçus indisponibles : ce dépôt est configuré sans environnements GitHub (forfait Free, variables DEV_/PROD_). preview.yml exige l'environnement « preview » et son fournisseur WIF (guide, étape 2, bloc « aperçus »). Rien n'a été construit ni publié."
+            echo "### Aperçus indisponibles sans environnements GitHub (forfait Free, D75)" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Environnements GitHub utilisés : aperçu possible (environnement preview)."
+
   construire:
     name: Build et tests unitaires (sans jeton OIDC)
+    needs: disponibilite
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: preview
@@ -39,7 +71,7 @@ jobs:
       - name: Garde-fous
         run: |
           set -euo pipefail
-          [ -n "${PROJECT_ID}" ] || { echo "::error::Variable FIREBASE_PROJECT_ID absente de l'environnement preview."; exit 1; }
+          [ -n "${PROJECT_ID}" ] || { echo "::error::Variable FIREBASE_PROJECT_ID absente de l'environnement preview (à créer en Team ou Enterprise ; indisponible en Free, D75)."; exit 1; }
           case "${PROJECT_ID}" in demo-*|gen-lang-client-0481880143) echo "::error::Projet interdit pour un aperçu : ${PROJECT_ID}."; exit 1;; esac
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

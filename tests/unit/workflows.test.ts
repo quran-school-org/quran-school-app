@@ -6,7 +6,11 @@
  *  - aucune expression `${{ }}` dans un script `run:` (injection), tout passe par `env` ;
  *  - un job qui obtient un jeton OIDC (`id-token: write`) déclare un
  *    environnement GitHub, n'utilise pas de cache npm partagé et installe
- *    les paquets sans scripts (`npm ci --ignore-scripts`) ;
+ *    les paquets sans scripts (`npm ci --ignore-scripts`) ; sa version sans
+ *    environnement (forfait Free, D75) reprend exactement ses permissions, ses
+ *    variables et ses étapes (alias YAML) et ne s'exécute qu'en mode `prefixe` ;
+ *  - D75 : une variable préfixée DEV_ / PROD_ n'est lue que sous la condition
+ *    du préfixe correspondant (jamais celle de l'autre environnement) ;
  *  - les déploiements et aperçus ne se lancent qu'à la main ;
  *    jamais de `pull_request_target`.
  * Analyse ligne à ligne (pas de dépendance YAML) : suffisante pour ces fichiers.
@@ -90,6 +94,61 @@ describe("workflows GitHub Actions (D68)", () => {
     });
   }
 
+  it("D75 : chaque job à jeton OIDC a un jumeau sans environnement, identique par alias", () => {
+    for (const f of ["deploy.yml", "deploy-lot0.yml", "ops.yml"]) {
+      const all = jobs(read(f));
+      expect([...all.keys()], f).toContain("configuration");
+      // Le job de configuration ne reçoit aucun jeton OIDC et ne déclare pas d'environnement.
+      expect(all.get("configuration")!.join("\n"), f).not.toMatch(/id-token|environment:/);
+      const oidc = [...all].filter(([, b]) => /id-token:\s*write/.test(b.join("\n")));
+      expect(oidc.length, f).toBe(1);
+      const [name, body] = oidc[0];
+      const src = body.join("\n");
+      expect(src, f).toMatch(/^\s{4}if: needs\.configuration\.outputs\.mode == 'environnement'$/m);
+      const anchor = (key: string) => src.match(new RegExp(`^\\s{4}${key}: &(\\w+)\\s*$`, "m"))?.[1];
+      const [perm, env, steps] = ["permissions", "env", "steps"].map(anchor);
+      expect([perm, env, steps], `${f} › ${name}`).not.toContain(undefined);
+      const twins = [...all].filter(([n]) => n === `${name}-sans-environnement`);
+      expect(twins.length, f).toBe(1);
+      const twin = twins[0][1].join("\n");
+      expect(twin, f).toMatch(/^\s{4}if: needs\.configuration\.outputs\.mode == 'prefixe'$/m);
+      expect(twin, f).not.toMatch(/environment:/);
+      expect(twin, f).toMatch(new RegExp(`^\\s{4}permissions: \\*${perm}$`, "m"));
+      expect(twin, f).toMatch(new RegExp(`^\\s{4}env: \\*${env}$`, "m"));
+      expect(twin, f).toMatch(new RegExp(`^\\s{4}steps: \\*${steps}$`, "m"));
+      // Aucun autre contenu propre au jumeau (pas d'étape ni de variable ajoutée).
+      expect(twin, f).not.toMatch(/^\s{6}\S/m);
+    }
+  });
+
+  it("D75 : DEV_* ne sert jamais à la production, ni PROD_* au dev (sélection gardée, pas d'index calculé)", () => {
+    for (const f of files) {
+      const text = read(f);
+      expect(text, f).not.toMatch(/vars\[/);
+      for (const [name, body] of jobs(text)) {
+        for (const l of body) {
+          for (const m of l.matchAll(/vars\.(DEV|PROD)_[A-Z0-9_]+/g)) {
+            const before = l.slice(0, m.index);
+            // Lecture brute admise seulement pour détecter la configuration (jamais utilisée comme valeur).
+            if (/^\s+(DEV|PROD)_PROJECT: \$\{\{ vars\.(DEV|PROD)_FIREBASE_PROJECT_ID \}\}$/.test(l)) continue;
+            expect(before, `${f} › ${name} : ${l.trim()}`).toMatch(new RegExp(`(prefix|other_prefix) == '${m[1]}_' && $`));
+          }
+        }
+      }
+    }
+  });
+
+  it("D75 : préfixe déterminé par inputs.environment, jamais l'inverse", () => {
+    for (const f of ["deploy.yml", "deploy-lot0.yml", "ops.yml"]) {
+      const text = read(f);
+      expect(text, f).toContain("dev) PREFIX=DEV_; OTHER=PROD_ ;;");
+      expect(text, f).toContain("production) PREFIX=PROD_; OTHER=DEV_ ;;");
+      expect(text, f).toContain(
+        "environnement:dev::PROD_|environnement:production::DEV_|prefixe:dev:DEV_:PROD_|prefixe:production:PROD_:DEV_) ;;",
+      );
+    }
+  });
+
   it("déploiement et aperçu : déclenchement manuel uniquement", () => {
     for (const f of ["deploy.yml", "preview.yml"]) {
       const on = read(f).split("\n");
@@ -104,6 +163,13 @@ describe("workflows GitHub Actions (D68)", () => {
     const text = read("preview.yml");
     expect(text).toMatch(/environment: preview/);
     expect(text).not.toMatch(/environment: (dev|production)\b/);
+  });
+
+  it("aperçu (D75) : arrêté avant tout job à environnement si le dépôt est configuré sans environnements", () => {
+    const all = jobs(read("preview.yml"));
+    expect(all.get("disponibilite")!.join("\n")).not.toMatch(/environment:|id-token/);
+    expect(all.get("construire")!.join("\n")).toMatch(/^\s{4}needs: disponibilite$/m);
+    expect(all.get("apercu")!.join("\n")).toMatch(/^\s{4}needs: construire$/m);
   });
 
   it("ops.yml (D74) : artefacts chiffrés avant envoi ; remplacement de mots de passe refusé sans clé publique", () => {
