@@ -260,6 +260,9 @@ collections racine et du service Cloud Run d'AI Studio).
   restrictions de clé.
 
 ### 6.3 Changements d'interface (à reporter sur `feat/design`)
+> Reportés sur `integration/design` (D63) : points 1 à 4 ; O-05 traité par le
+> design (D61) ; `CLAUDE.md` mis à jour (`staffPrivate`, `test:hosting`).
+
 1. `src/App.tsx`, abonnement au personnel : `sub<Teacher>("teachers", …)`
    remplacé par `subscribeToStaff(schoolId, canReadStaffPrivate(role), …)`
    (sur `feat/design` : `src/data/useSchoolSync.ts`).

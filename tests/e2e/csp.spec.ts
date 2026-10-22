@@ -46,7 +46,8 @@ test("l'application fonctionne sous la CSP de production (connexion, écrans, im
 
   // Fenêtre d'impression : hérite de la CSP de l'application.
   const popupPromise = context.waitForEvent("page");
-  await page.locator("#export-students-pdf-btn").dispatchEvent("click");
+  await page.locator("#export-students-dropdown-btn").click();
+  await page.locator("#export-students-pdf-btn").click();
   const popup = await popupPromise;
   await popup.waitForLoadState("domcontentloaded").catch(() => undefined);
   await page.waitForTimeout(1500);
