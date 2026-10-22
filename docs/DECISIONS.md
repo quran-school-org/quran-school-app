@@ -652,7 +652,9 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   pouvait aussi réécrire le titre et le message d'une notification existante.
 - **Décision** : création réservée au personnel (`isStaff`) ; mise à jour libre
   pour le bureau, limitée au champ `isRead` pour le reste du personnel ;
-  suppression inchangée (bureau). Même correctif sur le Lot 0 (`isStaff()`).
+  suppression inchangée (bureau). Un document hérité sans champ `id` peut le
+  recevoir (égal à son identifiant) en même temps que `isRead`. Lot 0 : la
+  création seule est restreinte (`isStaff()`), pour garder le correctif court.
 - **Effet sur l'interface** : aucun écran ne permet à une famille d'écrire une
   notification ; seule la notification automatique « تعديل البيانات الشخصية »
   après la modification de son profil était envoyée. Elle reste affichée

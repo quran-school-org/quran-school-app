@@ -164,6 +164,9 @@ describe("R-07 corrigé (D52) : notifications réservées au personnel", () => {
     await assertSucceeds(setDoc(doc(as("benevole"), "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: true, schoolId: A }, { merge: true }));
     await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { message: "payez sur le compte X" }));
     await assertFails(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { title: "faux", message: "faux", isRead: false, schoolId: A }));
+    // Document hérité sans champ `id` : le client le recopie en marquant comme lu (identique à l'identifiant).
+    await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { id: "n_1", isRead: true, schoolId: A }, { merge: true }));
+    await assertFails(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { id: "autre", isRead: true, schoolId: A }, { merge: true }));
     await assertSucceeds(updateDoc(doc(as("admin"), "schools", A, "notifications", "n_1"), { message: "corrigé" }));
   });
 

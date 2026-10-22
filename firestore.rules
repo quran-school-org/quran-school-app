@@ -259,7 +259,8 @@ service cloud.firestore {
         allow create: if isStaff(s) && validWrite(s, notificationId);
         allow update: if validWrite(s, notificationId)
           && (isOffice(s)
-              || (isStaff(s) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])));
+              || (isStaff(s) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'id'])
+                  && request.resource.data.get('id', notificationId) == notificationId));
         allow delete: if isOffice(s);
       }
     }
