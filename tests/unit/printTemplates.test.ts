@@ -23,16 +23,23 @@ function sourceFiles(dir: string): string[] {
     return /\.(ts|tsx)$/.test(name) ? [path] : [];
   });
 }
-const FILES = sourceFiles("src").filter((f) => readFileSync(f, "utf8").includes("document.write(`"));
+// Gabarits : `document.write(` + littéral, lignes de tableaux (`tableRows`), et
+// fonctions de src/print qui renvoient le HTML d'une impression (`return \``).
+const isPrintModule = (f: string) => /[\\/]print[\\/]/.test(f);
+const FILES = sourceFiles("src").filter((f) => {
+  const src = readFileSync(f, "utf8");
+  return src.includes("document.write(") || /const tableRows = .*\.map\(/.test(src) || (isPrintModule(f) && /^\s*return `/m.test(src));
+});
 
-function printBlocks(source: string): string[][] {
+function printBlocks(source: string, file = ""): string[][] {
   const lines = source.split("\n");
   const blocks: string[][] = [];
   for (let i = 0; i < lines.length; i++) {
     const isWrite = lines[i].includes("document.write(`");
     const isRows = /const tableRows = .*\.map\(/.test(lines[i]);
-    if (!isWrite && !isRows) continue;
-    const end = isWrite ? /^\s*`\);\s*$/ : /^\s*\}\)\.join\(""\);\s*$/;
+    const isReturn = isPrintModule(file) && /^\s*return `/.test(lines[i]);
+    if (!isWrite && !isRows && !isReturn) continue;
+    const end = isWrite ? /^\s*`\);\s*$/ : isReturn ? /^\s*`;\s*$/ : /^\s*\}\)\.join\(""\);\s*$/;
     let j = i;
     while (j < lines.length && !end.test(lines[j])) j++;
     blocks.push(lines.slice(i, j + 1));
@@ -54,11 +61,17 @@ describe("échappement HTML des impressions", () => {
 
   it("des gabarits d'impression sont bien trouvés et inspectés", () => {
     expect(FILES.length).toBeGreaterThan(0);
+    // Après le découpage d'App.tsx (Lot 2), les gabarits vivent dans src/print.
+    expect(FILES.filter(isPrintModule).length).toBeGreaterThanOrEqual(6);
+    // Chaque gabarit (littéral HTML) est bien découpé en blocs inspectés.
+    for (const f of FILES.filter((x) => /document\.write\(`|^\s*return `/m.test(readFileSync(x, "utf8")))) {
+      expect(printBlocks(readFileSync(f, "utf8"), f).length, f).toBeGreaterThan(0);
+    }
   });
 
   for (const file of FILES) {
     it(`${file} : aucune donnée insérée sans échappement dans un gabarit d'impression`, () => {
-      const blocks = printBlocks(readFileSync(file, "utf8"));
+      const blocks = printBlocks(readFileSync(file, "utf8"), file);
       const raw: string[] = [];
       for (const block of blocks) {
         for (const line of block) {
@@ -71,4 +84,18 @@ describe("échappement HTML des impressions", () => {
       expect(raw).toEqual([]);
     });
   }
+});
+
+describe("fenêtres d'impression sans script ni CDN (CSP stricte possible)", () => {
+  const all = sourceFiles("src").map((f) => [f, readFileSync(f, "utf8")] as const);
+  it("seul printWindow.ts écrit dans une fenêtre (document.write)", () => {
+    expect(all.filter(([f, src]) => src.includes("document.write(") && !f.endsWith("printWindow.ts")).map(([f]) => f)).toEqual([]);
+  });
+  it("aucun CDN Tailwind, aucun script ni gestionnaire en ligne dans les gabarits", () => {
+    const bad = all.filter(([, src]) => /cdn\.tailwindcss\.com|<script|\sonload=|\sonerror=/.test(src)).map(([f]) => f);
+    expect(bad).toEqual([]);
+  });
+  it("aucun service QR externe (constat O-05)", () => {
+    expect(all.filter(([, src]) => /qrserver/i.test(src)).map(([f]) => f)).toEqual([]);
+  });
 });

@@ -430,6 +430,16 @@ export const RealmSimDB = {
     setStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, settings);
     saveToFirestore(sid(), "settings", "system", settings);
   },
+  /**
+   * Mise à jour PARTIELLE des paramètres (constat F1) : seuls les champs donnés
+   * sont écrits (fusion Firestore). Sert aux synchronisations automatiques
+   * (nom du directeur) qui ne doivent jamais recopier tout l'objet : s'il n'est
+   * pas encore arrivé du serveur, ce seraient les valeurs par défaut.
+   */
+  updateSystemSettingsFields(fields: Partial<SystemSettings>): void {
+    setStoredItem(STORAGE_KEYS.SETTINGS_SYSTEM, { ...this.getSystemSettings(), ...fields });
+    saveToFirestore(sid(), "settings", "system", fields);
+  },
   getAppUsers(): AppUser[] {
     // Lot 0 : liste telle que synchronisée depuis Firestore (bureau uniquement),
     // sans aucune synthèse de comptes ni écriture. Les mots de passe hérités
