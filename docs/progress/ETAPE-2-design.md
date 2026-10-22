@@ -20,7 +20,7 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Cadre : menu groupé, barre du haut, sélecteur d'école, bandeau quota, menu mobile | fait |
 | Tableau de bord (carte des 60 أحزاب, KPI, محفّظون, تحتاج إجراءً, حضور, تقدّم الحلقات) | fait |
 | Élèves : liste, dossier, carte, fenêtre d'inscription | fait |
-| Personnel : en-tête, indicateurs, filtres (liste et fenêtres : harmonisation) | fait (partiel) |
+| Personnel : en-tête, indicateurs, filtres (liste et fenêtres : harmonisation) | fait |
 | Frais et paiements + fenêtre de saisie | fait |
 | Harmonisation automatique des écrans hérités (surfaces, champs 44 px, boutons) | fait |
 | Présences (+ scan QR, relevé mensuel et son impression) | fait |
@@ -34,11 +34,15 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Portail enseignant, fenêtre de profil (parent et élève : écrans communs déjà refaits) | fait |
 | Connexion, vérification de session, choix / création d'école | fait |
 | Impressions (reçu, attestation, rapports, cartes, présence mensuelle) + @media print | fait (tests/e2e/print.spec.ts) |
-| Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
+| Personnel : icônes de catégories, libellés sans émojis | fait |
+| Test mobile 360 px (`tests/e2e/mobile.spec.ts`) | fait |
+| QR locaux (O-05, `tests/e2e/qr.spec.ts`) ; impressions sans script ni CDN (D52) | fait |
+| Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | fait |
 
 ## Prochaine action
-Balayage final : émojis restants, couleurs hex héritées, Recharts RTL, absence de défilement horizontal à 360 px (test e2e), puis captures « après ».
-(PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
+Partie 2 terminée. Reste hors périmètre interface : constats F1, F5, téléphone par
+défaut codé en dur dans la logique du personnel et des activités (D51), CSP (D52) ;
+report des changements de `feat/durcissement` par l'agent d'intégration.
 
 ## Commandes utiles
 - Tests : `npm run lint && npm run build && npm test`, puis
