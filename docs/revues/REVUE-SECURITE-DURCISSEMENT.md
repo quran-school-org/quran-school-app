@@ -233,8 +233,8 @@ triggers y sont ignorés.
 
 | Branche (commit) | Lint app / functions | Build prod | Unitaires | Émulateurs | Functions | Hosting | Playwright |
 |---|---|---|---|---|---|---|---|
-| `fix/revue-durcissement` (`d5ec153`) | OK / OK | OK | 68/68 | 242 réussis, 2 ignorés | 43/43 | 5/5 (au commit `e3ee428`) | 11/11 sous CSP |
-| `fix/revue-durcissement-lot0` (`c10c3f4`) | OK / OK | OK | 29/29 | 221 réussis, 4 ignorés | 8/8 | — | — (pas de Playwright sur cette branche) |
+| `fix/revue-durcissement` (`9258aca`, après fusion de `main` et de `feat/workflows-ops`) | OK / OK | OK | 92/92 | 253 réussis, 2 ignorés | 45/45 | 5/5 | 27/27 sous CSP |
+| `fix/revue-durcissement-lot0` (`8fe8ab2`) | OK / OK | OK | 29/29 | 221 réussis, 4 ignorés | 8/8 | — | — (pas de Playwright sur cette branche) |
 
 Workflows : `actionlint` sans erreur ; `zizmor --offline` sans constat
 (3 constats « suppressed » de faible confiance). Les anciens workflows
