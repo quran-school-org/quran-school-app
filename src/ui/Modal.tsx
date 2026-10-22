@@ -21,11 +21,13 @@ export interface ModalProps {
   bodyClassName?: string;
   headerExtra?: React.ReactNode;
   tone?: "default" | "night";
+  /** Si fourni, le corps et le pied forment un <form> (boutons type=submit dans le pied). */
+  onSubmit?: (e: any) => void;
 }
 
 const SIZES = { sm: "max-w-md", md: "max-w-2xl", lg: "max-w-4xl", xl: "max-w-6xl" };
 
-export function Modal({ title, subtitle, icon, onClose, children, footer, size = "md", modalId, className, bodyClassName, headerExtra, tone = "default" }: ModalProps) {
+export function Modal({ title, subtitle, icon, onClose, children, footer, size = "md", modalId, className, bodyClassName, headerExtra, tone = "default", onSubmit }: ModalProps) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -79,8 +81,17 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
             )}
           </div>
         </div>
-        <div className={cx("px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0", bodyClassName)}>{children}</div>
-        {footer && <div className="px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center justify-end gap-2.5 shrink-0">{footer}</div>}
+        {onSubmit ? (
+          <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className={cx("px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0", bodyClassName)}>{children}</div>
+            {footer && <div className="px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center justify-end gap-2.5 shrink-0">{footer}</div>}
+          </form>
+        ) : (
+          <>
+            <div className={cx("px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0", bodyClassName)}>{children}</div>
+            {footer && <div className="px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center justify-end gap-2.5 shrink-0">{footer}</div>}
+          </>
+        )}
       </div>
     </div>
   );
