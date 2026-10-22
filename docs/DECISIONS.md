@@ -501,3 +501,41 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
 - **Conséquence** : `EMULATOR_SKIP_FIRESTORE_TRIGGERS` n'est plus nécessaire si
   l'on passe par `without-proxy.sh` (gardé pour compatibilité, D21).
 - **Retour arrière** : retirer l'étape CI et le script.
+
+### D49. Pages de production : `index.html` générique, en-têtes de sécurité, cache
+- **`index.html`** : titre et description génériques (« المدرسة القرآنية »),
+  `noindex` ; le titre suit l'école active après connexion (D27).
+- **En-têtes** (`firebase.json`, toutes les réponses) : CSP, `nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`
+  (caméra `self` pour le scan QR, micro, géolocalisation, paiement… fermés),
+  `X-Frame-Options: DENY` + `frame-ancestors 'none'`,
+  `Cross-Origin-Opener-Policy: same-origin-allow-popups` (fenêtres
+  d'impression), HSTS.
+- **CSP** : `default-src 'self'` ; Firebase (`*.googleapis.com`,
+  `*.cloudfunctions.net`, `*.run.app`), Google Fonts, reCAPTCHA Enterprise
+  (App Check, D44), images Unsplash et `api.qrserver.com` (utilisées par
+  l'interface) ; `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`.
+  **Compromis assumé** : `script-src` garde `'unsafe-inline'` et
+  `https://cdn.tailwindcss.com`, car les fenêtres d'impression (about:blank,
+  qui HÉRITENT de la CSP de l'application) contiennent des scripts en ligne
+  (`onload="window.print()"`, `<script>`) et chargent Tailwind par CDN (D37).
+  Les retirer est la prochaine étape, côté interface (branche design) :
+  gabarits d'impression sans CDN ni script en ligne (impression déclenchée par
+  l'ouvreur : `popup.print()`), puis retirer `'unsafe-inline'` et le CDN de
+  `script-src` (le test `tests/e2e/csp.spec.ts` dira si quelque chose casse).
+- **Cache** : `/assets/**` (noms hachés par Vite) `immutable` un an ; pages et
+  routes de l'application (`^/$|^/index\.html$|^/[^.]*$`, expression RE2 : Hosting
+  n'accepte pas les lookarounds) `no-cache`, pour qu'un déploiement soit vu
+  immédiatement.
+- **Vérification** : `npm run test:e2e` démarre le serveur de développement avec
+  `E2E_CSP=1` : la CSP de `firebase.json` y est appliquée par une balise
+  `<meta>` (origines locales des émulateurs ajoutées, `scripts/dev/csp.ts`) ;
+  toute la suite Playwright tourne donc sous la politique, et
+  `tests/e2e/csp.spec.ts` exige zéro violation (connexion, élèves, impression,
+  personnel, finances). `npm run test:hosting` vérifie les en-têtes servis par
+  l'émulateur Hosting ; `tests/unit/hostingHeaders.test.ts` leur cohérence.
+- **Constat annexe (O-05, faible)** : les badges et cartes génèrent leur QR code
+  via `https://api.qrserver.com` en envoyant identifiant, nom et catégorie
+  d'un élève ou d'un membre du personnel à un tiers. À remplacer par une
+  génération locale (côté interface) ; la CSP le permet encore pour ne rien casser.
+- **Retour arrière** : retirer le bloc `hosting.headers` et redéployer le Hosting.

@@ -30,15 +30,17 @@ Commandes locales (conteneur à proxy, D21, D48), toujours sous verrou :
 7. **Rewrite `/api/**` / D48** : testé localement (variables de proxy retirées
    pour le seul processus) et ajouté à la CI (`npm run test:hosting`) ; triggers
    également verts localement par ce moyen (237/237).
+8. **Pages de prod / D49** : `index.html` générique, en-têtes (CSP, nosniff,
+   Referrer-Policy, Permissions-Policy caméra, X-Frame-Options, COOP, HSTS),
+   cache ; toute la suite Playwright tourne sous la CSP (`E2E_CSP=1`), 11/11.
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-8. `index.html` générique, en-têtes de sécurité, cache, Playwright avec CSP.
 9. Runbook de restriction de la clé API web.
 10. Photos : évaluation / passage à Cloud Storage.
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 8 : `index.html` générique, en-têtes de sécurité (CSP…) et cache dans `firebase.json`, vérification Playwright sous CSP.
+Point 9 : runbook `docs/runbooks/CLE-API-WEB.md` (restriction de la clé API web).
