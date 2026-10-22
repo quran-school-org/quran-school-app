@@ -105,6 +105,15 @@ describe("fonction api (HTTP)", () => {
     const json = await res.json();
     expect(typeof json.summary).toBe("string"); // sans clé Gemini sur l'émulateur : rapport de repli
     expect(json.errorInfo).toBeUndefined();
+
+    // Quota (D43) : la requête a été comptée pour l'utilisateur, l'école et la plateforme.
+    const day = new Date().toISOString().slice(0, 10);
+    const uid = auth.currentUser!.uid;
+    expect((await admin.db.doc(`aiQuota/u_${uid}_${day}`).get()).data()?.count).toBe(1);
+    expect((await admin.db.doc(`aiQuota/s_alfajr_${day}`).get()).data()?.count).toBeGreaterThanOrEqual(1);
+    // Corps trop gros : 413 (servi par l'émulateur Functions).
+    const big = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...body, notes: "x".repeat(40_000) }) });
+    expect(big.status).toBe(413);
   });
 });
 
