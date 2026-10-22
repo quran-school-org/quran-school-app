@@ -60,7 +60,7 @@ export default function PaymentsScreen() {
         }
       />
 
-      <KpiGrid label="ملخص الرسوم" min={200}>
+      <KpiGrid label="ملخص الرسوم" min={160}>
         <KpiTile label="إجمالي المقبوضات" value={totalPaymentsCollected.toLocaleString("en-US")} unit="درهم" />
         <KpiTile label="إجمالي المستحقات المتأخرة" value={totalUnpaidAmount.toLocaleString("en-US")} unit="درهم" hint={totalUnpaidAmount > 0 ? "بانتظار السداد" : "لا مستحقات متأخرة"} hintTone={totalUnpaidAmount > 0 ? "danger" : "success"} />
         <KpiTile label="الفواتير المعلقة" value={totalUnpaidCount} unit="مطالبة" />
@@ -78,7 +78,7 @@ export default function PaymentsScreen() {
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={paymentChartData} margin={{ top: 12, right: 4, left: 4, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E1E3D8" />
-              <XAxis dataKey="name" reversed interval={0} tick={{ fill: "#4A5060", fontSize: 11.5, fontFamily: "IBM Plex Sans Arabic" }} stroke="#D0D3C6" tickLine={false} />
+              <XAxis dataKey="name" reversed minTickGap={4} tick={{ fill: "#4A5060", fontSize: 11.5, fontFamily: "IBM Plex Sans Arabic" }} stroke="#D0D3C6" tickLine={false} />
               <YAxis orientation="right" tickFormatter={(val) => `${val}`} width={44} tick={{ fill: "#6B7080", fontSize: 11.5 }} stroke="#D0D3C6" tickLine={false} axisLine={false} />
               <Tooltip
                 cursor={{ fill: "rgba(212, 160, 23, 0.08)" }}
