@@ -456,8 +456,7 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 - Cartes d'élève (`src/print/cards/StudentCards.tsx`) : nom, logo, devise,
   adresse, téléphone et saison lus dans les paramètres de l'école. Supprimés : l'adresse
   et le téléphone d'Al Fajr codés en dur, le nom latin « Association El Fajr Jadid »,
-  la saison « 1448 » figée. Le QR reste généré par `api.qrserver.com` (inchangé ;
-  l'identifiant de l'élève y est transmis : à remplacer par une génération locale).
+  la saison « 1448 » figée. Le QR est désormais généré localement (voir D51).
 - Reçu, attestation, rapports (élèves, cotisations) et relevé mensuel de présence :
   gabarits refaits aux couleurs de la charte avec une feuille commune
   (`src/print/docStyles.ts`), le nom, le logo, la devise, le nom du directeur et le
@@ -473,3 +472,41 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 - Il affiche le projet et la base de la configuration (`src/config/env.ts`) au lieu
   des identifiants de production codés en dur (constat F4) ; le lien vers la console
   de la production est retiré.
+
+### D51. Codes QR générés localement (constat O-05)
+- Contexte : cartes d'élève et badges du personnel appelaient `api.qrserver.com`,
+  qui recevait l'identifiant de l'élève, et le nom et la catégorie du membre du
+  personnel.
+- Décision : bibliothèque npm `qrcode` (1.5.4, sans appel réseau) ; composant
+  `src/ui/QrCode.tsx` qui produit un SVG en ligne (même rendu à l'écran et à
+  l'impression, l'aperçu étant recopié). Contenu des codes inchangé (identifiant de
+  l'élève ; `STAFF:id:nom:catégorie` pour le badge). Le téléphone de secours codé en
+  dur sur le badge et sur l'impression d'activité est remplacé par « — ».
+- Vérification : `tests/e2e/qr.spec.ts` (aucune requête vers `qrserver`, écran,
+  impression de carte, badge) et garde-fou unitaire (aucune mention de `qrserver`
+  dans `src/`).
+- Reste : le numéro « 06.74.633.108 » sert encore de valeur par défaut dans la
+  logique du personnel et des activités (`useStaffState`, `useActivitiesData`) ;
+  non modifié ici (logique métier).
+- Retour arrière : revenir à la balise `<img>` d'origine dans
+  `src/print/cards/StudentCards.tsx` et `StaffBadgeModal.tsx`.
+
+### D52. Impressions compatibles avec une CSP stricte
+- Plus de CDN Tailwind ni de script dans les documents imprimés : `openPrintWindow`
+  écrit le document puis c'est la fenêtre de l'application qui appelle `print()`
+  et `close()` une fois le document et les polices chargés. Seul
+  `src/print/printWindow.ts` écrit dans une fenêtre (garde-fou unitaire : aucun
+  `document.write` ailleurs, aucun `<script>`, `onload=`, `onerror=` ni CDN
+  Tailwind dans `src/`). Le rapport financier (`useFinanceTotals`) passe aussi
+  par `openPrintWindow`.
+- Reste à faire pour resserrer la CSP de production :
+  - styles : blocs `<style>` et attributs `style="…"` (gabarits, échelle des
+    cartes, styles de l'application recopiés) : il faut `style-src 'self'
+    'unsafe-inline' https://fonts.googleapis.com` ou passer à des nonces/hachages ;
+  - polices : `font-src https://fonts.gstatic.com` (Google Fonts) ou polices
+    hébergées avec l'application ;
+  - images : logos d'école en `data:` ou URL externes (`img-src 'self' data: https:`) ;
+  - les fenêtres `about:blank` héritent de la CSP de l'application : la tester sur
+    l'émulateur Hosting (`npm run build:dev`) avant tout déploiement.
+- Retour arrière : réintroduire le script d'impression dans `printDocument`.
+
