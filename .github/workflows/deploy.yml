@@ -25,6 +25,10 @@ on:
         type: choice
         options: [all, firestore-rules, functions, hosting]
         default: all
+      force:
+        description: "Passer --force à firebase deploy (bascule : supprime les fonctions du Lot 0 absentes de main)"
+        type: boolean
+        default: false
       confirm:
         description: "Production : recopier l'identifiant du projet de prod pour confirmer"
         type: string
@@ -174,10 +178,16 @@ jobs:
             *) echo "::error::cible inconnue"; exit 1 ;;
           esac
 
+      # Sans --force, la CLI refuse (mode non interactif) de supprimer des fonctions
+      # absentes du code : à la bascule, celles du Lot 0 (createUserAccount). D59.
       - name: Déploiement Firebase
+        env:
+          FORCE: ${{ inputs.force }}
         run: |
+          FORCE_FLAG=()
+          [ "${FORCE}" = "true" ] && FORCE_FLAG=(--force)
           npx firebase deploy --only "${{ steps.cibles.outputs.only }}" \
-            --project "${PROJECT_ID}" --non-interactive \
+            --project "${PROJECT_ID}" --non-interactive "${FORCE_FLAG[@]}" \
             --message "GitHub Actions ${GITHUB_SHA::7} (${GITHUB_ACTOR})"
 
       - name: Résumé
