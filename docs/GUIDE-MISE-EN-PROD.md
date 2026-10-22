@@ -64,13 +64,20 @@ gcloud services enable iamcredentials.googleapis.com sts.googleapis.com iam.goog
   eventarc.googleapis.com pubsub.googleapis.com secretmanager.googleapis.com \
   cloudscheduler.googleapis.com identitytoolkit.googleapis.com storage.googleapis.com
 
-# 2) Confiance GitHub → Google : seuls les jobs de CE dépôt, dans l'environnement $ENV
+# 2) Confiance GitHub → Google : seuls les jobs de CE dépôt, dans l'environnement $ENV,
+#    lancés depuis main et par l'un des 3 workflows prévus (revue D74). Le dev
+#    reçoit une copie des données réelles : il est protégé comme la prod. Une
+#    autre branche (ou un autre fichier de workflow) n'obtient aucun jeton.
+export WIF_WORKFLOWS="'$REPO/.github/workflows/deploy.yml@refs/heads/main', '$REPO/.github/workflows/deploy-lot0.yml@refs/heads/main', '$REPO/.github/workflows/ops.yml@refs/heads/main'"
+export WIF_CONDITION="assertion.repository=='$REPO' && assertion.environment=='$ENV' && assertion.ref=='refs/heads/main' && assertion.job_workflow_ref in [$WIF_WORKFLOWS]"
 gcloud iam workload-identity-pools create $POOL --location=global --display-name="GitHub Actions"
 gcloud iam workload-identity-pools providers create-oidc $PROVIDER --location=global \
   --workload-identity-pool=$POOL --display-name="quran-school-app" \
   --issuer-uri="https://token.actions.githubusercontent.com" \
   --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.environment=assertion.environment,attribute.ref=assertion.ref" \
-  --attribute-condition="assertion.repository=='$REPO' && assertion.environment=='$ENV'"
+  --attribute-condition="$WIF_CONDITION"
+# (Fournisseur déjà créé avec l'ancienne condition : remplacer « create-oidc » par
+#  « update-oidc » et ne garder que --workload-identity-pool et --attribute-condition.)
 
 # 3) Compte de DÉPLOIEMENT (règles, Functions, Hosting) : rôles minimaux, aucune clé
 gcloud iam service-accounts create github-deploy --display-name="Déploiement GitHub Actions"
@@ -124,6 +131,26 @@ gcloud storage buckets add-iam-policy-binding gs://$PROD_BUCKET \
 
 Faites ce bloc **après** le passage en prod, car le bucket de la prod doit déjà exister.
 
+**Uniquement dans le projet de DEV, et seulement si vous voulez des aperçus de
+branche** (`preview.yml`) : un second fournisseur, ouvert à toutes les branches
+mais limité à l'environnement `preview`, et un compte qui ne peut que publier
+le Hosting (ni règles, ni fonctions, ni lecture de Firestore) (revue D68, D74) :
+
+```bash
+gcloud iam workload-identity-pools providers create-oidc $PROVIDER-preview --location=global \
+  --workload-identity-pool=$POOL --display-name="quran-school-app (aperçus)" \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.environment=assertion.environment,attribute.ref=assertion.ref" \
+  --attribute-condition="assertion.repository=='$REPO' && assertion.environment=='preview'"
+gcloud iam service-accounts create github-preview --display-name="Aperçus GitHub Actions (Hosting seulement)"
+gcloud iam service-accounts add-iam-policy-binding github-preview@$PROJECT.iam.gserviceaccount.com --role=roles/iam.workloadIdentityUser \
+  --member="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL/subject/repo:$REPO:environment:preview"
+for ROLE in roles/firebasehosting.admin roles/serviceusage.serviceUsageConsumer; do
+  gcloud projects add-iam-policy-binding $PROJECT --member="serviceAccount:github-preview@$PROJECT.iam.gserviceaccount.com" --role=$ROLE --condition=None >/dev/null
+done
+echo "GCP_WIF_PROVIDER (preview)=$(gcloud iam workload-identity-pools providers describe $PROVIDER-preview --location=global --workload-identity-pool=$POOL --format='value(name)')"
+```
+
 > Si une commande répond qu'un élément « existe déjà », ce n'est pas grave : continuez.
 > Si elle répond « permission denied », vérifiez que vous êtes bien dans le bon projet (`gcloud config get project`).
 
@@ -148,6 +175,19 @@ Dans https://github.com/quran-school-org/quran-school-app › **Settings** › *
 | `FUNCTIONS_TRIGGER_REGION` | l'emplacement de l'étape 1.3 (si `eur3`, mettre `europe-west1`) |
 
 La prod n'a pas besoin de ces valeurs : elles sont déjà dans le dépôt (`.env.production`).
+
+4. **Chiffrement des artefacts (recommandé, obligatoire pour remplacer des mots
+   de passe)** : un artefact GitHub est lisible par toute personne, ou tout
+   agent, qui lit le dépôt. Sur **votre** ordinateur, créez une paire de clés
+   GnuPG (`gpg --quick-gen-key "Propriétaire kuttab"`), exportez la clé
+   **publique** (`gpg --armor --export "Propriétaire kuttab"`) et collez-la dans
+   la variable `ARTIFACT_GPG_PUBLIC_KEY` de **chaque** environnement. La clé
+   privée ne quitte jamais votre ordinateur. Pour lire un rapport :
+   `gpg --decrypt contenu.tar.gz.gpg | tar -xz`.
+5. **Aperçus (facultatif)** : environnement `preview` avec `FIREBASE_PROJECT_ID`
+   (dev), `GCP_WIF_PROVIDER` (valeur « preview » affichée ci-dessus),
+   `GCP_DEPLOY_SERVICE_ACCOUNT` = `github-preview@<ID du dev>.iam.gserviceaccount.com`
+   et les mêmes `VITE_*` que `dev`.
 
 ## 4. Clé Gemini (rapport IA)
 
@@ -176,7 +216,7 @@ Je vérifie alors seul que tout fonctionne : un premier déploiement sur le dev,
 2. **Lot 0 réel**, aux heures convenues : sauvegarde, création des comptes Auth, règles, puis nouvelle application.
    - Les mots de passe **ne changent pas** : ils deviennent invisibles, et chacun doit en choisir un nouveau à sa première connexion.
    - **Le directeur doit se connecter juste après**, car son mot de passe actuel est public.
-   - Je vous remets la liste des identifiants, en artefact privé de GitHub, à télécharger puis à supprimer.
+   - Je vous remets la liste des identifiants, en artefact de GitHub chiffré pour votre clé (étape 3.4), à télécharger, déchiffrer puis supprimer.
 3. **Deux répétitions de la migration multi-écoles sur le dev**, avec une copie des données de prod. Je vous remets le fichier des liens parent/enfant douteux, à faire valider par l'école.
    - **Go n°2** : vous validez le rapport de répétition et les liens.
 4. **Bascule multi-écoles en prod**, pendant une fenêtre de maintenance.

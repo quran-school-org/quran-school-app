@@ -1196,3 +1196,43 @@ là-bas (R-06).
   importer avant d'ouvrir l'école aux utilisateurs.
 - **Retour arrière** : les élèves importés portent `importBatch` ; les
   supprimer par l'Admin SDK (un humain) ou depuis l'interface.
+
+### D74. Workflows de mise en prod (D64) : dev protégé comme la prod, artefacts chiffrés
+- **Constats (revue, après fusion de `feat/workflows-ops`)** :
+  - **dev = données réelles** (élevée). `ops.yml` › `import-firestore` copie
+    un export de la prod dans le dev, dont l'agent de service lit le bucket de
+    la prod. Or la condition WIF (`repository` + `environment`) délivrait un
+    jeton à **toute branche** qui déclare `environment: dev`, puisqu'un
+    `workflow_dispatch` exécute le fichier de la branche choisie et que le
+    forfait gratuit n'offre aucune règle de branche d'environnement. Toute
+    personne ou tout agent capable de pousser une branche pouvait donc obtenir
+    `github-ops` (dev) et lire la copie des données réelles. Avant D68, les
+    aperçus partageaient en plus cet environnement ;
+  - **artefacts** (moyenne). Les rapports, avec identifiants et anomalies, et
+    les mots de passe temporaires (répétitions sur le dev avec
+    `rotate_passwords=all`) étaient envoyés en clair. Un artefact est lisible
+    par tout compte qui lit le dépôt, jetons d'agents compris : la consigne
+    « ne jamais télécharger » n'était qu'une règle ;
+  - le fournisseur de la prod acceptait aussi n'importe quelle branche
+    déclarant `production`. Les garde-fous `github.ref` des workflows ne valent
+    que pour les fichiers de `main`.
+- **Décision** :
+  - condition WIF identique pour le dev et la prod : dépôt, environnement,
+    `ref == refs/heads/main` et `job_workflow_ref` dans
+    {`deploy.yml`, `deploy-lot0.yml`, `ops.yml`}`@refs/heads/main`
+    (`GUIDE-MISE-EN-PROD.md` étape 2, `CI-DEPLOIEMENT.md` §2) ;
+  - aperçus : second fournisseur du seul projet de dev (`environment == preview`)
+    et compte `github-preview`, limité au Hosting ;
+  - `ops.yml` : chiffrement GnuPG des artefacts pour la clé publique
+    `ARTIFACT_GPG_PUBLIC_KEY` (la clé privée reste chez le propriétaire),
+    avertissement s'il n'y en a pas, et **refus** d'un remplacement de mots de
+    passe appliqué sans cette clé ; testé localement (chiffrement, puis
+    déchiffrement par la seule clé privée) et par le garde-fou statique
+    `tests/unit/workflows.test.ts`.
+- **Limites (forfait gratuit)** : quiconque peut pousser sur `main` peut changer
+  ces workflows et les lancer : le droit d'écriture reste la frontière de
+  confiance (D64). Recommandation : forfait Team (protection de `main`,
+  relecteurs d'environnement, `CODEOWNERS`) ou, à défaut, accès en écriture
+  limité au propriétaire et aux jetons qui en ont besoin.
+- **Retour arrière** : `update-oidc` avec l'ancienne condition ; retirer
+  l'étape de chiffrement d'`ops.yml`.

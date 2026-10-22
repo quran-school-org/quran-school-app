@@ -105,4 +105,15 @@ describe("workflows GitHub Actions (D68)", () => {
     expect(text).toMatch(/environment: preview/);
     expect(text).not.toMatch(/environment: (dev|production)\b/);
   });
+
+  it("ops.yml (D74) : artefacts chiffrés avant envoi ; remplacement de mots de passe refusé sans clé publique", () => {
+    if (!files.includes("ops.yml")) return;
+    const text = read("ops.yml");
+    const enc = text.indexOf("Chiffrement des artefacts");
+    const uploads = [...text.matchAll(/uses: actions\/upload-artifact@/g)].map((m) => m.index!);
+    expect(enc).toBeGreaterThan(0);
+    for (const u of uploads) expect(u).toBeGreaterThan(enc);
+    expect(text).toMatch(/ARTIFACT_GPG_PUBLIC_KEY/);
+    expect(text).toMatch(/\[ "\$\{ROTATE\}" != "none" \] && \[ -z "\$\{ARTIFACT_KEY\}" \]/);
+  });
 });

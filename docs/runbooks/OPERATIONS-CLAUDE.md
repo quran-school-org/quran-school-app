@@ -44,6 +44,11 @@ Règles permanentes :
   dans le conteneur (données personnelles, secrets) : seul le propriétaire les
   télécharge depuis l'onglet Actions (3 jours et 1 jour), puis les supprime.
   L'orchestrateur ne lit que les journaux et le résumé du run.
+  Depuis D74, ils sont chiffrés pour la clé publique du propriétaire
+  (`ARTIFACT_GPG_PUBLIC_KEY`) : sans cette variable, un run avec
+  `rotate_passwords` ≠ `none` et `apply=true` s'arrête au garde-fou (le poser
+  avant les répétitions 4.x sur le dev). Le propriétaire déchiffre avec
+  `gpg --decrypt contenu.tar.gz.gpg | tar -xz`.
 - **Critère d'arrêt général** : tout run rouge, toute ligne `::error::`, tout
   `critical: true`, tout écart inattendu de compteur. On s'arrête, on rapporte
   au propriétaire le run, l'étape et les compteurs, et on ne relance que ce que
