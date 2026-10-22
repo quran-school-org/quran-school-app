@@ -435,6 +435,10 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
 
 ### D48. Écarts assumés avec la maquette
 - Niveaux de tajwīd : seuls `ممتاز`, `متوسط`, `ضعيف` (le modèle n'a pas `مبتدئ`).
+  Constat F5 (non corrigé, comportement existant) : le dossier de suivi de
+  l'enseignant propose encore la valeur `مبتدئ`, hors du type `TajweedLevel` ;
+  elle s'affiche comme `ضعيف` (ton rouge). À trancher : retirer l'option ou
+  l'ajouter au modèle.
 - « الحضور والغياب » est actif (pas de « قريباً »).
 - Pied du menu : texte selon l'état réel de la synchronisation (متزامن / مزامنة /
   غير متصل), et la carte de statistiques de l'ancien menu (même navigation).
@@ -454,6 +458,16 @@ Constats et preuves : `docs/revues/REVUE-SECURITE-ETAPE-2.md`.
   et le téléphone d'Al Fajr codés en dur, le nom latin « Association El Fajr Jadid »,
   la saison « 1448 » figée. Le QR reste généré par `api.qrserver.com` (inchangé ;
   l'identifiant de l'élève y est transmis : à remplacer par une génération locale).
+- Reçu, attestation, rapports (élèves, cotisations) et relevé mensuel de présence :
+  gabarits refaits aux couleurs de la charte avec une feuille commune
+  (`src/print/docStyles.ts`), le nom, le logo, la devise, le nom du directeur et le
+  cachet de l'école ; textes fictifs codés en dur retirés (« حلقات التاج والوقار »,
+  « AI-ACAD-2026 »). Toutes les fenêtres passent par `openPrintWindow` ; le garde-fou
+  d'échappement (`tests/unit/printTemplates.test.ts`) inspecte toujours chaque
+  gabarit. Vérification : `tests/e2e/print.spec.ts` (fenêtres sans CDN, polices de
+  la charte, `@media print` de l'application qui masque le cadre).
+- Retour arrière : revenir aux fichiers de `src/print/` et à `usePrintActions.ts`
+  de `refactor/decoupage-app`.
 
 ### D50. Bandeau de quota
 - Il affiche le projet et la base de la configuration (`src/config/env.ts`) au lieu
