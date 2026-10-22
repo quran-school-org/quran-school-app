@@ -10,7 +10,8 @@
  *   - limitation de débit par utilisateur, par école et globale (aiQuota.ts,
  *     429 + Retry-After) ;
  *   - journaux sans donnée personnelle : école, pseudonyme de l'utilisateur,
- *     issue, durée ; jamais le nom de l'élève, l'invite ni la réponse (D43).
+ *     issue, durée ; jamais le nom de l'élève, l'invite ni la réponse (D43) ;
+ *   - réponses `Cache-Control: private, no-store` (D54).
  * GET /api/health : état du service.
  */
 import { onRequest } from "firebase-functions/v2/https";
@@ -137,6 +138,9 @@ export async function handleApi(req: Req, res: Res, generate?: (prompt: string) 
   }
   if (req.method === "POST" && path === "/gemini/analyze") {
     const startedAt = Date.now();
+    // Réponse propre à un utilisateur et à un élève : jamais mise en cache (CDN
+    // Hosting, navigateur, proxy), quelle que soit l'issue (revue, D54).
+    res.set?.("Cache-Control", "private, no-store");
     if (bodySize(req) > MAX_BODY_BYTES) {
       logAnalyze("rejected-too-large", { startedAt });
       res.status(413).json({ error: "payload-too-large" });

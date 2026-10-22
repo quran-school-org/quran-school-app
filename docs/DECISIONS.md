@@ -680,3 +680,25 @@ Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
   (avertissement, noms de champs seulement, aucune valeur dans les rapports).
 - **Retour arrière** : revenir au commit précédent du script (la relance
   redevient « fiche RH existante intacte, champs publics retirés »).
+
+### D54. Proxy IA : réponses `no-store` ; hypothèses de contournement des quotas réfutées
+- **Revue** : faire payer une autre école en citant son `schoolId`, consommer
+  sans droit (famille, bénévole, suspendu, requête incomplète), multiplier les
+  comptes d'une école, choisir ses compteurs par le corps de la requête,
+  falsifier ou remettre à zéro `aiQuota` depuis le client : **tout est
+  refusé** (`functions/test/revue-durcissement.test.ts`,
+  `tests/emulator/revue-durcissement-rules.test.ts`). Les compteurs dérivent
+  du jeton vérifié et de l'horloge du serveur ; les identifiants de documents
+  ne peuvent pas se chevaucher (préfixe de portée, jour de longueur fixe,
+  `SCHOOL_ID_PATTERN` sans `_`).
+- **Décision (défense en profondeur)** : `POST /api/gemini/analyze` répond
+  toujours `Cache-Control: private, no-store` (rapport propre à un élève ; le
+  CDN Hosting ne met déjà pas en cache une réponse sans `public`, mais rien ne
+  doit dépendre de la règle `no-cache` de `firebase.json`). Vérifié par appel
+  direct et à travers le rewrite Hosting (`npm run test:hosting`).
+- **Limites acceptées** : un directeur malveillant peut créer des comptes,
+  mais reste borné par le quota de son école (300/jour) ; quatre écoles
+  ensemble peuvent épuiser le quota global (déni de service du rapport IA,
+  sans coût au-delà de la limite) ; le compteur global est un document
+  unique (≈ 1 écriture/s soutenue) : au-delà, 503 (fermé par défaut).
+- **Retour arrière** : retirer la ligne `res.set?.("Cache-Control", …)`.

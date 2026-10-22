@@ -55,6 +55,10 @@ describe("rewrite Hosting /api/** → fonction api", () => {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body,
     });
     expect(res.status).toBe(200);
+    // D54 : rapport propre à un élève, jamais mis en cache (no-store, ou au moins pas « public »).
+    const cache = res.headers.get("cache-control") || "";
+    expect(cache).not.toContain("public");
+    expect(cache).toMatch(/no-store|no-cache|private/);
     expect(typeof (await res.json()).summary).toBe("string"); // rapport de repli (pas de clé Gemini)
     const day = new Date().toISOString().slice(0, 10);
     expect((await admin.db.doc(`aiQuota/s_alfajr_${day}`).get()).data()?.count).toBe(1);
