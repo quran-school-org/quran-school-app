@@ -69,6 +69,14 @@ npm run build:dev                      # build branché sur les émulateurs (pou
   une commande sans variables de proxy (ex. `test:hosting`, triggers compris, D48).
 - Démarrage d'émulateurs, serveur de dev ou Playwright partagés entre agents :
   sous `flock /home/user/.emulators.lock <commande>`.
+- `npm run build` refuse un `VITE_APPCHECK_DEBUG_TOKEN` (souvent venu de
+  `.env.local`, que Vite charge aussi en production) : le mettre dans
+  `.env.development.local` (`scripts/dev/buildGuards.ts`, D70).
+- Workflows : `actionlint` et `zizmor --offline .github/workflows/` ; le
+  garde-fou `tests/unit/workflows.test.ts` (dans `npm test`) exige actions
+  épinglées par SHA, aucune expression `${{ }}` dans un `run:`, jobs à jeton
+  OIDC sans cache npm et avec `npm ci --ignore-scripts`, artefacts d'`ops.yml`
+  chiffrés (D68, D74).
 
 ## Architecture (multi-écoles)
 
@@ -109,12 +117,32 @@ npm run build:dev                      # build branché sur les émulateurs (pou
 - `firestore.rules` : règles multi-écoles (base nommée, voir `firebase.json`).
 - `functions/` : Cloud Functions 2nd gen (Node 22, `europe-west1`) : `createSchool`,
   `createSchoolUser`, `resetUserPassword`, `setMemberRole`, `api` (proxy Gemini
-  authentifié, quotas `aiQuota`, D43), triggers de suspension à l'archivage,
-  `scheduledFirestoreExport` (omise tant que `BACKUP_ENABLED` ≠ true, D47).
+  authentifié, quotas `aiQuota` à la racine fermée, réponses `no-store`, D43,
+  D67), triggers de suspension à l'archivage (un compte super-admin n'est
+  jamais désactivé automatiquement, D72), `scheduledFirestoreExport` (omise
+  tant que `BACKUP_ENABLED` ≠ true ; ne supprime que des dossiers
+  `firestore/<base>/<horodatage>/`, D47, D69). App Check : `APPCHECK_ENFORCE`
+  (défaut false) côté Functions, `VITE_APPCHECK_SITE_KEY` côté client (D44).
+- Notifications : écrites par le personnel seulement ; hors bureau, une mise à
+  jour ne touche que `isRead` (R-07, D65).
 - `server.ts` : serveur de développement (Vite) ; plus de proxy Gemini.
-- `scripts/admin/lot0-provision-auth.ts`, `scripts/migration/migrate-to-tenants.ts`
-  (Admin SDK) : `--dry-run` par défaut, `--project` obligatoire ; ne les lancer que
-  contre les émulateurs. `scripts/dev/` : données fictives et peuplement.
+- `scripts/admin/lot0-provision-auth.ts`, `scripts/migration/migrate-to-tenants.ts`,
+  `scripts/admin/import-students.ts` (import CSV d'élèves, D73),
+  `scripts/ops/count-collections.ts` (Admin SDK) : `--dry-run` par défaut,
+  `--project` obligatoire ; ne les lancer que contre les émulateurs (la prod :
+  `ops.yml`). `scripts/dev/` : données fictives, peuplement, `csp.ts`,
+  `buildGuards.ts`, `without-proxy.sh`.
+- `.github/workflows/` : `ci.yml` (lint, build, audit, tests, Hosting, Playwright),
+  `deploy.yml` (multi-écoles, code de `main`, entrée `force`), `deploy-lot0.yml`
+  (code de `release/lot0`), `ops.yml` (exports, copie prod → dev, scripts Admin
+  SDK), `preview.yml` (canaux Hosting du dev, environnement `preview`). Tous
+  manuels, WIF sans clé ; la condition WIF n'accepte que `main` et ces
+  workflows (D74) ; mise en place : `docs/GUIDE-MISE-EN-PROD.md`,
+  `docs/runbooks/CI-DEPLOIEMENT.md`.
+- Exploitation : `docs/runbooks/` (Lot 0, bascule, nouvelle école, sauvegardes,
+  proxy IA, App Check, clé API web, CI) ; `docs/communication/` (messages aux
+  utilisateurs, arabe et français) ; `docs/conformite/CNDP.md` (loi 09-08, à
+  valider par un juriste) ; revues de sécurité : `docs/revues/`.
 - `tests/unit`, `tests/emulator` (règles, migration, Functions), `tests/hosting`
   (rewrite, en-têtes), `tests/e2e` (Playwright, repères `data-*` D54),
   `functions/test` (logique des Functions).

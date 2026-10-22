@@ -14,7 +14,7 @@ import { logger } from "firebase-functions";
 
 import { adminAuth, adminDb } from "../admin.js";
 import { FIRESTORE_DATABASE_ID, FIRESTORE_TRIGGER_REGION } from "../config.js";
-import { hasAnyActiveMembership } from "./access.js";
+import { hasAnyActiveMembership, isSuperAdminAccount } from "./access.js";
 
 type Member = { uid: string; data: FirebaseFirestore.DocumentData };
 
@@ -39,7 +39,7 @@ export async function setMemberArchived(schoolId: string, m: Member, archived: b
   await membersCol(schoolId).doc(m.uid).set({ isActive, isArchived: archived, updatedAt: new Date().toISOString(), updatedBy: "syncAccountsOnArchive" }, { merge: true });
   try {
     if (!isActive) {
-      if (!(await hasAnyActiveMembership(m.uid))) {
+      if (!(await hasAnyActiveMembership(m.uid)) && !(await isSuperAdminAccount(m.uid))) {
         await adminAuth().updateUser(m.uid, { disabled: true });
         await adminAuth().revokeRefreshTokens(m.uid);
       }

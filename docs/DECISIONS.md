@@ -969,3 +969,271 @@ Avancement et reprise : `docs/progress/ETAPE-2-integration.md`.
 - **Retour arrière** : `gh workflow disable deploy-lot0.yml` / `ops.yml`, ou
   désactivation du fournisseur WIF ; revenir à l'exécution humaine des runbooks
   (`git revert` des commits de `feat/workflows-ops`).
+
+## Revue adversariale du durcissement (branches `fix/revue-durcissement*`)
+
+Rapport : `docs/revues/REVUE-SECURITE-DURCISSEMENT.md`. Avancement :
+`docs/progress/ETAPE-2-revue2.md`.
+
+Numérotation : D52 à D63 sont pris par l'intégration du design et D64 par les
+workflows de mise en prod (`main`) ; cette revue commence à D65. Sur la branche Lot 0
+(`fix/revue-durcissement-lot0`), les mêmes décisions portent d'autres numéros
+(D53 est pris par `release/lot0`) : D65 ici = D54 là-bas (R-07), D71 ici = D55
+là-bas (R-06).
+
+### D65. Notifications réservées au personnel (R-07)
+- **Contexte** : R-07 (D41) : tout membre actif, familles comprises, pouvait
+  créer une notification, lue ensuite par tout le personnel (hameçonnage
+  interne : « réglez la cotisation sur tel compte »). Tout membre du personnel
+  pouvait aussi réécrire le titre et le message d'une notification existante.
+- **Décision** : création réservée au personnel (`isStaff`) ; mise à jour libre
+  pour le bureau, limitée au champ `isRead` pour le reste du personnel ;
+  suppression inchangée (bureau). Un document hérité sans champ `id` peut le
+  recevoir (égal à son identifiant) en même temps que `isRead`. Lot 0 : la
+  création seule est restreinte (`isStaff()`), pour garder le correctif court.
+- **Effet sur l'interface** : aucun écran ne permet à une famille d'écrire une
+  notification ; seule la notification automatique « تعديل البيانات الشخصية »
+  après la modification de son profil était envoyée. Elle reste affichée
+  localement, mais son écriture Firestore est refusée et seulement journalisée
+  dans la console (`saveToFirestore` intercepte l'erreur). Les familles ne
+  lisaient déjà pas les notifications.
+- **Tests** : `tests/emulator/revue-rules.test.ts` › R-07 (échouaient avant le
+  correctif), matrice de `tenant-rules.test.ts` ; Lot 0 :
+  `tests/emulator/revue-rules.test.ts` et `lot0-rules.test.ts`.
+- **Retour arrière** : rétablir `isMember(s)` (Lot 0 : `active()`) pour
+  `create` et `isStaff(s)` seul pour `update`.
+
+### D66. Scission des fiches à la relance : compléter la fiche RH, ne rien perdre
+- **Constat (revue)** : à la relance de la migration, une fiche publique cible
+  encore porteuse de champs RH était vidée de ces champs ; si une fiche RH
+  existait déjà, rien n'y était recopié. Un champ présent seulement dans la
+  fiche publique (ex. contact d'urgence saisi par une version antérieure à
+  D42) était donc **supprimé sans copie**. Démontré par
+  `tests/emulator/migration.test.ts` (échouait avant le correctif).
+- **Décision** : la fiche RH existante fait toujours foi pour ses valeurs ; les
+  champs qu'elle n'a pas sont complétés depuis la fiche publique avant leur
+  retrait ; une valeur différente donne l'anomalie `STAFF_PRIVATE_CONFLICT`
+  (avertissement, noms de champs seulement, aucune valeur dans les rapports).
+- **Retour arrière** : revenir au commit précédent du script (la relance
+  redevient « fiche RH existante intacte, champs publics retirés »).
+
+### D67. Proxy IA : réponses `no-store` ; hypothèses de contournement des quotas réfutées
+- **Revue** : faire payer une autre école en citant son `schoolId`, consommer
+  sans droit (famille, bénévole, suspendu, requête incomplète), multiplier les
+  comptes d'une école, choisir ses compteurs par le corps de la requête,
+  falsifier ou remettre à zéro `aiQuota` depuis le client : **tout est
+  refusé** (`functions/test/revue-durcissement.test.ts`,
+  `tests/emulator/revue-durcissement-rules.test.ts`). Les compteurs dérivent
+  du jeton vérifié et de l'horloge du serveur ; les identifiants de documents
+  ne peuvent pas se chevaucher (préfixe de portée, jour de longueur fixe,
+  `SCHOOL_ID_PATTERN` sans `_`).
+- **Décision (défense en profondeur)** : `POST /api/gemini/analyze` répond
+  toujours `Cache-Control: private, no-store` (rapport propre à un élève ; le
+  CDN Hosting ne met déjà pas en cache une réponse sans `public`, mais rien ne
+  doit dépendre de la règle `no-cache` de `firebase.json`). Vérifié par appel
+  direct et à travers le rewrite Hosting (`npm run test:hosting`).
+- **Limites acceptées** : un directeur malveillant peut créer des comptes,
+  mais reste borné par le quota de son école (300/jour) ; quatre écoles
+  ensemble peuvent épuiser le quota global (déni de service du rapport IA,
+  sans coût au-delà de la limite) ; le compteur global est un document
+  unique (≈ 1 écriture/s soutenue) : au-delà, 503 (fermé par défaut).
+- **Retour arrière** : retirer la ligne `res.set?.("Cache-Control", …)`.
+
+### D68. Workflows de déploiement : épinglage, pas d'injection, jeton OIDC confiné
+- **Constats (revue)** : `zizmor --offline` sur `feat/durcissement` : 18
+  actions non épinglées (dont `google-github-actions/auth` dans les jobs qui
+  obtiennent le jeton OIDC), 4 expressions `${{ }}` dans des scripts
+  (`inputs.target`, `vars.*`, sorties d'étape : valeurs de type `choice` ou
+  posées par un administrateur, donc non exploitables aujourd'hui, mais
+  fragiles), 5 `checkout` qui laissent le jeton GitHub dans `.git/config`.
+  Plus grave, au niveau de la conception :
+  - l'environnement `dev` acceptait **toutes les branches** et servait aux
+    aperçus comme aux déploiements complets. Or un workflow lancé à la main
+    s'exécute dans la version de la branche choisie : toute personne pouvant
+    pousser une branche pouvait déployer règles et fonctions sur le projet de
+    dev, donc lire ses données. C'est grave si ce projet reçoit un export réel
+    lors des répétitions de bascule (prévu par le rapport, §8) ;
+  - dans le job qui détient le jeton OIDC, `npm ci` exécutait les scripts
+    d'installation des paquets avec un cache npm partagé ;
+  - la condition du fournisseur WIF reposait sur le nom du dépôt
+    (réutilisable si le dépôt était supprimé puis recréé par un tiers) et, pour
+    la prod, sur la seule règle de branche de l'environnement GitHub.
+- **Décision** :
+  - actions épinglées par SHA (tag en commentaire), relevés par `git ls-remote` ;
+  - toute expression passe par `env` ; `persist-credentials: false` partout ;
+  - job à jeton OIDC : `npm ci --ignore-scripts` (aucun script n'est nécessaire,
+    vérifié : build, build des Functions, chargement des Functions, CLI
+    Firebase), pas de `cache: npm` ;
+  - aperçus : environnement `preview` et compte `github-preview` limité au
+    Hosting ; build et tests dans un job sans jeton OIDC, publication dans un
+    second job qui récupère `dist/` ; durée d'expiration validée ;
+  - environnement `dev` (déploiement complet) : branches protégées seulement
+    (remplacé par D74 : `main` et les trois workflows prévus, par la condition WIF) ;
+    répétitions avec un export réel dans un projet dédié sans fournisseur WIF ;
+  - fournisseur WIF : `repository_id` et `repository_owner_id` ; pour la prod,
+    en plus `ref == refs/heads/main` et `job_workflow_ref == …/deploy.yml@refs/heads/main` ;
+  - garde-fou statique `tests/unit/workflows.test.ts` (épinglage, pas
+    d'expression dans `run:`, job OIDC sans cache ni scripts, déclenchement
+    manuel, aperçu hors dev/production) ; il échoue sur les workflows de
+    `feat/durcissement` (7 tests) ; `actionlint` 1.7.7 et `zizmor` 1.31.1 :
+    aucun constat.
+- **Limite** : le code des dépendances s'exécute encore dans le job de
+  déploiement (build Vite, chargement des Functions par la CLI) ; le
+  verrouillage (`package-lock.json`), l'audit en CI et la relecture
+  obligatoire de l'environnement `production` restent les protections.
+- **Retour arrière** : revenir aux versions précédentes des workflows et du
+  runbook (`git revert`) ; l'environnement `preview` et son compte peuvent rester.
+
+### D69. Sauvegardes : suppression bornée aux dossiers d'export, export seul, conservation verrouillable
+- **Revue** : hypothèses réfutées (`functions/test/revue-backup.test.ts`) :
+  des dossiers plantés datés du futur ne font jamais supprimer un export de
+  moins de 30 jours ; une rétention absurde (0, négative, NaN) ne supprime rien ;
+  une longue panne laisse toujours les 3 exports les plus récents.
+- **Constat (faible)** : la suppression acceptait tout préfixe renvoyé par le
+  listage dont le nom se terminait par un horodatage (y compris hors de
+  `firestore/<base>/`). Avec un listage GCS normal (délimiteur `/`), ce cas ne
+  se produit pas ; mais rien ne le garantissait dans le code.
+- **Décision** :
+  - code : seuls les préfixes de la forme exacte `firestore/<base>/<horodatage>/`
+    sont candidats (`isExportPrefixUnder`) ;
+  - runbook : rôle personnalisé « export seul » au lieu de
+    `datastore.importExportAdmin` (qui permet aussi l'import, donc l'écrasement
+    de la base en service) ; politique de conservation du bucket de 28 jours
+    (aucun export récent supprimable, même par un compte compromis), à
+    verrouiller après un mois ; rappel que le déployeur peut agir en tant que
+    le compte de sauvegarde ; accès aux exports réservé.
+- **Retour arrière** : retirer le filtre dans `runBackup` ; retirer la politique
+  de conservation (`--clear-retention-period`, impossible une fois verrouillée).
+
+### D70. Build de production : refus d'un jeton de débogage App Check venu de `.env.local`
+- **Constat (revue, moyenne)** : le runbook App Check (§2) et `.env.example`
+  demandaient de mettre le jeton de débogage dans `.env.local`. Or Vite charge
+  `.env.local` dans tous les modes, y compris `npm run build`, et le runbook
+  (§3) fait construire la prod sur le même poste. Le jeton serait alors publié
+  dans le bundle et le client basculerait sur le fournisseur de débogage :
+  si ce jeton est enregistré sur le projet visé, App Check est contourné par
+  quiconque lit le bundle ; sinon, toutes les requêtes sont « non vérifiées »
+  et l'application cesse de fonctionner le jour où App Check est appliqué.
+  Démontré par `tests/unit/buildGuards.test.ts` (chargement réel par `loadEnv`).
+- **Décision** : `vite.config.ts` refuse un build de production qui porte
+  `VITE_APPCHECK_DEBUG_TOKEN` (ou des émulateurs avec un vrai projet), sauf
+  `ALLOW_APPCHECK_DEBUG_IN_BUILD=true` explicite dans l'environnement du
+  processus (projet de dev seulement). Le jeton va dans
+  `.env.development.local` (runbook et `.env.example` corrigés).
+- **Retour arrière** : retirer l'appel à `productionBuildProblems` dans `vite.config.ts`.
+
+### D71. R-06 sur le Lot 0 : pas de mesure minimale par les règles, décision documentée
+- **Question** : sur `fix/lot0-securite`, les salaires et CIN restent dans
+  `teachers`, lisible par `isEducator()` (مدير, إداري, مؤطر, مدرس). Une mesure
+  courte serait-elle sûre, par exemple ne plus lire `teachers` hors bureau ?
+- **Analyse du code du Lot 0** (`src/App.tsx`) :
+  - le tableau de bord de l'enseignant (مدرس) retrouve SA fiche
+    (`activeTeacher`) dans la liste `teachers`, par `linkedTeacherId` ou, à
+    défaut, par nom identique ; ses halaqas (`teacherClasses`) en dépendent ;
+  - les noms des enseignants s'affichent pour la pédagogie dans les halaqas,
+    les examens (`examinerId`), les cartes et attestations ;
+  - le مؤطر crée les halaqas et choisit leur enseignant dans cette liste.
+  Fermer `teachers` hors bureau casse donc le tableau de bord de l'enseignant
+  et l'affectation des halaqas. Une lecture « sa seule fiche » (`get` sur
+  `linkedTeacherId` d'`authLinks`) exigerait de remplacer l'abonnement à la
+  collection pour ces rôles et de supprimer le repli par nom : c'est une
+  modification de l'interface et de la session, pas un correctif court ; et la
+  fiche de l'enseignant contiendrait toujours son propre salaire. Les règles
+  ne filtrent pas des champs : seule la scission (D42) corrige vraiment.
+- **Décision** : aucune modification du Lot 0 pour R-06 ; risque accepté pour
+  la seule durée entre le Lot 0 et la bascule (qui apporte `staffPrivate`,
+  D42). Mesures d'organisation recommandées au directeur : informer le
+  personnel que ces champs sont visibles par l'équipe pédagogique jusqu'à la
+  bascule ; ne pas compléter de nouvelles CIN ni de nouveaux salaires dans
+  l'application avant la bascule si ce n'est pas nécessaire ; garder court
+  l'intervalle entre les deux opérations. Test documentaire conservé :
+  `tests/emulator/revue-rules.test.ts` (Lot 0) › R-06.
+- **Retour arrière** : sans objet.
+
+### D72. Le compte super-admin n'est jamais désactivé automatiquement
+- **Constat (revue, moyenne)**, découvert en préparant l'accueil d'une
+  deuxième école : l'interface crée une école avec `makeMeDirector` (le
+  super-admin en devient directeur pour y créer le vrai directeur). Quand on
+  retire ensuite le super-admin de cette école, `setMemberRole` (retrait)
+  désactive le compte Auth s'il n'a plus aucune école ; c'est le cas d'un
+  super-admin dédié (D25, recommandé). Le parcours normal d'accueil bloquait
+  donc le compte de l'administrateur de la plateforme. De même, un directeur
+  pouvait le bloquer volontairement : retrait, ou lien vers une fiche du
+  personnel puis archivage de la fiche (trigger d'archivage). Démontré par
+  `functions/test/revue-durcissement.test.ts` › D72 (échouait avant).
+- **Décision** : `isSuperAdminAccount(uid)` (claim `superAdmin`) : jamais de
+  désactivation automatique d'un tel compte, ni au retrait de sa dernière
+  école, ni à l'archivage. L'appartenance est bien retirée ou suspendue. Le
+  super-admin se désactive seulement à la main (console, par un humain).
+- **Retour arrière** : retirer les deux appels à `isSuperAdminAccount`.
+
+### D73. Import d'élèves par CSV pour une nouvelle école
+- **Évaluation** : une école qui arrive avec 100 à 300 élèves sur un tableur
+  devrait sinon les saisir un par un. Un import est simple à écrire si l'on
+  s'en tient aux élèves : pas de comptes, pas de paiements réels, pas de photos.
+  Ces trois points restent manuels, car ils touchent la sécurité, la finance
+  ou la taille des documents.
+- **Décision** : `scripts/admin/import-students.ts` (Admin SDK). Garde-fous :
+  - ceux des scripts existants : `--project` obligatoire, simulation par
+    défaut, `--confirm-prod` et `--database` hors émulateur ;
+  - école et paramètres existants exigés ;
+  - écriture par `create` seulement, sans jamais toucher un document existant ;
+  - validation stricte : genre, dates réelles, hizb de 0 à 60, niveau de
+    tajwid, longueurs, caractères de contrôle ;
+  - halaqa désignée par son identifiant, ou par son nom EXACT et unique,
+    jamais de correspondance approximative ;
+  - refus d'une colonne de mot de passe ;
+  - doublons détectés dans le fichier et dans l'école (nom complet + date de
+    naissance), ce qui rend la relance idempotente ;
+  - une anomalie bloque tout, sauf `--skip-invalid` ;
+  - identifiants `S-<n>` selon la même règle que l'interface ;
+  - cotisations « غير مدفوع » créées seulement avec `--payments=ui`
+    (comportement de l'interface) ;
+  - rapport sans nom ni téléphone (numéros de ligne, identifiants, codes).
+- **Tests** : `tests/emulator/import-students.test.ts` (CSV fictif
+  `tests/fixtures/eleves-fictifs.csv`, modèle `scripts/admin/templates/eleves-modele.csv`).
+- **Limite** : un élève créé dans l'interface PENDANT l'import peut prendre le
+  même identifiant. Le lot échoue alors (`create`) et la relance reprend :
+  importer avant d'ouvrir l'école aux utilisateurs.
+- **Retour arrière** : les élèves importés portent `importBatch` ; les
+  supprimer par l'Admin SDK (un humain) ou depuis l'interface.
+
+### D74. Workflows de mise en prod (D64) : dev protégé comme la prod, artefacts chiffrés
+- **Constats (revue, après fusion de `feat/workflows-ops`)** :
+  - **dev = données réelles** (élevée). `ops.yml` › `import-firestore` copie
+    un export de la prod dans le dev, dont l'agent de service lit le bucket de
+    la prod. Or la condition WIF (`repository` + `environment`) délivrait un
+    jeton à **toute branche** qui déclare `environment: dev`, puisqu'un
+    `workflow_dispatch` exécute le fichier de la branche choisie et que le
+    forfait gratuit n'offre aucune règle de branche d'environnement. Toute
+    personne ou tout agent capable de pousser une branche pouvait donc obtenir
+    `github-ops` (dev) et lire la copie des données réelles. Avant D68, les
+    aperçus partageaient en plus cet environnement ;
+  - **artefacts** (moyenne). Les rapports, avec identifiants et anomalies, et
+    les mots de passe temporaires (répétitions sur le dev avec
+    `rotate_passwords=all`) étaient envoyés en clair. Un artefact est lisible
+    par tout compte qui lit le dépôt, jetons d'agents compris : la consigne
+    « ne jamais télécharger » n'était qu'une règle ;
+  - le fournisseur de la prod acceptait aussi n'importe quelle branche
+    déclarant `production`. Les garde-fous `github.ref` des workflows ne valent
+    que pour les fichiers de `main`.
+- **Décision** :
+  - condition WIF identique pour le dev et la prod : dépôt, environnement,
+    `ref == refs/heads/main` et `job_workflow_ref` dans
+    {`deploy.yml`, `deploy-lot0.yml`, `ops.yml`}`@refs/heads/main`
+    (`GUIDE-MISE-EN-PROD.md` étape 2, `CI-DEPLOIEMENT.md` §2) ;
+  - aperçus : second fournisseur du seul projet de dev (`environment == preview`)
+    et compte `github-preview`, limité au Hosting ;
+  - `ops.yml` : chiffrement GnuPG des artefacts pour la clé publique
+    `ARTIFACT_GPG_PUBLIC_KEY` (la clé privée reste chez le propriétaire),
+    avertissement s'il n'y en a pas, et **refus** d'un remplacement de mots de
+    passe appliqué sans cette clé ; testé localement (chiffrement, puis
+    déchiffrement par la seule clé privée) et par le garde-fou statique
+    `tests/unit/workflows.test.ts`.
+- **Limites (forfait gratuit)** : quiconque peut pousser sur `main` peut changer
+  ces workflows et les lancer : le droit d'écriture reste la frontière de
+  confiance (D64). Recommandation : forfait Team (protection de `main`,
+  relecteurs d'environnement, `CODEOWNERS`) ou, à défaut, accès en écriture
+  limité au propriétaire et aux jetons qui en ont besoin.
+- **Retour arrière** : `update-oidc` avec l'ancienne condition ; retirer
+  l'étape de chiffrement d'`ops.yml`.

@@ -1,8 +1,9 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig, type Plugin} from 'vite';
+import {defineConfig, loadEnv, type Plugin} from 'vite';
 import {e2eCsp} from './scripts/dev/csp';
+import {productionBuildProblems} from './scripts/dev/buildGuards';
 
 /**
  * Tests de bout en bout (E2E_CSP=1, `npm run test:e2e`) : la CSP de production
@@ -22,7 +23,11 @@ function e2eCspMeta(): Plugin {
   };
 }
 
-export default defineConfig(() => {
+export default defineConfig(({mode}) => {
+  // Garde-fous du build de production (D70) : pas de jeton de débogage App Check
+  // ni d'émulateurs venus de .env.local dans le bundle publié.
+  const problems = productionBuildProblems(mode, loadEnv(mode, process.cwd(), 'VITE_'), process.env);
+  if (problems.length) throw new Error(`Build de production refusé :\n- ${problems.join('\n- ')}`);
   return {
     plugins: [e2eCspMeta(), react(), tailwindcss()],
     resolve: {

@@ -16,6 +16,11 @@
 # - Rapports (données personnelles) : artefact de 3 jours, jamais dans les
 #   journaux (seuls des compteurs sont affichés). Mots de passe temporaires :
 #   artefact séparé d'un jour.
+# - Revue D74 : un artefact GitHub est lisible par TOUT compte qui lit le dépôt
+#   (collaborateurs, jetons d'agents). Si la variable ARTIFACT_GPG_PUBLIC_KEY
+#   (clé publique du propriétaire) est posée, rapports et mots de passe sont
+#   chiffrés pour elle avant l'envoi ; un remplacement de mots de passe
+#   appliqué (rotate_passwords ≠ none) est REFUSÉ sans cette clé.
 name: Opérations de données (manuel)
 
 on:
@@ -94,10 +99,15 @@ jobs:
           WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
           OPS_SA: ${{ vars.GCP_OPS_SERVICE_ACCOUNT }}
           SUPER_ADMIN_USERNAME: ${{ vars.SUPER_ADMIN_USERNAME }}
+          ARTIFACT_KEY: ${{ vars.ARTIFACT_GPG_PUBLIC_KEY }}
         run: |
           set -euo pipefail
           fail() { echo "::error::$1"; exit 1; }
           case "${ENVIRONMENT}" in dev|production) ;; *) fail "Environnement inconnu.";; esac
+          # D74 : jamais de mots de passe temporaires en clair dans un artefact.
+          if [ "${APPLY}" = "true" ] && [ "${ROTATE}" != "none" ] && [ -z "${ARTIFACT_KEY}" ]; then
+            fail "rotate_passwords=${ROTATE} appliqué exige la variable ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
+          fi
           case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts) ;; *) fail "Action inconnue.";; esac
           case "${ROTATE}" in none|weak|all) ;; *) fail "rotate_passwords inconnu.";; esac
           case "${APPLY}" in true|false) ;; *) fail "apply invalide.";; esac
@@ -337,6 +347,34 @@ jobs:
           echo "secret_files=${N}" >> "$GITHUB_OUTPUT"
           echo "Fichiers de mots de passe temporaires : ${N}"
           exit "${CODE}"
+
+      # D74 : chiffrement des artefacts pour la clé publique du propriétaire.
+      - name: Chiffrement des artefacts (clé publique du propriétaire)
+        if: always() && steps.script.outcome != 'skipped'
+        env:
+          ARTIFACT_KEY: ${{ vars.ARTIFACT_GPG_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ARTIFACT_KEY}" ]; then
+            echo "::warning::ARTIFACT_GPG_PUBLIC_KEY absente : rapport envoyé EN CLAIR (lisible par tout compte qui lit le dépôt)."
+            exit 0
+          fi
+          export GNUPGHOME="${RUNNER_TEMP}/gnupg"
+          mkdir -p -m 700 "${GNUPGHOME}"
+          printf '%s\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
+          FPR=$(gpg --batch --with-colons --list-keys | awk -F: '/^fpr:/ {print $10; exit}')
+          [ -n "${FPR}" ] || { echo "::error::Clé publique illisible."; exit 1; }
+          encrypt_dir() {
+            local dir="$1" tmp="${RUNNER_TEMP}/a-chiffrer.tar.gz"
+            [ -d "${dir}" ] && [ -n "$(ls -A "${dir}")" ] || return 0
+            tar -C "${dir}" -czf "${tmp}" .
+            find "${dir}" -mindepth 1 -delete
+            gpg --batch --yes --trust-model always --recipient "${FPR}" --output "${dir}/contenu.tar.gz.gpg" --encrypt "${tmp}"
+            rm -f "${tmp}"
+          }
+          encrypt_dir "${REPORTS}"
+          encrypt_dir "${SECRETS_DIR}"
+          echo "Artefacts chiffrés pour la clé ${FPR} (déchiffrer : gpg --decrypt contenu.tar.gz.gpg | tar -xz)."
 
       - name: Rapport (données personnelles, 3 jours)
         if: always() && steps.script.outcome != 'skipped'

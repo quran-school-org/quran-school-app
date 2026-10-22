@@ -138,7 +138,8 @@ describe("migration racine → schools/alfajr", () => {
 
   it("une fiche publique cible encore porteuse de champs RH est scindée à la relance, sans écraser la fiche RH", async () => {
     // Fiche saisie par une version antérieure à D42 (t2 : fiche RH déjà présente ; t5 : aucune).
-    await admin.db.doc(`schools/${S}/teachers/t2`).update({ monthlySalary: 9999, cinNumber: "ANCIEN" });
+    // t2 : emergencyContact n'existe que dans la fiche publique (revue D66 : il ne doit pas être perdu).
+    await admin.db.doc(`schools/${S}/teachers/t2`).update({ monthlySalary: 9999, cinNumber: "ANCIEN", emergencyContact: "0612000000" });
     await admin.db.doc(`schools/${S}/teachers/t5`).update({ monthlySalary: 1800, address: "عنوان" });
     await admin.db.doc(`schools/${S}/staffPrivate/t1`).update({ monthlySalary: 2700 }); // saisie après la bascule
 
@@ -155,7 +156,15 @@ describe("migration racine → schools/alfajr", () => {
       for (const k of STAFF_PRIVATE_FIELDS) expect(pub[k], `${id}.${k}`).toBeUndefined();
       expect(pub.fullName).toBeTruthy();
     }
-    expect((await admin.db.doc(`schools/${S}/staffPrivate/t2`).get()).data()?.monthlySalary).toBe(3000); // fiche RH existante conservée
+    const rhT2 = (await admin.db.doc(`schools/${S}/staffPrivate/t2`).get()).data()!;
+    expect(rhT2.monthlySalary).toBe(3000); // fiche RH existante conservée
+    expect(rhT2.cinNumber).toBe("XX000002");
+    expect(rhT2.emergencyContact).toBe("0612000000"); // champ absent de la fiche RH : complété, pas perdu
+    const conflict = anomalies.filter((a) => a.code === "STAFF_PRIVATE_CONFLICT");
+    expect(conflict.map((a) => a.appUserId)).toEqual(["t2"]);
+    expect(conflict[0].detail).toContain("monthlySalary");
+    expect(conflict[0].detail).toContain("cinNumber");
+    expect(conflict[0].detail).not.toContain("9999"); // noms de champs seulement, aucune valeur
     expect((await admin.db.doc(`schools/${S}/staffPrivate/t5`).get()).data()).toMatchObject({ monthlySalary: 1800, address: "عنوان", teacherId: "t5", schoolId: S });
     expect((await admin.db.doc(`schools/${S}/staffPrivate/t1`).get()).data()?.monthlySalary).toBe(2700);
   });

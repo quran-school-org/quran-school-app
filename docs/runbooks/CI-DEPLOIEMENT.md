@@ -37,20 +37,54 @@ pour les scripts de comptes et `storage.googleapis.com` pour les exports).
 
 ## 2. Pool et fournisseur d'identité (OIDC GitHub)
 
-Guide, étape 2, bloc 2. Condition du fournisseur :
-`assertion.repository=='$REPO' && assertion.environment=='$ENV'` : seuls les
-jobs de CE dépôt qui déclarent l'environnement GitHub `$ENV` obtiennent un
-jeton. Le nom du fournisseur s'affiche avec :
+Guide, étape 2, bloc 2. Condition du fournisseur (revue D68, D74), **identique
+pour le dev et la prod** :
+```
+assertion.repository=='$REPO' && assertion.environment=='$ENV'
+  && assertion.ref=='refs/heads/main'
+  && assertion.job_workflow_ref in ['$REPO/.github/workflows/deploy.yml@refs/heads/main',
+                                    '$REPO/.github/workflows/deploy-lot0.yml@refs/heads/main',
+                                    '$REPO/.github/workflows/ops.yml@refs/heads/main']
+```
+Pourquoi :
+- un workflow lancé à la main s'exécute dans la version **de la branche
+  choisie**. Sans condition sur la branche, n'importe quelle branche qui
+  déclare `environment: dev` (ou `production`) obtient le jeton du compte ;
+- sur le forfait gratuit, aucune règle de branche d'environnement ne
+  l'empêche ;
+- le dev reçoit une copie des données réelles (`ops.yml` › `import-firestore`) :
+  il se protège comme la prod.
+Les aperçus de branche passent par un **second fournisseur** du seul projet de
+dev, limité à l'environnement `preview` et au compte `github-preview` (Hosting
+seulement ; guide, bloc « aperçus »). `job_workflow_ref` est une revendication
+du jeton OIDC de GitHub : vérifier au premier run (journal d'audit STS) qu'elle
+vaut bien `<dépôt>/.github/workflows/<fichier>@refs/heads/main`.
+
+Le nom du fournisseur s'affiche avec :
 ```bash
 gcloud iam workload-identity-pools providers describe $PROVIDER --location=global \
   --workload-identity-pool=$POOL --project=$PROJECT --format='value(name)'
 # → projects/<numéro>/locations/global/workloadIdentityPools/github/providers/quran-school-app
 ```
 
-Si la condition durcie de la revue (D55, branche `fix/revue-durcissement` :
-`job_workflow_ref == …/deploy.yml@refs/heads/main` pour la prod) est adoptée,
-y ajouter `deploy-lot0.yml` et `ops.yml` :
-`assertion.job_workflow_ref in ['$REPO/.github/workflows/deploy.yml@refs/heads/main', '$REPO/.github/workflows/deploy-lot0.yml@refs/heads/main', '$REPO/.github/workflows/ops.yml@refs/heads/main']`.
+### 2 bis. Ce que la condition ne couvre pas (revue D74)
+- **Écriture sur `main`** : sans protection de branche, toute personne (ou tout
+  agent) qui peut pousser sur `main` peut modifier ces trois workflows, puis les
+  lancer. Réduire le droit d'écriture au strict nécessaire ; un forfait Team
+  apporte protection de branche, relecteurs d'environnement et `CODEOWNERS`.
+- **Lancement** : `gh workflow run` exige le droit d'écriture (« actions »). Les
+  jetons des agents de développement ne devraient pas l'avoir sur ce dépôt.
+- **Artefacts** : lisibles par tout compte qui lit le dépôt. `ops.yml` les
+  chiffre pour la clé publique `ARTIFACT_GPG_PUBLIC_KEY`, et refuse un
+  remplacement de mots de passe appliqué sans elle (guide, étape 3.4).
+- **Portée de `github-deploy`** : déployer des fonctions, c'est exécuter du
+  code sous leur compte d'exécution (accès complet à la base) ; le compte
+  Compute par défaut a souvent le rôle `editor` : préférer un compte
+  d'exécution dédié avant la bascule.
+- **Épinglage** : les actions sont épinglées par SHA (tag en commentaire). Pour
+  les mettre à jour : `git ls-remote --tags https://github.com/<action>`, puis
+  `actionlint`, `zizmor --offline .github/workflows/` et
+  `npm test` (garde-fou `tests/unit/workflows.test.ts`).
 
 ## 3. Deux comptes de service, sans clé
 
@@ -177,8 +211,9 @@ mots de passe temporaires, s'il y en a : artefact séparé
 `mots-de-passe-temporaires-<env>-<run>` (1 jour). Les journaux n'affichent que
 des compteurs (`RESUME_JSON=`).
 
-**Aperçu d'une branche** (dev seulement) : « Prévisualisation (dev, manuel) »,
-canal `br-<branche>` qui expire (7 jours par défaut).
+**Aperçu d'une branche** (dev seulement, environnement `preview`, compte
+Hosting seulement) : « Prévisualisation (dev, manuel) », canal `br-<branche>`
+qui expire (7 jours par défaut). Build et tests dans un job sans jeton OIDC.
 ```bash
 gh workflow run preview.yml --repo $REPO --ref <branche> -f expires=7d
 ```
@@ -189,6 +224,8 @@ Si la clé API web du dev est restreinte par référent (runbook
 - `ops.yml` `describe-db` réussit sur le dev et sur la prod.
 - Un lancement `deploy-lot0.yml` `dev` / `all` réussit et la page s'ouvre sur `https://$PROJECT.web.app`.
 - Un lancement `production` depuis une autre branche que `main`, ou sans `confirm`, échoue au garde-fou.
+- Un lancement `dev` depuis une autre branche que `main` échoue à l'authentification (condition WIF).
+- Un aperçu qui tenterait `firebase deploy --only firestore:rules` est refusé par IAM.
 - Journal d'audit IAM : `gcloud logging read 'protoPayload.authenticationInfo.principalEmail="'$DEPLOY_SA'"' --project=$PROJECT --limit=20` (idem avec `$OPS_SA`).
 
 ## 9. Retour arrière
