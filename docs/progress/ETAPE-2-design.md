@@ -23,7 +23,7 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Personnel : en-tête, indicateurs, filtres (liste et fenêtres : harmonisation) | fait (partiel) |
 | Frais et paiements + fenêtre de saisie | fait |
 | Harmonisation automatique des écrans hérités (surfaces, champs 44 px, boutons) | fait |
-| Présences (+ scan QR, rapport mensuel) | à faire |
+| Présences (+ scan QR, relevé mensuel et son impression) | fait |
 | Examens et شهادات (+ fenêtre de note) | à faire |
 | Comptabilité (sections) | à faire |
 | Activités | à faire |
@@ -37,8 +37,8 @@ Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 | Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Écran des présences : `src/screens/AttendanceScreen.tsx` et `src/screens/modals/MonthlyReportModal.tsx`
-(PageHeader, KpiGrid, SegmentedControl, DataTable ; supprimer les émojis ; garder les `data-*`).
+Examens et شهادات : `src/screens/GradesScreen.tsx`, `src/screens/modals/GradeFormModal.tsx`
+(PageHeader, KpiGrid, DataTable, Pill ; supprimer les émojis ; garder les `data-*` et les libellés utilisés par les tests).
 
 ## Commandes utiles
 - Tests : `npm run lint && npm run build && npm test`, puis
