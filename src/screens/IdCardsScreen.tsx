@@ -1,11 +1,12 @@
 /**
- * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
+ * Laboratoire des cartes (officielles et numériques) : charte « لوحة الكتّاب ».
  */
 import { Student, checkUserPermission } from "../types";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { Award, Sparkles, Search, Trash2, Printer, FileText, QrCode } from "lucide-react";
 import { useApp } from "../app/AppContext";
 import { makeCardRenderers } from "./idCards/cardFaces";
+import { PageHeader } from "../ui";
 
 export default function IdCardsScreen() {
   const {
@@ -47,23 +48,11 @@ export default function IdCardsScreen() {
 
   return (
     <div data-screen="id-cards-lab" className="space-y-6" style={{ direction: "rtl" }}>
-      <div className="bg-night rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-          <div className="space-y-2">
-            <span className="bg-gold-400 text-ink font-bold text-[13px] px-3 py-1 rounded-full">استوديو الطباعة الرقمية</span>
-            <h2 className="text-2xl md:text-3xl font-bold">معمل بطاقات الهوية الرقمية والطباعة الاحترافية</h2>
-            <p className="text-sm text-primary-100 max-w-xl">
-              قم بمعاينة وتصميم بطاقة الهوية الذكية لكل طالب، مع إمكانية تصغير وتكبير المقاس بدقة متناهية لتلائم كافة طابعات الكروت البلاستيكية (CR80) أو الورقية بجودة عالية. يتم توليد رمز الاستجابة السريعة (QR Code) تلقائياً على ظهر البطاقة لتسجيل الحضور السريع بمجرد مسحه بالكاميرا.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <span className="bg-primary-700/80 border border-primary-500/30 text-white font-bold text-[13px] px-4 py-2.5 rounded-xl flex items-center gap-2">
-              🖨️ جاهز للتصدير المباشر
-            </span>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="استوديو الطباعة الرقمية"
+        title="بطاقات الهوية"
+        description="معاينة وتصميم بطاقة الهوية لكل طالب، مع تصغير وتكبير المقاس بدقة لتلائم طابعات الكروت البلاستيكية (CR80) أو الورقية. يُولَّد رمز الاستجابة السريعة (QR Code) تلقائياً على ظهر البطاقة لتسجيل الحضور بمجرد مسحه بالكاميرا."
+      />
 
       {/* SUB-TABS FOR LAB */}
       <div className="flex bg-surface p-1.5 rounded-2xl border border-sand-200/80 gap-2">
@@ -169,7 +158,8 @@ export default function IdCardsScreen() {
                           : "bg-gold-50 text-gold-800 border-gold-200 hover:bg-gold-100"
                       }`}
                     >
-                      🖨️ تفعيل الطباعة الجماعية ({bulkSelectedIds.length})
+                      <Printer className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
+                      تفعيل الطباعة الجماعية ({bulkSelectedIds.length})
                     </button>
                     {labPrintMode === "bulk" && (
                       <button
@@ -454,18 +444,18 @@ export default function IdCardsScreen() {
                 </div>
 
                 {/* Tip */}
-                <p className="text-[11.5px] text-ink-3 font-medium">
-                  💡 نصيحة للطباعة الاحترافية: للطباعة على كروت البلاستيك، يوصى بمقياس <span className="font-bold text-primary-700">85% (بطاقة CR80)</span>. أما للطباعة على ورق مقوى عادي يفضل المقدار <span className="font-bold text-primary-700">100%</span>.
+                <p className="m-0 text-[12.5px] text-ink-2 rounded-lg bg-gold-100 px-3 py-2">
+                  <strong className="text-gold-800">نصيحة للطباعة الاحترافية:</strong> للطباعة على كروت البلاستيك، يوصى بمقياس <span className="font-bold text-primary-700">85% (بطاقة CR80)</span>. أما للطباعة على ورق مقوى عادي يفضل المقدار <span className="font-bold text-primary-700">100%</span>.
                 </p>
               </div>
 
               {/* LIVE DISPLAY AREA */}
-              <div className="bg-sand-100 rounded-3xl p-6 border-2 border-dashed border-line flex justify-center items-start overflow-hidden min-h-[580px] relative">
+              <div className="bg-sunken rounded-3xl p-4 sm:p-6 border-[1.5px] border-dashed border-line-strong flex justify-center items-start overflow-auto min-h-[580px] relative">
 
                 {/* Interactive indicator for 3D mode */}
                 {labDisplayType === "3d" && (
-                  <div className="absolute top-4 right-4 bg-gold-500 text-ink text-[11.5px] font-bold px-3 py-1 rounded-full animate-bounce z-20">
-                    🔄 انقر فوق الكارت لقلبه
+                  <div className="absolute top-4 start-4 bg-gold text-night text-[12.5px] font-semibold px-3 py-1 rounded-full z-20">
+                    انقر فوق الكارت لقلبه
                   </div>
                 )}
 
@@ -483,7 +473,7 @@ export default function IdCardsScreen() {
                   {/* 1. FLAT PRINT MODE */}
                   {labDisplayType === "print" && (
                     labPrintMode === "single" ? (
-                      <div className="flex flex-col md:flex-row gap-6 justify-center items-center p-2 bg-transparent">
+                      <div className="flex flex-col md:flex-row md:flex-wrap gap-6 justify-center items-center p-2 bg-transparent">
                         {/* FRONT SIDE */}
                         {(labViewMode === "both" || labViewMode === "front") && renderFront(labStudent, labStudentClass)}
                         {/* BACK SIDE */}
