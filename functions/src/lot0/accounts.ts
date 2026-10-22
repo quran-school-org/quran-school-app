@@ -195,6 +195,21 @@ export async function resetUserPasswordCore(callerUid: string, appUserId: string
   if (!snap.exists || typeof authUid !== "string") {
     throw new HttpsError("not-found", "Compte introuvable ou non relié à Firebase Auth.");
   }
+  // Le directeur peut écrire appUsers (règles) : l'authUid n'est cru que s'il
+  // est confirmé par le lien authLinks (écrit par le script ou les Functions),
+  // sinon un document leurre permettrait de réinitialiser n'importe quel compte.
+  const link = (await db.collection("authLinks").doc(authUid).get()).data();
+  if (!link || link.appUserId !== appUserId) {
+    throw new HttpsError("permission-denied", "Compte non relié par un lien d'autorisation valide.");
+  }
+  // Le directeur historique (u1) ne peut être réinitialisé que par lui-même
+  // (changement de son mot de passe) ou par l'Admin SDK (runbook).
+  if (appUserId === "u1") {
+    const caller = (await db.collection("authLinks").doc(callerUid).get()).data();
+    if (caller?.appUserId !== "u1") {
+      throw new HttpsError("permission-denied", "حساب المدير الأساسي محمي: لا يمكن إعادة تعيين كلمة مروره من حساب آخر.");
+    }
+  }
   await adminAuth().updateUser(authUid, { password: newPassword });
   await adminAuth().revokeRefreshTokens(authUid);
   await ref.set({

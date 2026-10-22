@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import { Student, Class } from "../types";
 import { RealmSimDB } from "../db";
 import { StudentAvatar } from "../utils/studentAvatar";
+import { escapeHtml } from "../security/html";
 import { Printer, MapPin, Phone, Globe, Facebook, Check, Award } from "lucide-react";
 
 interface StudentCardProps {
@@ -53,7 +54,7 @@ export default function StudentCard({ student, studentClass, canPrint = true }: 
     printWindow.document.write(`
       <html>
         <head>
-          <title>بطاقة الطالب - ${student.fullName}</title>
+          <title>بطاقة الطالب - ${escapeHtml(student.fullName)}</title>
           <meta charset="utf-8" />
           <script src="https://cdn.tailwindcss.com"></script>
           <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
