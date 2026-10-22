@@ -3,7 +3,7 @@
 > **Mise en place : par un humain** (propriétaire du projet GCP et administrateur
 > du dépôt), une seule fois, en suivant **`docs/GUIDE-MISE-EN-PROD.md`** (version
 > pas à pas, à copier-coller dans Cloud Shell). Ce runbook en donne le détail
-> technique et les raisons. Décisions : D46, D64.
+> technique et les raisons. Décisions : D46, D64, D74, D75.
 > **Utilisation : par l'orchestrateur (Claude)**, uniquement par `gh workflow run`,
 > après le « go » du propriétaire : `docs/runbooks/OPERATIONS-CLAUDE.md`.
 > Aucun agent n'exécute de commande vers la prod depuis un conteneur.
@@ -11,6 +11,9 @@
 > `deploy-lot0.yml`, `ops.yml` et `preview.yml` échouent dès leur premier pas
 > (variables absentes) : ils sont **inactifs** par construction, et ne se lancent
 > de toute façon qu'à la main.
+> **Forfait GitHub** (D75) : les workflows fonctionnent avec les environnements
+> GitHub (Team, Enterprise) **ou** avec des variables de dépôt préfixées
+> `DEV_` / `PROD_` (Free, où un dépôt privé n'a pas d'environnements) ; §5.
 
 Faire **d'abord tout sur le projet de dev**, déployer, vérifier, puis
 recommencer pour la prod.
@@ -37,26 +40,50 @@ pour les scripts de comptes et `storage.googleapis.com` pour les exports).
 
 ## 2. Pool et fournisseur d'identité (OIDC GitHub)
 
-Guide, étape 2, bloc 2. Condition du fournisseur (revue D68, D74), **identique
-pour le dev et la prod** :
+Guide, étape 2 (bloc unique, identique à `docs/PROMPT-NAVIGATEUR.md`, étape C).
+Condition du fournisseur (revue D68, D74, puis D75 : plus de condition sur
+l'environnement GitHub), **identique pour le dev et la prod** :
 ```
-assertion.repository=='$REPO' && assertion.environment=='$ENV'
+assertion.repository=='$REPO'
   && assertion.ref=='refs/heads/main'
   && assertion.job_workflow_ref in ['$REPO/.github/workflows/deploy.yml@refs/heads/main',
                                     '$REPO/.github/workflows/deploy-lot0.yml@refs/heads/main',
                                     '$REPO/.github/workflows/ops.yml@refs/heads/main']
 ```
+Autorisation des comptes `github-deploy` et `github-ops` (rôle
+`iam.workloadIdentityUser`) :
+```
+principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/github/attribute.repository/$REPO
+```
+(avant D75 : `principal://…/subject/repo:$REPO:environment:$ENV`, retiré par le
+bloc du guide).
 Pourquoi :
 - un workflow lancé à la main s'exécute dans la version **de la branche
-  choisie**. Sans condition sur la branche, n'importe quelle branche qui
-  déclare `environment: dev` (ou `production`) obtient le jeton du compte ;
+  choisie**. Sans condition sur la branche, n'importe quelle branche obtient le
+  jeton du compte ;
 - sur le forfait gratuit, aucune règle de branche d'environnement ne
-  l'empêche ;
+  l'empêche, et un dépôt privé n'a même pas d'environnements : la condition ne
+  peut donc pas reposer sur `assertion.environment` (absente du jeton d'un job
+  sans `environment:`), ni l'autorisation sur un sujet `…:environment:<env>` ;
 - le dev reçoit une copie des données réelles (`ops.yml` › `import-firestore`) :
-  il se protège comme la prod.
-Les aperçus de branche passent par un **second fournisseur** du seul projet de
-dev, limité à l'environnement `preview` et au compte `github-preview` (Hosting
-seulement ; guide, bloc « aperçus »). `job_workflow_ref` est une revendication
+  il se protège comme la prod ;
+- la séparation dev / prod repose sur des **projets distincts** (un pool, un
+  fournisseur et des comptes par projet ; un jeton accepté par le pool du dev
+  ne donne rien sur la prod) et sur les garde-fous des workflows de `main`
+  (préfixe ou environnement choisi par `inputs.environment`, contrôle croisé,
+  projet de prod vérifié, `confirm`).
+`principalSet://…/workloadIdentityPools/github/attribute.repository/…` vaut pour
+**tout fournisseur du pool `github`** : ce pool ne doit contenir que le
+fournisseur `quran-school-app`. Les aperçus de branche passent par un
+fournisseur d'un **pool séparé** (`github-apercus`) du seul projet de dev,
+limité à l'environnement `preview` et au compte `github-preview` (Hosting
+seulement ; guide, bloc « aperçus », Team ou Enterprise seulement).
+**Point à vérifier au premier run en mode Free** (hypothèse non documentée) :
+le mappage `attribute.environment=assertion.environment` porte sur une
+revendication absente du jeton d'un job sans `environment:`. Si
+l'authentification échoue sur ce mappage, retirer `attribute.environment` du
+mappage (`update-oidc --attribute-mapping=…`, sur le dev d'abord) : la
+condition et l'autorisation ne l'utilisent pas. `job_workflow_ref` est une revendication
 du jeton OIDC de GitHub : vérifier au premier run (journal d'audit STS) qu'elle
 vaut bien `<dépôt>/.github/workflows/<fichier>@refs/heads/main`.
 
@@ -76,7 +103,7 @@ gcloud iam workload-identity-pools providers describe $PROVIDER --location=globa
   jetons des agents de développement ne devraient pas l'avoir sur ce dépôt.
 - **Artefacts** : lisibles par tout compte qui lit le dépôt. `ops.yml` les
   chiffre pour la clé publique `ARTIFACT_GPG_PUBLIC_KEY`, et refuse un
-  remplacement de mots de passe appliqué sans elle (guide, étape 3.4).
+  remplacement de mots de passe appliqué sans elle (guide, étape 3 C).
 - **Portée de `github-deploy`** : déployer des fonctions, c'est exécuter du
   code sous leur compte d'exécution (accès complet à la base) ; le compte
   Compute par défaut a souvent le rôle `editor` : préférer un compte
@@ -148,51 +175,79 @@ sont nommés `<AAAAMMJJ-HHMMSSZ>-<motif>` à la racine du bucket (`manuel`,
 `avant-lot0-provision`, `avant-migrate-to-tenants`). `describe-db` affiche
 l'emplacement attendu du bucket et la région conseillée des triggers.
 
-## 5. Environnements GitHub (forfait gratuit : pas de relecteur)
+## 5. Configuration GitHub : environnements ou variables préfixées (D75)
 
-Créer `dev` et `production` (guide, étape 3). Sur le forfait GitHub gratuit
-d'un dépôt privé, **aucun relecteur obligatoire ni règle de branche** n'est
-disponible. Les garde-fous sont donc dans les workflows :
+Guide, étape 3. Chaque workflow (`deploy.yml`, `deploy-lot0.yml`, `ops.yml`)
+commence par un job `configuration`, sans jeton ni secret, qui choisit le mode :
 
-- production lancée uniquement depuis le workflow de `main` (`github.ref`) ;
+| Mode | Quand | Job à jeton OIDC exécuté | Variables lues |
+|---|---|---|---|
+| `environnement` | `USE_GITHUB_ENVIRONMENTS=true`, ou aucune variable `DEV_FIREBASE_PROJECT_ID` / `PROD_FIREBASE_PROJECT_ID` | `deployer` / `operation`, avec `environment: <dev\|production>` | variables de l'environnement, sans préfixe (`FIREBASE_PROJECT_ID`…) |
+| `prefixe` | `USE_GITHUB_ENVIRONMENTS=false`, ou l'une de ces deux variables existe | `deployer-sans-environnement` / `operation-sans-environnement`, **sans** `environment:` | variables de dépôt `DEV_…` si `environment=dev`, `PROD_…` si `environment=production` |
+
+Les deux jobs jumeaux partagent exactement les mêmes permissions, variables et
+étapes (ancres YAML) ; leur condition `if:` est exclusive. Pourquoi deux jobs
+plutôt qu'une expression `environment: ${{ … || '' }}` : la documentation
+GitHub ne dit pas ce que devient un nom d'environnement vide, ni ce qui se
+passe quand un job déclare `environment:` dans un dépôt privé du forfait Free
+(elle indique seulement qu'un environnement référencé mais inexistant est créé,
+et que Free ne permet pas d'en configurer pour un dépôt privé). Le job sans
+`environment:` ne dépend d'aucun de ces comportements.
+
+Garde-fous (identiques dans les deux modes) :
+- **variables d'un environnement jamais utilisées pour l'autre** : le préfixe
+  est déduit de `inputs.environment` (`dev` → `DEV_`, `production` → `PROD_`),
+  chaque variable est lue par une sélection gardée
+  (`prefix == 'DEV_' && vars.DEV_X || prefix == 'PROD_' && vars.PROD_X || prefix == '' && vars.X || ''`),
+  sans repli d'un préfixe sur l'autre ; le garde-fou revérifie le couple
+  mode / environnement / préfixe et refuse un projet, un fournisseur WIF, un
+  compte ou un bucket égal à la variable préfixée de l'autre environnement
+  (`tests/unit/workflows.test.ts` le vérifie statiquement) ;
+- production lancée uniquement depuis le workflow de `main` (`github.ref`) et
+  visant `gen-lang-client-0481880143` ; `dev` ne vise jamais la prod ;
+- compte de service appartenant au projet visé ;
 - `confirm` = identifiant du projet pour toute écriture en prod ;
 - simulation par défaut (`apply=false`) pour les scripts de données ;
 - références de code **fixes** : `release/lot0` pour `deploy-lot0.yml` et
   `lot0-provision`, `main` pour `deploy.yml`, `migrate-to-tenants` et
   `verify-counts` ; aucune entrée ne choisit le code ;
 - `import-firestore` refusé en production ; export automatique avant toute
-  application de script ; PITR exigé en prod avant écriture.
+  application de script ; PITR exigé en prod avant écriture ;
+- artefacts chiffrés pour `ARTIFACT_GPG_PUBLIC_KEY` (préfixée, sinon de dépôt
+  ou d'environnement).
 
-> **À vérifier à l'étape 3 (D64)** : la documentation GitHub indique que, sur un
-> dépôt privé, les environnements (et leurs variables) ne se configurent qu'avec
-> GitHub Team ou Pro (« Users with GitHub Free plans can only configure
-> environments for public repositories »). Si l'interface refuse de créer les
-> environnements, ne pas contourner : le signaler ; la solution la plus simple
-> est le forfait Team pour l'organisation. Les workflows s'arrêtent sans rien
-> faire tant que les variables sont absentes.
+`preview.yml` (aperçus) exige l'environnement `preview` : en mode `prefixe`, son
+job `disponibilite` arrête le workflow avec un message clair, avant tout job
+qui déclare `environment:`.
 
-Rappel : sans protection de branche, toute personne ayant l'accès en écriture
+Sans protection de branche (Free), toute personne ayant l'accès en écriture
 au dépôt peut modifier les workflows de `main` ; la liste des collaborateurs
 est la vraie frontière de confiance.
 
-## 6. Variables des environnements (aucun secret)
+## 6. Variables (aucun secret)
 
-Dans **chaque** environnement, les 6 valeurs affichées à la fin du bloc 2 du
-guide : `FIREBASE_PROJECT_ID`, `FIRESTORE_DATABASE_ID`, `GCP_WIF_PROVIDER`,
+Les 6 valeurs affichées à la fin du bloc de l'étape 2 du guide, pour chaque
+projet : `FIREBASE_PROJECT_ID`, `FIRESTORE_DATABASE_ID`, `GCP_WIF_PROVIDER`,
 `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_OPS_SERVICE_ACCOUNT`, `BACKUP_BUCKET`.
+Team / Enterprise : dans l'environnement `dev` ou `production`, sans préfixe.
+Free : variables de dépôt `DEV_<nom>` et `PROD_<nom>`.
 
-Facultatives :
+Facultatives (même règle de préfixe) :
 - `FUNCTIONS_TRIGGER_REGION` (dev, et prod si la base n'est pas en
   `eur3`/`europe-west1`) : région des triggers Firestore, valeur conseillée par
   `ops.yml` › `describe-db` ;
 - `SUPER_ADMIN_USERNAME` (avant la bascule) : compte qui reçoit le claim
-  `superAdmin` lors de `migrate-to-tenants` (validé par expression régulière).
+  `superAdmin` lors de `migrate-to-tenants` (validé par expression régulière) ;
+- `ARTIFACT_GPG_PUBLIC_KEY` : clé publique du propriétaire ; peut aussi être
+  une variable de dépôt **sans** préfixe, valable pour les deux environnements ;
+- `USE_GITHUB_ENVIRONMENTS` (variable de dépôt, `true` ou `false`) : force le
+  mode du §5.
 
 **Dev seulement** (la prod utilise `.env.production`, versionné) : la
 configuration web publique du projet de dev, guide étape 3 (`VITE_FIREBASE_*`,
 `VITE_FIRESTORE_DATABASE_ID`, `FUNCTIONS_FIRESTORE_DATABASE_ID`,
-`FUNCTIONS_TRIGGER_REGION`). Le secret Gemini reste dans Secret Manager du
-projet (guide, étape 4), jamais dans GitHub.
+`FUNCTIONS_TRIGGER_REGION`), préfixée `DEV_` en Free. Le secret Gemini reste
+dans Secret Manager du projet (guide, étape 4), jamais dans GitHub.
 
 ## 7. Utilisation (orchestrateur, voir OPERATIONS-CLAUDE.md)
 
@@ -211,8 +266,8 @@ mots de passe temporaires, s'il y en a : artefact séparé
 `mots-de-passe-temporaires-<env>-<run>` (1 jour). Les journaux n'affichent que
 des compteurs (`RESUME_JSON=`).
 
-**Aperçu d'une branche** (dev seulement, environnement `preview`, compte
-Hosting seulement) : « Prévisualisation (dev, manuel) », canal `br-<branche>`
+**Aperçu d'une branche** (dev seulement, Team ou Enterprise : environnement
+`preview`, pool `github-apercus`, compte Hosting seulement ; indisponible en Free) : « Prévisualisation (dev, manuel) », canal `br-<branche>`
 qui expire (7 jours par défaut). Build et tests dans un job sans jeton OIDC.
 ```bash
 gh workflow run preview.yml --repo $REPO --ref <branche> -f expires=7d
@@ -225,10 +280,13 @@ Si la clé API web du dev est restreinte par référent (runbook
 - Un lancement `deploy-lot0.yml` `dev` / `all` réussit et la page s'ouvre sur `https://$PROJECT.web.app`.
 - Un lancement `production` depuis une autre branche que `main`, ou sans `confirm`, échoue au garde-fou.
 - Un lancement `dev` depuis une autre branche que `main` échoue à l'authentification (condition WIF).
+- Le journal du job `configuration` indique le mode attendu (`environnement` ou `variables de dépôt DEV_*/PROD_*`), et un seul des deux jobs jumeaux s'exécute (l'autre est « skipped »).
+- Le pool `github` de chaque projet ne contient que le fournisseur `quran-school-app` : `gcloud iam workload-identity-pools providers list --location=global --workload-identity-pool=github --project=$PROJECT`.
 - Un aperçu qui tenterait `firebase deploy --only firestore:rules` est refusé par IAM.
 - Journal d'audit IAM : `gcloud logging read 'protoPayload.authenticationInfo.principalEmail="'$DEPLOY_SA'"' --project=$PROJECT --limit=20` (idem avec `$OPS_SA`).
 
 ## 9. Retour arrière
 - Désactiver un workflow : `gh workflow disable ops.yml --repo $REPO` (idem `deploy.yml`, `deploy-lot0.yml`).
 - Couper l'accès : `gcloud iam workload-identity-pools providers disable $PROVIDER --location=global --workload-identity-pool=$POOL --project=$PROJECT`.
+- Revenir à l'autorisation par environnement (D74, Team/Enterprise seulement) : D75, « Retour arrière ».
 - Version précédente du Hosting : Console › Hosting › Historique des versions › Restaurer.
