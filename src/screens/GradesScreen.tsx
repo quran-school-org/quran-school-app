@@ -1,144 +1,119 @@
 /**
- * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
+ * Examens et attestations (charte « لوحة الكتّاب ») : synthèse des résultats,
+ * liste des examens validés, encart d'attestation. Mêmes actions et mêmes droits.
  */
+import React from "react";
+import { Award, FileBadge2, Plus, Trash2 } from "lucide-react";
 import { checkUserPermission } from "../types";
-import { Plus, Trash2 } from "lucide-react";
 import { useApp } from "../app/AppContext";
+import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, Ltr, PageHeader, Pill, ProgressBar } from "../ui";
+
+const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} aria-hidden="true" />;
+const OVERALL_TONE: Record<string, any> = { "ممتاز": "gold", "جيد جداً": "success", "جيد": "primary", "مقبول": "neutral" };
+const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : 0);
 
 export default function GradesScreen() {
-  const {
-    students,
-    teachers,
-    grades,
-    currentUser,
-    currentRole,
-    schoolName,
-    handleOpenGradeForm,
-    handleDeleteGrade,
-    handlePrintCertificate,
-  } = useApp();
+  const { students, teachers, grades, currentUser, currentRole, schoolName, handleOpenGradeForm, handleDeleteGrade, handlePrintCertificate } = useApp();
+  const can = (a: "create" | "delete" | "print") => checkUserPermission(currentUser, currentRole, "grades", a);
+  const mem = avg(grades.map((g) => Number(g.memorizationGrade) || 0));
+  const taj = avg(grades.map((g) => Number(g.tajweedGrade) || 0));
+  const excellent = grades.filter((g) => g.overallGrade === "ممتاز").length;
 
   return (
-    <div data-screen="grades" className="space-y-6">
+    <div data-screen="grades" className="flex flex-col gap-6">
+      <PageHeader
+        title="الامتحانات والشهادات"
+        description="نتائج امتحانات الحفظ والتجويد التي يشرف عليها معلمو الحلقات، وإصدار الشهادات التقديرية."
+        actions={
+          can("create") && (
+            <Button
+              variant="primary"
+              data-action="open-grade-form"
+              icon={ic(Plus, "w-[18px] h-[18px]")}
+              onClick={() => {
+                if (students.length > 0) handleOpenGradeForm(students[0].id);
+                else alert("يرجى تسجيل طلاب أولاً.");
+              }}
+            >
+              رصد نتيجة اختبار جديدة
+            </Button>
+          )
+        }
+      />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-primary">نتائج امتحانات الحفظ والتجويد وإصدار الشهادات</h2>
-          <p className="text-[13px] text-ink-3">سجل نتائج الاختبارات الدورية التي يشرف عليها معلمو الحلقات.</p>
-        </div>
+      <KpiGrid label="ملخص النتائج" min={170}>
+        <KpiTile size="md" label="اختبارات مرصودة" value={grades.length} unit="اختبار" />
+        <KpiTile size="md" label="معدل الحفظ" value={mem} unit="/ 20" />
+        <KpiTile size="md" label="معدل التجويد" value={taj} unit="/ 20" />
+        <KpiTile size="md" label="تقدير ممتاز" value={excellent} unit="طالب" />
+      </KpiGrid>
 
-        {checkUserPermission(currentUser, currentRole, "grades", "create") && (
-          <button
-            data-action="open-grade-form"
-            onClick={() => {
-              if (students.length > 0) {
-                handleOpenGradeForm(students[0].id);
-              } else {
-                alert("يرجى تسجيل طلاب أولاً.");
-              }
-            }}
-            className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            رصد نتيجة اختبار جديدة
-          </button>
-        )}
-      </div>
-
-      {/* Grades Table & Certificate generator */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Grades list */}
-        <div className="bg-surface rounded-2xl border border-line lg:col-span-2 overflow-hidden">
-          <div className="p-4 bg-sand-50 border-b font-bold text-[13px] text-ink-2">
-            قائمة شهادات الاختبار المعتمدة
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <Card padded={false} className="lg:col-span-2 overflow-hidden" aria-labelledby="grades-title">
+          <div className="px-5 py-4 border-b border-line-soft">
+            <h2 id="grades-title" className="m-0 font-display font-semibold text-[20px] text-primary">قائمة شهادات الاختبار المعتمدة</h2>
           </div>
-
-          <div className="divide-y divide-line-faint">
-            {grades.length > 0 ? (
-              grades.map((gr) => {
-                const stud = students.find(s => s.id === gr.studentId);
-                const teacher = teachers.find(t => t.id === gr.examinerId);
-
+          {grades.length === 0 ? (
+            <div className="p-5"><EmptyState icon={ic(Award, "w-8 h-8")} title="لا نتائج بعد">لم يتم رصد اختبارات أو شهادات تقديرية للطلاب بعد.</EmptyState></div>
+          ) : (
+            <ul className="m-0 p-0 list-none divide-y divide-line-faint">
+              {grades.map((gr) => {
+                const stud = students.find((s) => s.id === gr.studentId);
+                const teacher = teachers.find((t) => t.id === gr.examinerId);
                 return (
-                  <div key={gr.id} className="p-4 flex flex-col md:flex-row justify-between gap-4 hover:bg-sand-50/40">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-gold-400 text-ink text-[12.5px] font-bold px-2 py-0.5 rounded-full">
-                          {gr.overallGrade}
-                        </span>
-                        <h4 className="font-bold text-ink text-sm">{stud?.fullName || "طالب مجهول"}</h4>
+                  <li key={gr.id} className="px-5 py-4 flex flex-col md:flex-row justify-between gap-4 hover:bg-surface-2">
+                    <div className="flex flex-col gap-2.5 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="m-0 font-sans font-semibold text-[15px] text-ink">{stud?.fullName || "طالب مجهول"}</h3>
+                        <Pill tone={OVERALL_TONE[gr.overallGrade] || "neutral"}>{gr.overallGrade}</Pill>
                       </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 text-[13px] text-ink-3">
-                        <p>الامتحان: <span className="font-bold text-ink-2">{gr.testedPortion}</span></p>
-                        <p>درجة الحفظ: <span className="font-bold font-mono text-primary-700">{gr.memorizationGrade}/20</span></p>
-                        <p>درجة التجويد: <span className="font-bold font-mono text-primary-700">{gr.tajweedGrade}/20</span></p>
-                        <p className="md:col-span-3">تاريخ الاختبار: <span className="font-mono font-medium">{gr.examDate}</span></p>
+                      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-ink-3">
+                        <span>الامتحان: <strong className="font-semibold text-ink-2">{gr.testedPortion}</strong></span>
+                        <span>تاريخ الاختبار: <Ltr className="text-ink-2">{gr.examDate}</Ltr></span>
+                        {teacher && <span>الممتحن: <span className="text-ink-2">{teacher.fullName}</span></span>}
                       </div>
-
-                      {gr.notes && (
-                        <p className="text-[13px] bg-sand-50 p-2.5 rounded-lg border border-line-soft text-ink-2 italic">
-                          "{gr.notes}"
-                        </p>
-                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
+                        <div className="flex flex-col gap-1">
+                          <span className="flex justify-between text-[12.5px] text-ink-2"><span>درجة الحفظ</span><strong className="tabular-nums text-primary">{gr.memorizationGrade}/20</strong></span>
+                          <ProgressBar value={Number(gr.memorizationGrade) || 0} max={20} height={6} className="flex-none" label={`درجة الحفظ ${gr.memorizationGrade} من 20`} />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="flex justify-between text-[12.5px] text-ink-2"><span>درجة التجويد</span><strong className="tabular-nums text-primary">{gr.tajweedGrade}/20</strong></span>
+                          <ProgressBar value={Number(gr.tajweedGrade) || 0} max={20} height={6} tone="gold" className="flex-none" label={`درجة التجويد ${gr.tajweedGrade} من 20`} />
+                        </div>
+                      </div>
+                      {gr.notes && <p className="m-0 text-[13px] bg-surface-2 border border-line-soft rounded-lg px-3 py-2 text-ink-2">«{gr.notes}»</p>}
                     </div>
-
                     <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
-                      {/* Printable Certificate button simulated with simple alert/print window */}
-                      {checkUserPermission(currentUser, currentRole, "grades", "print") && (
-                        <button
-                          onClick={() => handlePrintCertificate(stud, gr)}
-                          className="px-3 py-1.5 bg-primary-50 hover:bg-primary-100 text-primary-800 rounded-lg text-[13px] font-bold transition flex items-center gap-1"
-                        >
-                          📜 عرض الشهادة التقديرية
-                        </button>
+                      {can("print") && (
+                        <Button size="sm" onClick={() => handlePrintCertificate(stud, gr)} icon={ic(FileBadge2)}>عرض الشهادة التقديرية</Button>
                       )}
-
-                      {checkUserPermission(currentUser, currentRole, "grades", "delete") && (
-                        <button
-                          onClick={() => handleDeleteGrade(gr.id)}
-                          className="p-1.5 hover:bg-danger-50 text-danger-600 rounded-lg transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      {can("delete") && (
+                        <IconButton size="sm" tone="danger" label="حذف نتيجة الاختبار" onClick={() => handleDeleteGrade(gr.id)}>{ic(Trash2)}</IconButton>
                       )}
                     </div>
-                  </div>
+                  </li>
                 );
-              })
-            ) : (
-              <div className="p-8 text-center text-ink-3 text-[13px]">
-                لم يتم رصد اختبارات أو شهادات تقديرية للطلاب بعد.
-              </div>
-            )}
-          </div>
-        </div>
+              })}
+            </ul>
+          )}
+        </Card>
 
-        {/* Certificate Showcase mockup */}
-        <div className="bg-gold-100 rounded-2xl p-6 border-4 border-gold-300 text-center space-y-4 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:16px_16px] pointer-events-none" />
-
-          <div className="border border-gold-200 p-4 rounded-xl space-y-3">
-            <span className="text-3xl block">📜</span>
-            <h3 className="font-serif font-bold text-gold-900 text-base">شهادة حفظ وتميز تجويدي</h3>
-            <p className="text-[12.5px] text-gold-800 leading-relaxed font-serif">
-              قال رسول الله صلى الله عليه وسلم:<br/>
-              <span className="font-bold italic">"الْمَاهِرُ بِالْقُرْآنِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ"</span>
+        <aside aria-label="الشهادة التقديرية" className="relative overflow-hidden rounded-2xl bg-night text-night-text p-6 text-center flex flex-col gap-4">
+          <GeometricPattern opacity={0.18} />
+          <div className="relative flex flex-col items-center gap-3 rounded-xl border border-gold/40 p-5">
+            <span className="w-12 h-12 rounded-full bg-gold/15 text-gold flex items-center justify-center">{ic(Award, "w-6 h-6")}</span>
+            <h2 className="m-0 font-display font-semibold text-[20px] text-gold-100">شهادة حفظ وتميز تجويدي</h2>
+            <p className="m-0 font-quran text-[17px] leading-loose text-night-text">
+              قال رسول الله صلى الله عليه وسلم:<br />
+              «الْمَاهِرُ بِالْقُرْآنِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ»
             </p>
-
-            <div className="h-0.5 bg-gradient-to-l from-transparent via-gold-400 to-transparent my-2" />
-
-            <p className="text-[13px] text-ink-2 leading-relaxed">
-              يصدر النادي شهادات معتمدة مع طباعة أوتوماتيكية للطلاب المتميزين تشجيعاً لهم في مسيرتهم التعليمية مع كتاب الله.
-            </p>
+            <span aria-hidden="true" className="block h-px w-2/3 bg-gradient-to-l from-transparent via-gold to-transparent" />
+            <p className="m-0 text-[13.5px] text-night-muted leading-relaxed">يصدر النادي شهادات معتمدة مع طباعة أوتوماتيكية للطلاب المتميزين تشجيعاً لهم في مسيرتهم التعليمية مع كتاب الله.</p>
           </div>
-
-          <p className="text-[11.5px] text-gold-700 font-bold">بإشراف {schoolName}</p>
-        </div>
-
+          <p className="relative m-0 text-[12.5px] font-semibold text-gold">بإشراف {schoolName}</p>
+        </aside>
       </div>
-
     </div>
   );
 }
