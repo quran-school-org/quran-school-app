@@ -1,0 +1,369 @@
+# Opérations de données (D59) : sauvegardes, copie prod → dev, scripts Admin SDK.
+#
+# - Déclenchement MANUEL uniquement (workflow_dispatch), par l'orchestrateur
+#   (gh workflow run) après le « go » du propriétaire : docs/runbooks/OPERATIONS-CLAUDE.md.
+# - Compte de service github-ops (WIF, sans clé), distinct de github-deploy.
+# - Entrées : des choix fermés, sauf `confirm` (comparé, jamais exécuté) et
+#   `import_source` (validé par une expression régulière stricte avant usage).
+#   Aucune entrée n'est interpolée dans un script : tout passe par env.
+# - Simulation par défaut (apply=false). Toute écriture (apply=true) exige
+#   confirm = identifiant du projet ; en production, toute action autre que
+#   describe-db et verify-counts l'exige aussi (lecture de données personnelles).
+# - Avant lot0-provision / migrate-to-tenants appliqués : PITR vérifié (prod)
+#   et export complet de la base dans le bucket de sauvegarde, en premier.
+# - Code exécuté : lot0-provision → release/lot0 ; migrate-to-tenants et
+#   verify-counts → main. Références fixes, jamais fournies en entrée.
+# - Rapports (données personnelles) : artefact de 3 jours, jamais dans les
+#   journaux (seuls des compteurs sont affichés). Mots de passe temporaires :
+#   artefact séparé d'un jour.
+name: Opérations de données (manuel)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environnement GitHub (dev ou production)"
+        type: choice
+        options: [dev, production]
+        default: dev
+      action:
+        description: "Opération"
+        type: choice
+        options: [describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts]
+        default: describe-db
+      apply:
+        description: "Appliquer (sinon simulation) : lot0-provision, migrate-to-tenants, import-firestore"
+        type: boolean
+        default: false
+      rotate_passwords:
+        description: "Remplacement des mots de passe (D53 : none)"
+        type: choice
+        options: [none, weak, all]
+        default: none
+      import_source:
+        description: "import-firestore : nom d'un export de la prod (AAAAMMJJ-HHMMSSZ-motif, lu dans un run export)"
+        type: string
+        required: false
+        default: ""
+      confirm:
+        description: "Recopier l'identifiant du projet visé pour confirmer"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Une seule opération à la fois par environnement ; jamais annulée en cours.
+concurrency:
+  group: ops-${{ inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  PROD_PROJECT_ID: gen-lang-client-0481880143
+  # Bucket des exports de la prod, lu par le projet de dev (guide, étape 2).
+  PROD_BACKUP_BUCKET: gen-lang-client-0481880143-sauvegardes
+  # École migrée par migrate-to-tenants (école n°1).
+  SCHOOL_ID: alfajr
+
+jobs:
+  operation:
+    name: ${{ inputs.action }} (${{ inputs.environment }}${{ inputs.apply && ', application' || ', simulation' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write # jeton OIDC pour la fédération d'identité
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      ACTION: ${{ inputs.action }}
+      APPLY: ${{ inputs.apply }}
+      ROTATE: ${{ inputs.rotate_passwords }}
+      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      DATABASE_ID: ${{ vars.FIRESTORE_DATABASE_ID }}
+      BACKUP_BUCKET: ${{ vars.BACKUP_BUCKET }}
+    outputs:
+      export_name: ${{ steps.export.outputs.name || steps.preexport.outputs.name }}
+    steps:
+      - name: Garde-fous
+        id: garde
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          IMPORT_SOURCE: ${{ inputs.import_source }}
+          REF: ${{ github.ref }}
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          OPS_SA: ${{ vars.GCP_OPS_SERVICE_ACCOUNT }}
+          SUPER_ADMIN_USERNAME: ${{ vars.SUPER_ADMIN_USERNAME }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          case "${ENVIRONMENT}" in dev|production) ;; *) fail "Environnement inconnu.";; esac
+          case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts) ;; *) fail "Action inconnue.";; esac
+          case "${ROTATE}" in none|weak|all) ;; *) fail "rotate_passwords inconnu.";; esac
+          case "${APPLY}" in true|false) ;; *) fail "apply invalide.";; esac
+          if [ -z "${PROJECT_ID}" ] || [ -z "${DATABASE_ID}" ] || [ -z "${WIF_PROVIDER}" ] || [ -z "${OPS_SA}" ] || [ -z "${BACKUP_BUCKET}" ]; then
+            fail "Variables de l'environnement GitHub '${ENVIRONMENT}' absentes (FIREBASE_PROJECT_ID, FIRESTORE_DATABASE_ID, GCP_WIF_PROVIDER, GCP_OPS_SERVICE_ACCOUNT, BACKUP_BUCKET). Voir docs/GUIDE-MISE-EN-PROD.md, étape 3."
+          fi
+          # Formats stricts : ces valeurs servent d'arguments à gcloud et aux scripts.
+          [[ "${PROJECT_ID}" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || fail "FIREBASE_PROJECT_ID invalide."
+          [[ "${DATABASE_ID}" =~ ^[a-z][a-z0-9-]{2,62}$ ]] || fail "FIRESTORE_DATABASE_ID invalide (base nommée attendue)."
+          [[ "${BACKUP_BUCKET}" =~ ^[a-z0-9][a-z0-9._-]{1,61}[a-z0-9]$ ]] || fail "BACKUP_BUCKET invalide (nom sans gs://)."
+          case "${PROJECT_ID}" in demo-*) fail "Projet demo-* : utiliser les émulateurs.";; esac
+          case "${OPS_SA}" in *"@${PROJECT_ID}.iam.gserviceaccount.com") ;; *) fail "Le compte d'opérations n'appartient pas au projet ${PROJECT_ID}.";; esac
+
+          if [ "${ENVIRONMENT}" = "production" ]; then
+            [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ] || fail "L'environnement production ne vise pas ${PROD_PROJECT_ID}."
+            [ "${REF}" = "refs/heads/main" ] || fail "La production ne se lance que depuis le workflow de main (reçu : ${REF})."
+          else
+            [ "${PROJECT_ID}" != "${PROD_PROJECT_ID}" ] || fail "L'environnement dev pointe vers la prod."
+            [ "${BACKUP_BUCKET}" != "${PROD_BACKUP_BUCKET}" ] || fail "Le bucket de dev est celui de la prod."
+          fi
+
+          # Cohérence des entrées avec l'action.
+          case "${ACTION}" in
+            lot0-provision|migrate-to-tenants|import-firestore) ;;
+            *) [ "${APPLY}" = "false" ] || fail "apply=true n'a pas de sens pour ${ACTION}." ;;
+          esac
+          case "${ACTION}" in
+            lot0-provision|migrate-to-tenants) ;;
+            *) [ "${ROTATE}" = "none" ] || fail "rotate_passwords ne concerne que lot0-provision et migrate-to-tenants." ;;
+          esac
+          if [ "${ACTION}" = "import-firestore" ]; then
+            [ "${ENVIRONMENT}" = "dev" ] || fail "import-firestore est refusé en production (écrase des documents de la base en service)."
+            [[ "${IMPORT_SOURCE}" =~ ^[0-9]{8}-[0-9]{6}Z-(manuel|avant-lot0-provision|avant-migrate-to-tenants)$ ]] \
+              || fail "import_source invalide : attendu le nom d'un export de la prod (ex. 20261101-193000Z-manuel)."
+          else
+            [ -z "${IMPORT_SOURCE}" ] || fail "import_source ne concerne que import-firestore."
+          fi
+
+          # Confirmation par l'identifiant du projet.
+          NEED_CONFIRM=false
+          [ "${APPLY}" = "true" ] && NEED_CONFIRM=true
+          if [ "${ENVIRONMENT}" = "production" ]; then
+            case "${ACTION}" in describe-db|verify-counts) ;; *) NEED_CONFIRM=true ;; esac
+          fi
+          if [ "${NEED_CONFIRM}" = "true" ] && [ "${CONFIRM}" != "${PROJECT_ID}" ]; then
+            fail "Confirmation incorrecte : recopier l'identifiant du projet visé dans « confirm »."
+          fi
+
+          # Super-administrateur (migration) : variable facultative de l'environnement, validée.
+          if [ "${ACTION}" = "migrate-to-tenants" ] && [ -n "${SUPER_ADMIN_USERNAME}" ]; then
+            [[ "${SUPER_ADMIN_USERNAME}" =~ ^[a-z0-9][a-z0-9._-]{1,39}$ ]] || fail "SUPER_ADMIN_USERNAME invalide."
+          fi
+
+          # Code à extraire : références FIXES.
+          case "${ACTION}" in
+            lot0-provision) echo "code_ref=release/lot0" >> "$GITHUB_OUTPUT" ;;
+            migrate-to-tenants|verify-counts) echo "code_ref=main" >> "$GITHUB_OUTPUT" ;;
+            *) echo "code_ref=" >> "$GITHUB_OUTPUT" ;;
+          esac
+          echo "stamp=$(date -u +%Y%m%d-%H%M%SZ)" >> "$GITHUB_OUTPUT"
+          # Rapports et secrets hors de l'espace de travail (jamais mêlés au code ni aux identifiants WIF).
+          { echo "REPORTS=${RUNNER_TEMP}/rapports"; echo "SECRETS_DIR=${RUNNER_TEMP}/secret"; } >> "$GITHUB_ENV"
+          echo "${ACTION} sur ${PROJECT_ID} / ${DATABASE_ID} (${ENVIRONMENT}), apply=${APPLY}, rotate_passwords=${ROTATE}"
+
+      - name: Code (${{ steps.garde.outputs.code_ref }})
+        if: steps.garde.outputs.code_ref != ''
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ steps.garde.outputs.code_ref }}
+          persist-credentials: false
+
+      # Pas de cache npm partagé dans le job qui détient le jeton OIDC.
+      - if: steps.garde.outputs.code_ref != ''
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      # Sans scripts d'installation (tsx et firebase-admin n'en ont pas besoin, vérifié).
+      - name: Installation (sans scripts)
+        if: steps.garde.outputs.code_ref != ''
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          echo "Code : $(git rev-parse HEAD)"
+
+      - name: Authentification Google (Workload Identity Federation, sans clé)
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_OPS_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Emplacement de la base et PITR
+        id: base
+        run: |
+          set -euo pipefail
+          gcloud firestore databases describe --database="${DATABASE_ID}" --project="${PROJECT_ID}" --format=json > "${RUNNER_TEMP}/base.json"
+          LOC=$(jq -r '.locationId // ""' "${RUNNER_TEMP}/base.json")
+          PITR=$(jq -r '.pointInTimeRecoveryEnablement // ""' "${RUNNER_TEMP}/base.json")
+          # Région conseillée pour les triggers Firestore (runbook Lot 0, §0.5) et
+          # emplacement attendu du bucket de sauvegarde (guide, étape 2).
+          case "${LOC}" in
+            eur3) TRIG=europe-west1; BLOC=EU ;;
+            nam5) TRIG=us-central1; BLOC=US ;;
+            nam7) TRIG=us-east4; BLOC="nam7 (à vérifier)" ;;
+            *) TRIG="${LOC}"; BLOC="${LOC}" ;;
+          esac
+          echo "location=${LOC}" >> "$GITHUB_OUTPUT"
+          echo "pitr=${PITR}" >> "$GITHUB_OUTPUT"
+          jq '{name, locationId, type, pointInTimeRecoveryEnablement, versionRetentionPeriod, earliestVersionTime, deleteProtectionState, concurrencyMode}' "${RUNNER_TEMP}/base.json"
+          echo "Région conseillée des triggers : ${TRIG} ; emplacement attendu du bucket : ${BLOC}"
+          {
+            echo "### Base \`${DATABASE_ID}\` (${PROJECT_ID})"
+            echo "- emplacement : \`${LOC}\` ; PITR : \`${PITR}\`"
+            echo "- région conseillée des triggers (FUNCTIONS_TRIGGER_REGION) : \`${TRIG}\`"
+            echo "- emplacement attendu du bucket \`${BACKUP_BUCKET}\` : \`${BLOC}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${APPLY}" = "true" ] && [ "${ENVIRONMENT}" = "production" ] && [ "${PITR}" != "POINT_IN_TIME_RECOVERY_ENABLED" ]; then
+            echo "::error::PITR désactivé sur la base de prod : écriture refusée (guide, étape 2, point 6)."
+            exit 1
+          fi
+
+      - name: describe-db — exports présents dans le bucket
+        if: inputs.action == 'describe-db'
+        run: |
+          set -euo pipefail
+          # Noms de dossiers (horodatages) seulement ; l'emplacement du bucket n'est
+          # lisible que si le compte a storage.buckets.get (sinon : non lisible).
+          gcloud storage buckets describe "gs://${BACKUP_BUCKET}" --format='value(location)' 2>/dev/null \
+            | sed 's/^/Emplacement du bucket : /' || echo "Emplacement du bucket : non lisible par ce compte"
+          echo "Derniers exports dans gs://${BACKUP_BUCKET}/ :"
+          gcloud storage ls "gs://${BACKUP_BUCKET}/" | sed -E 's#^gs://[^/]+/##; s#/$##' | grep -E '^[0-9]{8}-[0-9]{6}Z-' | sort | tail -n 15 || echo "(aucun)"
+
+      - name: Export préalable (avant écriture)
+        id: preexport
+        if: inputs.apply && (inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants')
+        env:
+          STAMP: ${{ steps.garde.outputs.stamp }}
+        run: |
+          set -euo pipefail
+          NAME="${STAMP}-avant-${ACTION}"
+          # Synchrone : la commande attend la fin de l'export (sinon échec = arrêt).
+          gcloud firestore export "gs://${BACKUP_BUCKET}/${NAME}" --database="${DATABASE_ID}" --project="${PROJECT_ID}"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "EXPORT=${NAME}"
+          echo "- export préalable : \`gs://${BACKUP_BUCKET}/${NAME}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: export-firestore
+        id: export
+        if: inputs.action == 'export-firestore'
+        env:
+          STAMP: ${{ steps.garde.outputs.stamp }}
+        run: |
+          set -euo pipefail
+          NAME="${STAMP}-manuel"
+          gcloud firestore export "gs://${BACKUP_BUCKET}/${NAME}" --database="${DATABASE_ID}" --project="${PROJECT_ID}"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+          echo "EXPORT=${NAME}"
+          echo "- export : \`gs://${BACKUP_BUCKET}/${NAME}\` (import_source=\`${NAME}\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: import-firestore (dev seulement)
+        if: inputs.action == 'import-firestore'
+        env:
+          IMPORT_SOURCE: ${{ inputs.import_source }}
+        run: |
+          set -euo pipefail
+          # Revalidé ici (défense en profondeur) : jamais sur la prod, format strict.
+          if [ "${ENVIRONMENT}" != "dev" ] || [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ]; then echo "::error::Import refusé hors dev."; exit 1; fi
+          [[ "${IMPORT_SOURCE}" =~ ^[0-9]{8}-[0-9]{6}Z-(manuel|avant-lot0-provision|avant-migrate-to-tenants)$ ]] || { echo "::error::import_source invalide."; exit 1; }
+          SRC="gs://${PROD_BACKUP_BUCKET}/${IMPORT_SOURCE}"
+          if [ "${APPLY}" != "true" ]; then
+            echo "Simulation : importerait ${SRC} dans ${PROJECT_ID} / ${DATABASE_ID}. Relancer avec apply=true."
+            echo "- simulation : importerait \`${SRC}\`" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Les documents de même chemin sont remplacés ; les autres restent (pas de purge).
+          gcloud firestore import "${SRC}" --database="${DATABASE_ID}" --project="${PROJECT_ID}"
+          echo "- importé : \`${SRC}\` → \`${PROJECT_ID}/${DATABASE_ID}\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: verify-counts (nombres seulement)
+        if: inputs.action == 'verify-counts'
+        run: |
+          set -euo pipefail
+          npx tsx scripts/ops/count-collections.ts --project="${PROJECT_ID}" --database="${DATABASE_ID}" > "${RUNNER_TEMP}/comptages.json"
+          cat "${RUNNER_TEMP}/comptages.json"
+          { echo "### Comptages"; echo '```json'; cat "${RUNNER_TEMP}/comptages.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: ${{ inputs.action }} (script Admin SDK, journal en artefact)
+        id: script
+        if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants'
+        env:
+          SUPER_ADMIN_USERNAME: ${{ vars.SUPER_ADMIN_USERNAME }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${REPORTS}"
+          ARGS=(--project="${PROJECT_ID}" --database="${DATABASE_ID}" --rotate-passwords="${ROTATE}" --out="${REPORTS}")
+          if [ "${ACTION}" = "lot0-provision" ]; then
+            SCRIPT=scripts/admin/lot0-provision-auth.ts
+          else
+            SCRIPT=scripts/migration/migrate-to-tenants.ts
+            ARGS+=(--school="${SCHOOL_ID}")
+            [ -n "${SUPER_ADMIN_USERNAME}" ] && ARGS+=(--super-admin="${SUPER_ADMIN_USERNAME}")
+          fi
+          [ "${APPLY}" = "true" ] && ARGS+=(--apply --confirm-prod="${PROJECT_ID}")
+          # Le journal contient des identifiants de comptes : jamais affiché, artefact seulement.
+          set +e
+          npx tsx "${SCRIPT}" "${ARGS[@]}" > "${REPORTS}/journal.txt" 2>&1
+          CODE=$?
+          set -e
+          echo "Code de sortie du script : ${CODE}"
+          if [ "${CODE}" -ne 0 ]; then
+            # Seules les lignes d'erreur générales, adresses et numéros masqués.
+            grep -E '^\[(lot0|migration)\] (ÉCHEC|Anomalies critiques)|compte\(s\) en échec' "${REPORTS}/journal.txt" \
+              | sed -E 's/[[:alnum:]._%+-]+@[[:alnum:].-]+/<email>/g; s/[0-9]{6,}/<n>/g' | head -n 5 || true
+          fi
+          if [ "${ACTION}" = "lot0-provision" ]; then
+            RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/lot0-*/resume.json' | head -n 1)
+            FILTER='{mode, appUsers, authCreated, authExisting, authPasswordSynced, authEmailUpdated, sessionsRevoked, passwordsRotated, rotationPolicy, failures, linksWritten, passwordsRemoved, mustChangePasswordSet, renamedUsernames, linksToReview, anomalies, critical}'
+          else
+            RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/migration-*/resume.json' | head -n 1)
+            FILTER='{mode, schoolId, collections, settings, schoolDoc, staffSplitExisting, accounts, superAdmin: (.superAdmin != null), anomalies, linksToReview, critical}'
+          fi
+          if [ -n "${RESUME}" ]; then
+            # Liste blanche de champs : compteurs et codes d'anomalie, aucune donnée personnelle.
+            jq "${FILTER}" "${RESUME}" > "${RUNNER_TEMP}/resume-filtre.json"
+            echo "RESUME_JSON=$(jq -c . "${RUNNER_TEMP}/resume-filtre.json")"
+            { echo "### Résumé ${ACTION} (${ENVIRONMENT})"; echo '```json'; cat "${RUNNER_TEMP}/resume-filtre.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Aucun resume.json produit."
+          fi
+          # Mots de passe temporaires (SECRET) : séparés du rapport.
+          mkdir -p "${SECRETS_DIR}"
+          N=0
+          while IFS= read -r -d '' f; do
+            N=$((N + 1)); mv "$f" "${SECRETS_DIR}/mots-de-passe-temporaires-${N}.csv"
+          done < <(find "${REPORTS}" -name 'mots-de-passe-temporaires.csv' -print0)
+          echo "secret_files=${N}" >> "$GITHUB_OUTPUT"
+          echo "Fichiers de mots de passe temporaires : ${N}"
+          exit "${CODE}"
+
+      - name: Rapport (données personnelles, 3 jours)
+        if: always() && steps.script.outcome != 'skipped'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rapport-${{ inputs.action }}-${{ inputs.environment }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.REPORTS }}
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Mots de passe temporaires (SECRET, 1 jour)
+        if: always() && steps.script.outputs.secret_files != '' && steps.script.outputs.secret_files != '0'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mots-de-passe-temporaires-${{ inputs.environment }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.SECRETS_DIR }}
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Résumé
+        if: always()
+        env:
+          CODE_REF: ${{ steps.garde.outputs.code_ref }}
+        run: |
+          {
+            echo "### Opération \`${ACTION}\` : ${ENVIRONMENT}"
+            echo "- projet : \`${PROJECT_ID}\`, base \`${DATABASE_ID}\`"
+            echo "- apply : ${APPLY} ; rotate_passwords : ${ROTATE}"
+            echo "- code : \`${CODE_REF:-aucun}\` ; workflow : \`${GITHUB_REF}@${GITHUB_SHA::7}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
