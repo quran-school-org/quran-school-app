@@ -1,7 +1,10 @@
 /**
- * Extrait tel quel d'App.tsx (Lot 2, sans changement de comportement).
+ * Écran de connexion (charte « لوحة الكتّاب ») : panneau bleu nuit à motif doré
+ * (bureau), formulaire inchangé (identifiant, mot de passe, envoi).
  */
+import React from "react";
 import { ShieldAlert, RefreshCw, Eye, Lock, User, LogIn, EyeOff } from "lucide-react";
+import { ActionAlert, Button, Emblem, FormField, GeometricPattern, SearchInput } from "../ui";
 import { useApp } from "../app/AppContext";
 
 export default function LoginScreen() {
@@ -19,122 +22,92 @@ export default function LoginScreen() {
     handleLoginSubmit,
   } = useApp();
 
+  const logo = systemSettings?.associationLogo;
+
   return (
-    <div data-screen="login" className="min-h-screen bg-sand-50 flex items-center justify-center p-4 md:p-8 relative overflow-hidden animate-fade-in" dir="rtl">
-      {/* Subtle decorative background shapes */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-primary-50 rounded-full blur-3xl -z-10 opacity-70"></div>
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-gold-50 rounded-full blur-3xl -z-10 opacity-70"></div>
+    <div data-screen="login" className="min-h-screen bg-app grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]" dir="rtl">
+      <aside aria-hidden="true" className="relative hidden lg:flex flex-col justify-between overflow-hidden bg-night text-night-text p-10">
+        <GeometricPattern opacity={0.16} fade="bottom" />
+        <div className="relative flex items-center gap-3">
+          <Emblem size={48} />
+          <span className="font-display font-semibold text-[22px] text-white">{schoolName}</span>
+        </div>
+        <div className="relative flex flex-col gap-4 max-w-md">
+          <p className="m-0 font-quran text-[30px] leading-[1.9] text-gold-100">«خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ»</p>
+          <p className="m-0 text-[15px] text-night-muted leading-relaxed">منظومة موحدة لمتابعة الحفظ والتجويد، الحضور، الرسوم والأنشطة في الكتّاب.</p>
+        </div>
+        <span className="relative text-[13px] text-night-muted">نظام إدارة حلقات تحفيظ القرآن الكريم</span>
+      </aside>
 
-      <div className="w-full max-w-md bg-surface border border-line overflow-hidden relative rounded-3xl shadow-pop">
-        {/* Top colored accent line */}
-        <div className="h-2 bg-gradient-to-r from-primary-600 via-gold-500 to-primary-700"></div>
-
-        <div className="p-6 md:p-8">
-          {/* Logo and Association Name */}
-          <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-primary-50/60 border border-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-3 overflow-hidden p-1.5">
-              {systemSettings?.associationLogo ? (
-                <img src={systemSettings.associationLogo} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-              ) : (
-                <svg className="w-full h-full" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="50" cy="50" r="46" fill="#f0fdf4" />
-                  <path d="M50 45 C40 45, 33 53, 33 63 L67 63 C67 53, 60 45, 50 45 Z" fill="#F59E0B" />
-                  <path d="M50 20 L50 30 M31 29 L38 36 M69 29 L62 36 M19 48 L29 48 M81 48 L71 48" stroke="#F59E0B" strokeWidth="4.5" strokeLinecap="round" />
-                  <path d="M42 63 C42 58, 44 53, 39 48 C37 46, 34 48, 32 50" stroke="#059669" strokeWidth="5.5" strokeLinecap="round" />
-                  <circle cx="41" cy="44" r="3.5" fill="#059669" />
-                  <path d="M58 63 C58 58, 56 53, 61 48 C63 46, 66 48, 68 50" stroke="#DC2626" strokeWidth="5.5" strokeLinecap="round" />
-                  <circle cx="59" cy="44" r="3.5" fill="#DC2626" />
-                  <path d="M28 63 C38 71, 62 71, 72 63" stroke="#059669" strokeWidth="4" fill="none" strokeLinecap="round" />
-                </svg>
-              )}
+      <main className="flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-[420px] flex flex-col gap-6">
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="w-20 h-20 rounded-2xl border border-line bg-surface flex items-center justify-center overflow-hidden p-1.5">
+              {logo ? <img src={logo} alt="شعار الجمعية" className="w-full h-full object-contain" referrerPolicy="no-referrer" /> : <Emblem size={64} />}
             </div>
-            <h2 className="text-xl font-bold text-primary tracking-tight">
-              {schoolName}
-            </h2>
-            <p className="text-[13px] text-ink-3 mt-1 font-medium">
-              بوابة الدخول الموحدة لإدارة شؤون حفظ وتجويد القرآن الكريم
-            </p>
+            <h1 className="m-0 font-display font-bold text-[28px] sm:text-[32px] leading-tight text-primary">{schoolName}</h1>
+            <p className="m-0 text-[14.5px] text-ink-2">بوابة الدخول الموحدة لإدارة شؤون حفظ وتجويد القرآن الكريم</p>
           </div>
 
-          {/* Error Message */}
-          {loginError && (
-            <div className="mb-4 p-3 bg-danger-50 border border-danger-200 text-danger-800 rounded-xl text-[13px] font-bold flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 shrink-0 text-danger-600" />
-              <span>{loginError}</span>
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
-                اسم المستخدم
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-ink-3 pointer-events-none">
-                  <User className="w-4 h-4" />
-                </span>
-                <input
-                  type="text"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                  placeholder=""
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  dir="ltr"
-                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pl-3 pr-10 text-right"
-                />
-              </div>
-              <p className="text-[11.5px] text-ink-3 mt-1 mr-1">استخدم اسم المستخدم الذي زودتك به إدارة الجمعية (وليس الاسم الكامل أو رقم الهاتف).</p>
-            </div>
-
-            <div>
-              <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
-                كلمة المرور
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-ink-3 pointer-events-none">
-                  <Lock className="w-4 h-4" />
-                </span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="• • • • • •"
-                  autoComplete="current-password"
-                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pl-10 pr-10 text-right font-mono"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-ink-3 hover:text-ink-2 focus:outline-none"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loginLoading}
-              className="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:bg-primary-400 cursor-pointer"
-            >
-              {loginLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>جاري التحقق من الهوية...</span>
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  <span>تسجيل الدخول الآمن</span>
-                </>
-              )}
-            </button>
-          </form>
+          <div className="rounded-3xl border border-line bg-surface p-5 sm:p-7 flex flex-col gap-4">
+            {loginError && (
+              <ActionAlert role="alert" tone="danger" icon={<ShieldAlert className="w-5 h-5" strokeWidth={1.75} />} title={loginError} />
+            )}
+            <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
+              <FormField label="اسم المستخدم" hint="استخدم اسم المستخدم الذي زودتك به إدارة الجمعية (وليس الاسم الكامل أو رقم الهاتف).">
+                {(id) => (
+                  <SearchInput
+                    id={id}
+                    type="text"
+                    icon={<User className="w-4 h-4" strokeWidth={1.75} />}
+                    value={loginUsername}
+                    onChange={(e: any) => setLoginUsername(e.target.value)}
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    dir="ltr"
+                    className="[&_input]:pr-10 [&_input]:pl-3 [&_input]:text-right"
+                  />
+                )}
+              </FormField>
+              <FormField label="كلمة المرور">
+                {(id) => (
+                  <div className="relative">
+                    <SearchInput
+                      id={id}
+                      type={showPassword ? "text" : "password"}
+                      icon={<Lock className="w-4 h-4" strokeWidth={1.75} />}
+                      value={loginPassword}
+                      onChange={(e: any) => setLoginPassword(e.target.value)}
+                      placeholder="• • • • • •"
+                      autoComplete="current-password"
+                      className="[&_input]:pe-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+                      aria-pressed={showPassword}
+                      className="absolute inset-y-0 end-0 w-11 inline-flex items-center justify-center bg-transparent border-0 text-ink-3 hover:text-ink cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
+                    </button>
+                  </div>
+                )}
+              </FormField>
+              <Button
+                type="submit"
+                variant="primary"
+                block
+                disabled={loginLoading}
+                icon={loginLoading ? <RefreshCw className="w-4 h-4 animate-spin" strokeWidth={1.75} /> : <LogIn className="w-4 h-4" strokeWidth={1.75} />}
+              >
+                {loginLoading ? "جاري التحقق من الهوية..." : "تسجيل الدخول الآمن"}
+              </Button>
+            </form>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
