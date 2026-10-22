@@ -14,6 +14,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -39,6 +40,7 @@ const uidFor = (role: Role) => `uid_${ROLES.indexOf(role)}`;
 const COLLECTIONS = [
   "students", "teachers", "classes", "attendance", "grades", "dailyProgress", "payments", "otherIncomes",
   "expenses", "salaryPayments", "activities", "activityParticipants", "activityExpenses", "notifications",
+  "staffPrivate",
 ];
 
 let env: RulesTestEnvironment;
@@ -63,6 +65,7 @@ async function seedSchool(db: Firestore, s: string) {
       await setDoc(doc(db, "schools", s, col, `${col}_${id}`), { studentId: id, schoolId: s });
     }
   }
+  await setDoc(doc(db, "schools", s, "staffPrivate", "teachers_1"), { monthlySalary: 2000, cinNumber: "XX9", teacherId: "teachers_1", schoolId: s });
   for (const col of ["teachers", "classes", "otherIncomes", "expenses", "salaryPayments", "activities", "activityParticipants", "activityExpenses", "notifications"]) {
     await setDoc(doc(db, "schools", s, col, `${col}_1`), { title: "x", schoolId: s });
   }
@@ -99,6 +102,8 @@ const dbAs = (uid: string, claims: Record<string, unknown> = {}): Firestore =>
   env.authenticatedContext(uid, claims).firestore() as unknown as Firestore;
 const dbRole = (role: Role) => dbAs(uidFor(role));
 const payload = (s: string, extra: Record<string, unknown> = {}) => ({ title: "valeur", studentId: "S-200", schoolId: s, ...extra });
+/** Contenu d'écriture valide selon la collection (staffPrivate : liste fermée de champs RH). */
+const payloadFor = (col: string, s: string) => (col === "staffPrivate" ? { monthlySalary: 1500, cinNumber: "XX1", schoolId: s } : payload(s));
 
 describe("accès sans appartenance", () => {
   it("visiteur non connecté : rien", async () => {
@@ -132,6 +137,7 @@ describe("accès sans appartenance", () => {
 const MATRIX: Record<string, { list: Role[]; write: Role[]; remove: Role[] }> = {
   students: { list: EDUCATORS, write: EDUCATORS, remove: OFFICE },
   teachers: { list: EDUCATORS, write: OFFICE, remove: OFFICE },
+  staffPrivate: { list: OFFICE, write: OFFICE, remove: OFFICE },
   classes: { list: ROLES, write: COORDINATORS, remove: OFFICE },
   attendance: { list: EDUCATORS, write: EDUCATORS, remove: OFFICE },
   grades: { list: EDUCATORS, write: EDUCATORS, remove: OFFICE },
@@ -157,12 +163,12 @@ describe("matrice rôle × collection × action (école alfajr)", () => {
         else await assertFails(list);
 
         const id = col === "settings" ? "system" : `${col}_new`;
-        const write = setDoc(doc(db, "schools", A, col, id), payload(A));
+        const write = setDoc(doc(db, "schools", A, col, id), payloadFor(col, A));
         if (exp.write.includes(role)) await assertSucceeds(write);
         else await assertFails(write);
 
         await env.withSecurityRulesDisabled(async (ctx) => {
-          await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, col, `${col}_del`), payload(A));
+          await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, col, `${col}_del`), payloadFor(col, A));
         });
         const del = deleteDoc(doc(db, "schools", A, col, `${col}_del`));
         if (exp.remove.includes(role)) await assertSucceeds(del);
@@ -170,6 +176,48 @@ describe("matrice rôle × collection × action (école alfajr)", () => {
       });
     }
   }
+});
+
+describe("fiches RH du personnel (R-06, D42)", () => {
+  const RH = ["monthlySalary", "contractType", "cinNumber", "emergencyContact", "birthDate", "address"];
+
+  it("aucun champ RH ne peut être écrit dans la fiche publique teachers", async () => {
+    const db = dbRole("مدير");
+    for (const field of RH) {
+      await assertFails(setDoc(doc(db, "schools", A, "teachers", "t_rh"), { fullName: "x", schoolId: A, [field]: "valeur" }));
+    }
+    await assertSucceeds(setDoc(doc(db, "schools", A, "teachers", "t_rh"), { fullName: "x", phone: "0600", schoolId: A }));
+  });
+
+  it("une fiche publique héritée avec salaire peut être nettoyée (deleteField en fusion)", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, "teachers", "t_old"), { fullName: "x", monthlySalary: 2500, schoolId: A });
+    });
+    const db = dbRole("إداري");
+    // Une mise à jour qui garde le champ RH est refusée…
+    await assertFails(updateDoc(doc(db, "schools", A, "teachers", "t_old"), { fullName: "y" }));
+    // … celle qui le retire passe (c'est ce que fait saveStaffToFirestore).
+    await assertSucceeds(setDoc(doc(db, "schools", A, "teachers", "t_old"), { fullName: "y", schoolId: A, monthlySalary: deleteField() }, { merge: true }));
+  });
+
+  it("staffPrivate : liste fermée de champs, identifiant cohérent, bon schoolId", async () => {
+    const db = dbRole("مدير");
+    await assertSucceeds(setDoc(doc(db, "schools", A, "staffPrivate", "t9"), { monthlySalary: 1, contractType: "تطوعي", cinNumber: "X", emergencyContact: "06", birthDate: "1990-01-01", address: "سلا", teacherId: "t9", schoolId: A, updatedAt: "2026-10-22" }));
+    await assertFails(setDoc(doc(db, "schools", A, "staffPrivate", "t9"), { fullName: "intrus", schoolId: A }));
+    await assertFails(setDoc(doc(db, "schools", A, "staffPrivate", "t9"), { monthlySalary: 1, teacherId: "autre", schoolId: A }));
+    await assertFails(setDoc(doc(db, "schools", A, "staffPrivate", "t9"), { monthlySalary: 1, schoolId: B }));
+    await assertFails(setDoc(doc(db, "schools", A, "staffPrivate", "t9"), { monthlySalary: 1, password: "x", schoolId: A }));
+  });
+
+  it("enseignants, coordinateurs, familles, autre école et super-admin : aucune fiche RH", async () => {
+    for (const role of ROLES.filter((r) => !OFFICE.includes(r))) {
+      await assertFails(getDoc(doc(dbRole(role), "schools", A, "staffPrivate", "teachers_1")));
+    }
+    await assertFails(getDoc(doc(dbAs("uid_dir_b"), "schools", A, "staffPrivate", "teachers_1")));
+    await assertFails(getDoc(doc(dbAs("uid_super", { superAdmin: true }), "schools", A, "staffPrivate", "teachers_1")));
+    await assertFails(getDoc(doc(dbAs("uid_suspendu"), "schools", A, "staffPrivate", "teachers_1")));
+    await assertSucceeds(getDoc(doc(dbRole("إداري"), "schools", A, "staffPrivate", "teachers_1")));
+  });
 });
 
 describe("isolation entre écoles", () => {

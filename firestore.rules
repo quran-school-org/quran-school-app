@@ -20,6 +20,7 @@ rules_version = '2';
 //   personnel   : pédagogie + متطوع, عامل نظافة / صيانة, أخرى
 //   famille     : طالب, ولي أمر (accès limité à linkedStudentIds)
 //
+// Fiches RH du personnel : schools/{s}/staffPrivate (bureau seulement, D42).
 // Matrice testée dans tests/emulator/tenant-rules.test.ts.
 // =============================================================================
 
@@ -95,6 +96,11 @@ service cloud.firestore {
         && !('password' in request.resource.data);
     }
 
+    // Champs RH du personnel (miroir de src/security/staffPrivate.ts).
+    function staffPrivateFields() {
+      return ['monthlySalary', 'contractType', 'cinNumber', 'emergencyContact', 'birthDate', 'address'];
+    }
+
     // Document d'élève lié au compte famille (lecture filtrée sur studentId).
     function familyOwnsDoc(s) {
       return isFamily(s) && resource.data.studentId in linkedStudents(s);
@@ -154,9 +160,23 @@ service cloud.firestore {
       }
 
       // ------------------------------------------------ personnel et halaqas
+      // Fiche publique du personnel : lisible par la pédagogie. Les champs RH
+      // (salaire, contrat, CIN, adresse, contact d'urgence, naissance) y sont
+      // interdits : ils vivent dans staffPrivate (R-06, D42).
       match /teachers/{teacherId} {
         allow read: if isEducator(s);
-        allow write: if isOffice(s) && validWrite(s, teacherId);
+        allow write: if isOffice(s) && validWrite(s, teacherId)
+          && !request.resource.data.keys().hasAny(staffPrivateFields());
+        allow delete: if isOffice(s);
+      }
+
+      // Fiche RH du personnel : bureau (مدير, إداري) uniquement, même identifiant
+      // que la fiche publique. Liste fermée de champs.
+      match /staffPrivate/{teacherId} {
+        allow read: if isOffice(s);
+        allow create, update: if isOffice(s) && validWrite(s, teacherId)
+          && request.resource.data.keys().hasOnly(staffPrivateFields().concat(['schoolId', 'teacherId', 'updatedAt']))
+          && request.resource.data.get('teacherId', teacherId) == teacherId;
         allow delete: if isOffice(s);
       }
 
