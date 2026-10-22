@@ -79,6 +79,10 @@ jobs:
       - name: Tests sur émulateurs (règles Firestore, scripts)
         run: npm run test:rules
 
+      # Rewrite Hosting /api/** → fonction api et en-têtes de sécurité (D48, D49).
+      - name: Tests Hosting (rewrite /api, en-têtes)
+        run: npm run test:hosting
+
   e2e:
     # Test de fumée Playwright contre les émulateurs (données fictives).
     runs-on: ubuntu-latest

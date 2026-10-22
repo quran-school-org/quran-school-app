@@ -3,9 +3,11 @@
 Branche `feat/durcissement` (depuis `fix/revue-securite`), worktree `/home/user/wt-durcissement`.
 Décisions : `docs/DECISIONS.md` à partir de D42.
 
-Commandes locales (conteneur à proxy, D21), toujours sous verrou :
+Commandes locales (conteneur à proxy, D21, D48), toujours sous verrou :
 - `EMULATOR_SKIP_FIRESTORE_TRIGGERS=true flock /home/user/.emulators.lock npm run test:rules`
 - `EMULATOR_SKIP_FIRESTORE_TRIGGERS=true flock /home/user/.emulators.lock npm run test:e2e`
+- `flock /home/user/.emulators.lock scripts/dev/without-proxy.sh npm run test:hosting`
+- (triggers compris : `without-proxy.sh` + `functions/.env.local` sans `EMULATOR_SKIP_FIRESTORE_TRIGGERS`)
 
 ## Fait
 1. **R-06 / D42** : fiches RH `staffPrivate` (règles, couche données, migration,
@@ -25,16 +27,18 @@ Commandes locales (conteneur à proxy, D21), toujours sous verrou :
    `BACKUP_ENABLED` ≠ true, vérifié sur l'émulateur), rétention, tests par
    appel direct, runbook `docs/runbooks/SAUVEGARDES.md` (PITR, bucket, IAM,
    restauration sur le dev).
+7. **Rewrite `/api/**` / D48** : testé localement (variables de proxy retirées
+   pour le seul processus) et ajouté à la CI (`npm run test:hosting`) ; triggers
+   également verts localement par ce moyen (237/237).
 
 ## En cours
 - (rien)
 
 ## Suivant (ordre de la mission)
-7. Rewrite Hosting `/api/**` : test local ou job CI.
 8. `index.html` générique, en-têtes de sécurité, cache, Playwright avec CSP.
 9. Runbook de restriction de la clé API web.
 10. Photos : évaluation / passage à Cloud Storage.
 Fin : `docs/PLAN.md`, section « Étape 2 : durcissement » de `docs/RAPPORT-ETAPE-1.md`.
 
 ## Prochaine action exacte
-Point 7 : test du rewrite Hosting `/api/**` (local avec variables proxy vidées, sinon job CI).
+Point 8 : `index.html` générique, en-têtes de sécurité (CSP…) et cache dans `firebase.json`, vérification Playwright sous CSP.

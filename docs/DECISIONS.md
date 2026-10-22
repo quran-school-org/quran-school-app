@@ -485,3 +485,19 @@ Avancement et reprise : `docs/progress/ETAPE-2-durcissement.md`.
 - **Tests** : logique pure (préfixes, requête, rétention, échec d'export sans
   suppression) par appel direct ; l'export réel n'est pas émulable.
 - **Retour arrière** : `BACKUP_ENABLED=false` et redéploiement (runbook §6).
+
+### D48. Rewrite Hosting `/api/**` testé ; proxy du conteneur contourné par processus
+- **Constat** : D11 et D21 attribuaient au proxy sortant l'échec du rewrite
+  (502) et des triggers sur l'émulateur. En lançant les émulateurs **sans
+  variables de proxy** pour ce seul processus (`scripts/dev/without-proxy.sh`),
+  les deux fonctionnent dans le conteneur : `npm run test:hosting` (3/3) et
+  `npm run test:rules` **avec** les triggers (237/237, aucun test ignoré,
+  `functions/.env.local` temporairement sans `EMULATOR_SKIP_FIRESTORE_TRIGGERS`).
+- **Décision** : nouveau script `test:hosting` (build de dev, émulateurs
+  Hosting + Functions + Auth + Firestore, `tests/hosting/`) : santé et rapport
+  IA via `/api/**` (401 sans jeton, 200 avec, quota compté), repli SPA. Ajouté
+  à la CI (job `verifier`). Dans un conteneur à proxy :
+  `flock /home/user/.emulators.lock scripts/dev/without-proxy.sh npm run test:hosting`.
+- **Conséquence** : `EMULATOR_SKIP_FIRESTORE_TRIGGERS` n'est plus nécessaire si
+  l'on passe par `without-proxy.sh` (gardé pour compatibilité, D21).
+- **Retour arrière** : retirer l'étape CI et le script.
