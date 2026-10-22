@@ -11,20 +11,34 @@ Mis à jour à chaque écran. Reprise : lire ce fichier, puis `docs/DECISIONS.md
 - [x] Comparaison pixel à pixel avant / après : identique (hors animations, ordre des membres)
 
 ## Partie 2 — `feat/design`
-Voir la liste des écrans ci-dessous.
+Décisions : D46 à D50 dans `docs/DECISIONS.md`.
 
-| Écran | État |
+| Écran / chantier | État |
 |---|---|
-| Jetons, polices | à faire |
-| Composants `src/ui` | à faire |
-| Cadre (menu, barre du haut, sélecteur d'école) | à faire |
-| Tableau de bord | à faire |
-| Élèves, personnel, halaqas, présences, examens, frais, comptabilité, activités, notifications, cartes, paramètres | à faire |
-| Connexion, choix d'école, portails, fenêtres | à faire |
-| Impressions | à faire |
+| Jetons `@theme`, polices, focus doré, bordure par défaut | fait |
+| Composants `src/ui` (AppShell, SideNav, Topbar, Modal, Form, DataTable, Kpi, Bars, Pill, HifzMap…) | fait |
+| Cadre : menu groupé, barre du haut, sélecteur d'école, bandeau quota, menu mobile | fait |
+| Tableau de bord (carte des 60 أحزاب, KPI, محفّظون, تحتاج إجراءً, حضور, تقدّم الحلقات) | fait |
+| Élèves : liste, dossier, carte, fenêtre d'inscription | fait |
+| Personnel : en-tête, indicateurs, filtres (liste et fenêtres : harmonisation) | fait (partiel) |
+| Frais et paiements + fenêtre de saisie | fait |
+| Harmonisation automatique des écrans hérités (surfaces, champs 44 px, boutons) | fait |
+| Présences (+ scan QR, rapport mensuel) | à faire |
+| Examens et شهادات (+ fenêtre de note) | à faire |
+| Comptabilité (sections) | à faire |
+| Activités | à faire |
+| Halaqas (ClassManagement) | à faire |
+| Notifications | à faire |
+| Cartes QR (laboratoire) | à faire |
+| Paramètres, utilisateurs, matrice des droits | à faire |
+| Portail enseignant / parent / élève, fenêtre de profil | à faire |
+| Connexion, vérification de session, choix / création d'école | à faire |
+| Impressions (reçu, attestation, rapports, cartes, présence mensuelle) + @media print | à faire |
+| Captures « après » 1440 / 390 + `docs/design/AVANCEMENT.md` | à faire |
 
 ## Prochaine action
-Créer `feat/design` depuis `refactor/decoupage-app`.
+Écran des présences : `src/screens/AttendanceScreen.tsx` et `src/screens/modals/MonthlyReportModal.tsx`
+(PageHeader, KpiGrid, SegmentedControl, DataTable ; supprimer les émojis ; garder les `data-*`).
 
 ## Commandes utiles
 - Tests : `npm run lint && npm run build && npm test`, puis
