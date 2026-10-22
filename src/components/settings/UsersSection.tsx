@@ -110,7 +110,7 @@ export default function UsersSection() {
               <div>
                 <p className="font-bold text-primary-950">المزامنة التلقائية والذكية لحسابات المؤسسة والأدوار:</p>
                 <p className="text-ink-2 mt-0.5 leading-relaxed">
-                  يقوم النظام تلقائياً بمزامنة حسابات <strong>المكتب التنفيذي والمسيرين</strong>، <strong>المؤطرين</strong>، <strong>المحفظين والأساتذة</strong>، <strong>المتطوعين</strong>، <strong>عمال النظافة والصيانة</strong>، <strong>أولياء الأمور</strong>، و<strong>الطلاب</strong> بدقة مع مطابقة الأدوار والمسميات الوظيفية المسندة لهم في شؤون العاملين، مع <strong>الإيقاف التلقائي لحساب أي شخص يتم أرشفته</strong>. كلمة المرور الافتراضية: <span className="font-mono bg-white border border-primary-200 px-1.5 py-0.2 rounded text-primary-800 font-bold">123</span>.
+                  يطابق النظام أدوار الحسابات الموجودة لـ<strong>المكتب التنفيذي والمسيرين</strong>، <strong>المؤطرين</strong>، <strong>المحفظين والأساتذة</strong>، <strong>المتطوعين</strong>، <strong>عمال النظافة والصيانة</strong>، <strong>أولياء الأمور</strong>، و<strong>الطلاب</strong> مع الأدوار والمسميات الوظيفية المسندة لهم في شؤون العاملين، مع <strong>إيقاف حساب أي شخص يتم أرشفته</strong>. لا يُنشأ أي حساب تلقائياً: يُنشأ كل حساب جديد بكلمة مرور مؤقتة يغيّرها صاحبها عند أول دخول.
                 </p>
               </div>
             </div>
