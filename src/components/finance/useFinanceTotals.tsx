@@ -2,7 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { escapeHtml } from "../../security/html";
+import { openPrintWindow } from "../../print/printWindow";
 import React, { useState, useMemo } from "react";
 import { Student } from "../../types";
 import type { useFinanceForms } from "./useFinanceForms";
@@ -328,69 +328,16 @@ export function useFinanceTotals(s: ReturnType<typeof useFinanceForms>) {
       return;
     }
 
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      window.print();
-      return;
-    }
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html dir="rtl" lang="ar">
-        <head>
-          <title>التقرير المالي والختامي - ${escapeHtml(selectedYear)}</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&display=swap');
-            @page {
-              size: A4 portrait;
-              margin: 12mm 10mm;
-            }
-            body {
-              font-family: 'Cairo', 'Amiri', serif !important;
-              background-color: #ffffff !important;
-              color: #0f172a !important;
-              margin: 0;
-              padding: 0;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-            * {
-              box-shadow: none !important;
-            }
-            .no-print, .print\\:hidden {
-              display: none !important;
-            }
-            table {
-              width: 100% !important;
-              border-collapse: collapse !important;
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-            tr {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-            .break-inside-avoid {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-          </style>
-        </head>
-        <body class="bg-white p-6">
-          <div class="max-w-4xl mx-auto">
-            ${reportElement.innerHTML}
-          </div>
-          <script>
-            setTimeout(function() {
-              window.print();
-              setTimeout(function() { window.close(); }, 700);
-            }, 800);
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    // Aperçu rendu par React (donc échappé), imprimé avec les styles de l'application.
+    const w = openPrintWindow({
+      title: "التقرير المالي والختامي - " + selectedYear,
+      body: '<main style="max-width: 56rem; margin: 0 auto; padding: 24px;">' + reportElement.innerHTML + "</main>",
+      css: "@page { size: A4 portrait; margin: 12mm 10mm; } body { background: #fff !important; } table, tr, .break-inside-avoid { break-inside: avoid; page-break-inside: avoid; } .no-print { display: none !important; }",
+      withAppStyles: true,
+      blockedMessage: "يرجى السماح بالنوافذ المنبثقة لطباعة التقرير.",
+      delay: 800,
+    });
+    if (!w) window.print();
   };
 
   return {

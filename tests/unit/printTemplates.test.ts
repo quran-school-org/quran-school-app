@@ -85,3 +85,17 @@ describe("échappement HTML des impressions", () => {
     });
   }
 });
+
+describe("fenêtres d'impression sans script ni CDN (CSP stricte possible)", () => {
+  const all = sourceFiles("src").map((f) => [f, readFileSync(f, "utf8")] as const);
+  it("seul printWindow.ts écrit dans une fenêtre (document.write)", () => {
+    expect(all.filter(([f, src]) => src.includes("document.write(") && !f.endsWith("printWindow.ts")).map(([f]) => f)).toEqual([]);
+  });
+  it("aucun CDN Tailwind, aucun script ni gestionnaire en ligne dans les gabarits", () => {
+    const bad = all.filter(([, src]) => /cdn\.tailwindcss\.com|<script|\sonload=|\sonerror=/.test(src)).map(([f]) => f);
+    expect(bad).toEqual([]);
+  });
+  it("aucun service QR externe (constat O-05)", () => {
+    expect(all.filter(([, src]) => /qrserver/i.test(src)).map(([f]) => f)).toEqual([]);
+  });
+});

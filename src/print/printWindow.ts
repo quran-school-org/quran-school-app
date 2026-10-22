@@ -1,5 +1,6 @@
 /**
- * Ouverture d'une fenêtre d'impression aux couleurs de la charte. Les feuilles
+ * Ouverture d'une fenêtre d'impression aux couleurs de la charte (sans script ni
+ * CDN dans le document imprimé). Les feuilles
  * de style de l'application sont recopiées (adresses absolues), ce qui permet
  * d'imprimer tel quel un aperçu rendu à l'écran (cartes, fiches) ; plus aucune
  * dépendance au CDN Tailwind.
@@ -72,12 +73,29 @@ export function openPrintWindow(opts: PrintOptions): Window | null {
     alert(opts.blockedMessage);
     return null;
   }
-  const delay = String(Math.max(0, Math.round(opts.delay ?? 900)));
-  const after = opts.closeAfter === false ? "" : "setTimeout(function(){ window.close(); }, 500);";
-  const script =
-    "<script>window.addEventListener('load', function(){ var go=function(){ setTimeout(function(){ window.print(); " + after + " }, " + delay +
-    "); }; if (document.fonts && document.fonts.ready) { document.fonts.ready.then(go); } else { go(); } });<\/script>";
-  w.document.write(printDocument(opts).replace("</body>", script + "</body>"));
+  // Aucun script dans le document imprimé (CSP stricte possible) : c'est la
+  // fenêtre de l'application qui déclenche l'impression, une fois le document
+  // et ses polices chargés.
+  w.document.write(printDocument(opts));
   w.document.close();
+  const delay = Math.max(0, Math.round(opts.delay ?? 900));
+  let started = false;
+  const go = () => {
+    if (started) return;
+    started = true;
+    window.setTimeout(() => {
+      if (w.closed) return;
+      w.focus();
+      w.print();
+      if (opts.closeAfter !== false) window.setTimeout(() => w.close(), 500);
+    }, delay);
+  };
+  const whenFonts = () => {
+    const fonts = (w.document as any).fonts;
+    if (fonts && fonts.ready) fonts.ready.then(go, go);
+    else go();
+  };
+  if (w.document.readyState === "complete") whenFonts();
+  else w.addEventListener("load", whenFonts);
   return w;
 }
