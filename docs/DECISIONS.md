@@ -943,7 +943,7 @@ Avancement et reprise : `docs/progress/ETAPE-2-integration.md`.
     pas configurer d'environnements (ni leurs variables) sans GitHub Team ou
     Pro. Si l'étape 3 du guide est impossible, les workflows restent inertes ;
     solution la plus simple : forfait Team pour l'organisation (à décider par
-    le propriétaire) ;
+    le propriétaire) ; **remplacé par D75** (variables de dépôt préfixées) ;
   - sans protection de branche, quiconque peut pousser sur `main` peut modifier
     ces workflows : la liste des collaborateurs est la frontière de confiance ;
   - Firebase Auth n'est ni exporté ni copié vers le dev (hachages = secrets) :
@@ -1237,3 +1237,119 @@ là-bas (R-06).
   limité au propriétaire et aux jetons qui en ont besoin.
 - **Retour arrière** : `update-oidc` avec l'ancienne condition ; retirer
   l'étape de chiffrement d'`ops.yml`.
+
+### D75. Condition WIF sans environnement GitHub, `principalSet`, workflows pour Team et Free
+- **Contexte** : l'organisation est peut-être sur le forfait GitHub **Free**.
+  Documentation GitHub (« Managing environments for deployment », lue le
+  22/10/2026) : « Users with GitHub Free plans can only configure environments
+  for public repositories » ; Team et Pro le peuvent pour un dépôt privé. Or
+  D74 reposait sur les environnements : condition WIF
+  `assertion.environment == '<env>'`, autorisation sur le sujet
+  `repo:<dépôt>:environment:<env>`, variables d'environnement. L'orchestrateur
+  a fait exécuter par le propriétaire une nouvelle spécification Google Cloud et
+  GitHub (`docs/PROMPT-NAVIGATEUR.md`).
+- **Décision (Google Cloud, spécification de l'orchestrateur)** :
+  - condition du fournisseur, identique pour le dev et la prod, sans
+    environnement : `assertion.repository == dépôt && assertion.ref ==
+    'refs/heads/main' && assertion.job_workflow_ref in [deploy.yml,
+    deploy-lot0.yml, ops.yml @refs/heads/main]` ;
+  - `iam.workloadIdentityUser` sur `github-deploy` et `github-ops` accordé à
+    `principalSet://…/workloadIdentityPools/github/attribute.repository/quran-school-org/quran-school-app`
+    (au lieu de `principal://…/subject/repo:…:environment:<env>`, retiré par le
+    bloc, rejouable sans risque) ;
+  - dev et prod séparés par des projets GCP distincts, chacun avec son pool.
+  Raisons : un jeton de job sans `environment:` n'a ni revendication
+  `environment` ni sujet `…:environment:…` ; la condition garde ce qui protège
+  vraiment (branche `main` et fichier de workflow), et elle fonctionne quel que
+  soit le forfait.
+- **Décision (workflows)** :
+  - `deploy.yml`, `deploy-lot0.yml`, `ops.yml` : job `configuration` (sans jeton,
+    sans environnement) qui choisit le mode : `environnement` si
+    `USE_GITHUB_ENVIRONMENTS == 'true'` ou si aucune variable de dépôt
+    `DEV_FIREBASE_PROJECT_ID` / `PROD_FIREBASE_PROJECT_ID` n'existe (Team,
+    Enterprise : rien à changer à la configuration du prompt) ; `prefixe` si
+    `USE_GITHUB_ENVIRONMENTS == 'false'` ou si l'une d'elles existe (Free).
+    Toute autre valeur de `USE_GITHUB_ENVIRONMENTS` arrête le workflow ;
+  - **deux jobs jumeaux** à jeton OIDC : `deployer` / `operation` avec
+    `environment: ${{ inputs.environment }}`, et
+    `deployer-sans-environnement` / `operation-sans-environnement` **sans** ce
+    mot-clé ; mêmes permissions, variables et étapes par ancres YAML
+    (documentées par GitHub, « Reusing workflow configurations ») ; conditions
+    `if:` exclusives. Écarté : `environment: ${{ cond && 'dev' || '' }}`, car la
+    documentation GitHub ne dit pas comment un nom vide est traité (le
+    fonctionnement est seulement rapporté par des utilisateurs), ni ce qui se
+    passe quand un job déclare `environment:` dans un dépôt privé en Free (elle
+    dit seulement qu'un environnement référencé inexistant est créé). Écarté
+    aussi : un workflow réutilisable, qui changerait `job_workflow_ref` et
+    sortirait de la condition WIF ;
+  - variables lues par une **sélection gardée**, sans index calculé (constat
+    `obfuscation` de zizmor) ni repli d'un préfixe sur l'autre :
+    `(prefix == 'DEV_' && vars.DEV_X) || (prefix == 'PROD_' && vars.PROD_X) ||
+    (prefix == '' && vars.X) || ''`, où `prefix` vient de `inputs.environment`
+    (`dev` → `DEV_`, `production` → `PROD_`) en mode `prefixe` et vaut `''` en
+    mode `environnement`. Contrôle explicite dans le garde-fou : couple
+    mode / environnement / préfixe revérifié, et refus si le projet, le
+    fournisseur WIF, le compte de service ou le bucket est égal à la variable
+    préfixée de l'**autre** environnement ;
+  - garde-fous conservés dans les deux modes : production depuis `main`,
+    `confirm` = projet, compte de service du projet visé, `dev` jamais vers la
+    prod, code fixe, artefacts chiffrés, aucune expression dans les scripts,
+    actions épinglées par SHA. Ajoutés à `deploy.yml` (déjà présents dans les
+    deux autres) : compte de service du projet visé, production égale à
+    `gen-lang-client-0481880143`, format de l'identifiant ; ajouté à
+    `deploy-lot0.yml` : production égale à `gen-lang-client-0481880143` ;
+  - `ARTIFACT_GPG_PUBLIC_KEY` : préfixée, sinon variable de dépôt (ou
+    d'environnement en mode `environnement`) ; c'est une clé publique ;
+  - région des triggers Firestore (bases de dev et de prod en `europe-west2`) :
+    `FUNCTIONS_TRIGGER_REGION` (`DEV_` en Free) est **obligatoire** pour le dev
+    dans `deploy.yml` et `deploy-lot0.yml`, sans repli sur `europe-west1`
+    (ancienne valeur codée en dur, incompatible avec une base en
+    `europe-west2`) ; elle remplace la région du fichier
+    `functions/.env.<projet>`. En production, la région vient du fichier
+    versionné (corrigé à part par l'orchestrateur), ou de
+    `PROD_FUNCTIONS_TRIGGER_REGION` si elle est posée ; les deux workflows
+    exigent une seule ligne `FIRESTORE_TRIGGER_REGION` valide avant de déployer ;
+  - `preview.yml` : job `disponibilite` (sans environnement) qui, en mode
+    `prefixe`, arrête le workflow avec un message clair avant tout job qui
+    déclare `environment: preview` ; inchangé en Team ;
+  - aperçus : le fournisseur `preview` passe dans un **pool séparé**
+    (`github-apercus`, guide étape 2). `principalSet://…/workloadIdentityPools/github/attribute.repository/…`
+    vaut pour tout fournisseur du pool `github` : un fournisseur d'aperçus dans
+    ce pool (ancienne version du guide) donnerait `github-deploy` et
+    `github-ops` du dev à toute branche déclarant `environment: preview` ;
+  - garde-fou statique `tests/unit/workflows.test.ts` étendu (jumeaux par
+    alias, sélection des préfixes, absence d'index calculé, arrêt des aperçus).
+- **Risques** :
+  - la séparation dev / prod ne repose plus sur l'environnement GitHub mais sur
+    les **projets GCP distincts** (un jeton accepté par le pool du dev ne donne
+    rien sur la prod) et sur la **logique des workflows de `main`** (préfixe ou
+    environnement choisi par `inputs.environment`, contrôle croisé, projet de
+    prod vérifié). Quiconque peut modifier ces trois workflows sur `main` peut
+    viser l'un ou l'autre projet : c'était déjà le cas (D64, D74) ;
+  - le pool `github` doit ne contenir que le fournisseur `quran-school-app`
+    (contrôle dans CI-DEPLOIEMENT.md §8) ;
+  - **hypothèse non vérifiée** : le mappage du prompt contient
+    `attribute.environment=assertion.environment`, revendication absente du
+    jeton d'un job sans `environment:`. La documentation Google consultée ne
+    dit pas si un mappage sur une revendication absente fait échouer
+    l'échange. Si le premier run Free échoue sur ce point, retirer
+    `attribute.environment` du mappage du fournisseur (rien ne l'utilise) ;
+  - non testé sur GitHub (aucun workflow déclenché) : comportement réel des
+    ancres YAML et des jobs « skipped », revendication `job_workflow_ref`.
+- **Vérifié localement** : `actionlint` 1.7.12 (shellcheck 0.11.0) sans
+  constat (dont SC2174 corrigé dans `ops.yml`) ; `zizmor` 1.31.1 `--offline`
+  sans constat, et en persona `pedantic` les 2 mêmes constats informatifs que
+  `main` (`ci.yml`) ; zizmor lit les alias (une injection volontaire dans une
+  étape ancrée est signalée deux fois) ; simulation des étapes `configuration`
+  et `Garde-fous` des trois workflows, avec un mini-évaluateur des expressions
+  `${{ }}`, en Team et en Free (variables factices) : cas nominaux, refus hors
+  `main`, sans `confirm`, `PROD_` absentes (aucun repli sur `DEV_`),
+  configurations croisées, dev vers la prod, compte d'un autre projet, clé GPG
+  de dépôt / préfixée / de l'autre environnement ; étape de chiffrement jouée
+  avec une clé jetable ; `npm run lint`, `npm test`, `npm run build`.
+- **Retour arrière** : côté Google, `update-oidc` avec la condition de D74 (avec
+  `assertion.environment=='<env>'`) et autorisation par sujet
+  `principal://…/subject/repo:…:environment:<env>` à la place du `principalSet`
+  (Team ou Enterprise seulement) ; côté GitHub, `USE_GITHUB_ENVIRONMENTS=true`
+  force le mode environnement sans changer de code, ou `git revert` des
+  commits de `feat/workflows-sans-environnements`.
