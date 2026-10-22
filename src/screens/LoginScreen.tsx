@@ -25,14 +25,14 @@ export default function LoginScreen() {
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary-50 rounded-full blur-3xl -z-10 opacity-70"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-gold-50 rounded-full blur-3xl -z-10 opacity-70"></div>
 
-      <div className="w-full max-w-md bg-white rounded-2xl border border-sand-200 shadow-xl overflow-hidden relative">
+      <div className="w-full max-w-md bg-surface border border-line overflow-hidden relative rounded-3xl shadow-pop">
         {/* Top colored accent line */}
         <div className="h-2 bg-gradient-to-r from-primary-600 via-gold-500 to-primary-700"></div>
 
         <div className="p-6 md:p-8">
           {/* Logo and Association Name */}
           <div className="text-center mb-6">
-            <div className="w-20 h-20 bg-primary-50/60 border border-primary-100 rounded-2xl flex items-center justify-center mx-auto shadow-sm mb-3 overflow-hidden p-1.5">
+            <div className="w-20 h-20 bg-primary-50/60 border border-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-3 overflow-hidden p-1.5">
               {systemSettings?.associationLogo ? (
                 <img src={systemSettings.associationLogo} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
               ) : (
@@ -48,17 +48,17 @@ export default function LoginScreen() {
                 </svg>
               )}
             </div>
-            <h2 className="text-xl font-black text-sand-800 tracking-tight">
+            <h2 className="text-xl font-bold text-primary tracking-tight">
               {schoolName}
             </h2>
-            <p className="text-xs text-sand-500 mt-1 font-medium">
+            <p className="text-[13px] text-ink-3 mt-1 font-medium">
               بوابة الدخول الموحدة لإدارة شؤون حفظ وتجويد القرآن الكريم
             </p>
           </div>
 
           {/* Error Message */}
           {loginError && (
-            <div className="mb-4 p-3 bg-danger-50 border border-danger-200 text-danger-800 rounded-xl text-xs font-bold flex items-center gap-2">
+            <div className="mb-4 p-3 bg-danger-50 border border-danger-200 text-danger-800 rounded-xl text-[13px] font-bold flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0 text-danger-600" />
               <span>{loginError}</span>
             </div>
@@ -67,11 +67,11 @@ export default function LoginScreen() {
           {/* Login Form */}
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-sand-500 mb-1.5 mr-1">
+              <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
                 اسم المستخدم
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sand-500 pointer-events-none">
+                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-ink-3 pointer-events-none">
                   <User className="w-4 h-4" />
                 </span>
                 <input
@@ -83,18 +83,18 @@ export default function LoginScreen() {
                   autoCapitalize="none"
                   spellCheck={false}
                   dir="ltr"
-                  className="w-full pl-3 pr-10 py-2.5 bg-sand-50 border border-sand-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all text-right font-medium"
+                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pl-3 pr-10 text-right"
                 />
               </div>
-              <p className="text-[10px] text-sand-500 mt-1 mr-1">استخدم اسم المستخدم الذي زودتك به إدارة الجمعية (وليس الاسم الكامل أو رقم الهاتف).</p>
+              <p className="text-[11.5px] text-ink-3 mt-1 mr-1">استخدم اسم المستخدم الذي زودتك به إدارة الجمعية (وليس الاسم الكامل أو رقم الهاتف).</p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-sand-500 mb-1.5 mr-1">
+              <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
                 كلمة المرور
               </label>
               <div className="relative">
-                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-sand-500 pointer-events-none">
+                <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-ink-3 pointer-events-none">
                   <Lock className="w-4 h-4" />
                 </span>
                 <input
@@ -103,12 +103,12 @@ export default function LoginScreen() {
                   onChange={(e) => setLoginPassword(e.target.value)}
                   placeholder="• • • • • •"
                   autoComplete="current-password"
-                  className="w-full pl-10 pr-10 py-2.5 bg-sand-50 border border-sand-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all text-right font-mono"
+                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pl-10 pr-10 text-right font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-sand-500 hover:text-sand-600 focus:outline-none"
+                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-ink-3 hover:text-ink-2 focus:outline-none"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>

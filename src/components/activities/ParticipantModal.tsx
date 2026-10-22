@@ -47,16 +47,16 @@ export default function ParticipantModal() {
     <>
       {/* MODAL 2: Register / Edit Participant */}
       {showParticipantModal && currentActivity && (
-        <div className="fixed inset-0 z-50 bg-sand-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:hidden">
-          <div className="bg-white rounded-2xl border border-sand-200 shadow-2xl max-w-lg w-full overflow-hidden my-8">
-            <div className="p-5 border-b border-sand-100 bg-sand-50 flex items-center justify-between">
-              <h3 className="font-bold text-sand-800 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto print:hidden bg-night/55 backdrop-blur-[2px]">
+          <div className="bg-surface border border-line max-w-lg w-full overflow-hidden my-8 rounded-3xl shadow-pop">
+            <div className="p-5 border-b border-line-soft bg-sand-50 flex items-center justify-between">
+              <h3 className="font-bold text-primary flex items-center gap-2">
                 <Users className="w-5 h-5 text-primary-600" />
                 <span>{editingParticipant ? "تعديل بيانات المشارك" : `تسجيل مشارك في "${currentActivity.title}"`}</span>
               </h3>
               <button
                 onClick={() => setShowParticipantModal(false)}
-                className="text-sand-500 hover:text-sand-600 p-1 rounded-lg"
+                className="text-ink-3 hover:text-ink-2 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -64,13 +64,13 @@ export default function ParticipantModal() {
 
             <form onSubmit={handleSaveParticipantForm} className="p-6 space-y-4 text-right">
               <div>
-                <label className="block text-xs font-bold text-sand-700 mb-1">مصدر بيانات المشارك</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">مصدر بيانات المشارك</label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setPartSourceType("student")}
-                    className={`py-2 text-xs font-bold rounded-xl border transition-all ${
-                      partSourceType === "student" ? "bg-primary-100 text-primary-800 border-primary-500" : "bg-sand-50 text-sand-600 border-sand-200"
+                    className={`py-2 text-[13px] font-bold rounded-xl border transition-all ${
+                      partSourceType === "student" ? "bg-primary-100 text-primary-800 border-primary-500" : "bg-sand-50 text-ink-2 border-line"
                     }`}
                   >
                     طالب من الجمعية
@@ -78,8 +78,8 @@ export default function ParticipantModal() {
                   <button
                     type="button"
                     onClick={() => setPartSourceType("staff")}
-                    className={`py-2 text-xs font-bold rounded-xl border transition-all ${
-                      partSourceType === "staff" ? "bg-primary-100 text-primary-800 border-primary-500" : "bg-sand-50 text-sand-600 border-sand-200"
+                    className={`py-2 text-[13px] font-bold rounded-xl border transition-all ${
+                      partSourceType === "staff" ? "bg-primary-100 text-primary-800 border-primary-500" : "bg-sand-50 text-ink-2 border-line"
                     }`}
                   >
                     أستاذ / كادر
@@ -87,8 +87,8 @@ export default function ParticipantModal() {
                   <button
                     type="button"
                     onClick={() => setPartSourceType("custom")}
-                    className={`py-2 text-xs font-bold rounded-xl border transition-all ${
-                      partSourceType === "custom" ? "bg-primary-100 text-primary-800 border-primary-500" : "bg-sand-50 text-sand-600 border-sand-200"
+                    className={`py-2 text-[13px] font-bold rounded-xl border transition-all ${
+                      partSourceType === "custom" ? "bg-primary-100 text-primary-800 border-primary-500" : "bg-sand-50 text-ink-2 border-line"
                     }`}
                   >
                     مشارك خارجي
@@ -98,7 +98,7 @@ export default function ParticipantModal() {
 
               {partSourceType === "student" && (
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">اختر الطالب المسجل بالجمعية *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اختر الطالب المسجل بالجمعية *</label>
                   <select
                     value={selectedStudentRefId}
                     onChange={(e) => {
@@ -111,7 +111,7 @@ export default function ParticipantModal() {
                       }
                     }}
                     required
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="">-- اختر طالباً --</option>
                     {students.filter(s => !s.isArchived).map(s => (
@@ -123,7 +123,7 @@ export default function ParticipantModal() {
 
               {partSourceType === "staff" && (
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">اختر الأستاذ / الموظف / الإداري *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اختر الأستاذ / الموظف / الإداري *</label>
                   <select
                     value={selectedStaffRefId}
                     onChange={(e) => {
@@ -136,7 +136,7 @@ export default function ParticipantModal() {
                       }
                     }}
                     required
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="">-- اختر كادراً أو موظفاً أو أستاذاً --</option>
                     {allStaff.map(t => (
@@ -150,16 +150,16 @@ export default function ParticipantModal() {
 
               {partSourceType === "custom" && (
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold text-sand-700">الصفة أو المسمى للمشارك (المسمى الوظيفي / الدور) *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الصفة أو المسمى للمشارك (المسمى الوظيفي / الدور) *</label>
                   <input
                     type="text"
                     value={partCustomRole}
                     onChange={(e) => setPartCustomRole(e.target.value)}
                     placeholder="مثال: طالب / محفظ / مؤطر / متطوع / مشارك خارجي..."
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   />
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    <span className="text-[11px] text-sand-500 font-bold self-center ml-1">اقتراحات سريعة:</span>
+                    <span className="text-[12.5px] text-ink-3 font-bold self-center ml-1">اقتراحات سريعة:</span>
                     {[
                       "طالب",
                       "محفظ",
@@ -175,10 +175,10 @@ export default function ParticipantModal() {
                         key={r}
                         type="button"
                         onClick={() => setPartCustomRole(r)}
-                        className={`text-[11px] px-2 py-1 rounded-lg border transition-all ${
+                        className={`text-[12.5px] px-2 py-1 rounded-lg border transition-all ${
                           partCustomRole === r
-                            ? "bg-primary-600 text-white border-primary-600 font-bold shadow-xs"
-                            : "bg-sand-100 hover:bg-sand-200 text-sand-700 border-sand-200"
+                            ? "bg-primary-600 text-white border-primary-600 font-bold"
+                            : "bg-sand-100 hover:bg-sand-200 text-ink-2 border-line"
                         }`}
                       >
                         {r}
@@ -189,35 +189,35 @@ export default function ParticipantModal() {
               )}
 
               <div>
-                <label className="block text-xs font-bold text-sand-700 mb-1">الاسم الكامل للمشارك *</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الاسم الكامل للمشارك *</label>
                 <input
                   type="text"
                   required
                   value={partFullName}
                   onChange={(e) => setPartFullName(e.target.value)}
                   placeholder="الاسم الكامل"
-                  className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">رقم الهاتف للتواصل</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الهاتف للتواصل</label>
                   <input
                     type="text"
                     value={partPhone}
                     onChange={(e) => setPartPhone(e.target.value)}
                     placeholder="06XXXXXXXX"
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">الجنس</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الجنس</label>
                   <select
                     value={partGender}
                     onChange={(e) => setPartGender(e.target.value as any)}
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="ذكر">ذكر</option>
                     <option value="أنثى">أنثى</option>
@@ -226,40 +226,40 @@ export default function ParticipantModal() {
               </div>
 
               {/* Fee & Payment Section */}
-              <div className="bg-sand-50 border border-sand-200 rounded-xl p-4 space-y-3">
-                <h4 className="font-bold text-xs text-sand-800">بيانات المساهمة والأداء</h4>
+              <div className="bg-sand-50 border border-line rounded-xl p-4 space-y-3">
+                <h4 className="font-bold text-[13px] text-ink">بيانات المساهمة والأداء</h4>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-sand-600 mb-1">المبلغ المطلوب (د.م)</label>
+                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ المطلوب (د.م)</label>
                     <input
                       type="number"
                       min="0"
                       value={partFee}
                       onChange={(e) => setPartFee(Number(e.target.value))}
-                      className="w-full p-2 text-sm bg-white border border-sand-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-sand-600 mb-1">المبلغ المدفوع (د.م)</label>
+                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ المدفوع (د.م)</label>
                     <input
                       type="number"
                       min="0"
                       value={partPaidAmount}
                       onChange={(e) => setPartPaidAmount(Number(e.target.value))}
-                      className="w-full p-2 text-sm bg-white border border-sand-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-bold text-primary-700"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-sand-600 mb-1">حالة الأداء</label>
+                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">حالة الأداء</label>
                     <select
                       value={partPaymentStatus}
                       onChange={(e) => setPartPaymentStatus(e.target.value as ParticipantPaymentStatus)}
-                      className="w-full p-2 text-xs bg-white border border-sand-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                     >
                       <option value="مدفوع">مدفوع بالكامل</option>
                       <option value="مدفوع جزئياً">مدفوع جزئياً</option>
@@ -269,11 +269,11 @@ export default function ParticipantModal() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-sand-600 mb-1">طريقة الدفع</label>
+                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">طريقة الدفع</label>
                     <select
                       value={partPaymentMethod}
                       onChange={(e) => setPartPaymentMethod(e.target.value as any)}
-                      className="w-full p-2 text-xs bg-white border border-sand-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                     >
                       <option value="نقداً">نقداً</option>
                       <option value="تحويل بنكي">تحويل بنكي</option>
@@ -284,39 +284,39 @@ export default function ParticipantModal() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-sand-600 mb-1">رقم وصل الأداء</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم وصل الأداء</label>
                   <input
                     type="text"
                     value={partReceiptNo}
                     onChange={(e) => setPartReceiptNo(e.target.value)}
                     placeholder="REC-ACT-XXXX"
-                    className="w-full p-2 text-xs bg-white border border-sand-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-sand-700 mb-1">ملاحظات صحية أو حساسية خاصة (اختياري)</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">ملاحظات صحية أو حساسية خاصة (اختياري)</label>
                 <input
                   type="text"
                   value={partMedicalNotes}
                   onChange={(e) => setPartMedicalNotes(e.target.value)}
                   placeholder="مثال: حساسية ضد الفول السوداني أو الربو..."
-                  className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-sand-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line-soft">
                 <button
                   type="button"
                   onClick={() => setShowParticipantModal(false)}
-                  className="px-4 py-2.5 text-xs font-semibold text-sand-600 hover:text-sand-800"
+                  className="px-4 py-2.5 text-[13px] font-semibold text-ink-2 hover:text-ink"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="bg-primary-700 hover:bg-primary-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all"
+                  className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55"
                 >
                   {editingParticipant ? "حفظ التعديلات" : "تأكيد التسجيل"}
                 </button>

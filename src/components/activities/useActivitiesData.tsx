@@ -255,7 +255,7 @@ export function useActivitiesData(s: ReturnType<typeof useActivitiesForms>) {
         return "bg-gold-100 text-gold-900 border-gold-200";
       case 9: // مشارك خارجي
       default:
-        return "bg-sand-100 text-sand-700 border-sand-200";
+        return "bg-sand-100 text-ink-2 border-line";
     }
   };
 

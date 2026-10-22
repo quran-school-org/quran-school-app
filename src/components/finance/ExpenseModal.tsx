@@ -35,8 +35,8 @@ export default function ExpenseModal() {
       {/* MODAL 3: ADD / EDIT EXPENSE */}
       {/* ========================================================================================= */}
       {showExpenseModal && (
-        <div className="fixed inset-0 bg-sand-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn" style={{ direction: "rtl" }}>
-          <div className="bg-white rounded-3xl border border-sand-200 shadow-2xl w-full max-w-md overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col">
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto animate-fadeIn bg-night/55 backdrop-blur-[2px]" style={{ direction: "rtl" }}>
+          <div className="bg-surface border border-line w-full max-w-md overflow-hidden my-8 animate-scaleIn max-h-[90vh] flex flex-col rounded-3xl shadow-pop">
             <div className="bg-gradient-to-r from-danger-900 to-sand-900 p-5 text-white flex justify-between items-center shrink-0">
               <h3 className="font-bold text-base flex items-center gap-2">
                 <Receipt className="w-5 h-5 text-danger-300" />
@@ -50,7 +50,7 @@ export default function ExpenseModal() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveExpense} className="p-6 space-y-4 text-xs text-sand-700 overflow-y-auto">
+            <form onSubmit={handleSaveExpense} className="p-6 space-y-4 text-[13px] text-ink-2 overflow-y-auto">
               <div>
                 <label className="block font-bold mb-1">بيان النفقة / المشتريات *</label>
                 <input
@@ -59,7 +59,7 @@ export default function ExpenseModal() {
                   placeholder="مثال: فاتورة الكهرباء / شراء جوائز وختم الأحزاب / أدوات مكتبية..."
                   value={expenseTitle}
                   onChange={(e) => setExpenseTitle(e.target.value)}
-                  className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-danger-600 focus:outline-none"
+                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                 />
               </div>
 
@@ -69,7 +69,7 @@ export default function ExpenseModal() {
                   <select
                     value={expenseCategory}
                     onChange={(e) => setExpenseCategory(e.target.value as any)}
-                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-danger-600 focus:outline-none"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="فواتير وخدمات">فواتير وخدمات (ماء، كهرباء...)</option>
                     <option value="مشتريات وتجهيزات">مشتريات وتجهيزات مكتبية</option>
@@ -88,7 +88,7 @@ export default function ExpenseModal() {
                     min={1}
                     value={expenseAmount}
                     onChange={(e) => setExpenseAmount(Number(e.target.value))}
-                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl font-bold text-danger-700 focus:bg-white focus:border-danger-600 focus:outline-none"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   />
                 </div>
               </div>
@@ -99,7 +99,7 @@ export default function ExpenseModal() {
                   <select
                     value={expenseSource}
                     onChange={(e) => setExpenseSource(e.target.value as any)}
-                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-danger-600 focus:outline-none"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="الصندوق">الصندوق النقدي</option>
                     <option value="حساب الجمعية البنكي">حساب الجمعية البنكي</option>
@@ -112,7 +112,7 @@ export default function ExpenseModal() {
                     type="date"
                     value={expenseDate}
                     onChange={(e) => setExpenseDate(e.target.value)}
-                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-danger-600 focus:outline-none"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   />
                 </div>
               </div>
@@ -125,7 +125,7 @@ export default function ExpenseModal() {
                     placeholder="مثال: شركة الكهرباء / مكتبة النجاح"
                     value={expenseSupplier}
                     onChange={(e) => setExpenseSupplier(e.target.value)}
-                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-danger-600 focus:outline-none"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   />
                 </div>
 
@@ -136,7 +136,7 @@ export default function ExpenseModal() {
                     placeholder="مثال: INV-2026-102"
                     value={expenseInvoiceNo}
                     onChange={(e) => setExpenseInvoiceNo(e.target.value)}
-                    className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-danger-600 focus:outline-none font-mono"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
                   />
                 </div>
               </div>
@@ -148,15 +148,15 @@ export default function ExpenseModal() {
                   placeholder="ملاحظات حول سبب وسياق هذه النفقة..."
                   value={expenseNotes}
                   onChange={(e) => setExpenseNotes(e.target.value)}
-                  className="w-full p-2.5 bg-sand-50 border border-sand-300 rounded-xl focus:bg-white focus:border-danger-600 focus:outline-none resize-none"
+                  className="py-2.5 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full resize-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-sand-100">
+              <div className="flex justify-end gap-3 pt-3 border-t border-line-soft">
                 <button
                   type="button"
                   onClick={() => setShowExpenseModal(false)}
-                  className="px-4 py-2 rounded-xl bg-sand-100 hover:bg-sand-200 text-sand-700 font-bold transition"
+                  className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] border border-line-strong bg-surface hover:bg-surface-2 text-ink text-[14px] font-semibold transition-colors cursor-pointer"
                 >
                   إلغاء
                 </button>

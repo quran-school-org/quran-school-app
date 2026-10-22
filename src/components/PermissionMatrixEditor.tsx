@@ -145,17 +145,17 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
       <div className={`flex items-center justify-between p-3 rounded-xl border ${badgeBg}`}>
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4" />
-          <h4 className="text-xs font-bold">{title}</h4>
+          <h4 className="text-[13px] font-bold">{title}</h4>
         </div>
-        <span className="text-[11px] font-semibold bg-white/80 px-2.5 py-0.5 rounded-full border border-sand-200">
+        <span className="text-[12.5px] font-semibold bg-white/80 px-2.5 py-0.5 rounded-full border border-line">
           {modules.filter((m) => getPerm(m.id, "read")).length} / {modules.length} مفعلة
         </span>
       </div>
 
-      <div className="overflow-x-auto border border-sand-200 rounded-2xl bg-white shadow-sm">
-        <table className="w-full text-right text-xs border-collapse">
+      <div className="overflow-x-auto border border-line rounded-2xl bg-surface">
+        <table className="w-full text-right text-[13px] border-collapse">
           <thead>
-            <tr className="bg-sand-100/90 text-sand-700 border-b border-sand-200 font-bold">
+            <tr className="bg-sand-100/90 text-ink-2 border-b border-line font-bold">
               <th className="p-3 text-right font-bold min-w-[220px]">اسم القسم / الصفحة</th>
               
               {/* Column Read */}
@@ -164,7 +164,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   type="button"
                   disabled={disabled}
                   onClick={() => handleToggleColumn("read")}
-                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-xs cursor-pointer"
+                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-[13px] cursor-pointer"
                   title="تحديد/إلغاء تحديد كل خانات العرض"
                 >
                   <Eye className="w-3.5 h-3.5 text-primary-600" />
@@ -178,7 +178,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   type="button"
                   disabled={disabled}
                   onClick={() => handleToggleColumn("create")}
-                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-xs cursor-pointer"
+                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-[13px] cursor-pointer"
                   title="تحديد/إلغاء تحديد كل خانات الإضافة"
                 >
                   <Plus className="w-3.5 h-3.5 text-primary-600" />
@@ -192,7 +192,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   type="button"
                   disabled={disabled}
                   onClick={() => handleToggleColumn("update")}
-                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-xs cursor-pointer"
+                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-[13px] cursor-pointer"
                   title="تحديد/إلغاء تحديد كل خانات التعديل"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-gold-600" />
@@ -206,7 +206,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   type="button"
                   disabled={disabled}
                   onClick={() => handleToggleColumn("delete")}
-                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-xs cursor-pointer"
+                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-[13px] cursor-pointer"
                   title="تحديد/إلغاء تحديد كل خانات الحذف والحرص"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-danger-600" />
@@ -220,7 +220,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   type="button"
                   disabled={disabled}
                   onClick={() => handleToggleColumn("print")}
-                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-xs cursor-pointer"
+                  className="w-full hover:bg-sand-200/70 p-1.5 rounded-lg transition flex items-center justify-center gap-1.5 text-[13px] cursor-pointer"
                   title="تحديد/إلغاء تحديد كل خانات الطباعة"
                 >
                   <Printer className="w-3.5 h-3.5 text-primary-600" />
@@ -229,12 +229,12 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
               </th>
 
               {/* Row toggle */}
-              <th className="p-2 text-center w-20 text-[11px] text-sand-500 font-semibold">
+              <th className="p-2 text-center w-20 text-[12.5px] text-ink-3 font-semibold">
                 الكل
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-sand-100">
+          <tbody className="divide-y divide-line-faint">
             {modules.map((module) => {
               const hasRead = getPerm(module.id, "read");
               const hasCreate = getPerm(module.id, "create");
@@ -252,11 +252,11 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                 >
                   {/* Module Name & Desc */}
                   <td className="p-3">
-                    <div className="font-bold text-sand-800 flex items-center gap-2">
+                    <div className="font-bold text-ink flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-primary-500 shrink-0" />
                       <span>{module.name}</span>
                     </div>
-                    <p className="text-[11px] text-sand-500 mt-0.5">
+                    <p className="text-[12.5px] text-ink-3 mt-0.5">
                       {module.description}
                     </p>
                   </td>
@@ -269,7 +269,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         disabled={disabled}
                         checked={hasRead}
                         onChange={() => handleToggle(module.id, "read")}
-                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-sand-300 cursor-pointer"
+                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-line-strong cursor-pointer"
                       />
                     </label>
                   </td>
@@ -282,7 +282,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         disabled={disabled}
                         checked={hasCreate}
                         onChange={() => handleToggle(module.id, "create")}
-                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-sand-300 cursor-pointer"
+                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-line-strong cursor-pointer"
                       />
                     </label>
                   </td>
@@ -295,7 +295,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         disabled={disabled}
                         checked={hasUpdate}
                         onChange={() => handleToggle(module.id, "update")}
-                        className="w-4 h-4 rounded text-gold-600 focus:ring-gold-500 border-sand-300 cursor-pointer"
+                        className="w-4 h-4 rounded text-gold-600 focus:ring-gold-500 border-line-strong cursor-pointer"
                       />
                     </label>
                   </td>
@@ -308,7 +308,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         disabled={disabled}
                         checked={hasDelete}
                         onChange={() => handleToggle(module.id, "delete")}
-                        className="w-4 h-4 rounded text-danger-600 focus:ring-danger-500 border-sand-300 cursor-pointer"
+                        className="w-4 h-4 rounded text-danger-600 focus:ring-danger-500 border-line-strong cursor-pointer"
                       />
                     </label>
                   </td>
@@ -321,7 +321,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         disabled={disabled}
                         checked={hasPrint}
                         onChange={() => handleToggle(module.id, "print")}
-                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-sand-300 cursor-pointer"
+                        className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-line-strong cursor-pointer"
                       />
                     </label>
                   </td>
@@ -332,10 +332,10 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                       type="button"
                       disabled={disabled}
                       onClick={() => handleToggleRow(module.id)}
-                      className={`p-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
+                      className={`p-1.5 rounded-lg border text-[13px] font-bold transition cursor-pointer ${
                         isAllRow
                           ? "bg-primary-100 text-primary-800 border-primary-300 hover:bg-primary-200"
-                          : "bg-sand-100 text-sand-600 border-sand-200 hover:bg-sand-200"
+                          : "bg-sand-100 text-ink-2 border-line hover:bg-sand-200"
                       }`}
                       title={isAllRow ? "إلغاء الكل لهذا الصف" : "تحديد الكل لهذا الصف"}
                     >
@@ -354,18 +354,18 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
   return (
     <div className="space-y-4" dir="rtl">
       {/* Header & Quick Actions Toolbar */}
-      <div className="bg-sand-900 text-white p-5 rounded-2xl shadow-sm space-y-4">
+      <div className="bg-sand-900 text-white p-5 rounded-2xl space-y-4">
         {/* Title & Subtitle */}
         <div className="flex items-start gap-3">
           <ShieldCheck className="w-6 h-6 text-gold-400 shrink-0 mt-0.5" />
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base font-bold text-white">مصفوفة صلاحيات الوصول</h3>
-              <span className="bg-primary-500/20 text-primary-300 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border border-primary-400/30">
+              <span className="bg-primary-500/20 text-primary-300 text-[12.5px] font-semibold px-2.5 py-0.5 rounded-full border border-primary-400/30">
                 تحكم مخصص
               </span>
             </div>
-            <p className="text-xs text-sand-400">
+            <p className="text-[13px] text-sand-400">
               تخصيص مستويات التحكم لكل قسم
             </p>
           </div>
@@ -373,7 +373,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
 
         {/* Quick Horizontal Control Bar */}
         <div className="pt-3 border-t border-sand-800 flex items-center justify-between gap-2 flex-wrap">
-          <span className="text-xs text-sand-500 font-semibold hidden sm:inline">
+          <span className="text-[13px] text-ink-3 font-semibold hidden sm:inline">
             أزرار التحكم السريع:
           </span>
           
@@ -382,7 +382,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
               type="button"
               disabled={disabled}
               onClick={handleApplyRolePreset}
-              className="px-3 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-sand-950 text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap"
+              className="px-3 py-2 rounded-xl bg-gold-500 hover:bg-gold-600 text-ink text-[13px] font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               title="تطبيق القالب التلقائي المناسب للدور المختار"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -393,7 +393,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
               type="button"
               disabled={disabled}
               onClick={handleSelectAll}
-              className="px-3 py-2 rounded-xl bg-primary-700 hover:bg-primary-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
             >
               <Check className="w-3.5 h-3.5" />
               <span>تحديد الكل</span>
@@ -403,7 +403,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
               type="button"
               disabled={disabled}
               onClick={handleDeselectAll}
-              className="px-3 py-2 rounded-xl bg-danger-800/80 hover:bg-danger-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+              className="px-3 py-2 rounded-xl bg-danger-800/80 hover:bg-danger-700 text-white text-[13px] font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               <X className="w-3.5 h-3.5" />
               <span>تفريغ الكل</span>

@@ -115,6 +115,10 @@
 }
 
 @layer base {
+  /* Tailwind 4 : bordure par défaut = couleur courante ; la charte veut un filet sable. */
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    border-color: var(--color-line-soft);
+  }
   html {
     background-color: var(--color-app);
   }

@@ -26,16 +26,16 @@ export default function ProfileModal() {
   } = useApp();
 
   return (
-    <div data-modal="profile" className="fixed inset-0 bg-sand-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200" dir="rtl">
-      <div className="bg-white rounded-2xl shadow-2xl border border-sand-200 w-full max-w-md overflow-hidden">
-        <div className="p-5 bg-gradient-to-r from-primary-900 to-primary-950 text-white flex items-center justify-between">
+    <div data-modal="profile" className="fixed inset-0 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200 bg-night/55 backdrop-blur-[2px]" dir="rtl">
+      <div className="bg-surface border border-line w-full max-w-md overflow-hidden rounded-3xl shadow-pop">
+        <div className="p-5 bg-night text-night-text flex items-center justify-between border-b border-night-line">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-primary-700 border-2 border-primary-400 flex items-center justify-center text-white text-lg font-bold shadow-inner shrink-0">
               {userAvatarInitial}
             </div>
             <div>
               <h3 className="font-bold text-base text-white">الملف الشخصي والحساب</h3>
-              <p className="text-xs text-primary-200 font-medium">تعديل بيانات الحساب الجاري ({currentRole})</p>
+              <p className="text-[13px] text-primary-200 font-medium">تعديل بيانات الحساب الجاري ({currentRole})</p>
             </div>
           </div>
           {!mustChangePassword && (
@@ -51,26 +51,26 @@ export default function ProfileModal() {
 
         <form onSubmit={handleSaveProfile} className="p-5 space-y-4">
           {mustChangePassword && (
-            <div className="p-3 bg-gold-50 border border-gold-200 text-gold-900 rounded-xl text-xs font-bold flex items-center gap-2">
+            <div className="p-3 bg-gold-50 border border-gold-200 text-gold-900 rounded-xl text-[13px] font-bold flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0 text-gold-600" />
               <span>لأسباب أمنية، يجب اختيار كلمة مرور جديدة (8 أحرف على الأقل) قبل متابعة استعمال المنظومة.</span>
             </div>
           )}
           {profileError && (
-            <div className="p-3 bg-danger-50 border border-danger-200 text-danger-800 rounded-xl text-xs font-bold flex items-center gap-2">
+            <div className="p-3 bg-danger-50 border border-danger-200 text-danger-800 rounded-xl text-[13px] font-bold flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 shrink-0 text-danger-600" />
               <span>{profileError}</span>
             </div>
           )}
           <div>
-            <label className="block text-xs font-bold text-sand-700 mb-1">الاسم الكامل لصاحب الحساب</label>
+            <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الاسم الكامل لصاحب الحساب</label>
             <div className="relative">
-              <User className="w-4 h-4 text-sand-500 absolute right-3 top-3" />
+              <User className="w-4 h-4 text-ink-3 absolute right-3 top-3" />
               <input
                 type="text"
                 value={profileFullName}
                 onChange={(e) => setProfileFullName(e.target.value)}
-                className="w-full pr-9 pl-3 py-2 bg-sand-50 border border-sand-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 focus:bg-white font-medium"
+                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
                 placeholder="أدخل الاسم الكامل"
                 required
               />
@@ -78,66 +78,66 @@ export default function ProfileModal() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-sand-700 mb-1">اسم المستخدم / معرّف الدخول</label>
+            <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم المستخدم / معرّف الدخول</label>
             <div className="relative">
-              <Phone className="w-4 h-4 text-sand-500 absolute right-3 top-3" />
+              <Phone className="w-4 h-4 text-ink-3 absolute right-3 top-3" />
               <input
                 type="text"
                 value={profilePhone}
                 disabled
-                className="w-full pr-9 pl-3 py-2 bg-sand-100 border border-sand-200 rounded-xl text-sm font-medium text-sand-500 cursor-not-allowed"
+                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3 cursor-not-allowed"
               />
             </div>
-            <p className="text-[10px] text-sand-500 mt-1">اسم المستخدم معرّف فريد لا يمكن تعديله إلا من إدارة النظام.</p>
+            <p className="text-[11.5px] text-ink-3 mt-1">اسم المستخدم معرّف فريد لا يمكن تعديله إلا من إدارة النظام.</p>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-sand-700 mb-1">كلمة المرور الحالية</label>
+            <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">كلمة المرور الحالية</label>
             <div className="relative mb-3">
-              <Lock className="w-4 h-4 text-sand-500 absolute right-3 top-3" />
+              <Lock className="w-4 h-4 text-ink-3 absolute right-3 top-3" />
               <input
                 type={showProfilePassword ? "text" : "password"}
                 value={profileCurrentPassword}
                 onChange={(e) => setProfileCurrentPassword(e.target.value)}
                 autoComplete="current-password"
-                className="w-full pr-9 pl-3 py-2 bg-sand-50 border border-sand-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 focus:bg-white font-mono"
+                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3 font-mono"
                 placeholder="مطلوبة عند تغيير كلمة المرور إذا طال وقت الجلسة"
               />
             </div>
-            <label className="block text-xs font-bold text-sand-700 mb-1">{mustChangePassword ? "كلمة المرور الجديدة" : "تحديث كلمة المرور (اختياري)"}</label>
+            <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">{mustChangePassword ? "كلمة المرور الجديدة" : "تحديث كلمة المرور (اختياري)"}</label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-sand-500 absolute right-3 top-3" />
+              <Lock className="w-4 h-4 text-ink-3 absolute right-3 top-3" />
               <input
                 type={showProfilePassword ? "text" : "password"}
                 value={profilePassword}
                 onChange={(e) => setProfilePassword(e.target.value)}
                 autoComplete="new-password"
                 required={mustChangePassword}
-                className="w-full pr-9 pl-9 py-2 bg-sand-50 border border-sand-200 rounded-xl text-sm focus:outline-none focus:border-primary-500 focus:bg-white font-mono"
+                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-9 font-mono"
                 placeholder="أدخل كلمة مرور جديدة"
               />
               <button
                 type="button"
                 onClick={() => setShowProfilePassword(!showProfilePassword)}
-                className="absolute left-3 top-2.5 text-sand-500 hover:text-sand-600"
+                className="absolute left-3 top-2.5 text-ink-3 hover:text-ink-2"
               >
                 {showProfilePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <div className="pt-3 flex items-center justify-end gap-2 border-t border-sand-100">
+          <div className="pt-3 flex items-center justify-end gap-2 border-t border-line-soft">
             <button
               type="button"
               onClick={() => (mustChangePassword ? handleLogout() : setShowProfileEditModal(false))}
-              className="px-4 py-2 bg-sand-100 hover:bg-sand-200 text-sand-700 rounded-xl text-xs font-bold transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] border border-line-strong bg-surface hover:bg-surface-2 text-ink text-[14px] font-semibold transition-colors cursor-pointer"
             >
               {mustChangePassword ? "خروج" : "إلغاء"}
             </button>
             <button
               type="submit"
               disabled={profileSaving}
-              className="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer disabled:bg-primary-400"
+              className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
             >
               <Check className="w-4 h-4" />
               <span>حفظ التغييرات</span>

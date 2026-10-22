@@ -36,16 +36,16 @@ export default function ActivityExpenseModal() {
     <>
       {/* MODAL 3: Create / Edit Expense */}
       {showExpenseModal && currentActivity && (
-        <div className="fixed inset-0 z-50 bg-sand-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto print:hidden">
-          <div className="bg-white rounded-2xl border border-sand-200 shadow-2xl max-w-lg w-full overflow-hidden my-8">
-            <div className="p-5 border-b border-sand-100 bg-sand-50 flex items-center justify-between">
-              <h3 className="font-bold text-sand-800 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto print:hidden bg-night/55 backdrop-blur-[2px]">
+          <div className="bg-surface border border-line max-w-lg w-full overflow-hidden my-8 rounded-3xl shadow-pop">
+            <div className="p-5 border-b border-line-soft bg-sand-50 flex items-center justify-between">
+              <h3 className="font-bold text-primary flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-danger-600" />
                 <span>{editingExpense ? "تعديل بيان المصروف" : `تسجيل مصروف لـ "${currentActivity.title}"`}</span>
               </h3>
               <button
                 onClick={() => setShowExpenseModal(false)}
-                className="text-sand-500 hover:text-sand-600 p-1 rounded-lg"
+                className="text-ink-3 hover:text-ink-2 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -53,24 +53,24 @@ export default function ActivityExpenseModal() {
 
             <form onSubmit={handleSaveExpenseForm} className="p-6 space-y-4 text-right">
               <div>
-                <label className="block text-xs font-bold text-sand-700 mb-1">بيان / عنوان المصروف *</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">بيان / عنوان المصروف *</label>
                 <input
                   type="text"
                   required
                   value={expTitle}
                   onChange={(e) => setExpTitle(e.target.value)}
                   placeholder="مثال: كراء حافلة نقل ممتازة سعة 48 مقعداً"
-                  className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">الصنف / الفئة *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الصنف / الفئة *</label>
                   <select
                     value={expCategory}
                     onChange={(e) => setExpCategory(e.target.value as ActivityExpenseCategory)}
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     {EXPENSE_CATEGORIES.map(c => (
                       <option key={c} value={c}>{c}</option>
@@ -79,7 +79,7 @@ export default function ActivityExpenseModal() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">المبلغ بالدرهم *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ بالدرهم *</label>
                   <input
                     type="number"
                     min="1"
@@ -87,29 +87,29 @@ export default function ActivityExpenseModal() {
                     value={expAmount || ""}
                     onChange={(e) => setExpAmount(Number(e.target.value))}
                     placeholder="0.00"
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-bold text-danger-700"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">تاريخ الصرف *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تاريخ الصرف *</label>
                   <input
                     type="date"
                     required
                     value={expDate}
                     onChange={(e) => setExpDate(e.target.value)}
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">طريقة الدفع</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">طريقة الدفع</label>
                   <select
                     value={expPaymentMethod}
                     onChange={(e) => setExpPaymentMethod(e.target.value as any)}
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="نقداً">نقداً</option>
                     <option value="تحويل بنكي">تحويل بنكي</option>
@@ -120,50 +120,50 @@ export default function ActivityExpenseModal() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">المورد أو الشركة</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المورد أو الشركة</label>
                   <input
                     type="text"
                     value={expSupplier}
                     onChange={(e) => setExpSupplier(e.target.value)}
                     placeholder="مثال: شركة الأطلس للنقل"
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-sand-700 mb-1">رقم الفاتورة / الوصل</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الفاتورة / الوصل</label>
                   <input
                     type="text"
                     value={expReceiptNo}
                     onChange={(e) => setExpReceiptNo(e.target.value)}
                     placeholder="FAC-2026-XXXX"
-                    className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-sand-700 mb-1">القائم بالأداء / المسؤول</label>
+                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">القائم بالأداء / المسؤول</label>
                 <input
                   type="text"
                   value={expPaidBy}
                   onChange={(e) => setExpPaidBy(e.target.value)}
                   placeholder="أمين المال أو المشرف"
-                  className="w-full p-2.5 text-sm bg-sand-50 border border-sand-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-sand-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line-soft">
                 <button
                   type="button"
                   onClick={() => setShowExpenseModal(false)}
-                  className="px-4 py-2.5 text-xs font-semibold text-sand-600 hover:text-sand-800"
+                  className="px-4 py-2.5 text-[13px] font-semibold text-ink-2 hover:text-ink"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="bg-danger-700 hover:bg-danger-800 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all"
+                  className="bg-danger-700 hover:bg-danger-800 text-white text-[13px] font-bold px-5 py-2.5 rounded-xl transition-all"
                 >
                   {editingExpense ? "حفظ التعديلات" : "تسجيل المصروف"}
                 </button>

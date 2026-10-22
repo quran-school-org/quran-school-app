@@ -103,7 +103,7 @@ export function useActivitiesForms(props: ActivitiesManagementProps) {
               <ArrowDown className="w-3.5 h-3.5 text-primary-800 font-bold shrink-0" />
             )
           ) : (
-            <ArrowUpDown className="w-3.5 h-3.5 text-sand-500 opacity-60 hover:opacity-100 shrink-0" />
+            <ArrowUpDown className="w-3.5 h-3.5 text-ink-3 opacity-60 hover:opacity-100 shrink-0" />
           )}
         </div>
       </th>

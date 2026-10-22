@@ -16,9 +16,9 @@ export default function NotificationsScreen() {
   return (
     <div data-screen="notifications" className="space-y-6">
 
-      <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-sand-200">
+      <div className="flex justify-between items-center bg-surface p-6 rounded-2xl border border-line">
         <div>
-          <h2 className="text-xl font-bold text-sand-800 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-primary flex items-center gap-2">
             <Bell className="w-5 h-5 text-primary-700" />
             {currentRole === "ولي أمر"
               ? "صندوق إشعارات وتنبيهات أولياء الأمور"
@@ -26,7 +26,7 @@ export default function NotificationsScreen() {
               ? "صندوق الإشعارات الشخصية للطالب"
               : "صندوق الإشعارات الفورية والتنبيهات"}
           </h2>
-          <p className="text-xs text-sand-500">
+          <p className="text-[13px] text-ink-3">
             {currentRole === "ولي أمر"
               ? "إشعارات خاصة بانتظام وحفظ وحضور أبنائك والرسوم المستحقة."
               : currentRole === "طالب"
@@ -41,14 +41,14 @@ export default function NotificationsScreen() {
               RealmSimDB.clearAllNotifications();
               loadDatabase();
             }}
-            className="px-3 py-1.5 bg-danger-50 hover:bg-danger-100 text-danger-700 rounded-lg text-xs font-bold transition"
+            className="px-3 py-1.5 bg-danger-50 hover:bg-danger-100 text-danger-700 rounded-lg text-[13px] font-bold transition"
           >
             مسح جميع التنبيهات
           </button>
         )}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-sand-200 overflow-hidden divide-y divide-sand-100">
+      <div className="bg-surface rounded-2xl border border-line overflow-hidden divide-y divide-line-faint">
         {userNotifications.length > 0 ? (
           userNotifications.map((n) => (
             <div 
@@ -65,13 +65,13 @@ export default function NotificationsScreen() {
 
               <div className="flex-1 space-y-1">
                 <div className="flex justify-between items-center">
-                  <h4 className="font-bold text-sand-800 text-xs">{n.title}</h4>
-                  <span className="text-[10px] text-sand-500 font-mono">{n.date}</span>
+                  <h4 className="font-bold text-ink text-[13px]">{n.title}</h4>
+                  <span className="text-[11.5px] text-ink-3 font-mono">{n.date}</span>
                 </div>
-                <p className="text-xs text-sand-600 leading-relaxed">{n.message}</p>
+                <p className="text-[13px] text-ink-2 leading-relaxed">{n.message}</p>
 
                 {!n.isRead && (
-                  <span className="inline-block text-[9px] text-primary-700 bg-primary-50 font-bold px-2 py-0.5 rounded">
+                  <span className="inline-block text-[12.5px] text-primary-700 bg-primary-50 font-bold px-2 py-0.5 rounded">
                     جديد • انقر لتعليم كقروء
                   </span>
                 )}
@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
             </div>
           ))
         ) : (
-          <div className="p-12 text-center text-sand-500 text-xs font-medium">
+          <div className="p-12 text-center text-ink-3 text-[13px] font-medium">
             لا توجد إشعارات أو تنبيهات موجهة لك حالياً.
           </div>
         )}
