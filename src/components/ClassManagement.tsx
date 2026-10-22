@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Class, Teacher, Student } from "../types";
-import { Plus, Edit2, Archive, Calendar, Users, Search, AlertCircle, X, Trash2 } from "lucide-react";
+import { Plus, Edit2, Archive, Calendar, Users, Search, AlertCircle, Trash2 } from "lucide-react";
+import { Button, Card, EmptyState, FilterChips, FormField, IconButton, InitialAvatar, Input, Ltr, Modal, PageHeader, Pill, ProgressBar, SearchInput, Select, cx } from "../ui";
 
 const parseScheduleString = (scheduleStr: string) => {
   const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
@@ -178,168 +179,107 @@ export default function ClassManagement({
     return matchesSearch;
   });
 
+  const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+  const activeCount = classes.filter((c) => !c.isArchived).length;
+  const archivedCount = classes.filter((c) => c.isArchived).length;
+
   return (
-    <div data-screen="classes" className="space-y-6" dir="rtl">
-      {/* Title Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface p-6 rounded-2xl border border-line">
-        <div>
-          <h2 className="text-xl font-bold text-primary flex items-center gap-2">
-            🏫 إدارة الفصول والحلقات الدراسية
-          </h2>
-          <p className="text-[13px] text-ink-3">
-            إضافة فصول دراسية جديدة، تعيين المحفظين المشرفين، تعديل المواعيد، وأرشفة الحلقات المكتملة.
-          </p>
-        </div>
+    <div data-screen="classes" className="flex flex-col gap-6" dir="rtl">
+      <PageHeader
+        title="الحلقات"
+        description="إضافة فصول دراسية جديدة، تعيين المحفظين المشرفين، تعديل المواعيد، وأرشفة الحلقات المكتملة."
+        actions={
+          canCreate && (
+            <Button variant="primary" data-action="open-class-form" onClick={() => handleOpenForm()} icon={<Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
+              إضافة حلقة / فصل جديد
+            </Button>
+          )
+        }
+      />
 
-        {canCreate && (
-          <button
-            data-action="open-class-form"
-            onClick={() => handleOpenForm()}
-            className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            إضافة حلقة / فصل جديد
-          </button>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SearchInput
+          aria-label="البحث في الحلقات"
+          icon={<Search className="w-4 h-4" strokeWidth={1.75} />}
+          placeholder="البحث باسم الحلقة، الجدول، أو المعلم..."
+          value={searchQuery}
+          onChange={(e: any) => setSearchQuery(e.target.value)}
+          className="flex-[1_1_260px] max-w-md"
+        />
+        <FilterChips
+          label="حالة الحلقات"
+          value={archiveFilter}
+          onChange={setArchiveFilter}
+          options={[
+            { value: "active", label: `الحلقات النشطة (${activeCount})` },
+            { value: "archived", label: `الأرشيف (${archivedCount})` },
+            { value: "all", label: `الكل (${classes.length})` },
+          ]}
+        />
       </div>
 
-      {/* Filter Bar and Search */}
-      <div className="flex flex-col md:flex-row justify-between gap-4 items-center bg-sand-50 p-4 rounded-xl border border-line">
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-64">
-            <Search className="absolute right-3 top-2.5 w-4 h-4 text-ink-3" />
-            <input
-              type="text"
-              placeholder="البحث باسم الحلقة، الجدول، أو المعلم..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
-            />
-          </div>
-        </div>
-
-        {/* Status Tab Filters */}
-        <div className="flex bg-white p-1 rounded-xl border border-line w-full md:w-auto">
-          <button
-            onClick={() => setArchiveFilter("active")}
-            className={`flex-1 md:flex-initial px-4 py-1.5 rounded-lg text-[13px] font-bold transition ${
-              archiveFilter === "active" ? "bg-primary-700 text-white shadow" : "text-ink-2 hover:bg-sand-100"
-            }`}
-          >
-            الحلقات النشطة ({classes.filter(c => !c.isArchived).length})
-          </button>
-          <button
-            onClick={() => setArchiveFilter("archived")}
-            className={`flex-1 md:flex-initial px-4 py-1.5 rounded-lg text-[13px] font-bold transition ${
-              archiveFilter === "archived" ? "bg-gold-600 text-white shadow" : "text-ink-2 hover:bg-sand-100"
-            }`}
-          >
-            الأرشيف ({classes.filter(c => c.isArchived).length})
-          </button>
-          <button
-            onClick={() => setArchiveFilter("all")}
-            className={`flex-1 md:flex-initial px-4 py-1.5 rounded-lg text-[13px] font-bold transition ${
-              archiveFilter === "all" ? "bg-sand-700 text-white shadow" : "text-ink-2 hover:bg-sand-100"
-            }`}
-          >
-            الكل ({classes.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Classes Grid */}
       {filteredClasses.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredClasses.map((cls) => {
-            const teacher = teachers.find(t => t.id === cls.teacherId);
-            const classStudents = students.filter(s => s.classId === cls.id && !s.isArchived);
+            const teacher = teachers.find((t) => t.id === cls.teacherId);
+            const classStudents = students.filter((s) => s.classId === cls.id && !s.isArchived);
             const capacityPercentage = Math.min(Math.round((classStudents.length / (cls.maxStudents || 20)) * 100), 100);
-
             return (
-              <div
-                key={cls.id}
-                className={`bg-surface rounded-2xl border ${
-                  cls.isArchived
-                    ? "border-gold-200 bg-gold-50/10"
-                    : "border-line"
-                } p-6 space-y-4 flex flex-col justify-between relative overflow-hidden`}
-              >
-                {/* Archived Badge Flag */}
-                {cls.isArchived && (
-                  <div className="absolute top-0 left-0 bg-gold-600 text-white text-[12.5px] font-bold px-3 py-1 rounded-br-xl">
-                    حلقة مؤرشفة
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  {/* Class Title & Capacity Badge */}
-                  <div className="flex justify-between items-start border-b pb-3">
-                    <div>
-                      <h3 className="font-bold text-primary text-base">{cls.name}</h3>
-                      <p className="text-[11.5px] text-ink-3 mt-0.5">رمز الحلقة: {cls.id.toUpperCase()}</p>
+              <Card key={cls.id} as="article" aria-labelledby={`class-${cls.id}`} className={cx("flex flex-col justify-between gap-4", cls.isArchived && "bg-surface-2")}>
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-start gap-3 pb-3 border-b border-line-soft">
+                    <div className="min-w-0">
+                      <h2 id={`class-${cls.id}`} className="m-0 font-display font-semibold text-[20px] text-primary">{cls.name}</h2>
+                      <p className="m-0 mt-0.5 text-[12.5px] text-ink-3">رمز الحلقة: <Ltr>{cls.id.toUpperCase()}</Ltr></p>
                     </div>
-                    <span className={`text-[12.5px] px-2.5 py-1 rounded-full font-bold border ${
-                      cls.isArchived
-                        ? "bg-sand-100 text-ink-2 border-line"
-                        : "bg-primary-50 text-primary-800 border-primary-100"
-                    }`}>
-                      {classStudents.length} طلاب مسجلين
-                    </span>
-                  </div>
-
-                  {/* Instructor block */}
-                  <div className="flex items-center gap-3 bg-sand-50 p-3 rounded-xl border border-line-soft">
-                    <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border bg-white flex items-center justify-center">
-                      {teacher?.photo ? (
-                        <img src={teacher.photo} alt={teacher.fullName} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-xl">👨‍🏫</span>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-[11.5px] text-ink-3 font-bold">المحفظ المشرف:</p>
-                      <p className="text-[13px] font-bold text-ink-2">{teacher?.fullName || "لم يتم تعيين معلم"}</p>
-                      {teacher && <p className="text-[12.5px] text-primary-700 font-semibold">{teacher.specialty}</p>}
+                    <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      {cls.isArchived && <Pill tone="warn">حلقة مؤرشفة</Pill>}
+                      <Pill tone={cls.isArchived ? "neutral" : "primary"}>{classStudents.length} طلاب مسجلين</Pill>
                     </div>
                   </div>
 
-                  {/* Schedule block */}
-                  <div className="space-y-1.5 text-[13px] text-ink-2">
-                    <p className="font-bold text-ink-2 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-ink-3" />
-                      توقيت وجدول الحلقة:
-                    </p>
-                    <div className="bg-gold-50/50 p-2.5 rounded-xl border border-gold-200/40 text-gold-900 font-medium font-sans">
-                      {cls.schedule}
+                  <div className="flex items-center gap-3">
+                    {teacher?.photo ? (
+                      <img src={teacher.photo} alt={teacher.fullName} className="w-11 h-11 rounded-full object-cover border border-line shrink-0" />
+                    ) : (
+                      <InitialAvatar name={teacher?.fullName || "?"} size={44} />
+                    )}
+                    <div className="min-w-0">
+                      <p className="m-0 text-[12.5px] text-ink-3">المحفظ المشرف</p>
+                      <p className="m-0 text-[14.5px] font-semibold text-ink">{teacher?.fullName || "لم يتم تعيين معلم"}</p>
+                      {teacher && <p className="m-0 text-[12.5px] text-ink-2">{teacher.specialty}</p>}
                     </div>
                   </div>
 
-                  {/* Capacity Progress Bar */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-[11.5px] text-ink-3 font-bold">
-                      <span>الاستيعاب والقدرة الاستيعابية:</span>
-                      <span>{classStudents.length} / {cls.maxStudents || 20} طالب</span>
-                    </div>
-                    <div className="w-full h-2 bg-sand-100 rounded-full overflow-hidden border border-sand-200/50">
-                      <div
-                        style={{ width: `${capacityPercentage}%` }}
-                        className={`h-full transition-all duration-500 ${
-                          capacityPercentage >= 90 ? "bg-danger-500" : capacityPercentage >= 75 ? "bg-gold-500" : "bg-primary-600"
-                        }`}
-                      />
-                    </div>
+                  <div className="flex items-start gap-2 rounded-xl bg-gold-100 text-[#5C4A1E] px-3 py-2.5 text-[13.5px]">
+                    <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
+                    <span><span className="sr-only">توقيت وجدول الحلقة: </span>{cls.schedule}</span>
                   </div>
 
-                  {/* Students inside class list snippet */}
-                  <div className="space-y-2">
-                    <p className="text-[13px] font-bold text-ink-2 flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-ink-3" />
-                      الطلاب المنتسبون لهذه الحلقة:
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center text-[12.5px] text-ink-2">
+                      <span>الاستيعاب والقدرة الاستيعابية</span>
+                      <span className="tabular-nums font-semibold">{classStudents.length} / {cls.maxStudents || 20} طالب</span>
+                    </div>
+                    <ProgressBar
+                      value={capacityPercentage}
+                      height={8}
+                      className="flex-none"
+                      tone={capacityPercentage >= 90 ? "danger" : capacityPercentage >= 75 ? "gold" : "primary"}
+                      label={`نسبة الامتلاء ${capacityPercentage}%`}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <p className="m-0 text-[13px] font-semibold text-ink-2 flex items-center gap-1.5">
+                      <Users className="w-4 h-4 text-ink-3" strokeWidth={1.75} aria-hidden="true" />
+                      الطلاب المنتسبون لهذه الحلقة
                     </p>
                     {classStudents.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5">
-                        {classStudents.map(st => (
-                          <span
+                        {classStudents.map((st) => (
+                          <button
+                            type="button"
                             key={st.id}
                             onClick={() => {
                               if (onSelectStudent && onSwitchTab) {
@@ -347,189 +287,109 @@ export default function ClassManagement({
                                 onSwitchTab("students");
                               }
                             }}
-                            className="bg-sand-100 hover:bg-primary-50 hover:text-primary-800 cursor-pointer text-ink-2 px-2.5 py-1 rounded-lg text-[11.5px] transition font-medium border border-sand-200/60"
+                            className="min-h-8 px-2.5 rounded-full border border-line bg-white text-[12.5px] text-ink-2 cursor-pointer hover:border-primary hover:text-primary transition-colors"
                             title="انقر لعرض تفاصيل الطالب"
                           >
-                            🧒 {st.fullName}
-                          </span>
+                            {st.fullName}
+                          </button>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-[12.5px] text-ink-3 italic bg-sand-50 p-2 rounded-lg border border-line-soft">
-                        لا يوجد طلاب مسجلون في هذه الحلقة حالياً.
-                      </p>
+                      <p className="m-0 text-[13px] text-ink-3 rounded-lg bg-surface-2 border border-line-soft px-3 py-2">لا يوجد طلاب مسجلون في هذه الحلقة حالياً.</p>
                     )}
                   </div>
                 </div>
 
-                {/* Card Actions for Admins */}
                 {(canUpdate || canDelete) && (
-                  <div className="border-t pt-3 mt-4 flex justify-between gap-2">
+                  <div className="pt-3 border-t border-line-soft flex gap-2">
                     {canUpdate && (
-                      <button
-                        onClick={() => handleOpenForm(cls)}
-                        className="flex-1 py-1.5 bg-sand-100 hover:bg-sand-200 text-ink-2 text-[12.5px] font-bold rounded-lg transition flex items-center justify-center gap-1 border border-line"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        تعديل الحلقة
-                      </button>
+                      <Button size="sm" className="flex-1" onClick={() => handleOpenForm(cls)} icon={<Edit2 className="w-3.5 h-3.5" strokeWidth={1.75} />}>تعديل الحلقة</Button>
                     )}
-
                     {canUpdate && (
-                      <button
-                        onClick={() => onArchiveToggle(cls.id)}
-                        className={`flex-1 py-1.5 text-[12.5px] font-bold rounded-lg transition flex items-center justify-center gap-1 border ${
-                          cls.isArchived
-                            ? "bg-primary-50 hover:bg-primary-100 text-primary-800 border-primary-200"
-                            : "bg-gold-50 hover:bg-gold-100 text-gold-800 border-gold-200"
-                        }`}
-                      >
-                        <Archive className="w-3.5 h-3.5" />
+                      <Button size="sm" className="flex-1" variant={cls.isArchived ? "success" : "outline"} onClick={() => onArchiveToggle(cls.id)} icon={<Archive className="w-3.5 h-3.5" strokeWidth={1.75} />}>
                         {cls.isArchived ? "تنشيط الحلقة" : "أرشفة الحلقة"}
-                      </button>
+                      </Button>
                     )}
-
                     {canDelete && (
-                      <button
-                        onClick={() => onDeleteClass(cls.id)}
-                        className="p-1.5 hover:bg-danger-50 text-danger-600 rounded-lg transition border border-transparent hover:border-danger-200"
-                        title="حذف نهائي"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <IconButton size="sm" tone="danger" label="حذف نهائي" onClick={() => onDeleteClass(cls.id)}><Trash2 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
                     )}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>
       ) : (
-        <div className="bg-surface rounded-2xl p-12 text-center border border-line space-y-3">
-          <AlertCircle className="w-12 h-12 text-ink-3 mx-auto" />
-          <h4 className="font-bold text-ink-2 text-sm">لا توجد فصول دراسية مطابقة لبحثك</h4>
-          <p className="text-[13px] text-ink-3">تأكد من اختيار التصفية المناسبة أو إضافة حلقة دراسية جديدة.</p>
-        </div>
+        <EmptyState icon={<AlertCircle className="w-8 h-8" strokeWidth={1.5} />} title="لا توجد فصول دراسية مطابقة لبحثك">
+          تأكد من اختيار التصفية المناسبة أو إضافة حلقة دراسية جديدة.
+        </EmptyState>
       )}
 
-      {/* ADD / EDIT CLASS MODAL */}
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]" style={{ direction: "rtl" }}>
-          <div className="bg-surface w-full max-w-lg overflow-hidden my-8 max-h-[90vh] flex flex-col rounded-3xl border border-line shadow-pop" dir="rtl">
-            <div className="flex justify-between items-center shrink-0 bg-night text-night-text px-6 py-4 border-b border-night-line">
-              <h3 className="font-bold text-base flex items-center gap-2">
-                {editingClass ? "📝 تعديل الحلقة الدراسية" : "🏫 إضافة حلقة قرآنية جديدة"}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition text-white"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <Modal
+          modalId="class-form"
+          size="sm"
+          title={editingClass ? "تعديل الحلقة الدراسية" : "إضافة حلقة قرآنية جديدة"}
+          onClose={() => setShowModal(false)}
+          onSubmit={handleSubmit}
+          footer={
+            <>
+              <Button onClick={() => setShowModal(false)}>إلغاء</Button>
+              <Button type="submit" variant="primary">{editingClass ? "حفظ التغييرات" : "إنشاء الحلقة"}</Button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <FormField label="اسم الفصل / الحلقة *">
+              {(id) => <Input id={id} type="text" required value={formName} onChange={(e: any) => setFormName(e.target.value)} placeholder="مثال: حلقة الإمام نافع" />}
+            </FormField>
+            <fieldset className="m-0 p-0 border-0 flex flex-col gap-2">
+              <legend className="text-[13.5px] font-semibold text-ink-2 mb-1.5">أيام الحلقة الدراسية *</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {DAYS.map((day) => {
+                  const isSelected = selectedDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => setSelectedDays(isSelected ? selectedDays.filter((d) => d !== day) : [...selectedDays, day])}
+                      className={cx("min-h-11 px-3.5 rounded-[10px] border text-[13.5px] font-semibold cursor-pointer transition-colors", isSelected ? "bg-primary border-primary text-white" : "bg-white border-line text-ink-2 hover:border-ink-4")}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="وقت البدء (ساعة الدخول) *">
+                {(id) => <Input id={id} type="time" required value={startTime} onChange={(e: any) => setStartTime(e.target.value)} />}
+              </FormField>
+              <FormField label="وقت الانتهاء (ساعة الخروج) *">
+                {(id) => <Input id={id} type="time" required value={endTime} onChange={(e: any) => setEndTime(e.target.value)} />}
+              </FormField>
             </div>
-
-            <form onSubmit={handleSubmit} className="p-6 space-y-4 text-[13px] overflow-y-auto">
-              {/* Class Name */}
-              <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم الفصل / الحلقة <span className="text-danger-500">*</span></label>
-                <input
-                  type="text"
-                  required
-                  value={formName}
-                  onChange={(e) => setFormName(e.target.value)}
-                  placeholder="مثال: حلقة الإمام نافع"
-                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                />
-              </div>
-
-              {/* Schedule Days Selection */}
-              <div className="space-y-2">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">أيام الحلقة الدراسية <span className="text-danger-500">*</span></label>
-                <div className="flex flex-wrap gap-1.5 p-1 bg-sand-50 rounded-xl border border-line">
-                  {["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"].map((day) => {
-                    const isSelected = selectedDays.includes(day);
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedDays(selectedDays.filter((d) => d !== day));
-                          } else {
-                            setSelectedDays([...selectedDays, day]);
-                          }
-                        }}
-                        className={`px-3 py-2 rounded-lg text-[12.5px] font-bold transition-all ${
-                          isSelected
-                            ? "bg-primary-700 text-white font-bold"
-                            : "bg-white text-ink-2 hover:bg-sand-100 border border-line"
-                        }`}
-                      >
-                        {day}
-                      </button>
-                    );
-                  })}
+            <div className="flex flex-col gap-2">
+              <div className="rounded-xl bg-primary-50 border border-primary-100 p-3 flex items-center gap-2.5" aria-live="polite">
+                <Calendar className="w-4 h-4 text-primary shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <div>
+                  <p className="m-0 text-[12.5px] text-ink-2">الجدول الدراسي الناتج تلقائياً</p>
+                  <p className="m-0 mt-0.5 text-[14px] font-semibold text-primary">{formSchedule || "(الرجاء اختيار يوم واحد على الأقل)"}</p>
                 </div>
               </div>
-
-              {/* Start & End Times */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">وقت البدء (ساعة الدخول) <span className="text-danger-500">*</span></label>
-                  <input
-                    type="time"
-                    required
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
-                  />
+              <details className="text-[13px] text-ink-3">
+                <summary className="cursor-pointer hover:text-ink-2 font-semibold min-h-8 flex items-center">تعديل النص يدوياً (خيارات متقدمة)</summary>
+                <div className="mt-2 flex flex-col gap-1">
+                  <Input type="text" aria-label="تعديل يدوي لصيغة الجدول" value={formSchedule} onChange={(e: any) => setFormSchedule(e.target.value)} placeholder="تعديل يدوي لصيغة الجدول والمواعيد" />
+                  <p className="m-0 text-[12.5px] text-ink-3">ملاحظة: تعديل النص يدوياً قد يؤثر على الحساب التلقائي والغياب في وقت الحلقة.</p>
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">وقت الانتهاء (ساعة الخروج) <span className="text-danger-500">*</span></label>
-                  <input
-                    type="time"
-                    required
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
-                  />
-                </div>
-              </div>
-
-              {/* Preview & Manual Override */}
-              <div className="space-y-1.5">
-                <div className="bg-primary-50/60 border border-primary-100 rounded-xl p-3 text-primary-800 flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-primary-600 shrink-0" />
-                  <div>
-                    <p className="text-[11.5px] text-primary-600 font-bold">الجدول الدراسي الناتج تلقائياً:</p>
-                    <p className="text-[13px] font-bold font-sans mt-0.5">{formSchedule || "(الرجاء اختيار يوم واحد على الأقل)"}</p>
-                  </div>
-                </div>
-                
-                <details className="text-[11.5px] text-ink-3">
-                  <summary className="cursor-pointer hover:text-ink-2 font-bold">تعديل النص يدوياً (خيارات متقدمة)</summary>
-                  <div className="mt-2 space-y-1">
-                    <input
-                      type="text"
-                      value={formSchedule}
-                      onChange={(e) => setFormSchedule(e.target.value)}
-                      placeholder="تعديل يدوي لصيغة الجدول والمواعيد"
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                    />
-                    <p className="text-[12.5px] text-ink-3">ملاحظة: تعديل النص يدوياً قد يؤثر على الحساب التلقائي والغياب في وقت الحلقة.</p>
-                  </div>
-                </details>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Teacher selection */}
-                <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المحفظ المشرف</label>
-                  <select
-                    value={formTeacherId}
-                    onChange={(e) => setFormTeacherId(e.target.value)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                  >
+              </details>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <FormField label="المحفظ المشرف">
+                {(id) => (
+                  <Select id={id} value={formTeacherId} onChange={(e: any) => setFormTeacherId(e.target.value)}>
                     <option value="">-- اختر محفظاً للحلقة --</option>
                     {teachers
                       .filter((t) => !t.isArchived)
@@ -543,41 +403,15 @@ export default function ClassManagement({
                           {t.fullName} {t.category ? `[${t.category}]` : ""} ({t.specialty})
                         </option>
                       ))}
-                  </select>
-                </div>
-
-                {/* Max Students */}
-                <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الطاقة الاستيعابية القصوى</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={formMaxStudents}
-                    onChange={(e) => setFormMaxStudents(Number(e.target.value))}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
-                  />
-                </div>
-              </div>
-
-              <div className="border-t pt-4 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] border border-line-strong bg-surface hover:bg-surface-2 text-ink text-[14px] font-semibold transition-colors cursor-pointer"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55"
-                >
-                  {editingClass ? "حفظ التغييرات" : "إنشاء الحلقة"}
-                </button>
-              </div>
-            </form>
+                  </Select>
+                )}
+              </FormField>
+              <FormField label="الطاقة الاستيعابية القصوى">
+                {(id) => <Input id={id} type="number" min="1" max="100" value={formMaxStudents} onChange={(e: any) => setFormMaxStudents(Number(e.target.value))} className="tabular-nums" />}
+              </FormField>
+            </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );
