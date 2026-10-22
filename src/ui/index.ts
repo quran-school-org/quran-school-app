@@ -1,0 +1,28 @@
+/** Composants de la charte « لوحة الكتّاب ». */
+export { cx } from "./cx";
+export { Button, IconButton } from "./Button";
+export type { ButtonVariant } from "./Button";
+export { Card, CardHeader, Divider } from "./Card";
+export { PageHeader } from "./PageHeader";
+export { KpiGrid, KpiTile } from "./Kpi";
+export { ProgressBar, StackedBar, Legend } from "./Bars";
+export { Pill, CountBadge } from "./Pill";
+export type { PillTone } from "./Pill";
+export { ActionAlert, TextAction } from "./ActionAlert";
+export { SegmentedControl, FilterChips } from "./SegmentedControl";
+export { Input, Select, Textarea, FormField, CheckboxRow, SearchInput, fieldClass } from "./Form";
+export { Modal } from "./Modal";
+export { TableWrap, Table, Th, Td, Tr } from "./DataTable";
+export { EmptyState } from "./EmptyState";
+export { InitialAvatar, initialOf } from "./InitialAvatar";
+export { GeometricPattern, Emblem } from "./GeometricPattern";
+export { HifzMap, hizbOf } from "./HifzMap";
+export { Toast } from "./Toast";
+export { SideNav, NavBrand } from "./SideNav";
+export type { NavItem, NavGroup } from "./SideNav";
+export { Topbar, SyncPill } from "./Topbar";
+export type { SyncState } from "./Topbar";
+export { AppShell } from "./AppShell";
+export { Ltr, WhatsAppIcon, DropdownMenu, InfoRow } from "./Misc";
+export type { MenuItem } from "./Misc";
+export { QrCode, qrPath } from "./QrCode";

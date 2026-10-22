@@ -11,6 +11,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { e2eCsp } from "../../scripts/dev/csp";
+import { ACCOUNTS, loginAs, logout, openTab } from "./helpers";
 
 test("l'application fonctionne sous la CSP de production (connexion, écrans, impression)", async ({ page, context }) => {
   const violations: string[] = [];
@@ -24,7 +25,6 @@ test("l'application fonctionne sous la CSP de production (connexion, écrans, im
       ((window as any).__csp ||= []).push(`${e.violatedDirective} ${e.blockedURI}`);
     });
   });
-  page.on("dialog", (d) => d.accept());
 
   await page.goto("/");
   const meta = await page.locator('meta[http-equiv="Content-Security-Policy"]').getAttribute("content");
@@ -40,30 +40,28 @@ test("l'application fonctionne sous la CSP de production (connexion, écrans, im
   await page.evaluate(() => { (window as any).__csp = []; });
   violations.length = 0;
 
-  await page.locator('form input[type="text"]').fill("dir_annour");
-  await page.locator('form input[type="password"]').fill("demo-annour-2026");
-  await page.locator('form button[type="submit"]').click();
-  await expect(page.getByText("أهلاً بك").first()).toBeVisible();
-
-  await page.locator("aside").getByText("إدارة ملفات الطلاب").click();
+  await loginAs(page, ACCOUNTS.directeurAnnour);
+  await openTab(page, "students");
   await expect(page.getByText("إلياس البركاني").first()).toBeVisible();
 
   // Fenêtre d'impression : hérite de la CSP de l'application.
   const popupPromise = context.waitForEvent("page");
-  await page.locator("#export-students-pdf-btn").dispatchEvent("click");
+  await page.locator("#export-students-dropdown-btn").click();
+  await page.locator("#export-students-pdf-btn").click();
   const popup = await popupPromise;
   await popup.waitForLoadState("domcontentloaded").catch(() => undefined);
   await page.waitForTimeout(1500);
   const popupViolations = await popup.evaluate(() => (window as any).__csp || []).catch(() => []);
   await popup.close().catch(() => undefined);
 
-  await page.locator("aside").getByText("شؤون العاملين والمدرسين").click();
+  await openTab(page, "teachers");
   await expect(page.getByText("أستاذة النور").first()).toBeVisible();
-  await page.locator("aside").getByText("المحاسبة والمالية الجمعوية").click();
+  await openTab(page, "dashboard");
+  await expect(page.locator('[data-screen="dashboard"]')).toBeVisible();
+  await openTab(page, "finance");
   await page.waitForTimeout(1000);
 
   const inPage = await page.evaluate(() => (window as any).__csp || []);
   expect([...violations, ...inPage, ...popupViolations], "violations de la CSP").toEqual([]);
-  await page.getByRole("button", { name: /خروج/ }).first().click();
-  await expect(page.locator('form button[type="submit"]')).toBeVisible();
+  await logout(page);
 });
