@@ -1,106 +1,53 @@
 /**
- * Module du personnel (enseignants, encadrants, administratifs, entretien, bénévoles).
- * Découpé mécaniquement depuis TeacherManagement.tsx (Lot 2, sans changement de comportement).
+ * Recherche, type de contrat, affichage (cartes / tableau) et statut d'archivage.
  */
-import { Search, Filter, LayoutGrid, List } from "lucide-react";
+import { Search, LayoutGrid, List } from "lucide-react";
+import { SearchInput, SegmentedControl, Select } from "../../ui";
 import { useStaff } from "./StaffContext";
 
 export default function StaffFilterBar() {
-  const {
-    searchQuery,
-    setSearchQuery,
-    contractFilter,
-    setContractFilter,
-    archiveFilter,
-    setArchiveFilter,
-    viewMode,
-    setViewMode,
-    allStaff,
-  } = useStaff();
-
+  const { searchQuery, setSearchQuery, contractFilter, setContractFilter, archiveFilter, setArchiveFilter, viewMode, setViewMode, allStaff } = useStaff();
   return (
-    <>
-      {/* Filter Bar, Search, and Status Buttons */}
-      <div className="flex flex-col md:flex-row justify-between gap-4 items-center bg-sand-50 p-4 rounded-xl border border-sand-200">
-        <div className="flex items-center gap-3 w-full md:w-auto flex-wrap">
-          {/* Search */}
-          <div className="relative flex-1 md:w-72">
-            <Search className="absolute right-3 top-2.5 w-4 h-4 text-sand-500" />
-            <input
-              type="text"
-              placeholder="البحث بالاسم، المسمى، الهاتف، CIN أو المهام..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pr-9 pl-3 py-2 border border-sand-300 rounded-xl text-xs bg-white focus:outline-none focus:border-primary-600 font-sans"
-            />
-          </div>
-
-          {/* Contract Filter */}
-          <div className="flex items-center gap-1.5 bg-white border border-sand-300 rounded-xl px-2.5 py-1.5">
-            <Filter className="w-3.5 h-3.5 text-sand-500 shrink-0" />
-            <select
-              value={contractFilter}
-              onChange={(e) => setContractFilter(e.target.value)}
-              className="text-xs bg-transparent text-sand-700 font-bold focus:outline-none cursor-pointer"
-            >
-              <option value="all">جميع أنواع التعاقد</option>
-              <option value="عقد عمل دائم">عقد عمل دائم</option>
-              <option value="عقد مؤقت / بالساعة">عقد مؤقت / بالساعة</option>
-              <option value="مكافأة شهرية">مكافأة شهرية</option>
-              <option value="تطوعي">تطوعي</option>
-              <option value="منحة تدريب">منحة تدريب</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-          {/* View Mode Toggle */}
-          <div className="flex bg-white p-1 rounded-xl border border-sand-200">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-1.5 rounded-lg transition ${viewMode === "grid" ? "bg-sand-200 text-sand-800" : "text-sand-500 hover:text-sand-700"}`}
-              title="عرض كبطاقات"
-            >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`p-1.5 rounded-lg transition ${viewMode === "table" ? "bg-sand-200 text-sand-800" : "text-sand-500 hover:text-sand-700"}`}
-              title="عرض كجدول"
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Status Tab Filters */}
-          <div className="flex bg-white p-1 rounded-xl border border-sand-200">
-            <button
-              onClick={() => setArchiveFilter("active")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                archiveFilter === "active" ? "bg-primary-700 text-white shadow-xs" : "text-sand-600 hover:bg-sand-100"
-              }`}
-            >
-              النشطون ({allStaff.filter(t => !t.isArchived).length})
-            </button>
-            <button
-              onClick={() => setArchiveFilter("archived")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                archiveFilter === "archived" ? "bg-gold-600 text-white shadow-xs" : "text-sand-600 hover:bg-sand-100"
-              }`}
-            >
-              الأرشيف ({allStaff.filter(t => t.isArchived).length})
-            </button>
-            <button
-              onClick={() => setArchiveFilter("all")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                archiveFilter === "all" ? "bg-sand-700 text-white shadow-xs" : "text-sand-600 hover:bg-sand-100"
-              }`}
-            >
-              الكل ({allStaff.length})
-            </button>
-          </div>
-        </div>
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2.5 flex-[1_1_420px]">
+        <SearchInput
+          icon={<Search className="w-4 h-4" strokeWidth={1.75} />}
+          aria-label="البحث في الطاقم"
+          placeholder="البحث بالاسم، المسمى، الهاتف، CIN أو المهام..."
+          value={searchQuery}
+          onChange={(e: any) => setSearchQuery(e.target.value)}
+          className="flex-[1_1_260px] max-w-md"
+        />
+        <Select aria-label="نوع التعاقد" value={contractFilter} onChange={(e: any) => setContractFilter(e.target.value)} className="w-auto">
+          <option value="all">جميع أنواع التعاقد</option>
+          <option value="عقد عمل دائم">عقد عمل دائم</option>
+          <option value="عقد مؤقت / بالساعة">عقد مؤقت / بالساعة</option>
+          <option value="مكافأة شهرية">مكافأة شهرية</option>
+          <option value="تطوعي">تطوعي</option>
+          <option value="منحة تدريب">منحة تدريب</option>
+        </Select>
       </div>
-    </>
+      <div className="flex flex-wrap items-center gap-2.5">
+        <SegmentedControl
+          label="طريقة العرض"
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: "grid", label: <span className="sr-only">عرض كبطاقات</span>, icon: <LayoutGrid className="w-4 h-4" strokeWidth={1.75} />, attrs: { title: "عرض كبطاقات" } },
+            { value: "table", label: <span className="sr-only">عرض كجدول</span>, icon: <List className="w-4 h-4" strokeWidth={1.75} />, attrs: { title: "عرض كجدول" } },
+          ]}
+        />
+        <SegmentedControl
+          label="حالة الأرشفة"
+          value={archiveFilter}
+          onChange={setArchiveFilter}
+          options={[
+            { value: "active", label: `النشطون (${allStaff.filter((t) => !t.isArchived).length})` },
+            { value: "archived", label: `الأرشيف (${allStaff.filter((t) => t.isArchived).length})` },
+            { value: "all", label: `الكل (${allStaff.length})` },
+          ]}
+        />
+      </div>
+    </div>
   );
 }
