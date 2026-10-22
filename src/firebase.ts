@@ -26,8 +26,9 @@ import {
   type UserCredential,
 } from "firebase/auth";
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from "firebase/functions";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken as getAppCheckToken, type AppCheck } from "firebase/app-check";
 import type { SystemSettings, AppUser, UserProfile, SchoolInfo } from "./types";
-import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, apiBaseUrl } from "./config/env";
+import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, apiBaseUrl, appCheckConfig } from "./config/env";
 import { loginEmailCandidates, normalizeAuthPassword, normalizeUsername } from "./security/accounts";
 import { getCacheScope, scopedKey } from "./cache/localCache";
 import { STAFF_PRIVATE_COLLECTION, STAFF_PRIVATE_FIELDS, mergeStaffRecords, splitStaffRecord, stripStaffPrivate } from "./security/staffPrivate";
@@ -37,6 +38,36 @@ export const FUNCTIONS_REGION = "europe-west1";
 
 // Configuration web Firebase lue depuis les variables VITE_* (voir .env.example).
 const app = initializeApp(firebaseWebConfig);
+
+// App Check (D44) : seulement si une clé de site est fournie (désactivé par
+// défaut). En mode émulateurs ou avec un jeton de débogage, le fournisseur de
+// débogage remplace reCAPTCHA (le jeton doit être enregistré dans la console
+// App Check du projet). Doit précéder l'initialisation des autres services.
+export const appCheck: AppCheck | null = (() => {
+  if (!appCheckConfig.siteKey || typeof window === "undefined") return null;
+  if (emulatorConfig.enabled || appCheckConfig.debugToken) {
+    (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = appCheckConfig.debugToken || true;
+  }
+  try {
+    return initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(appCheckConfig.siteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  } catch (error) {
+    console.error("[firebase] App Check non initialisé :", error);
+    return null;
+  }
+})();
+
+/** Jeton App Check pour la fonction HTTP `api` (null si App Check est désactivé ou indisponible). */
+export async function getAppCheckHeader(): Promise<string | null> {
+  if (!appCheck) return null;
+  try {
+    return (await getAppCheckToken(appCheck, false)).token;
+  } catch {
+    return null;
+  }
+}
 
 // Base Firestore (base nommée en prod, "(default)" sur les émulateurs).
 export const db = firestoreDatabaseId === "(default)"
@@ -223,6 +254,8 @@ export async function requestAiReport<T = unknown>(input: {
   const idToken = await getIdToken();
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (idToken) headers.Authorization = `Bearer ${idToken}`;
+  const appCheckToken = await getAppCheckHeader();
+  if (appCheckToken) headers["X-Firebase-AppCheck"] = appCheckToken;
   let res: Response;
   try {
     res = await fetch(apiUrl("/api/gemini/analyze"), { method: "POST", headers, body: JSON.stringify(input) });
