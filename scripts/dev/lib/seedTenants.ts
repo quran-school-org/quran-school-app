@@ -54,6 +54,8 @@ export async function seedSecondSchool(db: Firestore, auth: Auth, alsoMemberUser
   await db.collection("users").doc(teacherUid).set({ lastSchoolId: s.id, mustChangePassword: false }, { merge: true });
 
   await school.collection("teachers").doc("t1").set({ schoolId: s.id, fullName: s.teacher.fullName, category: "أستاذ / محفظ", phone: "0700000001", isArchived: false });
+  // Fiche RH (bureau seulement, D42).
+  await school.collection("staffPrivate").doc("t1").set({ schoolId: s.id, teacherId: "t1", monthlySalary: 1800, contractType: "مكافأة شهرية", cinNumber: "YY000001" });
   await school.collection("classes").doc("c1").set({ schoolId: s.id, name: "حلقة الفرقان", teacherId: "t1", schedule: "الجمعة 16:00 - 18:00", maxStudents: 15 });
   for (const [id, name] of [["S-101", "إلياس البركاني"], ["S-102", "هدى البركاني"]]) {
     await school.collection("students").doc(id).set({

@@ -37,7 +37,7 @@ const staffPerms = (read: string[]) =>
 
 export function legacyFixture(): LegacyFixture {
   const teachers: Record<string, Doc> = {
-    t1: { fullName: "يوسف البقالي", category: "أستاذ / محفظ", roleTitle: "محفظ", specialty: "حفظ وتثبيت", phone: "0600000001", monthlySalary: 2500, cinNumber: "XX000001", joinedDate: "2025-09-01", isArchived: false },
+    t1: { fullName: "يوسف البقالي", category: "أستاذ / محفظ", roleTitle: "محفظ", specialty: "حفظ وتثبيت", phone: "0600000001", monthlySalary: 2500, cinNumber: "XX000001", contractType: "مكافأة شهرية", birthDate: "1990-04-12", address: "عنوان تجريبي، سلا", emergencyContact: "0611000009", joinedDate: "2025-09-01", isArchived: false },
     t2: { fullName: "خالد التازي", category: "إداري / كاتب", roleTitle: "كاتب الجمعية", specialty: "إدارة", phone: "0600000002", monthlySalary: 3000, cinNumber: "XX000002", joinedDate: "2025-09-01", isArchived: false },
     t3: { fullName: "حمزة الفاسي", category: "متطوع", roleTitle: "متطوع", specialty: "تطوع", phone: "0600000003", joinedDate: "2025-09-01", isArchived: false },
     t4: { fullName: "سعيد المرابط", category: "عامل نظافة / صيانة", roleTitle: "عون نظافة", specialty: "نظافة وصيانة", phone: "0600000004", monthlySalary: 1500, joinedDate: "2025-09-01", isArchived: false },

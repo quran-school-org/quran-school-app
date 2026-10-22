@@ -149,3 +149,30 @@ test.describe.serial("revue de sécurité", () => {
     expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("kuttab:alfajr:")))).toEqual([]);
   });
 });
+
+/**
+ * Étape 2, durcissement : fiches RH du personnel (R-06, D42). Vérifié sur le
+ * cache local rempli par la couche données (indépendant de la mise en page).
+ */
+test.describe.serial("durcissement", () => {
+  const cachedTeachers = (page: Page) => page.evaluate(() => {
+    const raw = localStorage.getItem("kuttab:alfajr:teachers");
+    return raw ? (JSON.parse(raw) as Record<string, unknown>[]) : null;
+  });
+
+  test("R-06 : le bureau reçoit les fiches RH, l'enseignant jamais", async ({ page }) => {
+    await login(page, "admin_alfajr", "e2e-directeur-2026");
+    await expect.poll(async () => (await cachedTeachers(page))?.find((t) => t.id === "t1")?.monthlySalary ?? null).toBe(2500);
+    await logout(page);
+
+    await login(page, "youssef_baqali", "e2e-enseignant-2026");
+    await expect.poll(async () => (await cachedTeachers(page))?.length ?? 0).toBeGreaterThan(0);
+    const staff = (await cachedTeachers(page))!;
+    for (const t of staff) {
+      for (const k of ["monthlySalary", "cinNumber", "contractType", "birthDate", "address", "emergencyContact"]) {
+        expect(t[k], `${t.id}.${k}`).toBeUndefined();
+      }
+    }
+    await logout(page);
+  });
+});
