@@ -28,6 +28,10 @@ describe("en-têtes de sécurité Hosting", () => {
     expect(directives["connect-src"]).toEqual(expect.arrayContaining(["https://*.googleapis.com", "https://*.cloudfunctions.net"]));
     expect(directives["style-src"]).toContain("https://fonts.googleapis.com");
     expect(directives["font-src"]).toContain("https://fonts.gstatic.com");
+    // Origines devenues inutiles avec le nouveau design (D61, D62, D63) : QR locaux,
+    // impressions sans CDN Tailwind.
+    expect(csp).not.toContain("cdn.tailwindcss.com");
+    expect(csp).not.toContain("qrserver");
   });
 
   it("nosniff, Referrer-Policy, Permissions-Policy (caméra autorisée pour le scan QR), cadres interdits", () => {
