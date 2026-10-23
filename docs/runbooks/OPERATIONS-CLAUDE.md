@@ -53,7 +53,9 @@ Règles permanentes :
   (`ARTIFACT_GPG_PUBLIC_KEY` : variable de dépôt, préfixée ou d'environnement) : sans cette variable, un run avec
   `rotate_passwords` ≠ `none` et `apply=true` s'arrête au garde-fou (le poser
   avant les répétitions 4.x sur le dev). Le propriétaire déchiffre avec
-  `gpg --decrypt contenu.tar.gz.gpg | tar -xz`.
+  `unzip <artefact>.zip && gpg --decrypt contenu.tar.gz.gpg | tar -xz`, sur la
+  machine qui détient la clé privée ; les mots de passe sont dans
+  `mots-de-passe-temporaires-1.csv` (numéroté par `ops.yml`, un fichier par script).
 - **Critère d'arrêt général** : tout run rouge, toute ligne `::error::`, tout
   `critical: true`, tout écart inattendu de compteur. On s'arrête, on rapporte
   au propriétaire le run, l'étape et les compteurs, et on ne relance que ce que
@@ -99,7 +101,7 @@ aucune copie des données réelles** (sinon `seed-demo` refuse : `REAL_DATA`).
 |---|---|---|---|
 | D.1 | `run deploy.yml -f environment=dev -f target=all -f force=true` | job `verifier` vert (code de `main`) ; règles, Functions et Hosting multi-écoles déployés sur le dev ; fonctions du Lot 0 (`createUserAccount`), si 1.5 a été fait, supprimées du dev par `force` ; `https://$DEV.web.app` répond (`curl -sI`, projet de dev seulement) | droit manquant : CI-DEPLOIEMENT.md §3 ; région des triggers : 1.3 |
 | D.2 | `run ops.yml -f environment=dev -f action=seed-demo -f apply=true -f confirm=$DEV` | run vert ; `RESUME_JSON` : `mode: application`, `schoolId: demo`, `accounts.created + accounts.reset = 5`, `superAdminClaims: 0`, `otherSchoolMemberships: 0`, `passwordsFile: true` ; artefact `mots-de-passe-temporaires-dev-<run>-<tentative>` (chiffré, 1 jour) | `REAL_DATA` : le dev contient déjà autre chose (copie réelle, autre école, autres comptes) : **arrêt**, rapport au propriétaire, ne rien forcer ; `ACCOUNT_CONFLICT` : un compte `demo_*` est rattaché ailleurs ou son nom est pris : arrêt, rapport ; clé publique absente : la faire poser |
-| D.3 | (propriétaire) télécharger l'artefact depuis l'onglet Actions, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, puis se connecter sur `https://$DEV.web.app` | comptes `demo_directeur` (مدير), `demo_admin` (إداري), `demo_enseignant` (مدرس), `demo_parent` (ولي أمر, élèves S-101 et S-102), `demo_eleve` (طالب, S-109) ; chacun ne voit que l'école `demo` | — |
+| D.3 | (propriétaire) télécharger l'artefact depuis l'onglet Actions, `unzip`, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, lire `mots-de-passe-temporaires-1.csv`, puis se connecter sur `https://$DEV.web.app` | comptes `demo_directeur` (مدير), `demo_admin` (إداري), `demo_enseignant` (مدرس), `demo_parent` (ولي أمر, élèves S-101 et S-102), `demo_eleve` (طالب, S-109) ; chacun ne voit que l'école `demo` | — |
 
 - **Relance** (données de démonstration remises à neuf, nouveaux mots de passe,
   sessions révoquées) : la même commande D.2. Les anciens mots de passe ne
