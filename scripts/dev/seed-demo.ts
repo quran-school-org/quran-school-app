@@ -50,9 +50,12 @@ import { STAFF_PRIVATE_COLLECTION, hasStaffPrivateFields, splitStaffRecord } fro
 import { defaultSchoolSettings } from "../../src/school/businessRules";
 import { legacyFixture } from "./fixtures/legacy-alfajr";
 
-/** Projet et base de PRODUCTION : jamais visés par ce script (liste de refus, pas une configuration). */
+/**
+ * Projet de PRODUCTION : jamais visé par ce script (liste de refus, pas une configuration).
+ * Le refus porte sur le projet seul : une base appartient à son projet, et la base
+ * du dev porte volontairement le même identifiant que celle de la prod (guide, étape B.3).
+ */
 export const FORBIDDEN_PROJECT_IDS = ["gen-lang-client-0481880143"];
-export const FORBIDDEN_DATABASE_IDS = ["ai-studio-a6572431-c7db-4071-82bf-a922d18511ec"];
 
 export const DEMO_SCHOOL_ID = "demo";
 export const DEMO_SCHOOL_NAME = "مدرسة تجريبية (بيانات وهمية)";
@@ -94,11 +97,10 @@ export const DEMO_ACCOUNTS: DemoAccount[] = [
 
 export const DEMO_USERNAMES = DEMO_ACCOUNTS.map((a) => a.username);
 
-/** Refus du projet ou de la base de prod : premier contrôle, sans exception. */
-export function assertNotProduction(projectId: unknown, databaseId?: unknown): void {
+/** Refus du projet de prod : premier contrôle, sans exception. */
+export function assertNotProduction(projectId: unknown): void {
   const p = typeof projectId === "string" ? projectId.trim().toLowerCase() : "";
-  const d = typeof databaseId === "string" ? databaseId.trim().toLowerCase() : "";
-  if (FORBIDDEN_PROJECT_IDS.includes(p) || FORBIDDEN_DATABASE_IDS.includes(d)) {
+  if (FORBIDDEN_PROJECT_IDS.includes(p)) {
     throw new Error("Projet de PRODUCTION : refus définitif (l'école de démonstration ne va que sur le dev ou les émulateurs, D77).");
   }
 }
@@ -115,10 +117,10 @@ export function parseSeedDemoArgs(argv: string[], env: NodeJS.ProcessEnv = proce
   if (typeof project !== "string" || !project.trim()) {
     throw new Error("--project=<id> est obligatoire (aucun projet par défaut).");
   }
-  assertNotProduction(project, flags.get("database"));
+  assertNotProduction(project);
   for (const k of flags.keys()) if (!KNOWN_FLAGS.has(k)) throw new Error(`Option inconnue : --${k}`);
   const common = parseCommonArgs(argv, env, "scripts/dev/out");
-  assertNotProduction(common.projectId, common.databaseId);
+  assertNotProduction(common.projectId);
   return { ...common, remove: flags.has("remove") };
 }
 
