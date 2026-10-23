@@ -43,7 +43,12 @@ export default function LoginScreen() {
         <div className="w-full max-w-[420px] flex flex-col gap-6">
           <div className="flex flex-col items-center text-center gap-3">
             <div className="w-20 h-20 rounded-2xl border border-line bg-surface flex items-center justify-center overflow-hidden p-1.5">
-              {logo ? <img src={logo} alt="شعار الجمعية" className="w-full h-full object-contain" referrerPolicy="no-referrer" /> : <Emblem size={64} />}
+              {logo ? (
+                <img src={logo} alt="شعار الجمعية" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+              ) : (
+                // Logo temporaire (public/logo.svg, D78) tant que l'école n'a pas de logo dans Paramètres.
+                <img src="/logo.svg" alt="" className="w-full h-full object-contain" />
+              )}
             </div>
             <h1 className="m-0 font-display font-bold text-[28px] sm:text-[32px] leading-tight text-primary">{schoolName}</h1>
             <p className="m-0 text-[14.5px] text-ink-2">بوابة الدخول الموحدة لإدارة شؤون حفظ وتجويد القرآن الكريم</p>
