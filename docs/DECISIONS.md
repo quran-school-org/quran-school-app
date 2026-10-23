@@ -1531,3 +1531,110 @@ là-bas (R-06).
   charte de `LoginScreen`.
 - **Retour arrière** : `git revert` des commits de `feat/logo-favicon`
   (l'ancien favicon et l'`Emblem` de la tuile de connexion reviennent).
+
+### D79. Traduction française de TEST (sélecteur AR / FR), dev seulement
+- **Contexte** : le propriétaire, francophone, veut tester l'application
+  multi-écoles en français. C'est **temporaire** : la traduction sera retirée
+  de la version finale. Elle ne doit changer ni la logique ni les données
+  (valeurs de rôles en arabe, `value` des `<select>`, saisies, noms), ni le
+  design arabe, ni les ~115 fichiers d'écrans, et doit se retirer en un geste.
+- **Décision : une couche d'affichage posée sur le DOM**, isolée dans
+  `src/i18n-test/` (plutôt qu'une bibliothèque i18n, qui aurait imposé de
+  modifier chaque écran puis de tout défaire) :
+  - `fr.ts` : dictionnaire arabe → français (1 933 entrées) ; clé = chaîne
+    arabe exacte, espaces normalisés ; une clé avec `{0}`, `{1}`… est un
+    **motif** (gabarits `${…}` : nombres, noms, dates) ; une valeur capturée
+    est traduite si elle est elle-même au dictionnaire (rôle, mois, statut),
+    sinon reprise telle quelle. Les dates formatées (mois, jours) sont
+    traduites mot à mot. Un motif « faible » (texte fixe de moins de 4
+    lettres : « {0} و{1} », « {0} ({1}) ») est écarté si ses valeurs sont de
+    l'arabe inconnu (une citation ne devient pas « … et … ») ;
+  - `dom.ts` : un `MutationObserver` sur `<body>` modifie **en place**
+    (`nodeValue`) les nœuds texte reconnus, sans jamais remplacer ni insérer
+    de nœud : React continue de les mettre à jour, et chaque mise à jour est
+    retraduite. Attributs traduits : `placeholder`, `title`, `aria-label`,
+    `alt`, `label` des options. Texte des `<option>` traduit, **valeur
+    jamais** : une option sans attribut `value` reçoit d'abord sa valeur arabe
+    d'origine (sinon sa valeur suivrait le texte). Jamais touchés : valeur des
+    `input`/`textarea`, contenu `contenteditable`, `script`/`style`, et tout ce
+    qui est sous `[data-no-translate]`. Retour en AR : chaque texte et attribut
+    traduit reprend sa valeur arabe ; l'observateur ne tourne pas en AR (DOM
+    de `#root` identique à celui sans le module) ;
+  - boîtes natives `alert` / `confirm` / `prompt` : en FR, seul leur message
+    est traduit (la valeur par défaut d'un `prompt`, une donnée, ne l'est pas) ;
+  - `<html lang="fr" dir="ltr">` en FR ; `fr.css` inverse le sens des
+    conteneurs qui portent `dir="rtl"` ou `style="direction: rtl"` en dur, et
+    quelques alignements (`text-right`, icône de déconnexion), **uniquement
+    sous `html[lang="fr"]`** ;
+  - sélecteur « TEST · AR · FR » (`switcher.ts`) : petit élément autonome
+    ajouté à `<body>`, hors de l'arbre React, dans le coin bas du côté de la
+    zone principale ; présent sur l'écran de connexion, le choix d'école et
+    dans l'application. Choix initial : au centre de la barre du haut, mais la
+    barre s'allonge en français et le sélecteur y masquait la pastille de
+    synchronisation à 1 440 px ; l'insérer dans `src/shell/` aurait ajouté des
+    imports (et du code dans le bundle de prod) à défaire au retrait. Choix
+    mémorisé dans `localStorage` (`i18n-test:lang`, hors des préfixes vidés à
+    la déconnexion, accès protégés) ;
+  - chaîne sans traduction : l'arabe reste affiché ; en `npm run dev`,
+    `console.debug("[i18n-test] sans traduction : …")` une fois par chaîne
+    (et `window.__frTestMissing` pour les tests).
+- **Drapeau de build `VITE_ENABLE_FR_TEST`** (lu par `src/config/env.ts`
+  directement sur `import.meta.env`, donc remplacé par une constante) :
+  - `"true"` dans `.env.development` (dev local, e2e, `test:hosting`), dans
+    l'étape propre au dev de `deploy.yml` (« Configuration web du projet de
+    dev », qui écrit `.env.production.local`) et dans `preview.yml` (aperçus,
+    qui ne visent que le projet de dev et refusent la prod) ; **jamais** dans
+    `.env.production` ni dans la branche prod de `deploy.yml` ; rien dans
+    `deploy-lot0.yml` (code de `release/lot0`, sans le module) ;
+  - `src/main.tsx` n'importe le module que par `import('./i18n-test')` sous
+    `if (frTestEnabled)` : en production, la branche est éliminée et le
+    bundle ne contient ni le dictionnaire ni le sélecteur (vérifié sur
+    `dist/` après `npm run build` : un seul fichier JS, aucune chaîne du module) ;
+  - garde-fous (`scripts/dev/buildGuards.ts`, branchés dans `vite.config.ts`) :
+    `frTestBuildProblems` refuse un build de production avec le drapeau vrai
+    pour le projet de `.env.production` (prod, lu dans le fichier versionné,
+    rien de codé en dur) ; `frTestBundleProblems` fait échouer le build si un
+    module de `src/i18n-test/` est dans le bundle sans le drapeau.
+- **Couverture** : `npx tsx src/i18n-test/coverage.ts` extrait (API du
+  compilateur TypeScript) les littéraux, gabarits et textes JSX arabes de
+  `src/` et les messages `HttpsError` de `functions/src`, hors gabarits
+  d'impression (`src/print/`, autre fenêtre : **hors périmètre**, sauf
+  `src/print/cards` affiché dans l'atelier des cartes) et hors données
+  fictives (`scripts/dev`, fixtures) : 1 932 chaînes affichées, 1 930
+  traduites, 2 citations (hadiths) laissées en arabe volontairement
+  (`exclusions.ts`), 5 textes jamais affichés (messages WhatsApp envoyés aux
+  parents, qui restent en arabe). Le parcours e2e de tous les écrans en FR
+  (6 rôles) ne signale plus que des données fictives (noms, halaqas, notes).
+- **Tests** : `tests/unit/i18nTest.test.ts` (moteur, dictionnaire, couverture
+  à 100 %, drapeau dev seulement, import dynamique unique, garde-fous, lignes
+  du drapeau dans les workflows) ; `tests/e2e/i18n-fr.spec.ts` (bascule AR →
+  FR → AR et retour à `dir="rtl"`, connexion et navigation en FR, valeur des
+  rôles et saisies intactes ; options `CAPTURE_DIR` et `I18N_MISSING_OUT`).
+  Captures : `docs/design/captures/fr-test/` (données fictives).
+- **Limites connues** : l'ordre des mots suit les fragments JSX (un nombre
+  rendu à part reste à sa place) ; une donnée arabe dans une phrase française
+  peut s'afficher dans un ordre bidirectionnel inattendu ; les documents
+  imprimés depuis l'aperçu d'un écran (copie de son HTML) sortent dans la
+  langue affichée ; les valeurs saisies en arabe (horaires, catégories) qui
+  coïncident avec une entrée du dictionnaire s'affichent traduites (affichage
+  seulement, la donnée ne change pas).
+- **Procédure de retrait** (version finale) :
+  1. supprimer le dossier `src/i18n-test/` ;
+  2. dans `src/main.tsx`, supprimer l'import de `frTestEnabled` et le bloc
+     `if (frTestEnabled) { import('./i18n-test')… } else { render(); }` en
+     gardant un simple `render();` ;
+  3. supprimer le drapeau : `frTestEnabled` dans `src/config/env.ts`,
+     `VITE_ENABLE_FR_TEST` dans `src/vite-env.d.ts` et `.env.development`, les
+     deux lignes `echo 'VITE_ENABLE_FR_TEST="true"'` (et leur commentaire)
+     de `deploy.yml` et `preview.yml` ;
+  4. supprimer `tests/unit/i18nTest.test.ts` et `tests/e2e/i18n-fr.spec.ts`,
+     et, au choix, `docs/design/captures/fr-test/` ;
+  5. retirer les garde-fous devenus sans objet : `frTestBuildProblems`,
+     `committedProductionProjectId`, `frTestBundleProblems` (et l'import de
+     `dotenv`) dans `scripts/dev/buildGuards.ts`, `frTestBundleGuard` et ses
+     appels dans `vite.config.ts` ;
+  6. `npm run lint`, `npm test`, `npm run build`, `npm run test:e2e`.
+  Les écrans n'ayant pas été modifiés, rien d'autre n'est à défaire.
+- **Retour arrière** : `git revert` des commits de `feat/traduction-fr-tests`,
+  ou, pour couper la traduction sans retirer le code, `VITE_ENABLE_FR_TEST`
+  absent ou `"false"` (le module n'est alors plus dans le bundle).
