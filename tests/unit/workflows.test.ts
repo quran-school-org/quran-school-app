@@ -285,3 +285,31 @@ describe("workflows GitHub Actions (D68)", () => {
   });
 });
 
+
+describe("paramètres des Functions fournis au déploiement", () => {
+  // En mode non interactif, `firebase deploy` échoue si un paramètre n'a pas de
+  // valeur, même quand il a un défaut dans le code.
+  const SRC = "functions/src";
+  const params = [
+    ...new Set(
+      readdirSync(SRC, { recursive: true })
+        .map(String)
+        .filter((f) => f.endsWith(".ts"))
+        .flatMap((f) => [...readFileSync(join(SRC, f), "utf8").matchAll(/define(?:String|Boolean|Int)\("([A-Z_]+)"/g)].map((m) => m[1])),
+    ),
+  ];
+
+  it("trouve les paramètres", () => {
+    expect(params.length).toBeGreaterThan(0);
+  });
+
+  it("le fichier versionné de la prod les définit tous", () => {
+    const env = readFileSync("functions/.env.gen-lang-client-0481880143", "utf8");
+    for (const p of params) expect(env, p).toMatch(new RegExp(`^${p}=`, "m"));
+  });
+
+  it("deploy.yml les écrit tous pour le dev", () => {
+    const dev = runScripts(read("deploy.yml")).map((l) => l.content).join("\n");
+    for (const p of params) expect(dev, p).toMatch(new RegExp(`\\b${p}=`));
+  });
+});
