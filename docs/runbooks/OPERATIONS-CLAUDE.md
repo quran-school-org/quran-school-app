@@ -115,6 +115,50 @@ aucune copie des données réelles** (sinon `seed-demo` refuse : `REAL_DATA`).
 - L'orchestrateur ne télécharge pas l'artefact et ne lit jamais les mots de
   passe ; il ne transmet au propriétaire que l'URL du run.
 
+## 1 ter. Super-admin du dev (création d'écoles, D80)
+
+But : le propriétaire teste la création d'écoles sur le dev, qui contient une
+**copie des données réelles** (école `alfajr`, traitée comme la prod, D77).
+Le compte `superadmin_melik` (« Melik Zaanouni ») reçoit le claim `superAdmin`
+et **aucune appartenance d'école** : il liste les écoles et en crée, mais ne
+lit les données d'aucune école dont il n'est pas membre (D25). Une école créée
+depuis l'interface le rend directeur de **cette** école seulement
+(`makeMeDirector`).
+
+**Production : action interdite** (refusée par le garde-fou d'`ops.yml` et par
+le script lui-même, `--force` compris). En prod, le super-admin vient de
+`migrate-to-tenants --super-admin` à la bascule (variable
+`PROD_SUPER_ADMIN_USERNAME`, ou `SUPER_ADMIN_USERNAME` de l'environnement
+`production` ; §4, go n°3, et §5.4).
+
+Prérequis : `feat/dev-super-admin` fusionnée dans `main` (le code exécuté est
+celui de `main`) ; Functions multi-écoles déployées sur le dev (D.1 ou 4.2,
+pour `createSchool`) ; clé publique `ARTIFACT_GPG_PUBLIC_KEY` posée (Free :
+`DEV_ARTIFACT_GPG_PUBLIC_KEY` ou `ARTIFACT_GPG_PUBLIC_KEY`).
+
+| # | Commande | À vérifier | Si échec |
+|---|---|---|---|
+| S.1 | `run ops.yml -f environment=dev -f action=dev-super-admin -f username=superadmin_melik -f apply=true -f confirm=$DEV` | run vert ; `RESUME_JSON` : `mode: application`, `operation: grant`, `username: superadmin_melik`, `created: true` (première fois) ou `reset: true` (relance), `superAdmin: true`, `schoolMemberships: 0`, `disabled: false`, `passwordsFile: true` ; artefact `mots-de-passe-temporaires-dev-<run>-<tentative>` (chiffré, 1 jour) | `ACCOUNT_CONFLICT` : l'identifiant est pris par un autre compte (registre, compte Auth hors registre, ou deux domaines) : **arrêt**, rapport au propriétaire, ne rien forcer ; `MEMBER_ACCOUNT` : le compte appartient déjà à une école (compte réel de la copie ?) : arrêt, rapport (le workflow ne passe jamais `--allow-existing-member`) ; `username invalide` : corriger l'entrée ; clé publique absente : la faire poser |
+| S.2 | (propriétaire) télécharger l'artefact, `unzip`, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, lire `mots-de-passe-temporaires-1.csv`, se connecter sur `https://$DEV.web.app` avec `superadmin_melik` | page de choix d'école (liste des écoles, dont `alfajr`, et formulaire de création) ; aucune donnée d'`alfajr` lisible sans en être membre ; création d'une école de test ; changement de mot de passe demandé à l'entrée dans l'école créée (`mustChangePassword`) | connexion refusée : relancer S.1 (nouveau mot de passe) |
+
+- **Relance** (mot de passe perdu ou exposé) : la même commande S.1. Nouveau
+  mot de passe, sessions révoquées, compte réactivé s'il était désactivé,
+  claim gardé ; l'ancien mot de passe ne fonctionne plus. Après création d'une
+  école avec `makeMeDirector`, le compte en est membre : S.1 s'arrête alors
+  sur `MEMBER_ACCOUNT` (relance volontairement impossible par le workflow ; le
+  propriétaire change son mot de passe dans l'application, ou le retire de
+  l'école de test puis relance).
+- **Retrait** (fin des essais, et en tout cas si le compte est exposé) :
+  `run ops.yml -f environment=dev -f action=dev-super-admin-revoke -f username=superadmin_melik -f apply=true -f confirm=$DEV`
+  (script : `--revoke`). `RESUME_JSON` : `operation: revoke`,
+  `superAdmin: false`, `sessionsRevoked: true`, `disabled: true` si le compte
+  n'appartient à aucune école (sinon `false` et `schoolMemberships` > 0 : il
+  reste membre des écoles de test qu'il a créées). Rien n'est supprimé (compte
+  Auth, `users`, `usernames`, écoles créées) ; un jeton déjà émis garde le
+  claim jusqu'à son expiration (une heure au plus).
+- L'orchestrateur ne télécharge pas l'artefact et ne lit jamais le mot de
+  passe ; il ne transmet au propriétaire que l'URL du run.
+
 ## 2. Lot 0 : simulation sur la prod → **go n°1**
 
 | # | Commande | À vérifier |
@@ -222,9 +266,10 @@ l'application (super-admin). Retour arrière : MIGRATION-BASCULE.md §6, avec
 | | `force` | `false` (défaut), `true` : `--force` (supprime les fonctions absentes de `release/lot0`) |
 | | `confirm` | production : `gen-lang-client-0481880143` |
 | `ops.yml` | `environment` | `dev`, `production` |
-| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts`, `seed-demo` (dev), `remove-demo` (dev) |
-| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore ; **obligatoire** pour seed-demo et remove-demo |
+| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts`, `seed-demo` (dev), `remove-demo` (dev), `dev-super-admin` (dev), `dev-super-admin-revoke` (dev) |
+| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore ; **obligatoire** pour seed-demo, remove-demo, dev-super-admin et dev-super-admin-revoke |
 | | `rotate_passwords` | `none` (défaut, D53), `weak`, `all` : lot0-provision, migrate-to-tenants |
 | | `import_source` | import-firestore : `AAAAMMJJ-HHMMSSZ-(manuel\|avant-lot0-provision\|avant-migrate-to-tenants)` |
+| | `username` | dev-super-admin, dev-super-admin-revoke (obligatoire, vide pour les autres actions) : `^[a-z0-9][a-z0-9._-]{1,39}$`, ex. `superadmin_melik` |
 | | `confirm` | identifiant du projet visé : obligatoire pour `apply=true`, et en production pour tout sauf `describe-db` et `verify-counts` |
 | `deploy.yml` | `environment`, `target`, `confirm` | comme avant ; `force` (`false` par défaut) pour la bascule |

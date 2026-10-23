@@ -3,8 +3,9 @@
 # - Déclenchement MANUEL uniquement (workflow_dispatch), par l'orchestrateur
 #   (gh workflow run) après le « go » du propriétaire : docs/runbooks/OPERATIONS-CLAUDE.md.
 # - Compte de service github-ops (WIF, sans clé), distinct de github-deploy.
-# - Entrées : des choix fermés, sauf `confirm` (comparé, jamais exécuté) et
-#   `import_source` (validé par une expression régulière stricte avant usage).
+# - Entrées : des choix fermés, sauf `confirm` (comparé, jamais exécuté),
+#   `import_source` et `username` (validés par une expression régulière
+#   stricte avant usage).
 #   Aucune entrée n'est interpolée dans un script : tout passe par env.
 # - Simulation par défaut (apply=false). Toute écriture (apply=true) exige
 #   confirm = identifiant du projet ; en production, toute action autre que
@@ -26,6 +27,10 @@
 #   un compte par rôle, mots de passe aléatoires dans l'artefact chiffré) et
 #   remove-demo (suppression, avant toute copie des données réelles) : dev
 #   SEULEMENT, code de main, apply=true et confirm = projet de dev exigés.
+# - Super-admin du dev (D80) : dev-super-admin (compte `username`, claim
+#   superAdmin, aucune école, mot de passe dans l'artefact chiffré) et
+#   dev-super-admin-revoke (retrait du claim) : dev SEULEMENT, mêmes garde-fous
+#   que seed-demo. En production, le super-admin vient de migrate-to-tenants.
 # - Configuration GitHub (D75) : environnements `dev` / `production` (Team,
 #   Enterprise : job `operation`) ou variables de dépôt préfixées DEV_ / PROD_
 #   (Free : job `operation-sans-environnement`, sans `environment:`), choisie
@@ -43,10 +48,10 @@ on:
       action:
         description: "Opération"
         type: choice
-        options: [describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo]
+        options: [describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke]
         default: describe-db
       apply:
-        description: "Appliquer (sinon simulation) : lot0-provision, migrate-to-tenants, import-firestore ; obligatoire pour seed-demo, remove-demo"
+        description: "Appliquer (sinon simulation) : lot0-provision, migrate-to-tenants, import-firestore ; obligatoire pour seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke"
         type: boolean
         default: false
       rotate_passwords:
@@ -56,6 +61,11 @@ on:
         default: none
       import_source:
         description: "import-firestore : nom d'un export de la prod (AAAAMMJJ-HHMMSSZ-motif, lu dans un run export)"
+        type: string
+        required: false
+        default: ""
+      username:
+        description: "dev-super-admin, dev-super-admin-revoke : identifiant du compte super-admin du dev (^[a-z0-9][a-z0-9._-]{1,39}$)"
         type: string
         required: false
         default: ""
@@ -167,6 +177,7 @@ jobs:
         env:
           CONFIRM: ${{ inputs.confirm }}
           IMPORT_SOURCE: ${{ inputs.import_source }}
+          USERNAME_INPUT: ${{ inputs.username }}
           REF: ${{ github.ref }}
         run: |
           set -euo pipefail
@@ -181,7 +192,7 @@ jobs:
           if [ "${APPLY}" = "true" ] && [ "${ROTATE}" != "none" ] && [ -z "${ARTIFACT_KEY}" ]; then
             fail "rotate_passwords=${ROTATE} appliqué exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
           fi
-          case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts|seed-demo|remove-demo) ;; *) fail "Action inconnue.";; esac
+          case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke) ;; *) fail "Action inconnue.";; esac
           case "${ROTATE}" in none|weak|all) ;; *) fail "rotate_passwords inconnu.";; esac
           case "${APPLY}" in true|false) ;; *) fail "apply invalide.";; esac
           if [ -z "${PROJECT_ID}" ] || [ -z "${DATABASE_ID}" ] || [ -z "${WIF_PROVIDER}" ] || [ -z "${OPS_SA}" ] || [ -z "${BACKUP_BUCKET}" ]; then
@@ -210,13 +221,14 @@ jobs:
 
           # Cohérence des entrées avec l'action.
           case "${ACTION}" in
-            lot0-provision|migrate-to-tenants|import-firestore|seed-demo|remove-demo) ;;
+            lot0-provision|migrate-to-tenants|import-firestore|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke) ;;
             *) [ "${APPLY}" = "false" ] || fail "apply=true n'a pas de sens pour ${ACTION}." ;;
           esac
           # D77 : école de démonstration, sur le dev SEULEMENT (jamais la production).
+          # D80 : super-admin du dev, mêmes garde-fous (en prod : migrate-to-tenants).
           case "${ACTION}" in
-            seed-demo|remove-demo)
-              [ "${ENVIRONMENT}" = "dev" ] || fail "${ACTION} est refusé en production (école de démonstration : dev seulement, D77)."
+            seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke)
+              [ "${ENVIRONMENT}" = "dev" ] || fail "${ACTION} est refusé en production (dev seulement, D77, D80)."
               [ "${PROJECT_ID}" != "${PROD_PROJECT_ID}" ] || fail "${ACTION} : le projet visé est la prod."
               [ "${APPLY}" = "true" ] || fail "${ACTION} exige apply=true (et confirm = identifiant du projet de dev)."
               [ "${CONFIRM}" = "${PROJECT_ID}" ] || fail "Confirmation incorrecte : recopier l'identifiant du projet de dev dans « confirm »."
@@ -226,6 +238,16 @@ jobs:
           if [ "${ACTION}" = "seed-demo" ] && [ -z "${ARTIFACT_KEY}" ]; then
             fail "seed-demo exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
           fi
+          if [ "${ACTION}" = "dev-super-admin" ] && [ -z "${ARTIFACT_KEY}" ]; then
+            fail "dev-super-admin exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
+          fi
+          # D80 : identifiant du super-admin du dev, format strict (jamais exécuté, passé par env).
+          case "${ACTION}" in
+            dev-super-admin|dev-super-admin-revoke)
+              [[ "${USERNAME_INPUT}" =~ ^[a-z0-9][a-z0-9._-]{1,39}$ ]] || fail "username invalide : attendu ^[a-z0-9][a-z0-9._-]{1,39}$ (ex. superadmin_melik)."
+              ;;
+            *) [ -z "${USERNAME_INPUT}" ] || fail "username ne concerne que dev-super-admin et dev-super-admin-revoke." ;;
+          esac
           case "${ACTION}" in
             lot0-provision|migrate-to-tenants) ;;
             *) [ "${ROTATE}" = "none" ] || fail "rotate_passwords ne concerne que lot0-provision et migrate-to-tenants." ;;
@@ -256,7 +278,7 @@ jobs:
           # Code à extraire : références FIXES.
           case "${ACTION}" in
             lot0-provision) echo "code_ref=release/lot0" >> "$GITHUB_OUTPUT" ;;
-            migrate-to-tenants|verify-counts|seed-demo|remove-demo) echo "code_ref=main" >> "$GITHUB_OUTPUT" ;;
+            migrate-to-tenants|verify-counts|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke) echo "code_ref=main" >> "$GITHUB_OUTPUT" ;;
             *) echo "code_ref=" >> "$GITHUB_OUTPUT" ;;
           esac
           echo "stamp=$(date -u +%Y%m%d-%H%M%SZ)" >> "$GITHUB_OUTPUT"
@@ -401,7 +423,9 @@ jobs:
 
       - name: ${{ inputs.action }} (script Admin SDK, journal en artefact)
         id: script
-        if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants' || inputs.action == 'seed-demo' || inputs.action == 'remove-demo'
+        if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants' || inputs.action == 'seed-demo' || inputs.action == 'remove-demo' || inputs.action == 'dev-super-admin' || inputs.action == 'dev-super-admin-revoke'
+        env:
+          USERNAME_INPUT: ${{ inputs.username }}
         run: |
           set -euo pipefail
           mkdir -p "${REPORTS}"
@@ -411,6 +435,13 @@ jobs:
             if [ "${ENVIRONMENT}" != "dev" ] || [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ]; then echo "::error::${ACTION} refusé hors dev."; exit 1; fi
             SCRIPT=scripts/dev/seed-demo.ts
             [ "${ACTION}" = "remove-demo" ] && ARGS+=(--remove)
+          elif [ "${ACTION}" = "dev-super-admin" ] || [ "${ACTION}" = "dev-super-admin-revoke" ]; then
+            # Revalidé ici (défense en profondeur) : dev seulement, identifiant strict ; le script refuse aussi la prod.
+            if [ "${ENVIRONMENT}" != "dev" ] || [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ]; then echo "::error::${ACTION} refusé hors dev."; exit 1; fi
+            [[ "${USERNAME_INPUT}" =~ ^[a-z0-9][a-z0-9._-]{1,39}$ ]] || { echo "::error::username invalide."; exit 1; }
+            SCRIPT=scripts/admin/dev-super-admin.ts
+            ARGS+=(--username="${USERNAME_INPUT}")
+            [ "${ACTION}" = "dev-super-admin-revoke" ] && ARGS+=(--revoke)
           elif [ "${ACTION}" = "lot0-provision" ]; then
             SCRIPT=scripts/admin/lot0-provision-auth.ts
             ARGS+=(--rotate-passwords="${ROTATE}")
@@ -428,12 +459,15 @@ jobs:
           echo "Code de sortie du script : ${CODE}"
           if [ "${CODE}" -ne 0 ]; then
             # Seules les lignes d'erreur générales, adresses et numéros masqués.
-            grep -E '^\[(lot0|migration|seed-demo)\] (ÉCHEC|Anomalies critiques)|compte\(s\) en échec' "${REPORTS}/journal.txt" \
+            grep -E '^\[(lot0|migration|seed-demo|dev-super-admin)\] (ÉCHEC|Anomalies critiques)|compte\(s\) en échec' "${REPORTS}/journal.txt" \
               | sed -E 's/[[:alnum:]._%+-]+@[[:alnum:].-]+/<email>/g; s/[0-9]{6,}/<n>/g' | head -n 5 || true
           fi
           if [ "${ACTION}" = "seed-demo" ] || [ "${ACTION}" = "remove-demo" ]; then
             RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/seed-demo-*/resume.json' | head -n 1)
             FILTER='{mode, schoolId, collections, accounts, superAdminClaims, otherSchoolMemberships, passwordsFile, schoolExisted, accountsRemoved}'
+          elif [ "${ACTION}" = "dev-super-admin" ] || [ "${ACTION}" = "dev-super-admin-revoke" ]; then
+            RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/dev-super-admin-*/resume.json' | head -n 1)
+            FILTER='{mode, operation, username, accountFound, created, reset, superAdmin, schoolMemberships, disabled, sessionsRevoked, passwordsFile}'
           elif [ "${ACTION}" = "lot0-provision" ]; then
             RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/lot0-*/resume.json' | head -n 1)
             FILTER='{mode, appUsers, authCreated, authExisting, authPasswordSynced, authEmailUpdated, sessionsRevoked, passwordsRotated, rotationPolicy, failures, linksWritten, passwordsRemoved, mustChangePasswordSet, renamedUsernames, linksToReview, anomalies, critical}'
