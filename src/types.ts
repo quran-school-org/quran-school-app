@@ -370,6 +370,11 @@ export function checkUserPermission(
   // (Plus de super-utilisateur codé en dur « admin_alfajr » : le super-admin de
   // la plateforme est un claim Firebase, et les droits réels sont imposés par
   // les règles Firestore. Le directeur a tous les droits via son rôle.)
+  // Le rôle prime sur une matrice enregistrée : un compte directeur migré
+  // (ex. admin_alfajr, qui contournait la matrice dans l'ancienne application)
+  // peut garder une matrice restrictive, alors que les règles et les Cloud
+  // Functions lui donnent tous les droits dans son école (D81).
+  if ((user.role || role) === "مدير") return true;
 
   // If user has specific CRUD matrix permissions object defined
   if (user.permissions) {

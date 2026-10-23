@@ -1638,3 +1638,20 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits de `feat/traduction-fr-tests`,
   ou, pour couper la traduction sans retirer le code, `VITE_ENABLE_FR_TEST`
   absent ou `"false"` (le module n'est alors plus dans le bundle).
+
+### D81. Le rôle directeur prime sur une matrice de permissions enregistrée (interface)
+- **Contexte** : à la répétition 1 sur le dev (données réelles migrées), le
+  directeur connecté ne voyait pas le bouton « إضافة كادر / عامل جديد ». Dans
+  l'ancienne application (et `release/lot0`), `checkUserPermission` donnait
+  tous les droits au seul compte `admin_alfajr`, codé en dur ; le multi-écoles
+  a retiré ce contournement (super-admin = claim), mais une matrice
+  `permissions` enregistrée sur un compte prime sur le rôle. Le compte du
+  directeur migré gardait une matrice restrictive : régression qui aurait
+  touché la prod à la bascule.
+- **Décision** : dans `checkUserPermission`, un compte de rôle `مدير` a tous
+  les droits, quelle que soit sa matrice. C'est cohérent avec les règles
+  Firestore (`isDirector`, sans lecture de la matrice) et les Cloud Functions
+  (`DIRECTOR_ROLES`). La matrice garde son effet pour les autres rôles.
+  Test : `tests/unit/permissions.test.ts`.
+- **Retour arrière** : `git revert` du commit ; pour un directeur, corriger sa
+  matrice dans Paramètres › المستخدمين (ou passer `permissions: null`).

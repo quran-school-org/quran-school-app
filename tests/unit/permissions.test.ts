@@ -34,6 +34,19 @@ describe("matrice de permissions par défaut", () => {
     }
   });
 
+  it("un directeur garde tous les droits même avec une matrice enregistrée restrictive (compte migré, D81)", () => {
+    const none = Object.fromEntries(ALL_MODULES.map((m) => [m.id, { read: false, create: false, update: false, delete: false, print: false }]));
+    const director = makeUser("مدير", { username: "admin_alfajr", permissions: none });
+    for (const mod of ALL_MODULES) {
+      for (const action of ["read", "create", "update", "delete", "print"] as const) {
+        expect(checkUserPermission(director, "مدير", mod.id, action), `${mod.id} ${action}`).toBe(true);
+      }
+    }
+    // La matrice garde son effet pour les autres rôles.
+    const admin = makeUser("إداري", { permissions: none });
+    expect(checkUserPermission(admin, "إداري", "teachers", "create")).toBe(false);
+  });
+
   it("les finances ne sont visibles que du bureau (مدير / إداري)", () => {
     for (const role of ROLES) {
       const allowed = checkUserPermission(makeUser(role), role, "finance", "read");
