@@ -244,6 +244,11 @@ jobs:
           if [ ! -f "${ENV_FILE}" ]; then
             echo "FIRESTORE_DATABASE_ID=${FUNCTIONS_FIRESTORE_DATABASE_ID}" > "${ENV_FILE}"
           fi
+          # En mode non interactif, la CLI exige une valeur pour chaque paramètre,
+          # même ceux qui ont un défaut : on complète avec les valeurs de la prod.
+          for PARAM in APPCHECK_ENFORCE=false BACKUP_ENABLED=false BACKUP_BUCKET= BACKUP_RETENTION_DAYS=30; do
+            grep -q "^${PARAM%%=*}=" "${ENV_FILE}" || echo "${PARAM}" >> "${ENV_FILE}"
+          done
           # La variable fait foi pour la région (fichier versionné ou non).
           sed -i '/^FIRESTORE_TRIGGER_REGION=/d' "${ENV_FILE}"
           echo "FIRESTORE_TRIGGER_REGION=${FUNCTIONS_TRIGGER_REGION}" >> "${ENV_FILE}"
