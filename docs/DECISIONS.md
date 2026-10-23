@@ -1353,3 +1353,57 @@ là-bas (R-06).
   (Team ou Enterprise seulement) ; côté GitHub, `USE_GITHUB_ENVIRONMENTS=true`
   force le mode environnement sans changer de code, ou `git revert` des
   commits de `feat/workflows-sans-environnements`.
+
+### D76. Retrait du rapport IA (Gemini) ; fonction `api` réduite à `/api/health`
+- **Contexte** : décision du propriétaire (22/10/2026) : l'école n'utilise
+  pas l'IA et il n'y aura pas de clé Gemini. Or `api` déclarait
+  `defineSecret("GEMINI_API_KEY")` : sans ce secret dans Secret Manager, le
+  déploiement des Functions échoue.
+- **Décision** : retrait complet de la fonctionnalité.
+  - Interface : bouton « تحليل تقدم الطالب بالذكاء الاصطناعي », panneau du
+    rapport, état `aiReport` / `aiLoading` / `aiError`, `useAiActions`,
+    mention de l'IA dans la fiche vide de l'élève. Le reste du design est
+    inchangé (seul le bloc du bouton disparaît de la carte).
+  - Client : `requestAiReport`, `AiReportError`, `describeAiReportStatus`,
+    `apiUrl`, `getIdToken`, `getAppCheckHeader` (utilisés par le seul rapport),
+    variable `VITE_API_BASE_URL` (`src/config/env.ts`, `.env.*`, workflows
+    `deploy.yml` et `preview.yml`). Aucun secret n'était versionné :
+    `.env.example` ne portait qu'un `GEMINI_API_KEY=""` vide, retiré.
+  - Functions : proxy Gemini, `aiQuota.ts` (compteurs à la racine, sans règle
+    dédiée : la racine est fermée), vérification App Check de l'en-tête HTTP
+    (`appCheckStateOf`, `checkAppCheckHeader`), dépendance `@google/genai`
+    (lockfile régénéré par `npm uninstall`), paramètres `AI_*` et
+    `GEMINI_MODEL`. `APPCHECK_ENFORCE` reste pour les callables (D44).
+  - **`api` gardée, minimale** : `GET /api/health`, 404 pour tout le reste,
+    aucun secret, pas de CORS. Raisons : le rewrite `/api/**` de
+    `firebase.json` vise `api` (un rewrite vers une fonction absente fait
+    échouer le déploiement Hosting) ; `release/lot0` déploie déjà une `api`
+    identique, la bascule ne supprime donc aucune fonction ; `firebase.json`,
+    la CSP et `npm run test:hosting` restent cohérents sans changement de
+    configuration. La CSP n'est pas modifiée (`*.cloudfunctions.net` sert aux
+    callables).
+  - Tests : `aiQuota.test.ts` et les tests du proxy (D43, D67) retirés ;
+    remplacés par : santé, ancienne route `/api/gemini/analyze` → 404 (appel
+    direct, émulateur Functions, rewrite Hosting), aucun document `aiQuota`
+    créé, fiche d'élève sans mention de l'IA ni appel à `/api/` (Playwright).
+  - Docs : étape « Clé Gemini » retirée de `GUIDE-MISE-EN-PROD.md` (étapes
+    renumérotées 1 à 6), rôle `roles/secretmanager.viewer` retiré (il ne
+    servait qu'à vérifier `GEMINI_API_KEY`) du guide, de
+    `PROMPT-NAVIGATEUR.md` et de `CI-DEPLOIEMENT.md` ; runbook `PROXY-IA.md`
+    supprimé ; `MIGRATION-BASCULE.md`, `CLE-API-WEB.md`, `NOUVELLE-ECOLE.md`,
+    `APP-CHECK.md`, `LOT0-DEPLOIEMENT.md`, `OPERATIONS-CLAUDE.md` et
+    `conformite/CNDP.md` (plus de transfert vers Gemini, T6 supprimé) mis à
+    jour. Les décisions D43, D44 (partie `api`), D67 et les rapports
+    historiques restent tels quels : ils décrivent l'état d'alors.
+- **Non retiré** : l'activation de `secretmanager.googleapis.com` dans le bloc
+  du guide (sans effet, laissée pour ne pas rejouer le bloc) ; la mention, dans
+  `LOT0-DEPLOIEMENT.md`, de la clé Gemini de l'**ancien** service Cloud Run
+  d'AI Studio (O-01, S7) : elle reste à supprimer après l'arrêt de ce service.
+- **Réintroduire l'IA** : partir de `9c031e6` (dernier `main` avec le
+  rapport) ou `git revert` des commits de `feat/retrait-rapport-ia`
+  (« Functions : retrait du proxy Gemini… », « Interface : retrait du rapport
+  IA… », puis celui des docs). Avant le déploiement : créer le secret
+  `GEMINI_API_KEY` dans Secret Manager (prod et dev), remettre les `AI_*` dans
+  `functions/.env.<projet>`, le rôle `secretmanager.viewer` du compte de
+  déploiement, le runbook `PROXY-IA.md` et le traitement T6 de `CNDP.md`
+  (consentement des représentants légaux).

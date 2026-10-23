@@ -1,4 +1,4 @@
-# Runbook — restriction de la clé API web Firebase (et de la clé Gemini)
+# Runbook — restriction de la clé API web Firebase
 
 > **À EXÉCUTER PAR UN HUMAIN**, sur le projet de dev d'abord. Aucune commande
 > n'a été lancée par un agent. Décision : D50.
@@ -46,7 +46,7 @@ Délai de propagation : jusqu'à 5 minutes.
 
 ## 3. Vérifications
 - Depuis l'application (onglet privé) : connexion, lecture, écriture, création
-  de compte, rapport IA.
+  de compte.
 - Hors navigateur (doit échouer : référent absent) :
   ```bash
   curl -s "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$WEB_KEY" \
@@ -58,18 +58,11 @@ Délai de propagation : jusqu'à 5 minutes.
   `curl -H "Referer: https://$PROJECT.web.app/" …`.
 - Les scripts d'administration (Admin SDK) ne sont pas concernés.
 
-## 4. Clé Gemini (Secret Manager `GEMINI_API_KEY`)
-Utilisée seulement par la fonction `api` (serveur) : aucune restriction de
-référent, mais **API autorisée unique** :
-```bash
-export GEMINI_KEY_ID=<uid de la clé Gemini, voir gcloud services api-keys list>
-gcloud services api-keys update $GEMINI_KEY_ID --project=$PROJECT \
-  --api-target=service=generativelanguage.googleapis.com
-```
-Si la clé a été créée dans Google AI Studio sur un autre projet, faire la même
-chose dans ce projet. Après l'arrêt du service Cloud Run d'AI Studio (O-01),
-**faire tourner** la clé (nouvelle clé, `firebase functions:secrets:set
-GEMINI_API_KEY`, redéploiement de `api`, suppression de l'ancienne).
+## 4. Clé Gemini : sans objet (D76)
+L'application n'utilise plus d'IA : aucune clé Gemini dans Secret Manager,
+aucune à restreindre. Seule reste celle de l'ancien service Cloud Run d'AI
+Studio, s'il en avait une : la **supprimer** après l'arrêt de ce service
+(O-01, `LOT0-DEPLOIEMENT.md`).
 
 ## 5. Compléments Authentication (console)
 - Authentication › Paramètres › Domaines autorisés : garder seulement les

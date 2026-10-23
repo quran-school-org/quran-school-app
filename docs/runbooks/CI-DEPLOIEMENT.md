@@ -126,7 +126,6 @@ Guide, étape 2, bloc 3. Pourquoi ces rôles :
 | `cloudfunctions.admin` + `run.admin` | créer et mettre à jour les fonctions 2nd gen, et rendre `api` publique (IAM invocateur). `cloudfunctions.developer` ne peut pas poser cette IAM |
 | `eventarc.developer` | triggers Firestore (archivage) |
 | `cloudscheduler.admin` | fonction planifiée de sauvegarde (D47) |
-| `secretmanager.viewer` | vérifier que `GEMINI_API_KEY` existe (le contenu n'est pas lu) |
 | `artifactregistry.writer` | images des fonctions |
 | `serviceusage.serviceUsageConsumer`, `firebaseextensions.viewer` | contrôles faits par la CLI Firebase |
 | `iam.serviceAccountUser` (sur le seul compte d'exécution) | déployer des fonctions qui s'exécutent sous ce compte |
@@ -250,8 +249,8 @@ Facultatives (même règle de préfixe) :
 **Dev seulement** (la prod utilise `.env.production`, versionné) : la
 configuration web publique du projet de dev, guide étape 3 (`VITE_FIREBASE_*`,
 `VITE_FIRESTORE_DATABASE_ID`, `FUNCTIONS_FIRESTORE_DATABASE_ID`,
-`FUNCTIONS_TRIGGER_REGION`), préfixée `DEV_` en Free. Le secret Gemini reste
-dans Secret Manager du projet (guide, étape 4), jamais dans GitHub.
+`FUNCTIONS_TRIGGER_REGION`), préfixée `DEV_` en Free. Aucun secret applicatif
+(le rapport IA et sa clé Gemini ont été retirés, D76).
 
 ## 7. Utilisation (orchestrateur, voir OPERATIONS-CLAUDE.md)
 

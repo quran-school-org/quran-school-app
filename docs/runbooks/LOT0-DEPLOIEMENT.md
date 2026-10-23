@@ -224,8 +224,8 @@ npx firebase deploy --only functions --project prod
 6. Supprimer de votre poste les rapports `scripts/admin/out/` une fois traités,
    et conserver l'export Auth hors ligne.
 7. **Limite connue** : en Lot 0, les parents ne voient plus l'onglet des
-   paiements (finances réservées au bureau) ; le rapport IA ne fonctionne pas
-   sur le domaine Hosting (proxy Gemini dans la fonction `api` : lot suivant).
+   paiements (finances réservées au bureau) ; le rapport IA n'existe pas sur le
+   domaine Hosting (fonctionnalité retirée, D76).
 
 ## 7. Retour arrière (seulement en cas d'incident bloquant)
 
