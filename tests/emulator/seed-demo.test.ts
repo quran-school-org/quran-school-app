@@ -87,8 +87,11 @@ describe("arguments : projet de prod refusé, --project obligatoire", () => {
       expect(() => parseSeedDemoArgs([`--project=${PROD}`], e)).toThrow(/PRODUCTION/);
       expect(() => parseSeedDemoArgs([`--project=${PROD}`, "--force", "--apply", `--confirm-prod=${PROD}`, "--database=x"], e)).toThrow(/PRODUCTION/);
       expect(() => parseSeedDemoArgs([` --project=${PROD.toUpperCase()}`.trim(), "--force"], e)).toThrow(/PRODUCTION/);
-      expect(() => parseSeedDemoArgs(["--project=fajr-c4c6e", "--database=ai-studio-a6572431-c7db-4071-82bf-a922d18511ec"], e)).toThrow(/PRODUCTION/);
     }
+  });
+
+  it("accepte le dev, dont la base porte le même identifiant que celle de la prod (seul le projet compte)", () => {
+    expect(() => parseSeedDemoArgs(["--project=fajr-c4c6e", "--database=ai-studio-a6572431-c7db-4071-82bf-a922d18511ec"], {})).not.toThrow();
   });
 
   it("exige --project, refuse les options inconnues ; vrai projet : --database et --confirm-prod", () => {
