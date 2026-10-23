@@ -32,6 +32,21 @@ describe("rewrite Hosting /api/** → fonction api", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toContain('<div id="root">');
   });
+
+  it("favicon et icônes du logo temporaire (D78) servis comme fichiers, pas réécrits vers index.html", async () => {
+    const expected: Record<string, string> = {
+      "/favicon.svg": "image/svg+xml",
+      "/favicon.ico": "image/",
+      "/apple-touch-icon.png": "image/png",
+      "/icon-192.png": "image/png",
+      "/logo.svg": "image/svg+xml",
+    };
+    for (const [path, type] of Object.entries(expected)) {
+      const res = await fetch(`${HOSTING}${path}`);
+      expect(res.status, path).toBe(200);
+      expect(res.headers.get("content-type") || "", path).toContain(type);
+    }
+  });
 });
 
 describe("en-têtes de sécurité et cache servis par Hosting (D49)", () => {

@@ -1497,3 +1497,37 @@ là-bas (R-06).
   l'Admin SDK sur le dev (`firebaseauth.admin`) ne sont pas essayés.
 - **Retour arrière** : `remove-demo` sur le dev, puis `git revert` des
   commits de `feat/demo-dev` (script, actions d'`ops.yml`, tests, docs).
+
+### D78. Logo temporaire de l'école (favicon, icônes, écran de connexion)
+- **Contexte** : l'école n'a pas encore de logo définitif ; `public/favicon.svg`
+  ne correspondait pas à la charte « لوحة الكتّاب ». Un logo temporaire a été
+  dessiné dans la charte (`design/logo-temporaire/` : étoile à huit branches
+  dorée `#D4A017` sur fond nuit `#102446`, livre ouvert au centre).
+- **Décision** :
+  - `public/favicon.svg` (logo temporaire), `favicon.ico` (32 px),
+    `apple-touch-icon.png` (180 px), `icon-192.png` et `logo.svg` (512 px)
+    sont servis par Hosting ; `index.html` déclare l'icône svg et ico,
+    l'`apple-touch-icon` et `theme-color` `#102446`. `icon-192.png` est prêt
+    pour un futur manifeste (aucune balise sans manifeste) ;
+  - `LoginScreen` affiche `logo.svg` dans la tuile centrale quand les
+    paramètres de l'école n'ont pas de logo (`associationLogo`), à la place de
+    l'`Emblem` seul ;
+  - la barre latérale (`AppFrame` → `NavBrand`), le panneau nuit de la
+    connexion, `SchoolPicker`, `SessionCheckingScreen`, les cartes et les
+    impressions gardent l'`Emblem` : à 44-56 px sur fond nuit, l'étoile pleine
+    de l'`Emblem` est plus lisible que le logo, dont le livre central devient
+    illisible à cette taille ;
+  - garde-fous : `tests/unit/hostingHeaders.test.ts` (balises et fichiers) et
+    `tests/hosting/rewrite.test.ts` (fichiers servis par Hosting, pas réécrits
+    vers `index.html`). La CSP n'a pas à changer (`img-src 'self'`, polices
+    déjà autorisées).
+- **À faire** : remplacer ce logo temporaire par le **vrai logo de l'école**,
+  saisi dans **Paramètres** (`associationLogo`) ; il remplace alors le logo
+  temporaire sur l'écran de connexion et dans la barre latérale. Le favicon
+  et les icônes restent ceux de `public/` jusqu'à leur remplacement par des
+  fichiers définitifs (mêmes noms, mêmes tailles).
+- **Lot 0** : décision équivalente D56 sur `feat/lot0-connexion-charte`
+  (branche issue de `release/lot0`), où l'écran de connexion reprend en plus la
+  charte de `LoginScreen`.
+- **Retour arrière** : `git revert` des commits de `feat/logo-favicon`
+  (l'ancien favicon et l'`Emblem` de la tuile de connexion reviennent).
