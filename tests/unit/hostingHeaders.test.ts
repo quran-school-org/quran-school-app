@@ -2,7 +2,7 @@
  * En-têtes Hosting (firebase.json, D49) : présence, cohérence, et syntaxe
  * compatible avec Firebase Hosting (expressions RE2 : pas de lookaround).
  */
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { e2eCsp, productionCsp } from "../../scripts/dev/csp";
@@ -66,5 +66,16 @@ describe("en-têtes de sécurité Hosting", () => {
     const html = readFileSync("index.html", "utf8");
     expect(html).not.toMatch(/الفجر|Fajr/i);
     expect(html).toContain("<title>المدرسة القرآنية</title>");
+  });
+
+  it("icônes du logo temporaire (D78) : balises de index.html et fichiers de public/", () => {
+    const html = readFileSync("index.html", "utf8");
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/favicon.svg" />');
+    expect(html).toContain('<link rel="icon" href="/favicon.ico" sizes="32x32" />');
+    expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />');
+    expect(html).toContain('<meta name="theme-color" content="#102446" />');
+    for (const f of ["favicon.svg", "favicon.ico", "apple-touch-icon.png", "icon-192.png", "logo.svg"]) {
+      expect(existsSync(`public/${f}`), f).toBe(true);
+    }
   });
 });
