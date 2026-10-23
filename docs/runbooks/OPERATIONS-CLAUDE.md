@@ -2,7 +2,7 @@
 
 > **Exécuté par l'orchestrateur (Claude), uniquement par `gh workflow run`**, après
 > le « go » du propriétaire aux trois moments prévus par
-> `docs/GUIDE-MISE-EN-PROD.md` (§7). Décision : D64.
+> `docs/GUIDE-MISE-EN-PROD.md` (§6). Décision : D64.
 > Aucune commande n'est lancée vers la prod depuis un conteneur : ni `gcloud`, ni
 > `firebase`, ni script Admin SDK, ni appel aux API Firebase/Firestore/Identity
 > Toolkit. Tout passe par les workflows `deploy-lot0.yml`, `ops.yml` et
@@ -12,7 +12,7 @@
 
 ## 0. Prérequis et conventions
 
-1. Le propriétaire a déroulé le guide (étapes 1 à 6) pour le **dev** et la
+1. Le propriétaire a déroulé le guide (étapes 1 à 5) pour le **dev** et la
    **prod**, et a dit « c'est prêt ».
 2. Les workflows sont **sur `main`** (un `workflow_dispatch` ne se déclenche que
    pour un workflow présent sur la branche par défaut) : fusion de
@@ -31,7 +31,7 @@
 ```bash
 REPO=quran-school-org/quran-school-app
 P=gen-lang-client-0481880143          # prod
-DEV=<FIREBASE_PROJECT_ID de l'environnement dev>
+DEV=fajr-c4c6e                        # projet de dev (FIREBASE_PROJECT_ID de dev, ou DEV_FIREBASE_PROJECT_ID)
 # Lancer un workflow (toujours depuis main, toujours -f : jamais -F, qui lit des fichiers) :
 run() { gh workflow run "$1" --repo "$REPO" --ref main "${@:2}"; }   # affiche l'URL du run
 # Suivre le run (code de sortie non nul si le run échoue) :
@@ -79,6 +79,39 @@ Règles permanentes :
 Avertissement attendu à 1.5 (et au premier déploiement des Functions sur la
 prod) : « politique de nettoyage des images absente ». Il n'empêche rien ; le
 signaler au propriétaire (commande unique de CI-DEPLOIEMENT.md §3).
+
+## 1 bis. Démonstration du nouveau design sur le dev (données fictives, D77)
+
+But : le propriétaire essaie lui-même le nouveau design (multi-écoles) dans son
+navigateur, sur `https://$DEV.web.app`, avec un compte par rôle de l'école de
+démonstration `demo` (« مدرسة تجريبية (بيانات وهمية) », données **entièrement
+fictives**). Aucune donnée réelle, aucun accès à la prod.
+
+Prérequis : accès du dev vérifiés (1.1 et 1.3) ; `feat/demo-dev`
+fusionnée dans `main` par le propriétaire (elle contient le retrait de l'IA,
+PR #14 : sans lui, le déploiement des Functions exige le secret
+`GEMINI_API_KEY`) ; clé publique `ARTIFACT_GPG_PUBLIC_KEY` posée (Free :
+variable de dépôt `DEV_ARTIFACT_GPG_PUBLIC_KEY` ou `ARTIFACT_GPG_PUBLIC_KEY`),
+sans quoi `seed-demo` s'arrête au garde-fou ; **le dev ne contient encore
+aucune copie des données réelles** (sinon `seed-demo` refuse : `REAL_DATA`).
+
+| # | Commande | À vérifier | Si échec |
+|---|---|---|---|
+| D.1 | `run deploy.yml -f environment=dev -f target=all -f force=true` | job `verifier` vert (code de `main`) ; règles, Functions et Hosting multi-écoles déployés sur le dev ; fonctions du Lot 0 (`createUserAccount`), si 1.5 a été fait, supprimées du dev par `force` ; `https://$DEV.web.app` répond (`curl -sI`, projet de dev seulement) | droit manquant : CI-DEPLOIEMENT.md §3 ; région des triggers : 1.3 |
+| D.2 | `run ops.yml -f environment=dev -f action=seed-demo -f apply=true -f confirm=$DEV` | run vert ; `RESUME_JSON` : `mode: application`, `schoolId: demo`, `accounts.created + accounts.reset = 5`, `superAdminClaims: 0`, `otherSchoolMemberships: 0`, `passwordsFile: true` ; artefact `mots-de-passe-temporaires-dev-<run>-<tentative>` (chiffré, 1 jour) | `REAL_DATA` : le dev contient déjà autre chose (copie réelle, autre école, autres comptes) : **arrêt**, rapport au propriétaire, ne rien forcer ; `ACCOUNT_CONFLICT` : un compte `demo_*` est rattaché ailleurs ou son nom est pris : arrêt, rapport ; clé publique absente : la faire poser |
+| D.3 | (propriétaire) télécharger l'artefact depuis l'onglet Actions, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, puis se connecter sur `https://$DEV.web.app` | comptes `demo_directeur` (مدير), `demo_admin` (إداري), `demo_enseignant` (مدرس), `demo_parent` (ولي أمر, élèves S-101 et S-102), `demo_eleve` (طالب, S-109) ; chacun ne voit que l'école `demo` | — |
+
+- **Relance** (données de démonstration remises à neuf, nouveaux mots de passe,
+  sessions révoquées) : la même commande D.2. Les anciens mots de passe ne
+  fonctionnent plus.
+- **Fin de la démonstration, et en tout cas avant la répétition 4.1** :
+  `run ops.yml -f environment=dev -f action=remove-demo -f apply=true -f confirm=$DEV`
+  (`RESUME_JSON` : `accountsRemoved` = 5, ou 0 si déjà supprimée). L'école
+  `demo` ne cohabite jamais avec la copie des données réelles (D77) :
+  `import-firestore` refuse tant que `schools/demo` existe, et `seed-demo`
+  refuse dès que le dev contient d'autres données.
+- L'orchestrateur ne télécharge pas l'artefact et ne lit jamais les mots de
+  passe ; il ne transmet au propriétaire que l'URL du run.
 
 ## 2. Lot 0 : simulation sur la prod → **go n°1**
 
@@ -131,6 +164,7 @@ et l'export Auth n'est pas automatisé) ; d'où le choix des sources ci-dessous.
 
 | # | Commande | À vérifier |
 |---|---|---|
+| 4.0 | Si la démonstration (§1 bis) a été faite : `run ops.yml -f environment=dev -f action=remove-demo -f apply=true -f confirm=$DEV` | `RESUME_JSON` : `mode: application` ; `accountsRemoved` = 5 (0 si déjà supprimée) | `ACCOUNT_CONFLICT` : arrêt, rapport. Sans cette étape, 4.1 s'arrête (« L'école de démonstration (schools/demo) existe ») |
 | 4.1 | Répétition 1 : `run ops.yml -f environment=dev -f action=import-firestore -f import_source=<horodatage>-avant-lot0-provision` (simulation), puis la même avec `-f apply=true -f confirm=$DEV` | source affichée = bucket de la prod ; import vert. L'export d'avant le Lot 0 contient encore les mots de passe : il permet de recréer les comptes sur le dev |
 | 4.2 | `run deploy.yml -f environment=dev -f target=all -f force=true` | job `verifier` vert (code de `main`) ; fonctions du Lot 0 supprimées du dev, fonctions multi-écoles déployées |
 | 4.3 | `run ops.yml -f environment=dev -f action=migrate-to-tenants -f rotate_passwords=all` | simulation : `critical: false`, pour chaque collection `source = copied + skippedExisting` |
@@ -148,7 +182,7 @@ documents de même chemin sont remplacés, les autres restent) ; à la répétit
 2, `skippedExisting` > 0 est normal pour ce que la répétition 1 a déjà copié.
 
 Recette sur le dev (par le propriétaire, avec les mots de passe temporaires) :
-connexion par rôle, cotisations, reçu, rapport IA, archivage d'une fiche de test,
+connexion par rôle, cotisations, reçu, archivage d'une fiche de test,
 seconde école de test (MIGRATION-BASCULE.md §2.6). Puis il fait valider par
 l'école `comptes/…/liens-a-valider.csv` (artefact du run 4.4).
 
@@ -186,8 +220,8 @@ l'application (super-admin). Retour arrière : MIGRATION-BASCULE.md §6, avec
 | | `force` | `false` (défaut), `true` : `--force` (supprime les fonctions absentes de `release/lot0`) |
 | | `confirm` | production : `gen-lang-client-0481880143` |
 | `ops.yml` | `environment` | `dev`, `production` |
-| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts` |
-| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore |
+| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts`, `seed-demo` (dev), `remove-demo` (dev) |
+| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore ; **obligatoire** pour seed-demo et remove-demo |
 | | `rotate_passwords` | `none` (défaut, D53), `weak`, `all` : lot0-provision, migrate-to-tenants |
 | | `import_source` | import-firestore : `AAAAMMJJ-HHMMSSZ-(manuel\|avant-lot0-provision\|avant-migrate-to-tenants)` |
 | | `confirm` | identifiant du projet visé : obligatoire pour `apply=true`, et en production pour tout sauf `describe-db` et `verify-counts` |

@@ -22,6 +22,10 @@
 #   chiffrés pour elle avant l'envoi ; un remplacement de mots de passe
 #   appliqué (rotate_passwords ≠ none) est REFUSÉ sans cette clé. La clé peut
 #   être une variable de dépôt, préfixée (DEV_/PROD_) ou d'environnement.
+# - École de démonstration (D77) : seed-demo (école `demo`, données fictives,
+#   un compte par rôle, mots de passe aléatoires dans l'artefact chiffré) et
+#   remove-demo (suppression, avant toute copie des données réelles) : dev
+#   SEULEMENT, code de main, apply=true et confirm = projet de dev exigés.
 # - Configuration GitHub (D75) : environnements `dev` / `production` (Team,
 #   Enterprise : job `operation`) ou variables de dépôt préfixées DEV_ / PROD_
 #   (Free : job `operation-sans-environnement`, sans `environment:`), choisie
@@ -39,10 +43,10 @@ on:
       action:
         description: "Opération"
         type: choice
-        options: [describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts]
+        options: [describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo]
         default: describe-db
       apply:
-        description: "Appliquer (sinon simulation) : lot0-provision, migrate-to-tenants, import-firestore"
+        description: "Appliquer (sinon simulation) : lot0-provision, migrate-to-tenants, import-firestore ; obligatoire pour seed-demo, remove-demo"
         type: boolean
         default: false
       rotate_passwords:
@@ -177,7 +181,7 @@ jobs:
           if [ "${APPLY}" = "true" ] && [ "${ROTATE}" != "none" ] && [ -z "${ARTIFACT_KEY}" ]; then
             fail "rotate_passwords=${ROTATE} appliqué exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
           fi
-          case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts) ;; *) fail "Action inconnue.";; esac
+          case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts|seed-demo|remove-demo) ;; *) fail "Action inconnue.";; esac
           case "${ROTATE}" in none|weak|all) ;; *) fail "rotate_passwords inconnu.";; esac
           case "${APPLY}" in true|false) ;; *) fail "apply invalide.";; esac
           if [ -z "${PROJECT_ID}" ] || [ -z "${DATABASE_ID}" ] || [ -z "${WIF_PROVIDER}" ] || [ -z "${OPS_SA}" ] || [ -z "${BACKUP_BUCKET}" ]; then
@@ -206,9 +210,22 @@ jobs:
 
           # Cohérence des entrées avec l'action.
           case "${ACTION}" in
-            lot0-provision|migrate-to-tenants|import-firestore) ;;
+            lot0-provision|migrate-to-tenants|import-firestore|seed-demo|remove-demo) ;;
             *) [ "${APPLY}" = "false" ] || fail "apply=true n'a pas de sens pour ${ACTION}." ;;
           esac
+          # D77 : école de démonstration, sur le dev SEULEMENT (jamais la production).
+          case "${ACTION}" in
+            seed-demo|remove-demo)
+              [ "${ENVIRONMENT}" = "dev" ] || fail "${ACTION} est refusé en production (école de démonstration : dev seulement, D77)."
+              [ "${PROJECT_ID}" != "${PROD_PROJECT_ID}" ] || fail "${ACTION} : le projet visé est la prod."
+              [ "${APPLY}" = "true" ] || fail "${ACTION} exige apply=true (et confirm = identifiant du projet de dev)."
+              [ "${CONFIRM}" = "${PROJECT_ID}" ] || fail "Confirmation incorrecte : recopier l'identifiant du projet de dev dans « confirm »."
+              ;;
+          esac
+          # D74, D77 : les mots de passe des comptes de démonstration ne partent que chiffrés.
+          if [ "${ACTION}" = "seed-demo" ] && [ -z "${ARTIFACT_KEY}" ]; then
+            fail "seed-demo exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
+          fi
           case "${ACTION}" in
             lot0-provision|migrate-to-tenants) ;;
             *) [ "${ROTATE}" = "none" ] || fail "rotate_passwords ne concerne que lot0-provision et migrate-to-tenants." ;;
@@ -239,7 +256,7 @@ jobs:
           # Code à extraire : références FIXES.
           case "${ACTION}" in
             lot0-provision) echo "code_ref=release/lot0" >> "$GITHUB_OUTPUT" ;;
-            migrate-to-tenants|verify-counts) echo "code_ref=main" >> "$GITHUB_OUTPUT" ;;
+            migrate-to-tenants|verify-counts|seed-demo|remove-demo) echo "code_ref=main" >> "$GITHUB_OUTPUT" ;;
             *) echo "code_ref=" >> "$GITHUB_OUTPUT" ;;
           esac
           echo "stamp=$(date -u +%Y%m%d-%H%M%SZ)" >> "$GITHUB_OUTPUT"
@@ -353,6 +370,18 @@ jobs:
           if [ "${ENVIRONMENT}" != "dev" ] || [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ]; then echo "::error::Import refusé hors dev."; exit 1; fi
           [[ "${IMPORT_SOURCE}" =~ ^[0-9]{8}-[0-9]{6}Z-(manuel|avant-lot0-provision|avant-migrate-to-tenants)$ ]] || { echo "::error::import_source invalide."; exit 1; }
           SRC="gs://${PROD_BACKUP_BUCKET}/${IMPORT_SOURCE}"
+          # D77 : jamais de copie des données réelles à côté de l'école de démonstration.
+          # Lecture du seul document schools/demo (code HTTP, aucun contenu affiché) ; tout
+          # autre résultat que « absent » arrête l'import.
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::${TOKEN}"
+          DEMO=$(curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer ${TOKEN}" \
+            "https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/schools/demo" || true)
+          case "${DEMO}" in
+            404) echo "École de démonstration absente : import possible." ;;
+            200) echo "::error::L'école de démonstration (schools/demo) existe : lancer d'abord remove-demo (D77)."; exit 1 ;;
+            *) echo "::error::Présence de l'école de démonstration invérifiable (HTTP ${DEMO}) : import refusé."; exit 1 ;;
+          esac
           if [ "${APPLY}" != "true" ]; then
             echo "Simulation : importerait ${SRC} dans ${PROJECT_ID} / ${DATABASE_ID}. Relancer avec apply=true."
             echo "- simulation : importerait \`${SRC}\`" >> "$GITHUB_STEP_SUMMARY"
@@ -372,16 +401,22 @@ jobs:
 
       - name: ${{ inputs.action }} (script Admin SDK, journal en artefact)
         id: script
-        if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants'
+        if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants' || inputs.action == 'seed-demo' || inputs.action == 'remove-demo'
         run: |
           set -euo pipefail
           mkdir -p "${REPORTS}"
-          ARGS=(--project="${PROJECT_ID}" --database="${DATABASE_ID}" --rotate-passwords="${ROTATE}" --out="${REPORTS}")
-          if [ "${ACTION}" = "lot0-provision" ]; then
+          ARGS=(--project="${PROJECT_ID}" --database="${DATABASE_ID}" --out="${REPORTS}")
+          if [ "${ACTION}" = "seed-demo" ] || [ "${ACTION}" = "remove-demo" ]; then
+            # Revalidé ici (défense en profondeur) : dev seulement ; le script refuse aussi la prod.
+            if [ "${ENVIRONMENT}" != "dev" ] || [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ]; then echo "::error::${ACTION} refusé hors dev."; exit 1; fi
+            SCRIPT=scripts/dev/seed-demo.ts
+            [ "${ACTION}" = "remove-demo" ] && ARGS+=(--remove)
+          elif [ "${ACTION}" = "lot0-provision" ]; then
             SCRIPT=scripts/admin/lot0-provision-auth.ts
+            ARGS+=(--rotate-passwords="${ROTATE}")
           else
             SCRIPT=scripts/migration/migrate-to-tenants.ts
-            ARGS+=(--school="${SCHOOL_ID}")
+            ARGS+=(--rotate-passwords="${ROTATE}" --school="${SCHOOL_ID}")
             [ -n "${SUPER_ADMIN_USERNAME}" ] && ARGS+=(--super-admin="${SUPER_ADMIN_USERNAME}")
           fi
           [ "${APPLY}" = "true" ] && ARGS+=(--apply --confirm-prod="${PROJECT_ID}")
@@ -393,10 +428,13 @@ jobs:
           echo "Code de sortie du script : ${CODE}"
           if [ "${CODE}" -ne 0 ]; then
             # Seules les lignes d'erreur générales, adresses et numéros masqués.
-            grep -E '^\[(lot0|migration)\] (ÉCHEC|Anomalies critiques)|compte\(s\) en échec' "${REPORTS}/journal.txt" \
+            grep -E '^\[(lot0|migration|seed-demo)\] (ÉCHEC|Anomalies critiques)|compte\(s\) en échec' "${REPORTS}/journal.txt" \
               | sed -E 's/[[:alnum:]._%+-]+@[[:alnum:].-]+/<email>/g; s/[0-9]{6,}/<n>/g' | head -n 5 || true
           fi
-          if [ "${ACTION}" = "lot0-provision" ]; then
+          if [ "${ACTION}" = "seed-demo" ] || [ "${ACTION}" = "remove-demo" ]; then
+            RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/seed-demo-*/resume.json' | head -n 1)
+            FILTER='{mode, schoolId, collections, accounts, superAdminClaims, otherSchoolMemberships, passwordsFile, schoolExisted, accountsRemoved}'
+          elif [ "${ACTION}" = "lot0-provision" ]; then
             RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/lot0-*/resume.json' | head -n 1)
             FILTER='{mode, appUsers, authCreated, authExisting, authPasswordSynced, authEmailUpdated, sessionsRevoked, passwordsRotated, rotationPolicy, failures, linksWritten, passwordsRemoved, mustChangePasswordSet, renamedUsernames, linksToReview, anomalies, critical}'
           else

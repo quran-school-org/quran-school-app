@@ -28,9 +28,7 @@
 | Personnel (fiche RH) | personnel | **salaire, type de contrat, numéro de CIN, adresse, contact d'urgence, date de naissance** | `staffPrivate` (bureau seulement, D42) | **Lot 0 : ces champs sont encore dans `teachers`, lisibles par la pédagogie (R-06, D71)** |
 | Paie et dépenses | personnel, fournisseurs | salaires versés, dépenses | `salaryPayments`, `expenses`, `otherIncomes` | |
 | Comptes d'accès | tous les utilisateurs | identifiant, nom, rôle, école(s), dernière connexion ; e-mail technique et empreinte du mot de passe dans Firebase Auth | `users`, `schools/{s}/members`, `usernames`, Firebase Auth | Aucun mot de passe dans Firestore |
-| Rapport IA | élèves | nom, âge, hizb, tajwid, taux de présence, notes d'examens, **notes de l'enseignant**, envoyés à Google Gemini | fonction `api` | Voir §7 (transfert, sous-traitant) |
-| Journaux techniques | utilisateurs | pseudonyme de l'uid, école, issue, durée ; adresse IP dans les journaux de la plateforme Google | Cloud Logging | Aucune donnée d'élève dans les journaux de `api` (D43) |
-| Compteurs de quota | utilisateurs | uid dans l'identifiant du document, nombre de rapports par jour | `aiQuota` (racine) | Effacement automatique prévu (TTL, J+2) |
+| Journaux techniques | utilisateurs | pseudonyme de l'uid, école, issue, durée ; adresse IP dans les journaux de la plateforme Google | Cloud Logging | Aucune donnée d'élève dans les journaux des Functions |
 | Cache local | utilisateurs de l'appareil | copie des données lues | `localStorage` du navigateur (`kuttab:{école}:…`) | Purgé à la déconnexion et à la fin de session (D40) ; risque sur les ordinateurs partagés |
 | Sauvegardes | toutes | copie complète de la base | bucket d'exports, PITR | Voir §5 |
 
@@ -55,8 +53,8 @@ consentement et l'exercice des droits passent par le représentant légal
       écrit : quelle personne morale exploite la plateforme ?
 - [ ] **Sous-traitants ultérieurs** à déclarer aux écoles :
       - Google : Firebase Auth, Firestore, Hosting, Cloud Functions, Cloud
-        Storage, Cloud Logging, reCAPTCHA Enterprise si App Check est activé,
-        API Gemini ;
+        Storage, Cloud Logging, reCAPTCHA Enterprise si App Check est activé
+        (aucun service d'IA : rapport IA retiré, D76) ;
       - GitHub : code et déploiement ; rapports des scripts de données
         (artefacts de 1 à 3 jours, chiffrés pour le propriétaire depuis D74).
         Les journaux n'affichent que des compteurs ;
@@ -101,8 +99,6 @@ Clauses à prévoir **[À VÉRIFIER avec un juriste]** :
       - le traitement des données de l'élève (catégorie sensible, §1) ;
       - la **photo** de l'élève, utilisée pour le dossier, les cartes et les
         badges ; la refuser doit rester possible sans gêner l'inscription ;
-      - le **rapport IA**, si l'école l'utilise : données envoyées à un
-        service d'IA de Google hors du Maroc ;
       - la **création d'un compte élève** (à partir de l'âge minimal de l'école).
       **[À VÉRIFIER : forme et preuve du consentement exigées.]**
 - [ ] **Personnel** : information sur la fiche RH (salaire, CIN), ses
@@ -124,7 +120,6 @@ obligations légales, comptables, sociales]**.
 | Fiche RH et paie | durée légale sociale et fiscale **[À VÉRIFIER]** | `staffPrivate`, `salaryPayments` |
 | Comptes d'accès | suspension au départ ; suppression à la fin de l'année scolaire | « حالة الحساب », retrait de l'école |
 | Journaux Cloud Logging | durée par défaut de la plateforme (de l'ordre de 30 jours) **[À VÉRIFIER dans la console]** | réglage du bucket de journaux |
-| Compteurs `aiQuota` | 2 jours | TTL (`PROXY-IA.md` §3) |
 | Sauvegardes | PITR 7 jours ; exports 30 jours (au plus 45) | `SAUVEGARDES.md` |
 | Exports manuels (`manuel/…`), CSV d'import, rapports de scripts | supprimés dès la fin de l'opération | runbooks |
 | Copie des données réelles dans le projet de dev (répétitions de la bascule, `ops.yml` › `import-firestore`) | supprimée après la dernière répétition | base du dev à vider par un humain ; accès limité (D74) |
@@ -146,7 +141,7 @@ traitement). L'exploitant l'aide techniquement (contrat, §3).
 | Information | fiche d'information (§4) | à rédiger |
 | Accès | le parent voit dans son compte le dossier, la présence, les notes et les cotisations de ses enfants. Copie complète sur demande : impression de la fiche, ou export par l'exploitant (console, Admin SDK) | aucun export « en un clic » de toutes les données d'une personne |
 | Rectification | le directeur ou le personnel habilité corrige la fiche dans l'interface | — |
-| Opposition, retrait du consentement | arrêt de l'utilisation concernée : photo effacée, plus de rapport IA pour l'élève, compte suspendu | pas de case « refus du rapport IA » dans la fiche : consigne d'équipe à défaut |
+| Opposition, retrait du consentement | arrêt de l'utilisation concernée : photo effacée, compte suspendu | — |
 | Suppression | la suppression d'un élève dans l'interface efface sa fiche, mais **pas** ses présences, notes, progressions ni cotisations (documents séparés). Une suppression complète passe par l'exploitant, sauf les cotisations soumises à conservation légale | outil de suppression complète par élève (Admin SDK, simulation par défaut), à écrire si les demandes sont fréquentes |
 
 Après une suppression, les données subsistent dans les sauvegardes jusqu'à
@@ -162,13 +157,6 @@ personne. Seulement ce qui est utile au suivi pédagogique.
       L'exploitant le relève (`gcloud firestore databases describe … --format="value(locationId)"`,
       par un humain) et le note ici. Les Functions sont en `europe-west1`
       (Belgique) ; le bucket de sauvegarde est prévu dans l'UE.
-- [ ] **API Gemini** : lieu de traitement et conditions d'utilisation des
-      données à vérifier **[À VÉRIFIER : conditions Google de l'API, absence
-      d'entraînement sur les données, région]**. Recommandation technique :
-      n'envoyer ni le nom de l'élève ni les notes libres. Le rapport n'en a pas
-      besoin : la fonction `api` peut remplacer le nom par « الطالب » et le
-      client le réinsérer à l'affichage. Le rapport peut aussi être désactivé
-      (`AI_DAILY_LIMIT_GLOBAL=0`).
 - [ ] **Transfert vers l'étranger** : l'hébergement dans l'UE (et
       éventuellement aux États-Unis pour certains services Google) est un
       transfert hors du Maroc. La loi 09-08 l'encadre (pays assurant une
@@ -187,7 +175,7 @@ En place (multi-écoles) :
 - [x] échappement HTML des impressions (D37) ;
 - [x] en-têtes de sécurité et CSP (D49) ;
 - [x] purge du cache à la fin de session (D40) ;
-- [x] proxy IA authentifié, avec quotas, et journaux sans données d'élèves (D43) ;
+- [x] aucune donnée envoyée à un service d'IA : rapport IA retiré (D76) ;
 - [x] App Check préparé (D44) ;
 - [x] déploiement par CI sans clé, environnements protégés (D46, D68) ;
 - [x] sauvegardes et PITR préparés (D47, D69) ;
@@ -224,7 +212,7 @@ En place (multi-écoles) :
 - [ ] le numéro de récépissé ou d'autorisation est-il à mentionner dans la
       fiche d'information des parents ?
 - [ ] y a-t-il un délai ou une mise à jour à faire quand les traitements
-      changent (nouveau sous-traitant, rapport IA) ?
+      changent (nouveau sous-traitant) ?
 
 ## 10. Registre des traitements (modèle, une copie par école)
 
@@ -238,7 +226,7 @@ bonne pratique, qu'il soit ou non exigé par la loi **[À VÉRIFIER]**.
 | T3 | Cotisations | facturation, reçus | parents, élèves | montants, dates, reçus | bureau, parents (leurs enfants) | durée comptable | Google (UE) | contrat d'inscription [À VÉRIFIER] | |
 | T4 | Personnel et paie | gestion RH, salaires | personnel, bénévoles | fiche publique et fiche RH | bureau (RH), pédagogie (fiche publique) | durée sociale et fiscale | Google (UE) | contrat de travail ou engagement [À VÉRIFIER] | |
 | T5 | Comptes et sécurité | authentification, droits, traces | utilisateurs | identifiant, rôle, connexions, journaux | directeur, exploitant | §5 | Google (UE) | intérêt légitime ou nécessité [À VÉRIFIER] | |
-| T6 | Rapport IA (optionnel) | aide à l'appréciation pédagogique | élèves | §1 « Rapport IA » | enseignant, bureau | non conservé par l'application (affiché seulement) | Google Gemini (hors Maroc) | consentement [À VÉRIFIER] | |
+| T6 | *(supprimé : rapport IA retiré, D76)* | | | | | | | | |
 | T7 | Sauvegardes | continuité, restauration | toutes | copie de la base | exploitant | 7 j (PITR), 30 à 45 j (exports) | Google (UE) | sécurité | |
 | T8 | Photos et cartes | dossier, badges, cartes | élèves, personnel | photo, nom, catégorie | personnel habilité | jusqu'au départ | Google (UE) ; QR codes locaux (D61) | consentement | |
 

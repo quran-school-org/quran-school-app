@@ -36,10 +36,8 @@ export STAMP=$(date +%Y%m%d-%H%M)
    npm run lint && npm run lint:functions && npm run build && npm test
    npm run test:rules && npm run test:e2e
    ```
-2. **Clé Gemini** dans Secret Manager (jamais dans un fichier) :
-   ```bash
-   npx firebase functions:secrets:set GEMINI_API_KEY --project prod
-   ```
+2. **Secrets** : aucun. Le rapport IA et sa clé Gemini ont été retirés (D76) ;
+   la fonction `api` ne déclare plus de secret.
 3. **Région des triggers** : vérifier l'emplacement de la base et renseigner
    `FIRESTORE_TRIGGER_REGION` dans `functions/.env.gen-lang-client-0481880143`
    (voir §0.5 du runbook Lot 0).
@@ -89,7 +87,7 @@ Noter la version Hosting en ligne (Console › Hosting › historique).
 5. **Déploiement sur le dev** :
    `npx firebase deploy --only functions,firestore:rules,hosting --project dev --force`
 6. **Recette** : connexion de chaque rôle, données correctes, cotisations,
-   impression d'un reçu, rapport IA, archivage d'une fiche de test, création
+   impression d'un reçu, archivage d'une fiche de test, création
    d'une seconde école de test (super-admin) et changement d'école.
 7. Recommencer depuis l'étape 2 avec un export frais avant la bascule.
 
@@ -158,7 +156,8 @@ personnelles, ne pas diffuser**) :
    cotisations), élève (son dossier), agent d'entretien (aucun dossier d'élève).
 4. **Super-admin** : sélecteur « كل المدارس… », création d'une école de test,
    puis la retirer (Console Firestore : supprimer `schools/<test>`).
-5. **Rapport IA** (fonction `api`) depuis l'URL Hosting.
+5. **Fonction `api`** depuis l'URL Hosting : `/api/health` répond
+   `{"status":"ok",…}` (seule route restante, D76).
 6. **Archivage** d'une fiche de test : le compte lié est suspendu en quelques secondes.
 
 ## 6. Retour arrière (fenêtre courte : décider dans les heures qui suivent)

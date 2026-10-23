@@ -8,37 +8,9 @@
  * variables de proxy (voir scripts/dev/without-proxy.sh et D11 / D48).
  * Vérifie aussi les en-têtes de sécurité servis par Hosting (D49).
  */
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { initAdmin, type AdminHandles } from "../../scripts/admin/lib/cli";
-import { NEW_ACCOUNTS_EMAIL_DOMAIN, normalizeAuthPassword, usernameToEmail } from "../../src/security/accounts";
-
-const PROJECT = "demo-quran-school";
 const HOSTING = "http://127.0.0.1:5000";
-const AUTH = process.env.FIREBASE_AUTH_EMULATOR_HOST || "127.0.0.1:9099";
-let admin: AdminHandles;
-let token = "";
-
-beforeAll(async () => {
-  admin = initAdmin(PROJECT, "(default)", true, "hosting-rewrite-test");
-  await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/emulator/v1/projects/${PROJECT}/databases/(default)/documents`, { method: "DELETE" });
-  await fetch(`http://${AUTH}/emulator/v1/projects/${PROJECT}/accounts`, { method: "DELETE" });
-  const email = usernameToEmail("prof_rewrite", NEW_ACCOUNTS_EMAIL_DOMAIN);
-  const password = "rewrite-demo-2026";
-  const user = await admin.auth.createUser({ email, password: normalizeAuthPassword(password) });
-  await admin.db.doc("schools/alfajr").set({ name: "alfajr" });
-  await admin.db.doc(`schools/alfajr/members/${user.uid}`).set({ uid: user.uid, schoolId: "alfajr", role: "مدرس", isActive: true });
-  const res = await fetch(`http://${AUTH}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=demo-api-key`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password: normalizeAuthPassword(password), returnSecureToken: true }),
-  });
-  token = (await res.json()).idToken;
-  expect(token).toBeTruthy();
-});
-
-afterAll(async () => {
-  await admin?.close();
-});
 
 describe("rewrite Hosting /api/** → fonction api", () => {
   it("GET /api/health passe par le rewrite", async () => {
@@ -47,21 +19,12 @@ describe("rewrite Hosting /api/** → fonction api", () => {
     expect((await res.json()).status).toBe("ok");
   });
 
-  it("POST /api/gemini/analyze : 401 sans jeton, rapport avec un jeton d'enseignant, quota compté", async () => {
-    const body = JSON.stringify({ schoolId: "alfajr", studentName: "ياسين", hizbCount: 2, attendanceRate: 90 });
-    const anon = await fetch(`${HOSTING}/api/gemini/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body });
-    expect(anon.status).toBe(401);
+  it("l'ancienne route du rapport IA (retiré, D76) : 404 JSON de la fonction, pas index.html", async () => {
     const res = await fetch(`${HOSTING}/api/gemini/analyze`, {
-      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body,
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schoolId: "alfajr", studentName: "ياسين" }),
     });
-    expect(res.status).toBe(200);
-    // D67 : rapport propre à un élève, jamais mis en cache (no-store, ou au moins pas « public »).
-    const cache = res.headers.get("cache-control") || "";
-    expect(cache).not.toContain("public");
-    expect(cache).toMatch(/no-store|no-cache|private/);
-    expect(typeof (await res.json()).summary).toBe("string"); // rapport de repli (pas de clé Gemini)
-    const day = new Date().toISOString().slice(0, 10);
-    expect((await admin.db.doc(`aiQuota/s_alfajr_${day}`).get()).data()?.count).toBe(1);
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not-found" });
   });
 
   it("une route inconnue de l'application renvoie index.html (SPA), pas la fonction", async () => {

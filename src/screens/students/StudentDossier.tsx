@@ -1,19 +1,19 @@
-/** Fiche de l'élève sélectionné : informations, documents, rapport IA, carte. */
+/** Fiche de l'élève sélectionné : informations, documents, carte. */
 import React from "react";
-import { Check, RefreshCw, Sparkles, UserRound, X } from "lucide-react";
+import { Check, UserRound, X } from "lucide-react";
 import { checkUserPermission, type Class } from "../../types";
 import StudentCard from "../../components/StudentCard";
 import { StudentAvatar } from "../../utils/studentAvatar";
 import { useApp } from "../../app/AppContext";
-import { ActionAlert, Button, Card, CardHeader, EmptyState, GeometricPattern, InfoRow, Ltr, Pill, WhatsAppIcon } from "../../ui";
+import { ActionAlert, Button, Card, CardHeader, EmptyState, InfoRow, Ltr, Pill, WhatsAppIcon } from "../../ui";
 
 export default function StudentDossier({ classes }: { classes: Class[] }) {
-  const { selectedStudent, aiReport, aiLoading, aiError, schoolName, currentUser, currentRole, handleGenerateAIReport } = useApp();
+  const { selectedStudent, schoolName } = useApp();
 
   if (!selectedStudent) {
     return (
       <EmptyState icon={<UserRound className="w-8 h-8" strokeWidth={1.5} />} title="لم يُختر أي طالب">
-        الرجاء اختيار طالب من القائمة لعرض تفاصيله وبطاقته أو إجراء تحليلات تقدمه التجويدي بالذكاء الاصطناعي.
+        الرجاء اختيار طالب من القائمة لعرض تفاصيله وبطاقته.
       </EmptyState>
     );
   }
@@ -73,63 +73,7 @@ export default function StudentDossier({ classes }: { classes: Class[] }) {
           </ul>
         </div>
         {st.notes && <ActionAlert tone="warn" title="ملاحظات المعلم">{st.notes}</ActionAlert>}
-        <div className="border-t border-line-soft pt-4">
-          <Button variant="primary" block disabled={aiLoading} onClick={() => handleGenerateAIReport(st)} icon={<Sparkles className="w-[18px] h-[18px] text-gold" strokeWidth={1.75} />}>
-            {aiLoading ? "جاري توليد التقرير بالذكاء الاصطناعي..." : "تحليل تقدم الطالب بالذكاء الاصطناعي"}
-          </Button>
-        </div>
       </Card>
-
-      {(aiReport || aiLoading || aiError) && (
-        <section aria-labelledby="ai-title" aria-live="polite" className="relative bg-night text-night-text rounded-3xl p-6 overflow-hidden flex flex-col gap-4">
-          <GeometricPattern size={56} opacity={0.08} />
-          <div className="relative flex flex-wrap justify-between items-center gap-2 border-b border-night-line pb-3">
-            <h3 id="ai-title" className="m-0 font-display font-semibold text-[20px] text-gold-100 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-gold" strokeWidth={1.75} aria-hidden="true" />
-              التقرير التربوي الذكي لـ{schoolName}
-            </h3>
-            <span className="text-[12px] text-night-muted border border-night-line rounded-full px-2.5 py-0.5">موجه بالذكاء الاصطناعي</span>
-          </div>
-          {aiLoading && (
-            <div className="relative py-8 flex flex-col items-center gap-3 text-center">
-              <RefreshCw className="w-8 h-8 text-gold animate-spin" strokeWidth={1.75} aria-hidden="true" />
-              <p className="m-0 text-[14px] text-night-muted">يقوم الذكاء الاصطناعي بتحليل جودة التلاوة ومستوى الحفظ والمواظبة على الفصول حالياً...</p>
-            </div>
-          )}
-          {aiError && <p className="relative m-0 p-3 rounded-xl bg-danger-100 text-danger-800 text-[14px]">{aiError}</p>}
-          {aiReport && (
-            <div className="relative flex flex-col gap-4 text-[14px] leading-relaxed">
-              <div className="flex flex-col gap-1.5">
-                <p className="m-0 font-semibold text-gold">ملخص الأداء والتقدم</p>
-                <p className="m-0 p-3 rounded-xl bg-white/[0.06] border border-night-line">{aiReport.summary}</p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <p className="m-0 font-semibold text-gold">نصائح عملية للتجويد والتلاوة</p>
-                <ul className="m-0 ps-5 flex flex-col gap-1.5 list-disc">
-                  {aiReport.tajweedTips?.map((tip: string, idx: number) => <li key={idx}>{tip}</li>)}
-                </ul>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <p className="m-0 font-semibold text-gold">خطة حفظ ومراجعة مقترحة</p>
-                <p className="m-0 p-3 rounded-xl bg-white/[0.06] border border-night-line">{aiReport.studyPlan}</p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <p className="m-0 font-semibold text-gold">رسالة لولي الأمر في البيت</p>
-                <p className="m-0 p-3 rounded-xl bg-white/[0.06] border border-night-line font-quran text-[16px]">«{aiReport.parentMessage}»</p>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <p className="m-0 font-semibold text-gold">سور يوصى بتمتينها وتثبيتها</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {aiReport.recommendedSurahs?.map((surah: string, idx: number) => (
-                    <span key={idx} className="text-[13px] px-2.5 py-1 rounded-full bg-gold/[0.16] text-[#FFF2C7]">{surah}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
     </div>
   );
 }

@@ -8,7 +8,7 @@ Tu reprends une configuration déjà commencée dans Google Cloud, Firebase et G
   - au Hosting ni au Cloud Run.
 - Ne supprime RIEN. La seule exception est le retrait d'une ancienne autorisation IAM, explicitement prévu dans le bloc de l'étape C.
 - Ne crée JAMAIS de clé de compte de service.
-- Ne recopie aucun secret : clé Gemini, jeton, mot de passe, clé GPG privée.
+- Ne recopie aucun secret : jeton, mot de passe, clé GPG privée.
 - Ne souscris à AUCUN forfait payant, ni chez GitHub ni chez Google, sauf le forfait Blaze du projet de dev, décrit à l'étape B.
 - Si une commande renvoie une erreur autre que « already exists / existe déjà / not found » quand le bloc l'attend, ARRÊTE-TOI et rapporte l'erreur exacte.
 - Dans Cloud Shell, vérifie avec `gcloud config get project` que tu es dans le bon projet avant chaque bloc.
@@ -77,7 +77,7 @@ for SA_EMAIL in $DEPLOY_SA $OPS_SA; do
   gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL --role=roles/iam.workloadIdentityUser --member="$MEMBER" >/dev/null
 done
 for ROLE in roles/firebasehosting.admin roles/firebaserules.admin roles/cloudfunctions.admin roles/run.admin \
-  roles/eventarc.developer roles/cloudscheduler.admin roles/secretmanager.viewer roles/artifactregistry.writer \
+  roles/eventarc.developer roles/cloudscheduler.admin roles/artifactregistry.writer \
   roles/serviceusage.serviceUsageConsumer roles/firebaseextensions.viewer roles/datastore.viewer; do
   gcloud projects add-iam-policy-binding $PROJECT --member="serviceAccount:$DEPLOY_SA" --role=$ROLE --condition=None >/dev/null
 done

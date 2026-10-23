@@ -62,8 +62,13 @@ export function shouldRotate(policy: RotationPolicy, account: { role: string; us
 // Alphabet sans caractères ambigus (0/O, 1/l/I), facile à dicter.
 const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
 
-/** Mot de passe temporaire aléatoire (CSPRNG), format « xxxx-xxxx-xxxx ». */
-export function generateTemporaryPassword(): string {
+/**
+ * Mot de passe temporaire aléatoire (CSPRNG), format « xxxx-xxxx-xxxx » par
+ * défaut (3 groupes, 14 caractères) ; `groups` = 4 donne 19 caractères
+ * (comptes de démonstration du dev, D77).
+ */
+export function generateTemporaryPassword(groups = 3): string {
+  if (!Number.isInteger(groups) || groups < 1 || groups > 8) throw new Error("Nombre de groupes invalide.");
   const group = () => Array.from({ length: 4 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
-  return `${group()}-${group()}-${group()}`;
+  return Array.from({ length: groups }, group).join("-");
 }
