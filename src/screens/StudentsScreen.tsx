@@ -1,5 +1,5 @@
 /**
- * Élèves : liste filtrable, fiche détaillée, rapport IA et aperçu de la carte.
+ * Élèves : liste filtrable, fiche détaillée et aperçu de la carte.
  * Mêmes données, mêmes actions et mêmes droits que l'écran d'origine.
  */
 import React from "react";
@@ -25,13 +25,13 @@ function DocBadge({ ok, label, full }: { ok: boolean; label: string; full: strin
 export default function StudentsScreen() {
   const {
     classes, currentUser, currentRole, searchQuery, setSearchQuery, studentArchiveFilter, setStudentArchiveFilter,
-    selectedStudent, setSelectedStudent, setAiReport, filteredStudents, handleOpenStudentForm, handleDeleteStudent,
+    selectedStudent, setSelectedStudent, filteredStudents, handleOpenStudentForm, handleDeleteStudent,
     handleToggleArchiveStudent, handlePrintStudentsReport, handleExportStudentsCSV, handleExportStudentsJSON,
   } = useApp();
   const can = (a: "create" | "update" | "delete" | "print") => checkUserPermission(currentUser, currentRole, "students", a);
   const title = currentRole === "طالب" ? "ملفي الشخصي وسجل الحفظ القرآني" : currentRole === "ولي أمر" ? "متابعة الأبناء وسجلات الحفظ" : "إدارة ملفات الطلاب والوثائق الإدارية";
   const description = currentRole === "طالب" ? "استعراض مقدار الحفظ الحالي، مستوى التجويد، والوثائق الإدارية المعتمدة." : "سجل معلومات الطلاب، تتبع أوراقهم، ومقدار حفظهم وتجويدهم.";
-  const select = (st: any) => { setSelectedStudent(st); setAiReport(null); };
+  const select = (st: any) => { setSelectedStudent(st); };
 
   return (
     <div data-screen="students" className="flex flex-col gap-6">
