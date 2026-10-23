@@ -268,8 +268,13 @@ les workflows ne les utilisent plus.
    **publique** (`gpg --armor --export "Propriétaire kuttab"`) et collez-la dans
    une variable `ARTIFACT_GPG_PUBLIC_KEY` : de dépôt (la plus simple, valable
    pour le dev et la prod), ou préfixée (`DEV_…`, `PROD_…`), ou d'environnement.
-   La clé privée ne quitte jamais votre ordinateur. Pour lire un rapport :
-   `gpg --decrypt contenu.tar.gz.gpg | tar -xz`.
+   La clé privée ne quitte jamais votre ordinateur. Pour lire un rapport, sur
+   la machine qui détient la clé privée (Ubuntu, WSL, Cloud Shell) :
+   `unzip <artefact>.zip && gpg --decrypt contenu.tar.gz.gpg | tar -xz`. Les
+   mots de passe sont dans `mots-de-passe-temporaires-1.csv` (numéroté, un
+   fichier par script). Sous PowerShell, ne pas utiliser `|` (il altère les
+   fichiers binaires) : `gpg --output contenu.tar.gz --decrypt contenu.tar.gz.gpg`
+   puis `tar -xzf contenu.tar.gz`.
 2. **Facultatives** : `FUNCTIONS_TRIGGER_REGION` pour la prod si la base n'est
    pas en `eur3`/`europe-west1`, et `SUPER_ADMIN_USERNAME` avant la bascule
    (préfixées `PROD_…` / `DEV_…` en Free, dans l'environnement sinon).
