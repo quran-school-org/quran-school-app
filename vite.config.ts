@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv, type Plugin} from 'vite';
 import {e2eCsp} from './scripts/dev/csp';
-import {productionBuildProblems} from './scripts/dev/buildGuards';
+import {committedProductionProjectId, frTestBuildProblems, frTestBundleProblems, productionBuildProblems} from './scripts/dev/buildGuards';
 
 /**
  * Tests de bout en bout (E2E_CSP=1, `npm run test:e2e`) : la CSP de production
@@ -23,13 +23,34 @@ function e2eCspMeta(): Plugin {
   };
 }
 
+/**
+ * Traduction française de test (D79) : sans VITE_ENABLE_FR_TEST, le build
+ * échoue si un module de src/i18n-test se retrouve dans le bundle.
+ */
+function frTestBundleGuard(enabled: boolean): Plugin {
+  return {
+    name: 'fr-test-bundle-guard',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      const ids = Object.values(bundle).flatMap((chunk) => (chunk.type === 'chunk' ? Object.keys(chunk.modules) : []));
+      const problems = frTestBundleProblems(enabled, ids);
+      if (problems.length) this.error(problems.join('\n'));
+    },
+  };
+}
+
 export default defineConfig(({mode}) => {
   // Garde-fous du build de production (D70) : pas de jeton de débogage App Check
   // ni d'émulateurs venus de .env.local dans le bundle publié.
-  const problems = productionBuildProblems(mode, loadEnv(mode, process.cwd(), 'VITE_'), process.env);
+  const viteEnv = loadEnv(mode, process.cwd(), 'VITE_');
+  const problems = [
+    ...productionBuildProblems(mode, viteEnv, process.env),
+    ...frTestBuildProblems(mode, viteEnv, committedProductionProjectId(process.cwd())),
+  ];
   if (problems.length) throw new Error(`Build de production refusé :\n- ${problems.join('\n- ')}`);
+  const frTestEnabled = viteEnv.VITE_ENABLE_FR_TEST === 'true';
   return {
-    plugins: [e2eCspMeta(), react(), tailwindcss()],
+    plugins: [e2eCspMeta(), react(), tailwindcss(), frTestBundleGuard(frTestEnabled)],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
