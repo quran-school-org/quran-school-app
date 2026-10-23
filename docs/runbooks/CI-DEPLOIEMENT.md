@@ -160,9 +160,10 @@ le seul bucket de sauvegarde. Utilisé par `ops.yml` uniquement :
 |---|---|
 | `describe-db` | `datastore.databases.getMetadata` ; liste des objets du bucket |
 | `export-firestore` | `datastore.databases.export` ; l'agent de service Firestore écrit dans le bucket |
-| `import-firestore` (dev) | `datastore.databases.import` ; l'agent de service Firestore **du dev** lit le bucket de la prod (guide, bloc « dev seulement ») |
+| `import-firestore` (dev) | `datastore.databases.import` ; l'agent de service Firestore **du dev** lit le bucket de la prod (guide, bloc « dev seulement ») ; lecture du document `schools/demo` (API REST Firestore, `datastore.user`) : import refusé s'il existe (D77) |
 | `lot0-provision`, `migrate-to-tenants` | Firestore (Admin SDK) et Firebase Auth (création, mise à jour, claims) |
 | `verify-counts` | requêtes d'agrégation `count()` |
+| `seed-demo`, `remove-demo` (dev) | Firestore (Admin SDK : écriture et suppression récursive de `schools/demo`) et Firebase Auth (comptes `demo_*` : création, mot de passe, révocation, claims vidés, suppression) |
 
 ## 4. Bucket de sauvegarde et PITR
 

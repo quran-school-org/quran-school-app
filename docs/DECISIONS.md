@@ -1407,3 +1407,93 @@ là-bas (R-06).
   `functions/.env.<projet>`, le rôle `secretmanager.viewer` du compte de
   déploiement, le runbook `PROXY-IA.md` et le traitement T6 de `CNDP.md`
   (consentement des représentants légaux).
+
+### D77. École de démonstration `demo` sur le dev (`ops.yml` › `seed-demo`), supprimée avant toute copie réelle
+- **Contexte** : le Lot 0 est en prod (ancien design) ; le nouveau design et le
+  multi-écoles sont sur `main`, pas encore en prod. Le propriétaire veut
+  essayer lui-même le nouveau design dans un navigateur, avec des
+  identifiants. Le projet de dev `fajr-c4c6e` sert à cela, et servira ensuite
+  aux répétitions de migration avec une **copie des données réelles** (§4 du
+  runbook de l'orchestrateur). Aucune commande n'est lancée vers un vrai
+  projet depuis un conteneur : tout passe par `ops.yml` (D64).
+- **Décision (script `scripts/dev/seed-demo.ts`, Admin SDK)** :
+  - école d'identifiant fixe `demo`, nom « مدرسة تجريبية (بيانات وهمية) »,
+    marquée `demo: true` ; données **fictives** du jeu des émulateurs
+    (`scripts/dev/fixtures/legacy-alfajr.ts`) écrites directement au format
+    multi-écoles (`schoolId` dans chaque document, fiches RH dans
+    `staffPrivate`) : 10 élèves, 5 membres du personnel (3 fiches RH), 2
+    halaqas, présences, examens, suivi, paiements, recettes, dépenses,
+    salaire, activité (participants, dépenses), notification, paramètres de
+    cotisation de l'école n°1. Exclus : l'élève à la photo de ~950 Ko et à la
+    halaqa orpheline (S-111) et la présence orpheline (S-999), qui ne servent
+    qu'aux tests de migration ;
+  - un compte par rôle principal : `demo_directeur` (مدير), `demo_admin`
+    (إداري, fiche t2), `demo_enseignant` (مدرس, fiche t1, halaqa c1),
+    `demo_parent` (ولي أمر, élèves S-101 et S-102), `demo_eleve` (طالب, S-109) ;
+    emails techniques `@comptes.kuttab.local`, registre `usernames`, profil
+    `users/{uid}` avec `schoolIds: ["demo"]` et membre de `schools/demo`
+    **seulement** ; droits par défaut du rôle (`permissions: null`) ; claims
+    Auth **vidés** à chaque passage (jamais de `superAdmin`), puis contrôlés
+    (aucun claim, aucune autre école) ; `mustChangePassword: false` (comptes
+    de démonstration, mots de passe renouvelés à chaque relance) ;
+  - mots de passe **aléatoires** de 19 caractères
+    (`generateTemporaryPassword(4)`, même alphabet CSPRNG que le Lot 0 :
+    environ 79 bits), écrits dans le seul fichier secret
+    `seed-demo-<horodatage>/mots-de-passe-temporaires.csv` (mode 600), jamais
+    dans Firestore ni dans la sortie ;
+  - **idempotent** : une relance supprime récursivement `schools/demo`, la
+    réécrit, donne de nouveaux mots de passe aux comptes `demo_*`, révoque
+    leurs sessions et les réactive ;
+  - **refus** : projet `gen-lang-client-0481880143` (et base de la prod),
+    contrôlé **avant** toute autre vérification, sans option pour passer
+    outre (une option inconnue, `--force` compris, est refusée) ;
+    `--project` obligatoire ; simulation par défaut ; sur un vrai projet,
+    `--database` et `--confirm-prod=<projet>` (`scripts/admin/lib/cli.ts`) ;
+    refus si un compte `demo_*` est membre ou profil d'une autre école, si son
+    nom désigne un autre compte (registre) ou existe au domaine historique ;
+  - `--remove` : supprime `schools/demo`, puis les comptes `demo_*` (Auth,
+    `users`, `usernames`), avec les mêmes contrôles (jamais un compte membre
+    d'une autre école) ;
+  - exception assumée à « les comptes ne s'écrivent que par les Cloud
+    Functions » : script Admin SDK, comme la migration, limité au dev et aux
+    émulateurs.
+- **Décision (`ops.yml`)** : actions `seed-demo` et `remove-demo`, refusées en
+  production dans le job de garde-fous (et revérifiées dans l'étape du
+  script) ; code de `main` ; `apply=true` et `confirm` = identifiant du projet
+  de dev **exigés** ; `seed-demo` exige la clé publique
+  `ARTIFACT_GPG_PUBLIC_KEY` : le fichier des mots de passe part dans
+  l'artefact `mots-de-passe-temporaires-*` chiffré (D74), 1 jour ; journal
+  dans le rapport chiffré, seuls les compteurs (`RESUME_JSON`) dans les
+  journaux. `import-firestore` lit le document `schools/demo` (API REST
+  Firestore, code HTTP seulement) et **refuse** l'import s'il existe ou si la
+  lecture échoue.
+- **Choix : supprimer l'école `demo` avant la copie des données réelles**
+  (plutôt que la garder isolée à côté). Raisons :
+  - dès la copie, le dev est traité comme la prod (D74) ; chaque compte de
+    démonstration y serait un identifiant de plus, dont les mots de passe
+    circulent plus librement (essais, démonstrations à des tiers) ;
+  - l'isolation entre écoles repose sur les règles et les Functions que les
+    répétitions doivent justement valider : un défaut d'isolation donnerait
+    alors aux comptes de démonstration un accès à des données réelles
+    d'élèves mineurs ;
+  - la répétition doit reproduire la prod (`verify-counts`, registre des
+    noms, anomalies de la migration), sans école ni comptes étrangers.
+  Mise en œuvre par construction : `remove-demo` (runbook §4, étape 4.0),
+  refus de `seed-demo` dès que la base contient autre chose que `demo`
+  (collections racine, autre école, autres comptes), refus
+  d'`import-firestore` tant que `schools/demo` existe. Une démonstration après
+  les répétitions demande donc un dev vidé ou un autre projet.
+- **Vérifié localement** (émulateurs, `tests/emulator/seed-demo.test.ts`) :
+  données et comptes créés, connexion par rôle, droits par rôle dans `demo`
+  et aucun accès à `alfajr` ni `annour` (règles), aucun claim `superAdmin`,
+  relance (données remplacées, anciens mots de passe refusés, claim et
+  désactivation annulés), conflits de comptes, suppression sans toucher aux
+  autres écoles, refus de la prod (arguments et script lancé), mots de passe
+  absents de la sortie et du résumé ; garde-fou d'`ops.yml` joué avec bash
+  sur des variables factices (`tests/unit/workflows.test.ts`) ; `actionlint`
+  et `zizmor --offline` sans nouveau constat.
+- **Non testé sur GitHub** : aucun workflow déclenché ; la lecture REST de
+  `schools/demo` avec le jeton de `github-ops` (`datastore.user`) et
+  l'Admin SDK sur le dev (`firebaseauth.admin`) ne sont pas essayés.
+- **Retour arrière** : `remove-demo` sur le dev, puis `git revert` des
+  commits de `feat/demo-dev` (script, actions d'`ops.yml`, tests, docs).

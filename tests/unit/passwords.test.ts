@@ -9,6 +9,14 @@ describe("mots de passe temporaires", () => {
     expect(seen.size).toBe(200);
     for (const p of seen) expect(p).toMatch(/^[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}-[a-hjkmnp-z2-9]{4}$/);
   });
+
+  it("4 groupes (comptes de démonstration, D77) : 19 caractères ; nombre de groupes borné", () => {
+    const p = generateTemporaryPassword(4);
+    expect(p).toMatch(/^([a-hjkmnp-z2-9]{4}-){3}[a-hjkmnp-z2-9]{4}$/);
+    expect(p.length).toBe(19);
+    expect(() => generateTemporaryPassword(0)).toThrow();
+    expect(() => generateTemporaryPassword(2.5)).toThrow();
+  });
 });
 
 describe("politique de remplacement", () => {
