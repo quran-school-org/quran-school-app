@@ -1,0 +1,96 @@
+/*
+ * Couche de test FR (D79) : sélecteur de langue, et corrections de mise en
+ * page limitées au mode FR (html[lang="fr"]). Le mode arabe n'est pas touché.
+ */
+
+/* Sélecteur AR / FR « test » : petit, discret, hors de l'arbre React. */
+.i18n-test-switch {
+  position: fixed;
+  z-index: 70;
+  bottom: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px dashed var(--color-gold, #d4a017);
+  background: var(--color-surface, #f8f8f3);
+  box-shadow: 0 1px 4px rgb(16 36 70 / 0.12);
+  font: 600 11.5px/1 "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+  color: var(--color-ink-2, #4a5060);
+  opacity: 0.88;
+}
+.i18n-test-switch:hover,
+.i18n-test-switch:focus-within {
+  opacity: 1;
+}
+.i18n-test-badge {
+  padding: 0 6px 0 5px;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-gold-700, #8a6a10);
+}
+.i18n-test-switch button {
+  min-width: 30px;
+  height: 24px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.i18n-test-switch button[aria-pressed="true"] {
+  background: var(--color-primary, #1b3a6b);
+  color: #fff;
+}
+.i18n-test-switch button:focus-visible {
+  outline: 2px solid var(--color-gold, #d4a017);
+  outline-offset: 1px;
+}
+/* Côté de la zone principale (le menu latéral passe à gauche en FR). */
+html[lang="fr"] .i18n-test-switch {
+  left: auto;
+  right: 12px;
+}
+@media print {
+  .i18n-test-switch {
+    display: none;
+  }
+}
+
+/*
+ * Mode FR : sens de lecture de gauche à droite. Les conteneurs portent
+ * dir="rtl" en dur (cadre, fenêtres, écrans) : on inverse leur direction CSS
+ * sans toucher à l'attribut (les champs en dir="ltr" restent inchangés).
+ */
+html[lang="fr"] [dir="rtl"] {
+  direction: ltr;
+}
+/* Même chose pour les fenêtres qui fixent le sens par un style en ligne. */
+html[lang="fr"] [style*="direction: rtl"] {
+  direction: ltr !important;
+}
+/*
+ * Alignement physique pensé pour l'arabe (« à droite » = début de ligne).
+ * `text-left` n'est pas inversé : il sert aux champs latins (identifiant, montants).
+ */
+html[lang="fr"] :is([dir="rtl"], [style*="direction: rtl"]) .text-right:not([dir="ltr"]) {
+  text-align: left;
+}
+/* Sélecteur d'école : le nom affiché est une donnée en arabe, lue de droite à gauche. */
+html[lang="fr"] #school-switcher {
+  direction: rtl;
+}
+/* Identifiant de connexion : aligné au début en FR. */
+html[lang="fr"] [data-screen="login"] input {
+  text-align: left;
+}
+/* Flèche de l'icône de déconnexion : retournée pour l'arabe, remise à l'endroit en FR. */
+html[lang="fr"] [dir="rtl"] .-scale-x-100 {
+  --tw-scale-x: 1;
+  scale: 1 1;
+}

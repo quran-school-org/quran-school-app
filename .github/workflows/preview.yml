@@ -103,6 +103,8 @@ jobs:
             echo "VITE_FIRESTORE_DATABASE_ID=\"${VITE_FIRESTORE_DATABASE_ID}\""
             echo "VITE_APPCHECK_SITE_KEY=\"${VITE_APPCHECK_SITE_KEY}\""
             echo 'VITE_USE_EMULATORS="false"'
+            # Traduction française de TEST (D79) : l'aperçu vise le projet de dev.
+            echo 'VITE_ENABLE_FR_TEST="true"'
           } > .env.production.local
 
       - run: npm run build
