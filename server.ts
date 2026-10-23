@@ -10,10 +10,9 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Le proxy Gemini n'est plus servi ici : il vit dans la Cloud Function `api`
-// (functions/src/tenant/api.ts), qui exige un ID token Firebase et
-// l'appartenance à l'école, avec la clé dans Secret Manager (faille S7).
-// Ce serveur ne sert plus que l'application (développement : Vite ; ancienne
+// Aucune route d'API métier ici (l'ancien proxy IA, faille S7, a été retiré :
+// D76). La Cloud Function `api` ne sert plus que /api/health.
+// Ce serveur ne sert que l'application (développement : Vite ; ancienne
 // production AI Studio : fichiers statiques de dist/).
 
 app.get("/api/health", (req, res) => {

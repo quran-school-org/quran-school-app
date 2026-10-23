@@ -103,7 +103,6 @@ jobs:
             echo "VITE_FIRESTORE_DATABASE_ID=\"${VITE_FIRESTORE_DATABASE_ID}\""
             echo "VITE_APPCHECK_SITE_KEY=\"${VITE_APPCHECK_SITE_KEY}\""
             echo 'VITE_USE_EMULATORS="false"'
-            echo 'VITE_API_BASE_URL=""'
           } > .env.production.local
 
       - run: npm run build

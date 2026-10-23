@@ -3,7 +3,7 @@
  *
  * Callables (région FUNCTIONS_REGION) :
  *   createSchool, createSchoolUser, resetUserPassword, setMemberRole
- * HTTP : api (proxy Gemini authentifié, /api/** via Hosting)
+ * HTTP : api (GET /api/health seulement, /api/** via Hosting ; rapport IA retiré, D76)
  * Triggers Firestore : suspension des comptes à l'archivage des fiches.
  * Planifiée : scheduledFirestoreExport (sauvegarde quotidienne, omise tant que
  * BACKUP_ENABLED n'est pas true ; D47).

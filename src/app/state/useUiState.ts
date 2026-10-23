@@ -13,11 +13,6 @@ export function useUiState() {
   const [studentArchiveFilter, setStudentArchiveFilter] = useState<"active" | "archived" | "all">("active");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
-  // AI Report State
-  const [aiReport, setAiReport] = useState<any>(null);
-  const [aiLoading, setAiLoading] = useState<boolean>(false);
-  const [aiError, setAiError] = useState<string>("");
-
   // Modals & Form State
   const [showStudentModal, setShowStudentModal] = useState<boolean>(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -242,12 +237,6 @@ export function useUiState() {
     setStudentArchiveFilter,
     selectedStudent,
     setSelectedStudent,
-    aiReport,
-    setAiReport,
-    aiLoading,
-    setAiLoading,
-    aiError,
-    setAiError,
     showStudentModal,
     setShowStudentModal,
     editingStudent,

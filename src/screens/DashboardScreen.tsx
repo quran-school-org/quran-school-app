@@ -22,7 +22,7 @@ const TAJWEED = [
 export default function DashboardScreen() {
   const {
     students, teachers, classes, attendance, grades, payments, systemSettings, currentUser, currentRole,
-    setActiveTab, setSelectedStudent, setAiReport, totalStudentsCount, advancedStudentsCount,
+    setActiveTab, setSelectedStudent, totalStudentsCount, advancedStudentsCount,
     excellentTajweedCount, averageTajweedCount, weakTajweedCount, totalPaymentsCollected, totalUnpaidCount,
     handleBackupRealmDB, handleRestoreRealmDB,
   } = useApp();
@@ -109,7 +109,7 @@ export default function DashboardScreen() {
       <HifzProgress
         students={students}
         classes={classes}
-        onOpenStudent={canGo("students") ? (s) => { setSelectedStudent(s); setAiReport(null); go("students"); } : undefined}
+        onOpenStudent={canGo("students") ? (s) => { setSelectedStudent(s); go("students"); } : undefined}
       />
     </div>
   );

@@ -14,14 +14,13 @@ export DOMAIN=<domaine-hosting>                     # ex. gen-lang-client-048188
 ## 0. Ce que fait le code
 - Client (`src/firebase.ts`) : si `VITE_APPCHECK_SITE_KEY` est défini,
   `initializeAppCheck` avec `ReCaptchaEnterpriseProvider` et rafraîchissement
-  automatique. Firestore, Auth et les callables joignent alors le jeton ; la
-  fonction `api` le reçoit dans l'en-tête `X-Firebase-AppCheck`. En mode
+  automatique. Firestore, Auth et les callables joignent alors le jeton. En mode
   émulateurs, ou si `VITE_APPCHECK_DEBUG_TOKEN` est défini, le fournisseur de
   débogage est utilisé.
-- Functions : callables `enforceAppCheck: APPCHECK_ENFORCE` ; `api` vérifie
-  l'en-tête et ne refuse (401) que si `APPCHECK_ENFORCE=true`. Dans les deux
-  cas un journal `appcheck` / `ai.analyze` indique l'état du jeton (`valid`,
-  `missing`, `invalid`) : c'est la mesure de la période d'observation.
+- Functions : callables `enforceAppCheck: APPCHECK_ENFORCE`. Un journal
+  `appcheck` indique l'état du jeton (`valid`, `missing-or-invalid`) : c'est la
+  mesure de la période d'observation. La fonction HTTP `api` ne sert plus que
+  `/api/health` et ne vérifie pas App Check (rapport IA retiré, D76).
 
 ## 1. Clé reCAPTCHA Enterprise
 ```bash
@@ -59,8 +58,7 @@ Commiter `.env.production` (clé publique, aucun secret).
   (anciens onglets, robots, scripts d'administration : l'Admin SDK n'est pas
   concerné par App Check).
 - Journaux des Functions :
-  `jsonPayload.message="appcheck"` (callables) et
-  `jsonPayload.message="ai.analyze" jsonPayload.appCheck!="valid"` (`api`).
+  `jsonPayload.message="appcheck"` (callables).
 - Vérifier depuis les postes de l'école (navigateurs anciens, bloqueurs) que
   reCAPTCHA se charge : la CSP de `firebase.json` autorise `www.google.com`,
   `www.gstatic.com`, `www.recaptcha.net` et `content-firebaseappcheck.googleapis.com`.
@@ -75,7 +73,7 @@ Commiter `.env.production` (clé publique, aucun secret).
 3. Authentication : Console › App Check › API › Authentication › **Appliquer**
    (le cas échéant, Identity Platform).
 Délai de propagation : jusqu'à 15 minutes. Tester connexion, lecture, écriture,
-création de compte (callable) et rapport IA.
+création de compte (callable).
 
 ## 6. Retour arrière
 - Console › App Check › API › service › **Ne plus appliquer** (immédiat à 15 min).
