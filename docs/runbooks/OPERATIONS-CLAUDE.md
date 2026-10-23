@@ -17,11 +17,16 @@
 2. Les workflows sont **sur `main`** (un `workflow_dispatch` ne se déclenche que
    pour un workflow présent sur la branche par défaut) : fusion de
    `feat/workflows-ops` par le propriétaire.
-3. **Forfait GitHub gratuit** : la documentation GitHub indique que les
-   environnements ne se configurent, sur un dépôt privé, qu'avec GitHub Team ou
-   Pro. Si l'étape 3 du guide est impossible, s'arrêter et le signaler au
-   propriétaire (voir D64, « Limites ») : sans variables d'environnement, les
+3. **Forfait GitHub** (D75) : sur un dépôt privé, les environnements GitHub
+   n'existent qu'avec Team ou Enterprise. Avec le forfait Free, le propriétaire
+   pose des variables de dépôt préfixées `DEV_…` / `PROD_…` (guide, étape 3 B) ;
+   les workflows le détectent seuls (job `configuration`) et exécutent leur job
+   jumeau sans `environment:` (`deployer-sans-environnement`,
+   `operation-sans-environnement`). Les commandes ci-dessous sont **les mêmes**
+   dans les deux cas. Le premier run de chaque workflow : vérifier dans le
+   journal du job `configuration` le mode annoncé. Sans aucune variable, les
    workflows s'arrêtent dès leur premier pas, sans rien toucher.
+   `preview.yml` (aperçus) n'est pas disponible en Free.
 
 ```bash
 REPO=quran-school-org/quran-school-app
@@ -45,7 +50,7 @@ Règles permanentes :
   télécharge depuis l'onglet Actions (3 jours et 1 jour), puis les supprime.
   L'orchestrateur ne lit que les journaux et le résumé du run.
   Depuis D74, ils sont chiffrés pour la clé publique du propriétaire
-  (`ARTIFACT_GPG_PUBLIC_KEY`) : sans cette variable, un run avec
+  (`ARTIFACT_GPG_PUBLIC_KEY` : variable de dépôt, préfixée ou d'environnement) : sans cette variable, un run avec
   `rotate_passwords` ≠ `none` et `apply=true` s'arrête au garde-fou (le poser
   avant les répétitions 4.x sur le dev). Le propriétaire déchiffre avec
   `gpg --decrypt contenu.tar.gz.gpg | tar -xz`.
@@ -64,9 +69,9 @@ Règles permanentes :
 
 | # | Commande | À vérifier | Si échec |
 |---|---|---|---|
-| 1.1 | `run ops.yml -f environment=dev -f action=describe-db` | run vert ; `locationId` identique à celui que le propriétaire a noté pour la prod ; PITR `POINT_IN_TIME_RECOVERY_ENABLED` ; la liste des exports s'affiche (vide) | erreur WIF ou `PERMISSION_DENIED` : indiquer au propriétaire l'étape 2 du guide concernée (pool, compte `github-ops`, rôle) |
+| 1.1 | `run ops.yml -f environment=dev -f action=describe-db` | run vert ; job `configuration` : mode attendu (environnement ou variables `DEV_*`) ; `locationId` identique à celui que le propriétaire a noté pour la prod ; PITR `POINT_IN_TIME_RECOVERY_ENABLED` ; la liste des exports s'affiche (vide) | erreur WIF ou `PERMISSION_DENIED` : indiquer au propriétaire l'étape 2 du guide concernée (pool, compte `github-ops`, rôle) ; en mode Free, erreur sur le mappage d'attributs : CI-DEPLOIEMENT.md §2 (`attribute.environment`) |
 | 1.2 | `run ops.yml -f environment=production -f action=describe-db` | même chose pour la prod ; noter `locationId`, la **région conseillée des triggers** et l'emplacement attendu du bucket | idem |
-| 1.3 | (si la région conseillée n'est pas `europe-west1`) | demander au propriétaire de poser `FUNCTIONS_TRIGGER_REGION=<région>` dans les environnements `dev` **et** `production` | ne pas déployer les Functions avant |
+| 1.3 | Comparer la région conseillée par 1.1 et 1.2 avec `DEV_FUNCTIONS_TRIGGER_REGION` (ou `FUNCTIONS_TRIGGER_REGION` de l'environnement `dev`, **obligatoire** : les déploiements du dev s'arrêtent sans elle) et avec `FIRESTORE_TRIGGER_REGION` du fichier versionné `functions/.env.gen-lang-client-0481880143` (sur `main` et `release/lot0`) | toutes égales (bases actuelles : `europe-west2`) | écart : faire corriger la variable par le propriétaire, ou le fichier versionné par une PR (ou poser `PROD_FUNCTIONS_TRIGGER_REGION`) ; ne pas déployer les Functions avant |
 | 1.4 | `run ops.yml -f environment=production -f action=verify-counts` | nombres par collection racine (référence « avant ») ; aucun `schools` | — |
 | 1.5 | `run deploy-lot0.yml -f environment=dev -f target=all` | job `verifier` vert (lint, build, tests, émulateurs de `release/lot0`) ; déploiement vert ; `https://$DEV.web.app` s'ouvre (`curl -sI`, projet de dev seulement) | droit manquant : faire ajouter au compte `github-deploy` **du dev** le rôle précis cité par l'erreur (CI-DEPLOIEMENT.md §3), puis relancer |
 | 1.6 | `run ops.yml -f environment=dev -f action=lot0-provision` | run vert ; `RESUME_JSON` avec `appUsers: 0` et l'anomalie `U1_MISSING` (base de dev vide : attendu) ; la chaîne WIF → Admin SDK fonctionne | erreur d'accès à Auth/Firestore : rôles de `github-ops` |
@@ -129,7 +134,7 @@ et l'export Auth n'est pas automatisé) ; d'où le choix des sources ci-dessous.
 | 4.1 | Répétition 1 : `run ops.yml -f environment=dev -f action=import-firestore -f import_source=<horodatage>-avant-lot0-provision` (simulation), puis la même avec `-f apply=true -f confirm=$DEV` | source affichée = bucket de la prod ; import vert. L'export d'avant le Lot 0 contient encore les mots de passe : il permet de recréer les comptes sur le dev |
 | 4.2 | `run deploy.yml -f environment=dev -f target=all -f force=true` | job `verifier` vert (code de `main`) ; fonctions du Lot 0 supprimées du dev, fonctions multi-écoles déployées |
 | 4.3 | `run ops.yml -f environment=dev -f action=migrate-to-tenants -f rotate_passwords=all` | simulation : `critical: false`, pour chaque collection `source = copied + skippedExisting` |
-| 4.4 | `run ops.yml -f environment=dev -f action=migrate-to-tenants -f apply=true -f rotate_passwords=all -f confirm=$DEV` | export préalable du dev ; `targetAfter = source` partout ; `accounts.pendingAuth: 0` ; `superAdmin: true` si `SUPER_ADMIN_USERNAME` est posé dans `dev` ; artefact `mots-de-passe-temporaires-dev-<run>` (1 jour) |
+| 4.4 | `run ops.yml -f environment=dev -f action=migrate-to-tenants -f apply=true -f rotate_passwords=all -f confirm=$DEV` | export préalable du dev ; `targetAfter = source` partout ; `accounts.pendingAuth: 0` ; `superAdmin: true` si `SUPER_ADMIN_USERNAME` est posé dans `dev` (Free : `DEV_SUPER_ADMIN_USERNAME`) ; artefact `mots-de-passe-temporaires-dev-<run>` (1 jour) |
 | 4.5 | `run ops.yml -f environment=dev -f action=verify-counts` | `schools.alfajr.<collection>` = racine pour les 14 collections ; `members` = `appUsers` |
 | 4.6 | Répétition 2 (export frais, juste avant la bascule) : `run ops.yml -f environment=production -f action=export-firestore -f confirm=$P`, puis 4.1 avec `import_source=<nom affiché>` et 4.3 à 4.5 | données récentes : anomalies et comptages. `accounts.pendingAuth` est attendu égal au nombre de comptes absents d'Auth sur le dev (export d'après le Lot 0, sans mot de passe) ; les comptes créés à la répétition 1 restent valables |
 
@@ -149,7 +154,8 @@ l'école `comptes/…/liens-a-valider.csv` (artefact du run 4.4).
 
 **Go n°2** : le propriétaire valide le rapport de répétition et les liens.
 **Go n°3** : il fixe la date de la bascule. Avant la bascule, il pose
-`SUPER_ADMIN_USERNAME` dans l'environnement `production` (compte dédié
+`SUPER_ADMIN_USERNAME` dans l'environnement `production` (Free : variable de
+dépôt `PROD_SUPER_ADMIN_USERNAME` ; compte dédié
 recommandé, MIGRATION-BASCULE.md §0.4).
 
 ## 5. Bascule multi-écoles en prod (fenêtre de maintenance, date du go n°3)

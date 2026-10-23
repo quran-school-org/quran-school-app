@@ -4,18 +4,22 @@
 #   PR, aucune planification ne déploie.
 # - Authentification Google par Workload Identity Federation (OIDC GitHub),
 #   SANS clé JSON. Rien ne fonctionne tant que l'humain n'a pas créé le pool,
-#   le compte de service et les environnements GitHub : voir
-#   docs/runbooks/CI-DEPLOIEMENT.md.
-# - Environnements GitHub : `dev` (projet de développement) et `production`
-#   (validation manuelle obligatoire par un relecteur, branche main seulement).
+#   les comptes de service et les variables GitHub : voir
+#   docs/GUIDE-MISE-EN-PROD.md et docs/runbooks/CI-DEPLOIEMENT.md.
+# - Deux configurations GitHub, choisies par le job `configuration` (D75) :
+#   environnements `dev` et `production` (forfait Team ou Enterprise : job
+#   `deployer`, qui déclare `environment:`), ou variables de DÉPÔT préfixées
+#   DEV_ / PROD_ (forfait Free, sans environnement : job
+#   `deployer-sans-environnement`). Les deux jobs partagent les mêmes étapes
+#   (ancres YAML) ; un seul s'exécute.
 # - Aucune valeur sensible dans ce fichier : identifiants de projet, fournisseur
-#   WIF et compte de service viennent des VARIABLES de l'environnement GitHub.
+#   WIF et compte de service viennent des VARIABLES GitHub.
 # - Durcissement (revue, D68) : actions épinglées par SHA ; aucune expression
 #   interpolée dans un script (tout passe par `env`) ; dans le job qui détient
 #   le jeton OIDC, installation sans scripts npm et sans cache partagé.
-#   Rappel : le fichier exécuté est celui de la branche choisie ; seules les
-#   protections GitHub (environnement production : relecteur, branche main) et
-#   la condition du fournisseur WIF (runbook §2) protègent la prod.
+#   Rappel : le fichier exécuté est celui de la branche choisie ; la condition
+#   du fournisseur WIF (main et ces trois workflows seulement, D74, D75) et les
+#   garde-fous de ce fichier, sur main, protègent la prod.
 name: Déploiement (manuel)
 
 on:
@@ -47,7 +51,55 @@ concurrency:
   group: deploy-${{ inputs.environment }}
   cancel-in-progress: false
 
+env:
+  PROD_PROJECT_ID: gen-lang-client-0481880143
+
 jobs:
+  # D75 : environnement GitHub (Team/Enterprise) ou variables de dépôt préfixées
+  # (Free). Aucun jeton, aucune valeur sensible : ne lit que des variables.
+  configuration:
+    name: Configuration GitHub (environnement ou variables préfixées)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+      prefix: ${{ steps.mode.outputs.prefix }}
+      other_prefix: ${{ steps.mode.outputs.other_prefix }}
+    steps:
+      - name: Choix de la configuration
+        id: mode
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          USE_GITHUB_ENVIRONMENTS: ${{ vars.USE_GITHUB_ENVIRONMENTS }}
+          DEV_PROJECT: ${{ vars.DEV_FIREBASE_PROJECT_ID }}
+          PROD_PROJECT: ${{ vars.PROD_FIREBASE_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          case "${ENVIRONMENT}" in
+            dev) PREFIX=DEV_; OTHER=PROD_ ;;
+            production) PREFIX=PROD_; OTHER=DEV_ ;;
+            *) fail "Environnement inconnu." ;;
+          esac
+          # USE_GITHUB_ENVIRONMENTS (variable de dépôt, facultative) force le mode ;
+          # sinon, la présence d'une variable préfixée signale la configuration Free.
+          case "${USE_GITHUB_ENVIRONMENTS}" in
+            true) MODE=environnement ;;
+            false) MODE=prefixe ;;
+            "") if [ -n "${DEV_PROJECT}${PROD_PROJECT}" ]; then MODE=prefixe; else MODE=environnement; fi ;;
+            *) fail "USE_GITHUB_ENVIRONMENTS doit valoir true, false, ou être absente." ;;
+          esac
+          if [ "${MODE}" = "environnement" ]; then
+            VAR_PREFIX=""
+            MSG="environnement GitHub « ${ENVIRONMENT} » (variables sans préfixe)"
+          else
+            VAR_PREFIX="${PREFIX}"
+            MSG="variables de dépôt ${PREFIX}* (sans environnement GitHub)"
+          fi
+          { echo "mode=${MODE}"; echo "prefix=${VAR_PREFIX}"; echo "other_prefix=${OTHER}"; } >> "$GITHUB_OUTPUT"
+          echo "Configuration : ${MSG}."
+          echo "- configuration GitHub : ${MSG}" >> "$GITHUB_STEP_SUMMARY"
+
   verifier:
     name: Build et tests (émulateurs)
     runs-on: ubuntu-latest
@@ -78,42 +130,68 @@ jobs:
       - run: npm test
       - run: npm run test:rules
 
+  # Job à jeton OIDC, version « environnement GitHub » (Team/Enterprise).
   deployer:
     name: Déploiement (${{ inputs.environment }} / ${{ inputs.target }})
-    needs: verifier
+    needs: [verifier, configuration]
+    if: needs.configuration.outputs.mode == 'environnement'
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    # Environnement GitHub : variables propres, relecteurs obligatoires et
-    # branche main seulement pour `production` (voir le runbook).
+    # Environnement GitHub : variables propres (sans préfixe), et protections
+    # éventuelles de l'environnement (relecteurs, branches).
     environment: ${{ inputs.environment }}
-    permissions:
+    permissions: &deployer_permissions
       contents: read
       id-token: write # jeton OIDC pour la fédération d'identité
-    env:
-      PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+    # Variables lues sous le préfixe choisi par `configuration` : vide (variables
+    # de l'environnement) ou DEV_ / PROD_ selon inputs.environment, jamais l'autre.
+    env: &deployer_env
       ENVIRONMENT: ${{ inputs.environment }}
       TARGET: ${{ inputs.target }}
-    steps:
+      CONFIG_MODE: ${{ needs.configuration.outputs.mode }}
+      VAR_PREFIX: ${{ needs.configuration.outputs.prefix }}
+      OTHER_PREFIX: ${{ needs.configuration.outputs.other_prefix }}
+      PROJECT_ID: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_FIREBASE_PROJECT_ID) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_FIREBASE_PROJECT_ID) || (needs.configuration.outputs.prefix == '' && vars.FIREBASE_PROJECT_ID) || '' }}
+      WIF_PROVIDER: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_GCP_WIF_PROVIDER) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_GCP_WIF_PROVIDER) || (needs.configuration.outputs.prefix == '' && vars.GCP_WIF_PROVIDER) || '' }}
+      DEPLOY_SA: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_GCP_DEPLOY_SERVICE_ACCOUNT) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_GCP_DEPLOY_SERVICE_ACCOUNT) || (needs.configuration.outputs.prefix == '' && vars.GCP_DEPLOY_SERVICE_ACCOUNT) || '' }}
+      # Valeurs de l'AUTRE environnement (variables préfixées), pour le contrôle croisé.
+      OTHER_PROJECT_ID: ${{ (needs.configuration.outputs.other_prefix == 'DEV_' && vars.DEV_FIREBASE_PROJECT_ID) || (needs.configuration.outputs.other_prefix == 'PROD_' && vars.PROD_FIREBASE_PROJECT_ID) || '' }}
+      OTHER_WIF_PROVIDER: ${{ (needs.configuration.outputs.other_prefix == 'DEV_' && vars.DEV_GCP_WIF_PROVIDER) || (needs.configuration.outputs.other_prefix == 'PROD_' && vars.PROD_GCP_WIF_PROVIDER) || '' }}
+      OTHER_DEPLOY_SA: ${{ (needs.configuration.outputs.other_prefix == 'DEV_' && vars.DEV_GCP_DEPLOY_SERVICE_ACCOUNT) || (needs.configuration.outputs.other_prefix == 'PROD_' && vars.PROD_GCP_DEPLOY_SERVICE_ACCOUNT) || '' }}
+    steps: &deployer_steps
       - name: Garde-fous
         env:
           CONFIRM: ${{ inputs.confirm }}
           REF: ${{ github.ref }}
-          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
-          DEPLOY_SA: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-          case "${ENVIRONMENT}" in dev|production) ;; *) echo "::error::Environnement inconnu."; exit 1;; esac
+          fail() { echo "::error::$1"; exit 1; }
+          case "${ENVIRONMENT}" in dev|production) ;; *) fail "Environnement inconnu.";; esac
+          # D75 : les variables DEV_* ne servent jamais à la production, ni PROD_* au dev.
+          case "${CONFIG_MODE}:${ENVIRONMENT}:${VAR_PREFIX}:${OTHER_PREFIX}" in
+            environnement:dev::PROD_|environnement:production::DEV_|prefixe:dev:DEV_:PROD_|prefixe:production:PROD_:DEV_) ;;
+            *) fail "Configuration incohérente (mode « ${CONFIG_MODE} », préfixe « ${VAR_PREFIX} ») pour ${ENVIRONMENT}.";;
+          esac
           if [ -z "${PROJECT_ID}" ] || [ -z "${WIF_PROVIDER}" ] || [ -z "${DEPLOY_SA}" ]; then
-            echo "::error::Variables de l'environnement GitHub '${ENVIRONMENT}' absentes (FIREBASE_PROJECT_ID, GCP_WIF_PROVIDER, GCP_DEPLOY_SERVICE_ACCOUNT). Voir docs/runbooks/CI-DEPLOIEMENT.md."
-            exit 1
+            fail "Variables ${VAR_PREFIX}FIREBASE_PROJECT_ID, ${VAR_PREFIX}GCP_WIF_PROVIDER ou ${VAR_PREFIX}GCP_DEPLOY_SERVICE_ACCOUNT absentes (${CONFIG_MODE}, ${ENVIRONMENT}). Voir docs/GUIDE-MISE-EN-PROD.md, étape 3."
           fi
-          case "${PROJECT_ID}" in demo-*) echo "::error::Projet demo-* : rien à déployer."; exit 1;; esac
+          for v in PROJECT_ID WIF_PROVIDER DEPLOY_SA; do
+            o="OTHER_${v}"
+            if [ -n "${!o}" ] && [ "${!v}" = "${!o}" ]; then
+              fail "${v} de ${ENVIRONMENT} est égal à la variable ${OTHER_PREFIX}* de l'autre environnement : configuration croisée."
+            fi
+          done
+          [[ "${PROJECT_ID}" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || fail "FIREBASE_PROJECT_ID invalide."
+          case "${PROJECT_ID}" in demo-*) fail "Projet demo-* : rien à déployer.";; esac
+          case "${DEPLOY_SA}" in *"@${PROJECT_ID}.iam.gserviceaccount.com") ;; *) fail "Le compte de déploiement n'appartient pas au projet ${PROJECT_ID}.";; esac
           if [ "${ENVIRONMENT}" = "production" ]; then
-            if [ "${REF}" != "refs/heads/main" ]; then echo "::error::La production ne se déploie que depuis main (reçu : ${REF})."; exit 1; fi
-            if [ "${CONFIRM}" != "${PROJECT_ID}" ]; then echo "::error::Confirmation incorrecte : recopier l'identifiant du projet de prod."; exit 1; fi
+            [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ] || fail "La production ne vise pas ${PROD_PROJECT_ID}."
+            [ "${REF}" = "refs/heads/main" ] || fail "La production ne se déploie que depuis main (reçu : ${REF})."
+            [ "${CONFIRM}" = "${PROJECT_ID}" ] || fail "Confirmation incorrecte : recopier l'identifiant du projet de prod."
           else
-            if [ "${PROJECT_ID}" = "gen-lang-client-0481880143" ]; then echo "::error::L'environnement dev pointe vers la prod."; exit 1; fi
+            [ "${PROJECT_ID}" != "${PROD_PROJECT_ID}" ] || fail "L'environnement dev pointe vers la prod."
           fi
+          echo "Déploiement vers ${PROJECT_ID} (${ENVIRONMENT}, configuration ${CONFIG_MODE}${VAR_PREFIX:+ ${VAR_PREFIX}*}), cible ${TARGET}"
 
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -132,17 +210,23 @@ jobs:
       - name: Configuration web du projet de dev (variables publiques)
         if: inputs.environment == 'dev'
         env:
-          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
-          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-          VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
-          VITE_FIRESTORE_DATABASE_ID: ${{ vars.VITE_FIRESTORE_DATABASE_ID }}
-          VITE_APPCHECK_SITE_KEY: ${{ vars.VITE_APPCHECK_SITE_KEY }}
-          FUNCTIONS_FIRESTORE_DATABASE_ID: ${{ vars.FUNCTIONS_FIRESTORE_DATABASE_ID }}
-          FUNCTIONS_TRIGGER_REGION: ${{ vars.FUNCTIONS_TRIGGER_REGION }}
+          VITE_FIREBASE_API_KEY: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_VITE_FIREBASE_API_KEY) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_VITE_FIREBASE_API_KEY) || (needs.configuration.outputs.prefix == '' && vars.VITE_FIREBASE_API_KEY) || '' }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_VITE_FIREBASE_AUTH_DOMAIN) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_VITE_FIREBASE_AUTH_DOMAIN) || (needs.configuration.outputs.prefix == '' && vars.VITE_FIREBASE_AUTH_DOMAIN) || '' }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_VITE_FIREBASE_STORAGE_BUCKET) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_VITE_FIREBASE_STORAGE_BUCKET) || (needs.configuration.outputs.prefix == '' && vars.VITE_FIREBASE_STORAGE_BUCKET) || '' }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_VITE_FIREBASE_MESSAGING_SENDER_ID) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_VITE_FIREBASE_MESSAGING_SENDER_ID) || (needs.configuration.outputs.prefix == '' && vars.VITE_FIREBASE_MESSAGING_SENDER_ID) || '' }}
+          VITE_FIREBASE_APP_ID: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_VITE_FIREBASE_APP_ID) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_VITE_FIREBASE_APP_ID) || (needs.configuration.outputs.prefix == '' && vars.VITE_FIREBASE_APP_ID) || '' }}
+          VITE_FIRESTORE_DATABASE_ID: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_VITE_FIRESTORE_DATABASE_ID) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_VITE_FIRESTORE_DATABASE_ID) || (needs.configuration.outputs.prefix == '' && vars.VITE_FIRESTORE_DATABASE_ID) || '' }}
+          VITE_APPCHECK_SITE_KEY: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_VITE_APPCHECK_SITE_KEY) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_VITE_APPCHECK_SITE_KEY) || (needs.configuration.outputs.prefix == '' && vars.VITE_APPCHECK_SITE_KEY) || '' }}
+          FUNCTIONS_FIRESTORE_DATABASE_ID: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_FUNCTIONS_FIRESTORE_DATABASE_ID) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_FUNCTIONS_FIRESTORE_DATABASE_ID) || (needs.configuration.outputs.prefix == '' && vars.FUNCTIONS_FIRESTORE_DATABASE_ID) || '' }}
+          FUNCTIONS_TRIGGER_REGION: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_FUNCTIONS_TRIGGER_REGION) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_FUNCTIONS_TRIGGER_REGION) || (needs.configuration.outputs.prefix == '' && vars.FUNCTIONS_TRIGGER_REGION) || '' }}
         run: |
           set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          # Région des triggers et base des Functions : obligatoires pour le dev, sans valeur
+          # par défaut (une région incompatible avec l'emplacement de la base fait échouer les triggers).
+          [ -n "${FUNCTIONS_TRIGGER_REGION}" ] || fail "Variable ${VAR_PREFIX}FUNCTIONS_TRIGGER_REGION absente (dev ; région des triggers Firestore, ex. europe-west2 : guide, étape 3)."
+          [[ "${FUNCTIONS_TRIGGER_REGION}" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || fail "${VAR_PREFIX}FUNCTIONS_TRIGGER_REGION invalide."
+          [ -n "${FUNCTIONS_FIRESTORE_DATABASE_ID}" ] || fail "Variable ${VAR_PREFIX}FUNCTIONS_FIRESTORE_DATABASE_ID absente (dev ; guide, étape 3)."
           # .env.production.local surcharge .env.production (Vite) : le build vise le projet de dev.
           {
             echo "VITE_FIREBASE_API_KEY=\"${VITE_FIREBASE_API_KEY}\""
@@ -157,12 +241,35 @@ jobs:
             echo 'VITE_API_BASE_URL=""'
           } > .env.production.local
           # Paramètres non secrets des Functions pour ce projet, s'ils ne sont pas versionnés.
-          if [ ! -f "functions/.env.${PROJECT_ID}" ]; then
-            {
-              echo "FIRESTORE_DATABASE_ID=${FUNCTIONS_FIRESTORE_DATABASE_ID}"
-              echo "FIRESTORE_TRIGGER_REGION=${FUNCTIONS_TRIGGER_REGION:-europe-west1}"
-            } > "functions/.env.${PROJECT_ID}"
+          ENV_FILE="functions/.env.${PROJECT_ID}"
+          if [ ! -f "${ENV_FILE}" ]; then
+            echo "FIRESTORE_DATABASE_ID=${FUNCTIONS_FIRESTORE_DATABASE_ID}" > "${ENV_FILE}"
           fi
+          # La variable fait foi pour la région (fichier versionné ou non).
+          sed -i '/^FIRESTORE_TRIGGER_REGION=/d' "${ENV_FILE}"
+          echo "FIRESTORE_TRIGGER_REGION=${FUNCTIONS_TRIGGER_REGION}" >> "${ENV_FILE}"
+
+      # Production : fichier versionné (functions/.env.<projet>) ; la variable
+      # PROD_FUNCTIONS_TRIGGER_REGION (ou celle de l'environnement), si elle est posée,
+      # remplace sa région. Dans tous les cas : une seule région, explicite et valide.
+      - name: Région des triggers Firestore (aucun repli implicite)
+        env:
+          TRIGGER_REGION: ${{ (needs.configuration.outputs.prefix == 'DEV_' && vars.DEV_FUNCTIONS_TRIGGER_REGION) || (needs.configuration.outputs.prefix == 'PROD_' && vars.PROD_FUNCTIONS_TRIGGER_REGION) || (needs.configuration.outputs.prefix == '' && vars.FUNCTIONS_TRIGGER_REGION) || '' }}
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          ENV_FILE="functions/.env.${PROJECT_ID}"
+          [ -f "${ENV_FILE}" ] || fail "${ENV_FILE} absent : paramètres des Functions introuvables."
+          if [ "${ENVIRONMENT}" = "production" ] && [ -n "${TRIGGER_REGION}" ]; then
+            [[ "${TRIGGER_REGION}" =~ ^[a-z]+-[a-z]+[0-9]+$ ]] || fail "${VAR_PREFIX}FUNCTIONS_TRIGGER_REGION invalide."
+            sed -i '/^FIRESTORE_TRIGGER_REGION=/d' "${ENV_FILE}"
+            echo "FIRESTORE_TRIGGER_REGION=${TRIGGER_REGION}" >> "${ENV_FILE}"
+          fi
+          REGIONS=$(grep -c '^FIRESTORE_TRIGGER_REGION=' "${ENV_FILE}" || true)
+          [ "${REGIONS}" = "1" ] || fail "${ENV_FILE} : ${REGIONS} ligne(s) FIRESTORE_TRIGGER_REGION, une seule attendue."
+          grep -qE '^FIRESTORE_TRIGGER_REGION="?[a-z]+-[a-z]+[0-9]+"?$' "${ENV_FILE}" || fail "${ENV_FILE} : FIRESTORE_TRIGGER_REGION absente ou invalide."
+          echo "Paramètres des Functions (${ENV_FILE}, aucun secret) :"
+          grep -E '^(FIRESTORE_DATABASE_ID|FIRESTORE_TRIGGER_REGION)=' "${ENV_FILE}"
 
       - name: Build de l'application
         run: npm run build
@@ -176,8 +283,8 @@ jobs:
       - name: Authentification Google (Workload Identity Federation, sans clé)
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
         with:
-          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
-          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SA }}
           create_credentials_file: true
 
       - name: Cibles
@@ -215,3 +322,15 @@ jobs:
             echo "- cibles : \`${ONLY}\`"
             echo "- commit : \`${GITHUB_SHA}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Même job, version « variables de dépôt préfixées » (forfait Free) : pas de
+  # mot-clé `environment:`, mêmes permissions, variables et étapes (ancres YAML).
+  deployer-sans-environnement:
+    name: Déploiement sans environnement GitHub (${{ inputs.environment }} / ${{ inputs.target }})
+    needs: [verifier, configuration]
+    if: needs.configuration.outputs.mode == 'prefixe'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions: *deployer_permissions
+    env: *deployer_env
+    steps: *deployer_steps
