@@ -300,3 +300,39 @@ utilise D54 et D55.
   (qui apporte `staffPrivate`) ; mesures d'organisation : prévenir le
   personnel, ne pas saisir de nouvelles CIN ni de nouveaux salaires avant la
   bascule, garder l'intervalle court.
+
+## Écran de connexion à la charte et logo temporaire (branche `feat/lot0-connexion-charte`)
+
+### D56 (Lot 0). Logo temporaire et écran de connexion à la charte (équivalent de D78 sur `main`)
+- **Contexte** : l'école n'a pas encore de logo définitif ; le favicon du Lot 0
+  (soleil vert et ambre) ne correspond plus à la charte « لوحة الكتّاب » de
+  `main`. L'écran de connexion est le premier écran vu par tous les comptes.
+- **Décision** :
+  - un **logo temporaire** (`design/logo-temporaire/` : étoile à huit branches
+    dorée `#D4A017` sur fond nuit `#102446`, livre ouvert au centre) sert de
+    favicon (`public/favicon.svg`, `favicon.ico`), d'icône d'écran d'accueil
+    (`apple-touch-icon.png`, `icon-192.png`) et de logo par défaut de l'écran
+    de connexion (`public/logo.svg`) quand les paramètres de l'école n'ont pas
+    de logo (`associationLogo`) ; `theme-color` `#102446` ;
+  - **seul l'écran de connexion** adopte la charte, en reprenant le rendu de
+    `src/screens/LoginScreen.tsx` de `main` (fond `#ECEDE6`, carte claire,
+    Reem Kufi / IBM Plex Sans Arabic / Amiri chargées depuis Google Fonts dans
+    `index.html`, champs de 44 px, bouton `#1B3A6B`, focus doré, panneau nuit à
+    motif géométrique en bureau). Exception assumée à D5 : le reste de
+    l'interface garde l'ancien design (`--font-sans` n'est pas redéfini, les
+    jetons ajoutés dans `src/index.css` ne sont utilisés que par cet écran) ;
+  - **aucun changement de logique** : mêmes champs (`input[type=text]`,
+    `input[type=password]`, `button[type=submit]` dans le `form`), même aide,
+    mêmes messages d'erreur, même `handleLoginSubmit`.
+- **À faire** : remplacer ce logo par le vrai logo de l'école, saisi dans
+  Paramètres (`associationLogo`) ; il remplace alors le logo temporaire sur
+  l'écran de connexion. Le favicon reste le logo temporaire jusqu'à ce qu'un
+  fichier définitif remplace ceux de `public/`.
+- **CSP** : `firebase.json` de cette branche ne déclare pas d'en-tête CSP ;
+  rien à ouvrir pour les polices. (Sur `main`, la CSP autorise déjà
+  `fonts.googleapis.com` et `fonts.gstatic.com`.)
+- **Captures** : `docs/design/captures/lot0-connexion/` (avant / après, bureau
+  1440 px et mobile 390 px, avec et sans message d'erreur ; émulateurs, données
+  fictives).
+- **Retour arrière** : `git revert` des commits de `feat/lot0-connexion-charte`
+  (l'ancien `public/favicon.svg` et l'ancien écran reviennent).
