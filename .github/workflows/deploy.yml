@@ -238,7 +238,6 @@ jobs:
             echo "VITE_FIRESTORE_DATABASE_ID=\"${VITE_FIRESTORE_DATABASE_ID}\""
             echo "VITE_APPCHECK_SITE_KEY=\"${VITE_APPCHECK_SITE_KEY}\""
             echo 'VITE_USE_EMULATORS="false"'
-            echo 'VITE_API_BASE_URL=""'
           } > .env.production.local
           # Paramètres non secrets des Functions pour ce projet, s'ils ne sont pas versionnés.
           ENV_FILE="functions/.env.${PROJECT_ID}"

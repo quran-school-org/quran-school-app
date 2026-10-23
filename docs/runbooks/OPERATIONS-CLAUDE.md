@@ -2,7 +2,7 @@
 
 > **Exécuté par l'orchestrateur (Claude), uniquement par `gh workflow run`**, après
 > le « go » du propriétaire aux trois moments prévus par
-> `docs/GUIDE-MISE-EN-PROD.md` (§7). Décision : D64.
+> `docs/GUIDE-MISE-EN-PROD.md` (§6). Décision : D64.
 > Aucune commande n'est lancée vers la prod depuis un conteneur : ni `gcloud`, ni
 > `firebase`, ni script Admin SDK, ni appel aux API Firebase/Firestore/Identity
 > Toolkit. Tout passe par les workflows `deploy-lot0.yml`, `ops.yml` et
@@ -12,7 +12,7 @@
 
 ## 0. Prérequis et conventions
 
-1. Le propriétaire a déroulé le guide (étapes 1 à 6) pour le **dev** et la
+1. Le propriétaire a déroulé le guide (étapes 1 à 5) pour le **dev** et la
    **prod**, et a dit « c'est prêt ».
 2. Les workflows sont **sur `main`** (un `workflow_dispatch` ne se déclenche que
    pour un workflow présent sur la branche par défaut) : fusion de
@@ -148,7 +148,7 @@ documents de même chemin sont remplacés, les autres restent) ; à la répétit
 2, `skippedExisting` > 0 est normal pour ce que la répétition 1 a déjà copié.
 
 Recette sur le dev (par le propriétaire, avec les mots de passe temporaires) :
-connexion par rôle, cotisations, reçu, rapport IA, archivage d'une fiche de test,
+connexion par rôle, cotisations, reçu, archivage d'une fiche de test,
 seconde école de test (MIGRATION-BASCULE.md §2.6). Puis il fait valider par
 l'école `comptes/…/liens-a-valider.csv` (artefact du run 4.4).
 

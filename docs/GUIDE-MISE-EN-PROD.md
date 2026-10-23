@@ -7,10 +7,9 @@
 | 1. Créer le projet Firebase de dev | Vous | 10 min |
 | 2. Relier GitHub à Google Cloud (dev, puis prod) | Vous, copier-coller dans Cloud Shell | 2 × 10 min |
 | 3. Créer les variables GitHub (selon le forfait) | Vous, dans l'interface GitHub | 10 min |
-| 4. Clé Gemini | Vous | 2 min |
-| 5. Geler AI Studio | Vous, avec l'autre développeur | — |
-| 6. Me dire « c'est prêt » | Vous | — |
-| 7. Lot 0, répétitions, bascule | Claude, avec votre « go » à 3 moments | — |
+| 4. Geler AI Studio | Vous, avec l'autre développeur | — |
+| 5. Me dire « c'est prêt » | Vous | — |
+| 6. Lot 0, répétitions, bascule | Claude, avec votre « go » à 3 moments | — |
 
 ---
 
@@ -99,7 +98,7 @@ for SA_EMAIL in $DEPLOY_SA $OPS_SA; do
   gcloud iam service-accounts add-iam-policy-binding $SA_EMAIL --role=roles/iam.workloadIdentityUser --member="$MEMBER" >/dev/null
 done
 for ROLE in roles/firebasehosting.admin roles/firebaserules.admin roles/cloudfunctions.admin roles/run.admin \
-  roles/eventarc.developer roles/cloudscheduler.admin roles/secretmanager.viewer roles/artifactregistry.writer \
+  roles/eventarc.developer roles/cloudscheduler.admin roles/artifactregistry.writer \
   roles/serviceusage.serviceUsageConsumer roles/firebaseextensions.viewer roles/datastore.viewer; do
   gcloud projects add-iam-policy-binding $PROJECT --member="serviceAccount:$DEPLOY_SA" --role=$ROLE --condition=None >/dev/null
 done
@@ -280,27 +279,15 @@ les workflows ne les utilisent plus.
    `github-preview@<ID du dev>.iam.gserviceaccount.com` et les mêmes `VITE_*`
    que `dev`.
 
-## 4. Clé Gemini (rapport IA)
-
-Dans Cloud Shell, **sur la prod** puis **sur le dev** :
-
-```bash
-read -s -p "Clé Gemini : " K; echo
-printf %s "$K" | gcloud secrets create GEMINI_API_KEY --replication-policy=automatic --data-file=- --project <ID du projet>
-unset K
-```
-
-Collez la clé quand la commande la demande. Elle ne s'affiche pas à l'écran, et elle est stockée dans Secret Manager : ni dans GitHub, ni dans le chat. Si vous n'en avez pas, créez-en une sur https://aistudio.google.com/apikey.
-
-## 5. Geler AI Studio
+## 4. Geler AI Studio
 
 Mettez-vous d'accord avec l'autre développeur : plus aucun déploiement depuis AI Studio, ni sur Cloud Run, ni sur Hosting. Sinon, l'ancienne version, avec ses failles, écraserait la nouvelle.
 
-## 6. Me dire « c'est prêt »
+## 5. Me dire « c'est prêt »
 
 Je vérifie alors seul que tout fonctionne : un premier déploiement sur le dev, puis la lecture de l'emplacement de la base de prod.
 
-## 7. Ce que je fais ensuite, et vos 3 « go »
+## 6. Ce que je fais ensuite, et vos 3 « go »
 
 1. **Lot 0 en simulation sur la prod**, sans aucune écriture. Je vous montre le résumé : comptes trouvés, anomalies, liens parent/enfant.
    - **Go n°1** : vous validez le résumé et choisissez l'heure de la coupure, environ 15 minutes.

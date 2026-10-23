@@ -189,9 +189,6 @@ l'Admin SDK, par un humain.
 
 - Vérifier les paramètres (§3), en particulier l'ouverture et la cotisation,
   avant la première cotisation enregistrée.
-- Rapport IA : chaque école dispose de 300 rapports par jour (limite
-  `AI_DAILY_LIMIT_PER_SCHOOL`, `PROXY-IA.md`). Au-delà de trois écoles, revoir
-  la limite globale (D67).
 - Sauvegardes : l'export quotidien couvre toute la base, nouvelle école comprise.
 
 ## 7. Remise des identifiants
@@ -227,8 +224,8 @@ d'exploitation.
    - `schools/<id>/members` contient exactement les comptes prévus ;
    - chaque `users/<uid>` des nouveaux comptes a `schoolIds: ["<id>"]` (ou
      plusieurs écoles pour les comptes rattachés) ;
-   - aucun document n'existe à la racine hors `users`, `usernames`, `schools`
-     et `aiQuota`.
+   - aucun document n'existe à la racine hors `users`, `usernames` et
+     `schools`.
 7. **Reçu de test** : numéro au format de l'école, nom et logo de la nouvelle
    école ; puis supprimer le paiement de test.
 En cas d'écart : suspendre les comptes concernés (« حالة الحساب ») et

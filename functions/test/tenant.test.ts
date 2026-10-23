@@ -1,7 +1,7 @@
 /**
  * Cloud Functions multi-écoles : logique métier testée par appel direct contre
  * les émulateurs Firestore et Auth (createSchool, createSchoolUser,
- * resetUserPassword, setMemberRole, triggers d'archivage, fonction api).
+ * resetUserPassword, setMemberRole, triggers d'archivage, route de santé de api).
  */
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -193,54 +193,27 @@ describe("archivage = compte suspendu (par école)", () => {
   });
 });
 
-describe("fonction api (proxy Gemini)", () => {
-  const body = { schoolId: "alfajr", studentName: "ياسين", hizbCount: 3, attendanceRate: 90 };
-
-  it("exige un ID token valide", async () => {
-    const { res, out } = fakeRes();
-    await api.handleApi({ method: "POST", path: "/api/gemini/analyze", headers: {}, body }, res);
-    expect(out.status).toBe(401);
-    const r2 = fakeRes();
-    await api.handleApi({ method: "POST", path: "/api/gemini/analyze", headers: { authorization: "Bearer faux" }, body }, r2.res);
-    expect(r2.out.status).toBe(401);
-  });
-
-  it("exige l'appartenance active à l'école avec un rôle pédagogique", async () => {
-    const parent = await makeUser("parent_a");
-    await addMember("alfajr", parent, "ولي أمر");
-    const outsider = await makeUser("autre");
-    await addMember("annour", outsider, "مدير");
-    for (const email of ["parent_a@alfajr.local", "autre@alfajr.local"]) {
-      const token = await idToken(email, "motdepasse-2026");
-      const { res, out } = fakeRes();
-      await api.handleApi({ method: "POST", path: "/api/gemini/analyze", headers: { authorization: `Bearer ${token}` }, body }, res);
-      expect(out.status, email).toBe(403);
-    }
-  });
-
-  it("répond pour un enseignant ; en cas d'échec : rapport de repli sans détail technique", async () => {
-    const prof = await makeUser("prof_a");
-    await addMember("alfajr", prof, "مدرس");
-    await admin.adminDb().doc("schools/alfajr/settings/system").set({ associationName: "مدرسة الاختبار" });
-    const token = await idToken("prof_a@alfajr.local", "motdepasse-2026");
-    let prompt = "";
-    const ok = fakeRes();
-    await api.handleApi({ method: "POST", path: "/api/gemini/analyze", headers: { authorization: `Bearer ${token}` }, body }, ok.res,
-      async (p) => { prompt = p; return JSON.stringify({ summary: "ممتاز" }); });
-    expect(ok.out.status).toBe(200);
-    expect(ok.out.body).toEqual({ summary: "ممتاز" });
-    expect(prompt).toContain("مدرسة الاختبار");
-
-    const ko = fakeRes();
-    await api.handleApi({ method: "POST", path: "/api/gemini/analyze", headers: { authorization: `Bearer ${token}` }, body }, ko.res,
-      async () => { throw new Error("clé API invalide : secret"); });
-    expect(ko.out.body.isFallback).toBe(true);
-    expect(JSON.stringify(ko.out.body)).not.toContain("secret");
-  });
-
+describe("fonction api (santé seulement, D76)", () => {
   it("route de santé", async () => {
     const { res, out } = fakeRes();
-    await api.handleApi({ method: "GET", path: "/api/health", headers: {}, body: null }, res);
+    api.handleApi({ method: "GET", path: "/api/health" }, res);
     expect(out.body.status).toBe("ok");
+  });
+
+  it("l'ancienne route du rapport IA n'existe plus : 404, aucun traitement", async () => {
+    for (const method of ["POST", "GET"]) {
+      const { res, out } = fakeRes();
+      api.handleApi({ method, path: "/api/gemini/analyze" }, res);
+      expect(out.status, method).toBe(404);
+      expect(out.body).toEqual({ error: "not-found" });
+    }
+  });
+});
+
+
+describe("App Check (préparé, désactivé par défaut, D44)", () => {
+  it("APPCHECK_ENFORCE vaut false par défaut (callables)", async () => {
+    const ac = await import("../src/appCheck.js");
+    expect(ac.appCheckEnforced()).toBe(false);
   });
 });

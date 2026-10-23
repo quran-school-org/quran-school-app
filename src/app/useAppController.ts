@@ -21,7 +21,6 @@ import { useFinanceActions } from "./actions/useFinanceActions";
 import { usePrintActions } from "./actions/usePrintActions";
 import { useExportBackupActions } from "./actions/useExportBackupActions";
 import { useAdminActions } from "./actions/useAdminActions";
-import { useAiActions } from "./actions/useAiActions";
 import { useProfileActions } from "./actions/useProfileActions";
 
 export function useAppController() {
@@ -46,7 +45,6 @@ export function useAppController() {
     ...usePrintActions(derived),
     ...useExportBackupActions(derived),
     ...useAdminActions(derived),
-    ...useAiActions(derived),
     ...useProfileActions(derived),
   };
   useAutoSelectStudent(derived);

@@ -4,8 +4,8 @@
  * - Personnel : le directeur voit les fiches RH (salaire, CIN) ; un enseignant
  *   à qui l'on ouvre l'écran du personnel n'en voit AUCUNE (R-06, D42), même
  *   pas les valeurs par défaut des fiches synthétiques.
- * - Rapport IA : passe par requestAiReport ; message AiReportError.userMessage
- *   en cas de quota atteint (réponse simulée, aucun appel à Gemini).
+ * - Rapport IA retiré (D76) : la fiche de l'élève ne propose plus d'analyse
+ *   et aucun appel à la fonction `api` ne part de l'écran.
  * Si CAPTURE_DIR est défini, les écrans sont enregistrés (captures « après »).
  * Données FICTIVES, émulateurs uniquement (projet demo-, Admin SDK sur émulateurs).
  */
@@ -79,44 +79,21 @@ test.describe.serial("intégration design + durcissement", () => {
     }
   });
 
-  test("tableau de bord et rapport IA (requestAiReport : quota atteint, puis rapport)", async ({ page }) => {
+  test("tableau de bord et fiche d'élève sans rapport IA (D76)", async ({ page }) => {
+    const apiCalls: string[] = [];
+    page.on("request", (req) => { if (new URL(req.url()).pathname.includes("/api/")) apiCalls.push(req.url()); });
     await loginAs(page, ACCOUNTS.directeur);
     await openTab(page, "dashboard");
     await expect(page.locator('[data-screen="dashboard"]')).toBeVisible();
     await capture(page, "tableau-de-bord-directeur");
 
     await openTab(page, "students");
-    const aiButton = page.getByRole("button", { name: /تحليل تقدم الطالب بالذكاء الاصطناعي/ });
-    await expect(aiButton).toBeVisible();
-
-    const calls: { auth: string | undefined; body: any }[] = [];
-    let status = 429;
-    await page.route("**/api/gemini/analyze", async (route) => {
-      calls.push({ auth: route.request().headers()["authorization"], body: route.request().postDataJSON() });
-      if (status !== 200) return route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ error: "quota" }) });
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          summary: "ملخص تجريبي (رد محاكى في الاختبار).",
-          tajweedTips: ["نصيحة تجريبية 1", "نصيحة تجريبية 2"],
-          studyPlan: "خطة تجريبية.",
-          parentMessage: "رسالة تجريبية.",
-          recommendedSurahs: ["الملك", "يس"],
-        }),
-      });
-    });
-
-    await aiButton.click();
-    await expect(page.getByText("تم بلوغ الحد المسموح به من تقارير الذكاء الاصطناعي لهذا اليوم")).toBeVisible();
-    expect(calls[0].auth, "jeton Firebase joint").toMatch(/^Bearer /);
-    expect(calls[0].body.schoolId).toBe("alfajr");
-    await capture(page, "rapport-ia-quota");
-
-    status = 200;
-    await aiButton.click();
-    await expect(page.getByText("ملخص تجريبي (رد محاكى في الاختبار).")).toBeVisible();
-    await capture(page, "rapport-ia");
+    const screen = page.locator('[data-screen="students"]');
+    await expect(screen.locator("#whatsapp-contact-parent-btn")).toBeVisible();
+    await expect(page.getByText(/الذكاء الاصطناعي/)).toHaveCount(0);
+    await expect(page.getByText(/التقرير التربوي الذكي/)).toHaveCount(0);
+    expect(apiCalls, "aucun appel à la fonction api").toEqual([]);
+    await capture(page, "fiche-eleve");
     await logout(page);
   });
 });

@@ -87,35 +87,25 @@ describe("callables multi-écoles", () => {
   });
 });
 
-describe("fonction api (HTTP)", () => {
-  const url = `http://127.0.0.1:5001/${PROJECT}/${REGION}/api/api/gemini/analyze`;
-  const body = { schoolId: "alfajr", studentName: "ياسين العلمي", hizbCount: 5, attendanceRate: 95 };
+describe("fonction api (HTTP, santé seulement, D76)", () => {
+  const base = `http://127.0.0.1:5001/${PROJECT}/${REGION}/api`;
 
-  it("401 sans jeton, 403 pour un parent, rapport (ou repli) pour un enseignant", async () => {
-    expect((await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).status).toBe(401);
-
-    await login("mohammed_alami@alfajr.local", "123");
-    let token = await auth.currentUser!.getIdToken();
-    expect((await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) })).status).toBe(403);
+  it("GET /api/health répond ; l'ancienne route du rapport IA renvoie 404, même authentifié", async () => {
+    const health = await fetch(`${base}/api/health`);
+    expect(health.status).toBe(200);
+    expect((await health.json()).status).toBe("ok");
 
     await login("youssef_baqali@alfajr.local", "123");
-    token = await auth.currentUser!.getIdToken();
-    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-    expect(res.status).toBe(200);
-    const json = await res.json();
-    expect(typeof json.summary).toBe("string"); // sans clé Gemini sur l'émulateur : rapport de repli
-    expect(json.errorInfo).toBeUndefined();
-
-    // Quota (D43) : la requête a été comptée pour l'utilisateur, l'école et la plateforme.
-    const day = new Date().toISOString().slice(0, 10);
-    const uid = auth.currentUser!.uid;
-    expect((await admin.db.doc(`aiQuota/u_${uid}_${day}`).get()).data()?.count).toBe(1);
-    expect((await admin.db.doc(`aiQuota/s_alfajr_${day}`).get()).data()?.count).toBeGreaterThanOrEqual(1);
-    // Corps trop gros : 413 (servi par l'émulateur Functions).
-    const big = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ ...body, notes: "x".repeat(40_000) }) });
-    expect(big.status).toBe(413);
+    const token = await auth.currentUser!.getIdToken();
+    const res = await fetch(`${base}/api/gemini/analyze`, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ schoolId: "alfajr", studentName: "ياسين العلمي" }),
+    });
+    expect(res.status).toBe(404);
+    expect((await admin.db.collection("aiQuota").get()).size).toBe(0);
   });
 });
+
 
 // Ignoré quand l'émulateur ne peut pas enregistrer les triggers (voir
 // functions/src/index.ts) ; la logique est alors couverte par functions/test.
