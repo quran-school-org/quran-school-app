@@ -433,7 +433,12 @@ jobs:
           export GNUPGHOME="${RUNNER_TEMP}/gnupg"
           mkdir -p "${GNUPGHOME}"
           chmod 700 "${GNUPGHOME}"
-          printf '%s\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
+          # Clé collée sans armure (sans les lignes BEGIN/END) : on la rajoute.
+          if printf '%s' "${ARTIFACT_KEY}" | grep -q 'BEGIN PGP PUBLIC KEY BLOCK'; then
+            printf '%s\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
+          else
+            printf -- '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n%s\n-----END PGP PUBLIC KEY BLOCK-----\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
+          fi
           FPR=$(gpg --batch --with-colons --list-keys | awk -F: '/^fpr:/ {print $10; exit}')
           [ -n "${FPR}" ] || { echo "::error::Clé publique illisible."; exit 1; }
           encrypt_dir() {
