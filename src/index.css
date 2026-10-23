@@ -1,5 +1,42 @@
 @import "tailwindcss";
 
+/*
+ * Charte « لوحة الكتّاب » (design/Main.dc.html, §5.2 du rapport d'analyse),
+ * réduite à ce qu'utilise l'écran de connexion. Noms identiques à `main`.
+ * `--font-sans` n'est PAS redéfini : le reste de l'interface du Lot 0 garde
+ * ses polices et ses couleurs.
+ */
+@theme {
+  --font-display: "Reem Kufi", "IBM Plex Sans Arabic", sans-serif;
+  --font-plex: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-quran: "Amiri", "Traditional Arabic", serif;
+
+  --color-app: #ECEDE6;
+  --color-surface: #F8F8F3;
+  --color-surface-2: #F1F2EB;
+  --color-night: #102446;
+  --color-night-text: #EEF1F7;
+  --color-night-muted: #B8C4D8;
+  --color-ink: #1A1F2B;
+  --color-ink-2: #4A5060;
+  --color-ink-3: #6B7080;
+  --color-line: #D9DBD0;
+  --color-line-strong: #D0D3C6;
+  --color-primary: #1B3A6B;
+  --color-primary-hover: #102446;
+  --color-gold: #D4A017;
+  --color-gold-100: #F6EDD2;
+  --color-danger: #A33A2E;
+  --color-danger-100: #F5E2DE;
+  --color-danger-800: #7A2A21;
+}
+
+/* Écran de connexion : focus clavier doré (maquette), limité à cet écran. */
+[data-screen="login"] :focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
 /* 
   High-Performance Scrolling & Scrollbar Optimizations
   Fixes scrolling lag, delayed response, and stuttering on wheel/drag scroll.
