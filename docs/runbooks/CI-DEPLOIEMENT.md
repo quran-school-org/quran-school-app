@@ -164,6 +164,7 @@ le seul bucket de sauvegarde. Utilisé par `ops.yml` uniquement :
 | `lot0-provision`, `migrate-to-tenants` | Firestore (Admin SDK) et Firebase Auth (création, mise à jour, claims) |
 | `verify-counts` | requêtes d'agrégation `count()` |
 | `seed-demo`, `remove-demo` (dev) | Firestore (Admin SDK : écriture et suppression récursive de `schools/demo`) et Firebase Auth (comptes `demo_*` : création, mot de passe, révocation, claims vidés, suppression) |
+| `dev-super-admin`, `dev-super-admin-revoke` (dev) | `firebaseauth.admin` (compte de l'entrée `username` : lecture par email, création, mot de passe, réactivation ou désactivation, révocation des sessions, claim `superAdmin`) et `datastore.user` (Admin SDK : lecture de `usernames`, `users`, `schools/*/members/{uid}` ; écriture de `usernames/{username}` et `users/{uid}`) du compte `github-ops` **du dev** ; aucun rôle nouveau (D80) |
 
 ## 4. Bucket de sauvegarde et PITR
 
