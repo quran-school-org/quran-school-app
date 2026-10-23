@@ -14,7 +14,9 @@
  *  - les déploiements et aperçus ne se lancent qu'à la main ;
  *    jamais de `pull_request_target` ;
  *  - D77 : `seed-demo` / `remove-demo` d'ops.yml réservés au dev (garde-fou
- *    joué avec bash sur des variables factices).
+ *    joué avec bash sur des variables factices) ;
+ *  - D80 : `dev-super-admin` / `dev-super-admin-revoke` réservés au dev, entrée
+ *    `username` validée par une expression régulière stricte, passée par env.
  * Analyse ligne à ligne (pas de dépendance YAML) : suffisante pour ces fichiers.
  */
 import { spawnSync } from "node:child_process";
@@ -224,7 +226,7 @@ describe("workflows GitHub Actions (D68)", () => {
         OPS_SA: `github-ops@${project}.iam.gserviceaccount.com`,
         ARTIFACT_KEY: "cle-publique-factice", SUPER_ADMIN_USERNAME: "",
         OTHER_PROJECT_ID: "", OTHER_WIF_PROVIDER: "", OTHER_OPS_SA: "", OTHER_BACKUP_BUCKET: "",
-        CONFIRM: project, IMPORT_SOURCE: "", REF: "refs/heads/main",
+        CONFIRM: project, IMPORT_SOURCE: "", USERNAME_INPUT: "", REF: "refs/heads/main",
         ...vars,
       };
       const r = spawnSync("bash", [script], { env, encoding: "utf8" });
@@ -232,7 +234,7 @@ describe("workflows GitHub Actions (D68)", () => {
     };
 
     it("choix d'action : seed-demo et remove-demo", () => {
-      expect(text).toMatch(/options: \[describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo\]/);
+      expect(text).toMatch(/options: \[describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke\]/);
     });
 
     it("dev, apply=true, confirm = projet de dev, clé publique : accepté, code de main", () => {
@@ -275,12 +277,88 @@ describe("workflows GitHub Actions (D68)", () => {
       expect(script).toMatch(/if \[ "\$\{ENVIRONMENT\}" != "dev" \] \|\| \[ "\$\{PROJECT_ID\}" = "\$\{PROD_PROJECT_ID\}" \]; then echo "::error::\$\{ACTION\} refusé hors dev."; exit 1; fi/);
       expect(script).toContain("-path '*/seed-demo-*/resume.json'");
       expect(script).toContain("-name 'mots-de-passe-temporaires.csv'");
-      expect(text).toMatch(/if: inputs\.action == 'lot0-provision' \|\| inputs\.action == 'migrate-to-tenants' \|\| inputs\.action == 'seed-demo' \|\| inputs\.action == 'remove-demo'\n/);
+      expect(text).toMatch(/if: inputs\.action == 'lot0-provision' \|\| inputs\.action == 'migrate-to-tenants' \|\| inputs\.action == 'seed-demo' \|\| inputs\.action == 'remove-demo' \|\| inputs\.action == 'dev-super-admin' \|\| inputs\.action == 'dev-super-admin-revoke'\n/);
       const secret = text.slice(text.indexOf("- name: Mots de passe temporaires (SECRET, 1 jour)"));
       expect(secret).toMatch(/^\s+retention-days: 1$/m);
       const imp = stepScript("import-firestore (dev seulement)");
       expect(imp).toContain("documents/schools/demo");
       expect(imp.indexOf("documents/schools/demo")).toBeLessThan(imp.indexOf("gcloud firestore import"));
+    });
+
+    describe("D80 : super-admin du dev (dev-super-admin, dev-super-admin-revoke)", () => {
+      const USER = "superadmin_melik";
+      const ACTIONS = ["dev-super-admin", "dev-super-admin-revoke"];
+
+      it("dev, apply=true, confirm = projet de dev, identifiant valide, clé publique : accepté, code de main", () => {
+        for (const action of ACTIONS) {
+          const r = run({ ACTION: action, USERNAME_INPUT: USER });
+          expect(r.code, r.out).toBe(0);
+          expect(r.outputs).toContain("code_ref=main");
+        }
+        for (const ok of ["ab", "superadmin.melik", "a-b_c.d", "9" + "x".repeat(39)]) {
+          expect(run({ ACTION: "dev-super-admin", USERNAME_INPUT: ok }).code, ok).toBe(0);
+        }
+        // Le retrait ne produit aucun mot de passe : la clé publique n'est pas exigée.
+        expect(run({ ACTION: "dev-super-admin-revoke", USERNAME_INPUT: USER, ARTIFACT_KEY: "" }).code).toBe(0);
+      });
+
+      it("refusé en production (même confirmé, depuis main), sans apply, sans confirmation exacte", () => {
+        for (const action of ACTIONS) {
+          const prod = run({ ENVIRONMENT: "production", ACTION: action, USERNAME_INPUT: USER });
+          expect(prod.code).toBe(1);
+          expect(prod.out).toMatch(/refusé en production/);
+          const noApply = run({ ACTION: action, USERNAME_INPUT: USER, APPLY: "false" });
+          expect(noApply.code).toBe(1);
+          expect(noApply.out).toMatch(/exige apply=true/);
+          const noConfirm = run({ ACTION: action, USERNAME_INPUT: USER, CONFIRM: "" });
+          expect(noConfirm.code).toBe(1);
+          expect(noConfirm.out).toMatch(/Confirmation incorrecte/);
+          expect(run({ ACTION: action, USERNAME_INPUT: USER, CONFIRM: PROD }).code).toBe(1);
+          expect(run({ ACTION: action, USERNAME_INPUT: USER, ROTATE: "all" }).out).toMatch(/rotate_passwords ne concerne/);
+        }
+        // Un dev mal configuré qui viserait la prod.
+        const croise = run({ ACTION: "dev-super-admin", USERNAME_INPUT: USER, PROJECT_ID: PROD, CONFIRM: PROD, OPS_SA: `github-ops@${PROD}.iam.gserviceaccount.com`, BACKUP_BUCKET: "autre-bucket" });
+        expect(croise.code).toBe(1);
+        expect(croise.out).toMatch(/pointe vers la prod/);
+      });
+
+      it("identifiant invalide ou absent refusé, sans jamais être affiché ni exécuté", () => {
+        const bad = ["", "a", "-x", "_x", "Superadmin", "super admin", "x".repeat(41), "a;id", "$(id)", "a`id`", "::error::x", "a\nb", "ab/../c", "é_melik"];
+        for (const action of ACTIONS) {
+          for (const u of bad) {
+            const r = run({ ACTION: action, USERNAME_INPUT: u });
+            expect(r.code, JSON.stringify(u)).toBe(1);
+            expect(r.out, JSON.stringify(u)).toMatch(/username invalide/);
+            if (u.length > 2) expect(r.out).not.toContain(u);
+          }
+        }
+        // L'entrée ne sert à aucune autre action.
+        expect(run({ ACTION: "seed-demo", USERNAME_INPUT: USER }).out).toMatch(/username ne concerne que/);
+        expect(run({ ACTION: "describe-db", APPLY: "false", CONFIRM: "", USERNAME_INPUT: USER }).code).toBe(1);
+      });
+
+      it("clé publique absente : dev-super-admin refusé (le mot de passe ne part que chiffré)", () => {
+        const noKey = run({ ACTION: "dev-super-admin", USERNAME_INPUT: USER, ARTIFACT_KEY: "" });
+        expect(noKey.code).toBe(1);
+        expect(noKey.out).toMatch(/dev-super-admin exige la variable DEV_ARTIFACT_GPG_PUBLIC_KEY/);
+      });
+
+      it("script : revalidé hors dev, identifiant par env, résumé en liste blanche, mot de passe vers l'artefact chiffré d'un jour", () => {
+        const script = stepScript("${{ inputs.action }} (script Admin SDK, journal en artefact)");
+        expect(script).toContain("SCRIPT=scripts/admin/dev-super-admin.ts");
+        expect(script).toContain('ARGS+=(--username="${USERNAME_INPUT}")');
+        expect(script).toContain('[ "${ACTION}" = "dev-super-admin-revoke" ] && ARGS+=(--revoke)');
+        const branch = script.slice(script.indexOf('elif [ "${ACTION}" = "dev-super-admin" ]'), script.indexOf("SCRIPT=scripts/admin/dev-super-admin.ts"));
+        expect(branch).toMatch(/if \[ "\$\{ENVIRONMENT\}" != "dev" \] \|\| \[ "\$\{PROJECT_ID\}" = "\$\{PROD_PROJECT_ID\}" \]; then echo "::error::\$\{ACTION\} refusé hors dev."; exit 1; fi/);
+        expect(branch).toContain('[[ "${USERNAME_INPUT}" =~ ^[a-z0-9][a-z0-9._-]{1,39}$ ]]');
+        expect(script).toContain("-path '*/dev-super-admin-*/resume.json'");
+        const filter = script.match(/FILTER='(\{mode, operation, username[^']*\})'/)?.[1];
+        expect(filter).toBe("{mode, operation, username, accountFound, created, reset, superAdmin, schoolMemberships, disabled, sessionsRevoked, passwordsFile}");
+        expect(filter).not.toMatch(/password[^s]|reportDir/i);
+        // L'entrée n'arrive dans les scripts que par env.
+        expect(text).toMatch(/^\s+USERNAME_INPUT: \$\{\{ inputs\.username \}\}$/m);
+        expect(runScripts(text).some((r) => r.content.includes("inputs.username"))).toBe(false);
+      });
     });
   });
 });

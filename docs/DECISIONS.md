@@ -1639,6 +1639,110 @@ là-bas (R-06).
   ou, pour couper la traduction sans retirer le code, `VITE_ENABLE_FR_TEST`
   absent ou `"false"` (le module n'est alors plus dans le bundle).
 
+### D80. Super-admin du dev par `ops.yml` › `dev-super-admin` (prod : `migrate-to-tenants`)
+- **Contexte** : le propriétaire veut tester la création d'écoles sur le
+  projet de dev `fajr-c4c6e`, qui contient désormais une **copie des données
+  réelles** migrée (école `alfajr`, 88 comptes), traitée comme la prod (D77).
+  Le claim `superAdmin` n'est posé que par `migrate-to-tenants --super-admin`,
+  qui exige un compte présent dans les anciens `appUsers` ; `seed-demo` refuse
+  volontairement d'en créer. Aucun chemin ne permettait donc de créer un
+  super-admin sur le dev, et aucune commande n'est lancée vers un vrai projet
+  depuis un conteneur (D64).
+- **Décision (script `scripts/admin/dev-super-admin.ts`, Admin SDK)** :
+  - **refus du projet `gen-lang-client-0481880143`** avant toute autre
+    analyse des arguments (même mal formés, `--force` compris : une option
+    inconnue est refusée) ; critère : le **projet** seul, la base du dev
+    portant le même identifiant que celle de la prod (comme `seed-demo`) ;
+    `--project` obligatoire, simulation par défaut, `--apply` ; sur un vrai
+    projet `--database` et `--confirm-prod=<projet>` (`scripts/admin/lib/cli.ts`) ;
+  - `--username` obligatoire, normalisé et validé par `normalizeUsername` et
+    `isValidUsername` de `src/security/accounts.ts` (copie à l'identique de
+    `functions/src/shared/accounts.ts`, parité testée) ; `--full-name`
+    facultatif (défaut « Melik Zaanouni », 120 caractères imprimables au plus) ;
+  - **convention identifiant → email de `createSchoolUser`** :
+    `usernameToEmail(username, NEW_ACCOUNTS_EMAIL_DOMAIN)`, soit
+    `<username>@comptes.kuttab.local` ; la connexion de l'application
+    (`signInWithUsername`, `loginEmailCandidates`) essaie le domaine
+    historique puis celui-ci ;
+  - écrit ce qu'écrit `createSchoolUser`, **sans appartenance** : Auth, puis
+    en transaction `usernames/{username}` (`uid`, `email`, `createdAt`,
+    `source`) et `users/{uid}` (`username`, `displayName`, `schoolIds: []`,
+    `lastSchoolId: null`, `mustChangePassword: true`, `createdAt`,
+    `createdBy`) ; compte Auth supprimé si la transaction échoue ; claim
+    `superAdmin: true` **ajouté** aux claims existants ; mot de passe
+    `generateTemporaryPassword(4)` (19 caractères) dans le seul fichier
+    secret `dev-super-admin-<horodatage>/mots-de-passe-temporaires.csv`
+    (mode 600), jamais dans Firestore, la sortie ou `resume.json` ;
+  - **réutilisation** d'un compte seulement s'il est inscrit au registre et
+    que les emails de connexion désignent ce même compte ; sinon
+    `ACCOUNT_CONFLICT` (registre vers un autre uid ou un compte absent, compte
+    Auth hors registre, c'est-à-dire inscription libre sous un identifiant
+    anticipé, jamais promu, ou deux domaines vers deux comptes) ;
+  - compte membre d'une école (profil `schoolIds` ou
+    `schools/*/members/{uid}`) : `MEMBER_ACCOUNT`, sauf
+    `--allow-existing-member` (option du script seulement, le workflow ne la
+    passe jamais : un compte réel de la copie n'est pas promu par le dev) ;
+  - **relance** : nouveau mot de passe, sessions révoquées, compte réactivé,
+    claims gardés, `mustChangePassword: true`, écoles du profil intactes ;
+  - `--revoke` : claim `superAdmin` retiré (autres claims gardés), sessions
+    révoquées, compte désactivé s'il n'appartient à aucune école ; **rien
+    n'est supprimé** ;
+  - résumé `resume.json` sans mot de passe : `mode`, `operation`,
+    `username`, `accountFound`, `created`, `reset`, `superAdmin`,
+    `schoolMemberships`, `disabled`, `sessionsRevoked`, `passwordsFile` ;
+  - exception assumée à « les comptes ne s'écrivent que par les Cloud
+    Functions » (comme la migration et `seed-demo`) : script Admin SDK
+    limité au dev et aux émulateurs.
+- **Décision (`ops.yml`)** : actions `dev-super-admin` et
+  `dev-super-admin-revoke` (retrait : sans lui, l'orchestrateur ne pourrait
+  pas retirer le claim sans commande vers le dev depuis un conteneur), avec les
+  garde-fous de `seed-demo` : refusées en production dans le job de
+  garde-fous et revalidées dans l'étape du script ; code de `main` ;
+  `apply=true` et `confirm` = identifiant du projet de dev exigés ;
+  `dev-super-admin` exige `ARTIFACT_GPG_PUBLIC_KEY` (mot de passe dans
+  l'artefact chiffré `mots-de-passe-temporaires-*`, 1 jour) ; seuls les
+  compteurs filtrés (`RESUME_JSON`) vont dans les journaux.
+- **Choix de l'entrée `username`** (plutôt que la variable
+  `DEV_SUPER_ADMIN_USERNAME`) : cette variable est déjà lue par
+  `migrate-to-tenants` sur le dev (runbook, 4.4), où elle désigne un compte
+  des `appUsers` ; la réutiliser lierait deux usages (une répétition de
+  migration promouvrait ce nom, ou échouerait en `SUPER_ADMIN_NOT_FOUND`), et
+  la poser demande une modification des paramètres du dépôt par le
+  propriétaire. L'entrée est validée par `^[a-z0-9][a-z0-9._-]{1,39}$` (format
+  des Functions) dans le job de garde-fous puis dans l'étape, n'est jamais
+  affichée si elle est invalide, passe par `env` (aucune interpolation dans
+  un script) et est refusée pour toute autre action. Choisir le nom ne donne
+  pas accès au compte : le mot de passe ne part que chiffré pour la clé du
+  propriétaire, et un nom déjà pris ou membre d'une école est refusé. Le nom
+  complet reste fixe dans le script (aucune entrée libre à valider).
+- **Droits** : ceux du compte `github-ops` du dev déjà prévus
+  (`firebaseauth.admin`, `datastore.user`), aucun rôle nouveau
+  (CI-DEPLOIEMENT.md §3).
+- **Limites** : un jeton d'identification déjà émis garde le claim jusqu'à
+  son expiration (une heure au plus) après `--revoke` ; `mustChangePassword`
+  n'est imposé par l'interface qu'à l'entrée dans une école (le super-admin
+  sans école arrive sur la page de choix) ; après création d'une école avec
+  `makeMeDirector`, le compte en est membre et la relance par le workflow
+  s'arrête sur `MEMBER_ACCOUNT` (changer son mot de passe dans l'application).
+- **Vérifié localement** (émulateurs, `tests/emulator/dev-super-admin.test.ts`) :
+  compte créé avec l'email de `createSchoolUser`, connexion comme
+  l'application, claim présent et aucune appartenance, règles (liste des
+  écoles, aucune donnée d'école lue), `createSchool` par l'émulateur Functions
+  (avec et sans `makeMeDirector`), relance (nouveau mot de passe, ancien
+  refusé, sessions révoquées, réactivation, claims gardés), refus d'un compte
+  membre et option `--allow-existing-member`, conflits d'identifiant,
+  `--revoke` (claim retiré, désactivation sans école, rien de supprimé,
+  `createSchool` refusé ensuite), refus de la prod (arguments et script
+  lancé, `--force` compris), mot de passe absent de la sortie et du résumé ;
+  garde-fou d'`ops.yml` joué avec bash (`tests/unit/workflows.test.ts`) ;
+  `zizmor --offline` sans nouveau constat.
+- **Non testé sur GitHub** : aucun workflow déclenché ; l'Admin SDK avec le
+  jeton de `github-ops` du dev n'est pas essayé pour cette action.
+- **Retour arrière** : `dev-super-admin-revoke` sur le dev (ou suppression du
+  compte à la main dans la console du dev, par un humain), puis `git revert`
+  des commits de `feat/dev-super-admin` (script, actions et entrée
+  d'`ops.yml`, tests, docs).
+
 ### D81. Le rôle directeur prime sur une matrice de permissions enregistrée (interface)
 - **Contexte** : à la répétition 1 sur le dev (données réelles migrées), le
   directeur connecté ne voyait pas le bouton « إضافة كادر / عامل جديد ». Dans
