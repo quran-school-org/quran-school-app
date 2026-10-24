@@ -56,13 +56,15 @@ test.describe.serial("parcours par rôle", () => {
     await openTab(page, "students");
     await expect(page.getByText("ياسين العلمي").first()).toBeVisible();
 
-    await page.locator("#school-switcher").selectOption("annour");
+    await page.locator("#school-switcher").click();
+    await page.locator('[data-school-option="annour"]').click();
     await expect(page.locator("[data-active-school]").getByText(SCHOOL_2)).toBeVisible();
     await expect(page.getByText("ياسين العلمي")).toHaveCount(0);
     const keys = await page.evaluate(() => Object.keys(localStorage));
     expect(keys.filter((k) => k.startsWith("kuttab:alfajr:"))).toEqual([]);
 
-    await page.locator("#school-switcher").selectOption("alfajr");
+    await page.locator("#school-switcher").click();
+    await page.locator('[data-school-option="alfajr"]').click();
     await expect(page.locator("[data-active-school]").getByText(SCHOOL_1)).toBeVisible();
     await logout(page);
   });

@@ -1334,6 +1334,8 @@ export const FR: Record<string, string> = {
   "خروج": "Déconnexion",
   // school/SchoolSwitcher.tsx
   "تغيير المدرسة": "Changer d'école",
+  "مدارسك": "Vos écoles",
+  "اختيار مدرسة": "Choisir une école",
   "كل المدارس…": "Toutes les écoles…",
   "اختيار مدرسة…": "Choisir une école…",
   // screens/AttendanceScreen.tsx

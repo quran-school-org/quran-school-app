@@ -228,7 +228,8 @@ test.describe.serial("traduction FR de test (D79)", () => {
         await shot("directeur-fenetre-compte", false);
         await page.keyboard.press("Escape");
         await page.locator(".fixed.inset-0, [data-modal]").last().getByRole("button", { name: /Annuler|Fermer/ }).first().click().catch(() => undefined);
-        await page.locator("#school-switcher").selectOption("__picker__");
+        await page.locator("#school-switcher").click();
+        await page.locator('[data-school-option="__picker__"]').click();
         await expect(page.locator('[data-screen="school-picker"]')).toBeVisible();
         await shot("directeur-choix-ecole");
         await page.getByRole("button", { name: /جمعية الفجر الجديد/ }).first().click();
