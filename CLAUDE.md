@@ -46,6 +46,8 @@ npm ci && npm ci --prefix functions   # installation
 npm run emulators                      # auth 9099, firestore 8080, functions 5001, hosting 5000, UI 4000
 npm run seed:emulator                  # données FICTIVES : école alfajr (migrée) + école annour, comptes de démo
 npm run dev                            # app sur http://localhost:3000, branchée sur les émulateurs
+npm run check                          # lint (app + Functions), tests unitaires, build : avant chaque PR
+npm run check:all                      # check + tests sur émulateurs (test:rules)
 npm run lint                           # tsc --noEmit (app, scripts, tests)
 npm run lint:functions                 # tsc des Cloud Functions
 npm test                               # tests unitaires (vitest, sans émulateur)

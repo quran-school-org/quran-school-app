@@ -17,6 +17,8 @@
     "test:rules": "npm run build:functions && firebase emulators:exec --only firestore,auth,functions --project demo-quran-school \"vitest run --dir tests/emulator && npm --prefix functions test\"",
     "test:hosting": "npm run build:dev && npm run build:functions && firebase emulators:exec --only hosting,functions,auth,firestore --project demo-quran-school \"vitest run --dir tests/hosting\"",
     "test:all": "npm run test && npm run test:rules",
+    "check": "npm run lint && npm run lint:functions && npm test && npm run build",
+    "check:all": "npm run check && npm run test:rules",
     "emulators:persist": "npm run build:functions && firebase emulators:start --project demo-quran-school --import=./emulator-data --export-on-exit=./emulator-data",
     "seed:emulator": "tsx scripts/dev/seed-emulator.ts",
     "test:e2e": "npm run build:functions && firebase emulators:exec --only auth,firestore,functions --project demo-quran-school \"npm run seed:emulator && E2E_CSP=1 playwright test\"",
