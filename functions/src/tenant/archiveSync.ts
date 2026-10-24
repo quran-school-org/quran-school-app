@@ -6,8 +6,9 @@
  * n'est désactivé que si la personne n'a plus aucune appartenance active
  * (elle peut exercer dans une autre école). À la désarchivation, seuls les
  * membres suspendus par archivage sont réactivés. Un parent n'est suspendu que
- * si tous ses enfants liés sont archivés. Le directeur historique (u1) n'est
- * jamais modifié automatiquement.
+ * si tous ses enfants liés sont archivés. Le directeur historique (u1), et
+ * plus largement tout membre de rôle مدير (A-02, D83), n'est jamais modifié
+ * automatiquement.
  */
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { logger } from "firebase-functions";
@@ -65,6 +66,12 @@ export const syncAccountsOnTeacherArchive = onDocumentUpdated(
     const members = await collect([await membersCol(schoolId).where("linkedTeacherId", "==", teacherId).get()]);
     for (const m of members) {
       if (m.data.role === "طالب" || m.data.role === "ولي أمر") continue;
+      // Un directeur ne change que par setMemberRole (réservé aux directeurs) :
+      // un إداري qui archive sa fiche ne doit pas pouvoir le suspendre (A-02, D83).
+      if (m.data.role === "مدير") {
+        logger.info("director left unchanged by archive", { schoolId, uid: m.uid, teacherId });
+        continue;
+      }
       await setMemberArchived(schoolId, m, archived);
     }
   }
