@@ -1,0 +1,7 @@
+# Fins de ligne LF dans le dépôt et sur tous les postes (Windows compris) :
+# les tests lisent les workflows et scripts ligne à ligne.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.gpg binary
