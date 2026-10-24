@@ -286,6 +286,28 @@ jobs:
           { echo "REPORTS=${RUNNER_TEMP}/rapports"; echo "SECRETS_DIR=${RUNNER_TEMP}/secret"; } >> "$GITHUB_ENV"
           echo "${ACTION} sur ${PROJECT_ID} / ${DATABASE_ID} (${ENVIRONMENT}, configuration ${CONFIG_MODE}${VAR_PREFIX:+ ${VAR_PREFIX}*}), apply=${APPLY}, rotate_passwords=${ROTATE}"
 
+      # A-06 (D83) : la clé publique est importée et essayée AVANT toute opération ;
+      # une clé inutilisable arrête le run sans rien avoir écrit, et les artefacts
+      # ne partent jamais en clair.
+      - name: Clé de chiffrement utilisable
+        if: env.ARTIFACT_KEY != ''
+        run: |
+          set -euo pipefail
+          export GNUPGHOME="${RUNNER_TEMP}/gnupg"
+          mkdir -p "${GNUPGHOME}"
+          chmod 700 "${GNUPGHOME}"
+          # Clé collée sans armure (sans les lignes BEGIN/END) : on la rajoute.
+          if printf '%s' "${ARTIFACT_KEY}" | grep -q 'BEGIN PGP PUBLIC KEY BLOCK'; then
+            printf '%s\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
+          else
+            printf -- '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n%s\n-----END PGP PUBLIC KEY BLOCK-----\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
+          fi
+          FPR=$(gpg --batch --with-colons --list-keys | awk -F: '/^fpr:/ {print $10; exit}')
+          [ -n "${FPR}" ] || { echo "::error::Clé publique illisible : rien n'a été fait."; exit 1; }
+          printf 'essai' | gpg --batch --yes --trust-model always --recipient "${FPR}" --encrypt > /dev/null \
+            || { echo "::error::La clé publique ne chiffre pas (expirée, révoquée ou sans sous-clé de chiffrement) : rien n'a été fait."; exit 1; }
+          echo "ARTIFACT_FPR=${FPR}" >> "$GITHUB_ENV"
+
       - name: Code (${{ steps.garde.outputs.code_ref }})
         if: steps.garde.outputs.code_ref != ''
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -495,6 +517,7 @@ jobs:
 
       # D74 : chiffrement des artefacts pour la clé publique du propriétaire.
       - name: Chiffrement des artefacts (clé publique du propriétaire)
+        id: chiffrement
         if: always() && steps.script.outcome != 'skipped'
         run: |
           set -euo pipefail
@@ -503,22 +526,16 @@ jobs:
             exit 0
           fi
           export GNUPGHOME="${RUNNER_TEMP}/gnupg"
-          mkdir -p "${GNUPGHOME}"
-          chmod 700 "${GNUPGHOME}"
-          # Clé collée sans armure (sans les lignes BEGIN/END) : on la rajoute.
-          if printf '%s' "${ARTIFACT_KEY}" | grep -q 'BEGIN PGP PUBLIC KEY BLOCK'; then
-            printf '%s\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
-          else
-            printf -- '-----BEGIN PGP PUBLIC KEY BLOCK-----\n\n%s\n-----END PGP PUBLIC KEY BLOCK-----\n' "${ARTIFACT_KEY}" | gpg --batch --quiet --import
-          fi
-          FPR=$(gpg --batch --with-colons --list-keys | awk -F: '/^fpr:/ {print $10; exit}')
-          [ -n "${FPR}" ] || { echo "::error::Clé publique illisible."; exit 1; }
+          FPR="${ARTIFACT_FPR:-}"
+          [ -n "${FPR}" ] || { echo "::error::Clé non vérifiée : aucun artefact envoyé."; exit 1; }
           encrypt_dir() {
-            local dir="$1" tmp="${RUNNER_TEMP}/a-chiffrer.tar.gz"
+            local dir="$1" tmp="${RUNNER_TEMP}/a-chiffrer.tar.gz" out="${RUNNER_TEMP}/contenu.tar.gz.gpg"
             [ -d "${dir}" ] && [ -n "$(ls -A "${dir}")" ] || return 0
             tar -C "${dir}" -czf "${tmp}" .
+            gpg --batch --yes --trust-model always --recipient "${FPR}" --output "${out}" --encrypt "${tmp}"
+            # Les fichiers en clair ne sont retirés qu'une fois le chiffrement réussi.
             find "${dir}" -mindepth 1 -delete
-            gpg --batch --yes --trust-model always --recipient "${FPR}" --output "${dir}/contenu.tar.gz.gpg" --encrypt "${tmp}"
+            mv "${out}" "${dir}/contenu.tar.gz.gpg"
             rm -f "${tmp}"
           }
           encrypt_dir "${REPORTS}"
@@ -526,7 +543,7 @@ jobs:
           echo "Artefacts chiffrés pour la clé ${FPR} (déchiffrer : gpg --decrypt contenu.tar.gz.gpg | tar -xz)."
 
       - name: Rapport (données personnelles, 3 jours)
-        if: always() && steps.script.outcome != 'skipped'
+        if: always() && steps.script.outcome != 'skipped' && steps.chiffrement.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: rapport-${{ inputs.action }}-${{ inputs.environment }}-${{ github.run_id }}-${{ github.run_attempt }}
@@ -535,7 +552,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Mots de passe temporaires (SECRET, 1 jour)
-        if: always() && steps.script.outputs.secret_files != '' && steps.script.outputs.secret_files != '0'
+        if: always() && steps.script.outputs.secret_files != '' && steps.script.outputs.secret_files != '0' && steps.chiffrement.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mots-de-passe-temporaires-${{ inputs.environment }}-${{ github.run_id }}-${{ github.run_attempt }}

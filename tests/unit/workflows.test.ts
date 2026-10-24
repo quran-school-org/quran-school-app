@@ -20,7 +20,7 @@
  * Analyse ligne à ligne (pas de dépendance YAML) : suffisante pour ces fichiers.
  */
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -187,6 +187,98 @@ describe("workflows GitHub Actions (D68)", () => {
     for (const u of uploads) expect(u).toBeGreaterThan(enc);
     expect(text).toMatch(/ARTIFACT_GPG_PUBLIC_KEY/);
     expect(text).toMatch(/\[ "\$\{ROTATE\}" != "none" \] && \[ -z "\$\{ARTIFACT_KEY\}" \]/);
+  });
+
+  describe("ops.yml (A-06, D83) : chiffrement des artefacts sans échec ouvert", () => {
+    const lines = read("ops.yml").split("\n");
+    const stepIndex = (name: string) => lines.findIndex((l) => l.trim() === `- name: ${name}`);
+    /** Bloc YAML complet de l'étape nommée. */
+    const stepBlock = (name: string) => {
+      const i = stepIndex(name);
+      const base = indent(lines[i]);
+      const out = [lines[i]];
+      for (const l of lines.slice(i + 1)) {
+        if (l.trim() !== "" && indent(l) <= base) break;
+        out.push(l);
+      }
+      return out.join("\n");
+    };
+    const CHECK = "Clé de chiffrement utilisable";
+    const ENC = "Chiffrement des artefacts (clé publique du propriétaire)";
+
+    it("la clé est importée et essayée avant toute opération", () => {
+      const check = stepIndex(CHECK);
+      expect(check).toBeGreaterThan(stepIndex("Garde-fous"));
+      expect(check).toBeLessThan(lines.findIndex((l) => l.trim().startsWith("- name: Code (")));
+      expect(check).toBeLessThan(lines.findIndex((l) => l.trim().startsWith("- name: ${{ inputs.action }} (script")));
+      expect(stepBlock(CHECK)).toMatch(/--encrypt > \/dev\/null/);
+    });
+
+    it("aucun artefact n'est envoyé si le chiffrement échoue", () => {
+      expect(stepBlock(ENC)).toMatch(/^\s+id: chiffrement$/m);
+      for (const name of ["Rapport (données personnelles, 3 jours)", "Mots de passe temporaires (SECRET, 1 jour)"]) {
+        expect(stepBlock(name)).toMatch(/steps\.chiffrement\.outcome == 'success'/);
+      }
+    });
+
+    it("les fichiers en clair ne sont supprimés qu'après un chiffrement réussi", () => {
+      const block = stepBlock(ENC);
+      expect(block.indexOf("--encrypt")).toBeGreaterThan(0);
+      expect(block.indexOf("--encrypt")).toBeLessThan(block.indexOf("-mindepth 1 -delete"));
+    });
+
+    it.skipIf(spawnSync("gpg", ["--version"]).status !== 0)("une clé illisible arrête le run sans rien transmettre (exécution réelle)", () => {
+      const block = stepBlock(CHECK).split("\n");
+      const j = block.findIndex((l) => /^\s+run: \|$/.test(l));
+      const body = block.slice(j + 1);
+      const pad = Math.min(...body.filter((l) => l.trim()).map(indent));
+      const dir = mkdtempSync(join(tmpdir(), "cle-"));
+      const script = join(dir, "cle.sh");
+      writeFileSync(script, body.map((l) => l.slice(pad)).join("\n"));
+      writeFileSync(join(dir, "env"), "");
+      const r = spawnSync("bash", [script], {
+        env: { PATH: process.env.PATH ?? "/usr/bin:/bin", RUNNER_TEMP: dir, GITHUB_ENV: join(dir, "env"), ARTIFACT_KEY: "cle-invalide" },
+        encoding: "utf8",
+      });
+      expect(r.status).not.toBe(0);
+      expect(readFileSync(join(dir, "env"), "utf8")).not.toContain("ARTIFACT_FPR");
+    });
+
+    // Linux seulement (comme la CI qui exécute ops.yml) : le gpg de Git pour Windows gère mal les chemins Windows.
+    it.skipIf(process.platform === "win32" || spawnSync("gpg", ["--version"]).status !== 0)("une clé valide : vérifiée, puis rapport et secrets chiffrés sans fichier en clair (exécution réelle)", () => {
+      const scriptOf = (name: string) => {
+        const block = stepBlock(name).split("\n");
+        const body = block.slice(block.findIndex((l) => /^\s+run: \|$/.test(l)) + 1);
+        const pad = Math.min(...body.filter((l) => l.trim()).map(indent));
+        return body.map((l) => l.slice(pad)).join("\n");
+      };
+      // Clé de test jetable, dans un trousseau à part.
+      const keyDir = mkdtempSync(join(tmpdir(), "trousseau-"));
+      const gpgEnv = { ...process.env, GNUPGHOME: keyDir };
+      spawnSync("gpg", ["--batch", "--pinentry-mode", "loopback", "--passphrase", "", "--quick-gen-key", "test-ops <test@example.invalid>", "default", "default", "1d"], { env: gpgEnv });
+      const publicKey = spawnSync("gpg", ["--batch", "--armor", "--export", "test@example.invalid"], { env: gpgEnv, encoding: "utf8" }).stdout;
+      expect(publicKey).toContain("BEGIN PGP PUBLIC KEY BLOCK");
+
+      const dir = mkdtempSync(join(tmpdir(), "chiffrement-"));
+      const reports = join(dir, "rapports");
+      const secrets = join(dir, "secret");
+      for (const d of [reports, secrets]) mkdirSync(d);
+      writeFileSync(join(reports, "comptes.csv"), "nom\nfictif\n");
+      writeFileSync(join(secrets, "mots-de-passe-temporaires-1.csv"), "compte,mdp\nfictif,xxxx\n");
+      writeFileSync(join(dir, "env"), "");
+      const base = { PATH: process.env.PATH ?? "/usr/bin:/bin", RUNNER_TEMP: dir, GITHUB_ENV: join(dir, "env"), ARTIFACT_KEY: publicKey };
+      writeFileSync(join(dir, "cle.sh"), scriptOf(CHECK));
+      const check = spawnSync("bash", [join(dir, "cle.sh")], { env: base, encoding: "utf8" });
+      expect(check.status, check.stderr).toBe(0);
+      const fpr = /ARTIFACT_FPR=(\S+)/.exec(readFileSync(join(dir, "env"), "utf8"))?.[1];
+      expect(fpr).toBeTruthy();
+
+      writeFileSync(join(dir, "chiffrement.sh"), scriptOf(ENC));
+      const enc = spawnSync("bash", [join(dir, "chiffrement.sh")], { env: { ...base, ARTIFACT_FPR: fpr!, REPORTS: reports, SECRETS_DIR: secrets }, encoding: "utf8" });
+      expect(enc.status, enc.stderr).toBe(0);
+      expect(readdirSync(reports)).toEqual(["contenu.tar.gz.gpg"]);
+      expect(readdirSync(secrets)).toEqual(["contenu.tar.gz.gpg"]);
+    });
   });
 
   describe("ops.yml (D77) : école de démonstration réservée au dev", () => {
