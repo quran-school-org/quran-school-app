@@ -114,6 +114,37 @@
   --shadow-pop: 0 12px 32px rgba(16, 36, 70, 0.16);
 }
 
+/*
+ * Palette verte à l'essai (D85) : <html data-palette="vert">, choisie par chaque
+ * personne dans son profil. Seuls le primaire et la nuit changent ; l'or, les
+ * neutres sable et les couleurs d'état restent ceux de la charte.
+ */
+:root[data-palette="vert"] {
+  --color-night: #0F3326;
+  --color-night-2: #174433;
+  --color-night-line: #2A5F4A;
+  --color-night-line-2: #255844;
+  --color-night-text: #EEF5F1;
+  --color-night-muted: #B6CDC0;
+  --color-night-label: #8EAE9C;
+  --color-night-link: #C7DACF;
+  --color-primary: #1D5C42;
+  --color-primary-hover: #0F3326;
+  --color-primary-50: #EDF5F0;
+  --color-primary-100: #DFEDE5;
+  --color-primary-200: #C0DBCC;
+  --color-primary-300: #92C0A7;
+  --color-primary-400: #4F9876;
+  --color-primary-500: #2F7757;
+  --color-primary-600: #1D5C42;
+  --color-primary-700: #1D5C42;
+  --color-primary-800: #164A35;
+  --color-primary-900: #0F3326;
+  --color-primary-950: #0A251B;
+  --shadow-toast: 0 10px 30px rgba(15, 51, 38, 0.25);
+  --shadow-pop: 0 12px 32px rgba(15, 51, 38, 0.16);
+}
+
 @layer base {
   /* Tableaux dans une zone défilante : largeur minimale lisible sur mobile
      (défilement horizontal dans la carte, jamais de la page). */

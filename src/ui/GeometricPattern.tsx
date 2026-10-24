@@ -5,7 +5,7 @@
 import { useId } from "react";
 import { cx } from "./cx";
 
-export function GeometricPattern({ size = 64, opacity = 0.09, fade, className, color = "#D4A017", fadeColor = "#102446" }: { size?: number; opacity?: number; fade?: "top" | "bottom"; className?: string; color?: string; fadeColor?: string }) {
+export function GeometricPattern({ size = 64, opacity = 0.09, fade, className, color = "#D4A017", fadeColor = "var(--color-night)" }: { size?: number; opacity?: number; fade?: "top" | "bottom"; className?: string; color?: string; fadeColor?: string }) {
   const id = useId().replace(/:/g, "");
   const s = size;
   const q = s * (18 / 64);
@@ -38,7 +38,7 @@ export function GeometricPattern({ size = 64, opacity = 0.09, fade, className, c
 }
 
 /** Emblème (étoile dorée) utilisé comme logo par défaut de l'école. */
-export function Emblem({ size = 44, className, background = "#102446" }: { size?: number; className?: string; background?: string }) {
+export function Emblem({ size = 44, className, background = "var(--color-night)" }: { size?: number; className?: string; background?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <g fill="#D4A017">

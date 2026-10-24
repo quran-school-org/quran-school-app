@@ -1335,6 +1335,10 @@ export const FR: Record<string, string> = {
   // school/SchoolSwitcher.tsx
   "تغيير المدرسة": "Changer d'école",
   "مدارسك": "Vos écoles",
+  "لون الواجهة": "Couleur de l'interface",
+  "يُطبَّق فوراً على هذا الجهاز فقط.": "Appliquée tout de suite, sur cet appareil seulement.",
+  "أزرق": "Bleu",
+  "أخضر": "Vert",
   "اختيار مدرسة": "Choisir une école",
   "كل المدارس…": "Toutes les écoles…",
   "اختيار مدرسة…": "Choisir une école…",

@@ -52,7 +52,7 @@ export function FormField({ label, hint, error, className, children }: FormField
 export function CheckboxRow({ checked, onChange, children, className, disabled }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode; className?: string; disabled?: boolean }) {
   return (
     <label className={cx("flex items-center gap-2.5 min-h-11 px-3 rounded-[10px] border border-line bg-white cursor-pointer hover:bg-surface-2 transition-colors text-[14px] text-ink", disabled && "opacity-60 cursor-not-allowed", className)}>
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4 accent-[#1B3A6B] shrink-0" />
+      <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4 accent-primary shrink-0" />
       <span className="min-w-0">{children}</span>
     </label>
   );

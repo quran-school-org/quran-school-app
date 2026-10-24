@@ -101,34 +101,6 @@ export default function TeacherDashboardScreen() {
             <div className="p-5"><EmptyState title="لا طلاب">لا يوجد طلاب مسجلون بحلقاتك حالياً.</EmptyState></div>
           ) : (
             <>
-            {/* Téléphone : une carte par élève au lieu d'un tableau qui déborde (U-04). */}
-            <ul className="sm:hidden m-0 p-0 list-none divide-y divide-line-faint">
-              {teacherStudents.map((student) => {
-                const attRate = getStudentAttendanceRate(student.id);
-                return (
-                  <li key={student.id} className="flex flex-col gap-3 px-4 py-4">
-                    <div className="flex items-center gap-2.5">
-                      <span className="w-10 h-10 rounded-full overflow-hidden bg-sunken border border-line shrink-0">
-                        <StudentAvatar student={student} alt={student.fullName} className="w-full h-full object-cover" />
-                      </span>
-                      <span className="flex flex-col min-w-0">
-                        <span className="font-semibold text-ink">{student.fullName}</span>
-                        <span className="text-[12.5px] text-ink-3">{classes.find((c) => c.id === student.classId)?.name || "بدون فصل"}</span>
-                      </span>
-                      <Pill tone={TAJWEED_TONE[student.tajweedLevel] || "danger"} className="ms-auto shrink-0">{student.tajweedLevel}</Pill>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-2">
-                      <span><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</span>
-                      <span>{student.currentSurah || "غير محدد"}</span>
-                      <span className="tabular-nums">الحضور {attRate}%</span>
-                    </div>
-                    <Button size="sm" block data-action="open-teacher-student-file-mobile" onClick={() => openFile(student)} icon={<NotebookPen className="w-3.5 h-3.5" strokeWidth={1.75} />}>
-                      متابعة الحفظ والتجويد
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
             <div className="hidden sm:block">
             <TableWrap label="طلابي">
               <Table>
@@ -179,6 +151,34 @@ export default function TeacherDashboardScreen() {
               </Table>
             </TableWrap>
             </div>
+            {/* Téléphone : une carte par élève au lieu d'un tableau qui déborde (U-04). */}
+            <ul className="sm:hidden m-0 p-0 list-none divide-y divide-line-faint">
+              {teacherStudents.map((student) => {
+                const attRate = getStudentAttendanceRate(student.id);
+                return (
+                  <li key={student.id} className="flex flex-col gap-3 px-4 py-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-10 h-10 rounded-full overflow-hidden bg-sunken border border-line shrink-0">
+                        <StudentAvatar student={student} alt={student.fullName} className="w-full h-full object-cover" />
+                      </span>
+                      <span className="flex flex-col min-w-0">
+                        <span className="font-semibold text-ink">{student.fullName}</span>
+                        <span className="text-[12.5px] text-ink-3">{classes.find((c) => c.id === student.classId)?.name || "بدون فصل"}</span>
+                      </span>
+                      <Pill tone={TAJWEED_TONE[student.tajweedLevel] || "danger"} className="ms-auto shrink-0">{student.tajweedLevel}</Pill>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-2">
+                      <span><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</span>
+                      <span>{student.currentSurah || "غير محدد"}</span>
+                      <span className="tabular-nums">الحضور {attRate}%</span>
+                    </div>
+                    <Button size="sm" block data-action="open-teacher-student-file-mobile" onClick={() => openFile(student)} icon={<NotebookPen className="w-3.5 h-3.5" strokeWidth={1.75} />}>
+                      متابعة الحفظ والتجويد
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
             </>
           )}
         </Card>

@@ -1831,3 +1831,20 @@ là-bas (R-06).
     plus un archivage fait entre-temps par le bureau.
 - **Retour arrière** : `git revert` des commits ; les champs `readBy` déjà
   écrits restent sans effet sur l'ancienne règle.
+
+### D85. Palette verte à l'essai, au choix de chaque personne
+- **Contexte** : l'école a demandé d'essayer le vert à la place du bleu.
+  Mélik a choisi d'en faire une option, puis de passer tout le front en vert
+  si le rendu convainc (échange du 24/10/2026).
+- **Décision** : bloc `:root[data-palette="vert"]` dans `src/index.css`, qui
+  ne redéfinit que les jetons `primary` et `night` (l'or, les neutres sable et
+  les couleurs d'état restent). Choix « لون الواجهة » (أزرق / أخضر) dans la
+  fenêtre de profil, appliqué tout de suite et gardé sur l'appareil
+  (`localStorage`, clé `kuttab-ui:palette`, hors du cache `kuttab:*` vidé à la
+  déconnexion) ; appliqué avant le premier rendu (`src/ui/palette.ts`). Les
+  bleus codés en dur des écrans passent par les variables du thème. Les
+  documents imprimés restent bleus. Captures : `docs/design/captures/palette/`.
+- **Passer tout le front en vert** : remplacer les valeurs `primary` et
+  `night` de `@theme` par celles du bloc vert, puis retirer le bloc et le
+  choix du profil.
+- **Retour arrière** : `git revert` du commit.

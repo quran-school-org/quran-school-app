@@ -72,7 +72,7 @@ export default function PaymentsScreen() {
           id="flow-title"
           title={`التدفق المالي والمداخيل الشهرية لعام ${year}`}
           description="إجمالي الاشتراكات المحصلة شهرياً مقارنة بالمستحقات المعلقة."
-          actions={<Legend columns={2} items={[{ label: "المداخيل المحصلة", color: "#1B3A6B" }, { label: "المستحقات المعلقة", color: "#D4A017" }]} />}
+          actions={<Legend columns={2} items={[{ label: "المداخيل المحصلة", color: "var(--color-primary)" }, { label: "المستحقات المعلقة", color: "#D4A017" }]} />}
         />
         <div className="h-72 w-full" role="img" aria-label={`مخطط المداخيل الشهرية لعام ${year}`}>
           <ResponsiveContainer width="100%" height="100%">
@@ -85,7 +85,7 @@ export default function PaymentsScreen() {
                 contentStyle={{ direction: "rtl", textAlign: "right", borderRadius: 12, borderColor: "#D9DBD0", background: "#F8F8F3", fontFamily: "IBM Plex Sans Arabic" }}
                 formatter={(value, name) => [`${value} درهم`, String(name)]}
               />
-              <RechartsBar dataKey="المداخيل المحصلة" fill="#1B3A6B" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <RechartsBar dataKey="المداخيل المحصلة" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={28} />
               <RechartsBar dataKey="المستحقات المعلقة" fill="#D4A017" radius={[4, 4, 0, 0]} maxBarSize={28} />
             </RechartsBarChart>
           </ResponsiveContainer>
