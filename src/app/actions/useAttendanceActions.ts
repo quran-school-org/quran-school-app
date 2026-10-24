@@ -55,7 +55,8 @@ export function useAttendanceActions(s: DerivedScope) {
     addSysNotification(
       "إنذار غياب",
       `تم إرسال إنذار غياب لولي أمر الطالب ${student.fullName} عبر واتساب لتغيبه ${consecutiveCount} حصص متتالية.`,
-      "تنبيه"
+      "تنبيه",
+      "educators"
     );
   };
 
@@ -90,7 +91,8 @@ export function useAttendanceActions(s: DerivedScope) {
         addSysNotification(
           "تنبيه غياب متكرر ⚠️",
           `الطالب ${student.fullName} متغيب لـ ${consecutiveCount} حصص متتالية! يرجى إرسال إنذار غياب لولي أمره.`,
-          "تنبيه"
+          "تنبيه",
+          "educators"
         );
       }
     }
@@ -179,7 +181,8 @@ export function useAttendanceActions(s: DerivedScope) {
       addSysNotification(
         finalStatus === "متأخر" ? "حضور متأخر بالرمز 🕒" : "حضور سريع بالرمز 🟢",
         `تم تسجيل حضور الطالب ${foundStudent.fullName} تلقائياً (${finalStatus === "متأخر" ? "متأخر" : "حاضر"}) لمسح بطاقة هويته. ${note}`,
-        finalStatus === "متأخر" ? "تنبيه" : "نجاح"
+        finalStatus === "متأخر" ? "تنبيه" : "نجاح",
+        "educators"
       );
     } else {
       playBeep("error");

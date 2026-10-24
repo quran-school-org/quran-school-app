@@ -146,7 +146,7 @@ describe("R-06 corrigé (D42) : fiches RH du personnel", () => {
 describe("R-07 corrigé (D65) : notifications réservées au personnel", () => {
   beforeEach(async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
-      await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: false, schoolId: A });
+      await setDoc(doc(ctx.firestore() as unknown as Firestore, "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: false, audience: "staff", schoolId: A });
     });
   });
 
@@ -160,8 +160,8 @@ describe("R-07 corrigé (D65) : notifications réservées au personnel", () => {
   });
 
   it("le personnel crée une notification ; hors bureau, il ne peut que la marquer comme lue", async () => {
-    await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "notifications", "n_prof"), { title: "x", message: "y", isRead: false, schoolId: A }));
-    await assertSucceeds(setDoc(doc(as("benevole"), "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: true, schoolId: A }, { merge: true }));
+    await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "notifications", "n_prof"), { title: "x", message: "y", isRead: false, audience: "educators", schoolId: A }));
+    await assertSucceeds(setDoc(doc(as("benevole"), "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: true, audience: "staff", schoolId: A }, { merge: true }));
     await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { message: "payez sur le compte X" }));
     await assertFails(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { title: "faux", message: "faux", isRead: false, schoolId: A }));
     // Document hérité sans champ `id` : le client le recopie en marquant comme lu (identique à l'identifiant).

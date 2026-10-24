@@ -6,7 +6,7 @@ import { runTransaction } from "firebase/firestore";
 import { RealmSimDB } from "../db";
 import { subscribeToCollection, subscribeToSettings, subscribeToDocument, subscribeToDocumentsByIds, subscribeToQueryIn, subscribeToStaff, schoolDocRef, sanitizeForFirestore, db } from "../firebase";
 import { Student, Teacher, Class, Attendance, Grade, Payment, Notification, AppUser, UserProfile, DailyProgress, OtherIncome, SalaryPayment, Expense, ActivityTrip, ActivityParticipant, ActivityExpense } from "../types";
-import { isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections, canReadStaffPrivate } from "../security/access";
+import { isEducatorRole, isFamilyRole, isOfficeRole, fullyReadableCollections, canReadStaffPrivate, readableNotificationAudiences } from "../security/access";
 import { linkedStudentIdsOf } from "../security/accountAlignment";
 import { getOpeningPeriod, monthIndex } from "../school/businessRules";
 import { parseClassSchedule, mergeSessionProfile } from "../app/helpers";
@@ -149,7 +149,15 @@ export function useSchoolSync(s: SessionScope) {
       }
       sub<Class>("classes", "classes", setClasses);
       sub<Payment>("payments", "payments", onPayments);
-      sub<Notification>("notifications", "notifications", setNotifications);
+      if (readable.has("notifications")) {
+        sub<Notification>("notifications", "notifications", setNotifications);
+      } else {
+        // Hors bureau : seulement les destinataires permis par les règles (D83).
+        const audiences = readableNotificationAudiences(role);
+        unsubscribes.push(subscribeToQueryIn<Notification>(schoolId, "notifications", "audience", audiences, (items) => {
+          if (active) setNotifications(items);
+        }, "notifications"));
+      }
       sub<OtherIncome>("otherIncomes", "other_incomes", setOtherIncomes);
       sub<SalaryPayment>("salaryPayments", "salary_payments", setSalaryPayments);
       sub<Expense>("expenses", "expenses", setExpenses);

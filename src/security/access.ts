@@ -3,7 +3,7 @@
  * Sert à n'ouvrir que les abonnements autorisés pour le rôle connecté.
  * La sécurité réelle reste dans les règles : ce module n'est qu'un confort.
  */
-import type { UserRole } from "../types";
+import type { NotificationAudience, UserRole } from "../types";
 
 export const ALL_ROLES: UserRole[] = [
   "مدير", "إداري", "مؤطر", "مدرس", "متطوع", "عامل نظافة / صيانة", "أخرى", "طالب", "ولي أمر",
@@ -27,11 +27,20 @@ export function fullyReadableCollections(role: UserRole): string[] {
     ["students", "teachers", "attendance", "grades", "dailyProgress", "activityParticipants", "activityExpenses"].forEach((c) => cols.add(c));
   }
   if (role === "متطوع") cols.add("activityParticipants");
-  if (isStaffRole(role)) cols.add("notifications");
   if (isOfficeRole(role)) {
-    ["payments", "otherIncomes", "expenses", "salaryPayments", "appUsers"].forEach((c) => cols.add(c));
+    ["payments", "otherIncomes", "expenses", "salaryPayments", "appUsers", "notifications"].forEach((c) => cols.add(c));
   }
   return Array.from(cols);
+}
+
+/**
+ * Destinataires de notifications lisibles hors bureau (miroir de
+ * `canSeeNotification` dans firestore.rules, D83). Le bureau lit toute la
+ * collection ; les familles n'en lisent aucune.
+ */
+export function readableNotificationAudiences(role: UserRole): NotificationAudience[] {
+  if (isOfficeRole(role) || !isStaffRole(role)) return [];
+  return isEducatorRole(role) ? ["educators", "staff"] : ["staff"];
 }
 
 /** Fiches RH du personnel (staffPrivate : salaire, CIN…) : bureau seulement (D42). */

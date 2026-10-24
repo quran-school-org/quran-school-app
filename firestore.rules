@@ -101,6 +101,21 @@ service cloud.firestore {
       return ['monthlySalary', 'contractType', 'cinNumber', 'emergencyContact', 'birthDate', 'address'];
     }
 
+    // Champ texte facultatif d'une mise à jour de son propre profil : s'il est
+    // modifié, il est nul ou une chaîne d'au plus `max` caractères (A-04, D83).
+    function selfTextOk(key, max) {
+      return !(key in request.resource.data.diff(resource.data).affectedKeys())
+        || request.resource.data.get(key, null) == null
+        || (request.resource.data[key] is string && request.resource.data[key].size() <= max);
+    }
+
+    // Destinataires d'une notification (champ `audience`, A-01, D83).
+    function canSeeNotification(s, audience) {
+      return isOffice(s)
+        || (isEducator(s) && audience in ['educators', 'staff'])
+        || (isStaff(s) && audience == 'staff');
+    }
+
     // Document d'élève lié au compte famille (lecture filtrée sur studentId).
     function familyOwnsDoc(s) {
       return isFamily(s) && resource.data.studentId in linkedStudents(s);
@@ -119,7 +134,8 @@ service cloud.firestore {
         && (!('mustChangePassword' in request.resource.data.diff(resource.data).affectedKeys())
             || request.resource.data.mustChangePassword == false)
         && (request.resource.data.get('lastSchoolId', null) == null
-            || request.resource.data.lastSchoolId in resource.data.get('schoolIds', []));
+            || request.resource.data.lastSchoolId in resource.data.get('schoolIds', []))
+        && selfTextOk('passwordChangedAt', 40) && selfTextOk('lastLogin', 40);
     }
 
     // Registre global des noms d'utilisateur : Cloud Functions uniquement.
@@ -142,7 +158,8 @@ service cloud.firestore {
         allow list: if isOffice(s) || isSuper();
         allow create, delete: if false;
         allow update: if isMember(s) && request.auth.uid == uid
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'fullName', 'phone']);
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin', 'fullName', 'phone'])
+          && selfTextOk('fullName', 120) && selfTextOk('phone', 40) && selfTextOk('lastLogin', 40);
       }
 
       // Paramètres et identité de l'école.
@@ -252,14 +269,19 @@ service cloud.firestore {
 
       // ------------------------------------------------------- notifications
       // Personnel seulement (R-07, D65) : les familles ne lisent ni n'écrivent
-      // de notifications. Hors bureau, une mise à jour ne peut que marquer
-      // la notification comme lue (pas de réécriture du titre ou du message).
+      // de notifications. Destinataires par le champ `audience` (A-01, D83) :
+      // 'office' (bureau : finances, comptes…), 'educators' (pédagogie : notes,
+      // absences), 'staff' (tout le personnel). Sans champ : bureau seulement.
+      // Hors bureau, une mise à jour ne peut que marquer comme lue une
+      // notification qu'on a le droit de lire.
       match /notifications/{notificationId} {
-        allow read: if isStaff(s);
-        allow create: if isStaff(s) && validWrite(s, notificationId);
+        allow read: if canSeeNotification(s, resource.data.get('audience', 'office'));
+        allow create: if isStaff(s) && validWrite(s, notificationId)
+          && (isOffice(s) || canSeeNotification(s, request.resource.data.get('audience', 'office')));
         allow update: if validWrite(s, notificationId)
           && (isOffice(s)
-              || (isStaff(s) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'id'])
+              || (canSeeNotification(s, resource.data.get('audience', 'office'))
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'id'])
                   && request.resource.data.get('id', notificationId) == notificationId));
         allow delete: if isOffice(s);
       }

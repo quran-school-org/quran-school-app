@@ -129,7 +129,12 @@ export interface Notification {
   date: string;
   type: "نجاح" | "تنبيه" | "مالي" | "إداري";
   isRead: boolean;
+  /** Destinataires (firestore.rules, D83) ; absent : bureau seulement. */
+  audience?: NotificationAudience;
 }
+
+/** 'office' : bureau ; 'educators' : pédagogie ; 'staff' : tout le personnel. */
+export type NotificationAudience = "office" | "educators" | "staff";
 
 export type UserRole = "مدير" | "إداري" | "مؤطر" | "مدرس" | "متطوع" | "عامل نظافة / صيانة" | "طالب" | "ولي أمر" | "أخرى";
 

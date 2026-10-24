@@ -98,8 +98,8 @@ export function useSettingsState(props: SettingsManagementProps) {
 
   const filteredUsers = appUsers.filter((user) => {
     const matchesSearch = 
-      (user.fullName || "").toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-      (user.username || "").toLowerCase().includes(userSearchQuery.toLowerCase());
+      String(user.fullName ?? "").toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      String(user.username ?? "").toLowerCase().includes(userSearchQuery.toLowerCase());
     
     const matchesRole = 
       userRoleFilter === "all" || user.role === userRoleFilter;

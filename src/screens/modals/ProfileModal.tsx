@@ -57,7 +57,7 @@ export default function ProfileModal() {
           </ActionAlert>
         )}
         <FormField label="الاسم الكامل لصاحب الحساب">
-          {(id) => <SearchInput id={id} type="text" icon={<User className="w-4 h-4" strokeWidth={1.75} />} value={profileFullName} onChange={(e: any) => setProfileFullName(e.target.value)} placeholder="أدخل الاسم الكامل" required />}
+          {(id) => <SearchInput id={id} type="text" icon={<User className="w-4 h-4" strokeWidth={1.75} />} value={profileFullName} onChange={(e: any) => setProfileFullName(e.target.value)} placeholder="أدخل الاسم الكامل" maxLength={120} required />}
         </FormField>
         <FormField label="اسم المستخدم / معرّف الدخول" hint="اسم المستخدم معرّف فريد لا يمكن تعديله إلا من إدارة النظام.">
           {(id) => <SearchInput id={id} type="text" dir="ltr" icon={<AtSign className="w-4 h-4" strokeWidth={1.75} />} value={profilePhone} disabled className="[&_input]:cursor-not-allowed [&_input]:bg-sunken [&_input]:pr-10 [&_input]:pl-3 [&_input]:text-right" />}

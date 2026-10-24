@@ -3,8 +3,8 @@
  */
 import { useMemo } from "react";
 import { RealmSimDB } from "../db";
-import { Payment, Notification, UserRole } from "../types";
-import { isOfficeRole } from "../security/access";
+import { Payment, Notification, NotificationAudience, UserRole } from "../types";
+import { isEducatorRole, isOfficeRole } from "../security/access";
 import { getSubscriptionAmount as rulesSubscriptionAmount, getMonthsToGenerate as rulesMonthsToGenerate, isMonthBeforeOpening } from "../school/businessRules";
 import { DEFAULT_SCHOOL_LABEL } from "./helpers";
 import type { BaseScope } from "./scope";
@@ -96,14 +96,18 @@ export function useCore(s: BaseScope) {
     }
   };
   // Helper to trigger automated notifications
-  const addSysNotification = (title: string, message: string, type: "نجاح" | "تنبيه" | "مالي" | "إداري") => {
+  // Destinataires par défaut (D83) : le bureau pour ses propres opérations,
+  // la pédagogie pour celles d'un enseignant ou d'un encadrant, tout le
+  // personnel pour les autres rôles (seule valeur que les règles leur permettent).
+  const addSysNotification = (title: string, message: string, type: "نجاح" | "تنبيه" | "مالي" | "إداري", audience?: NotificationAudience) => {
     const newNotif: Notification = {
       id: "n_" + Date.now(),
       title,
       message,
       date: new Date().toISOString().split("T")[0],
       type,
-      isRead: false
+      isRead: false,
+      audience: audience ?? (isOfficeRole(currentRole) ? "office" : isEducatorRole(currentRole) ? "educators" : "staff"),
     };
     RealmSimDB.saveNotification(newNotif);
     setNotifications(RealmSimDB.getNotifications());
