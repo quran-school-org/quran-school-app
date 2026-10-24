@@ -27,7 +27,8 @@ export function AppShell({ sidebar, drawer, drawerOpen, onCloseDrawer, topbar, b
   return (
     <div data-app-shell dir="rtl" className="min-h-screen flex bg-app text-ink font-sans">
       <aside className="hidden lg:block w-[264px] shrink-0 bg-night print:hidden">
-        <div className="sticky top-0 h-screen overflow-y-auto flex flex-col">{sidebar}</div>
+        {/* Barre de défilement fine et visible sur fond nuit : le menu dépasse la hauteur des petits écrans. */}
+        <div className="sticky top-0 h-screen overflow-y-auto flex flex-col [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.28)_transparent]">{sidebar}</div>
       </aside>
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex print:hidden" role="dialog" aria-modal="true" aria-label="القائمة الرئيسية">
