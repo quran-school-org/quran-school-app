@@ -34,7 +34,7 @@ export interface SideNavProps {
 
 export function SideNav({ brand, groups, active, onSelect, footer, navId, className, headerExtra }: SideNavProps) {
   return (
-    <nav data-nav={navId} aria-label="القائمة الرئيسية" className={cx("relative flex flex-col gap-[22px] bg-night text-night-text px-4 pt-6 pb-5 overflow-hidden", className)}>
+    <nav data-nav={navId} aria-label="القائمة الرئيسية" className={cx("relative flex flex-col gap-[22px] [@media(max-height:900px)]:gap-3 bg-night text-night-text px-4 pt-6 [@media(max-height:900px)]:pt-4 pb-5 overflow-hidden", className)}>
       <div className="absolute bottom-0 inset-x-0 h-80 pointer-events-none">
         <GeometricPattern size={56} opacity={0.13} fade="top" />
       </div>
@@ -44,12 +44,12 @@ export function SideNav({ brand, groups, active, onSelect, footer, navId, classN
       </div>
       {groups.filter((g) => g.items.length > 0).map((g) => (
         <div key={g.label} className="relative flex flex-col gap-1">
-          <span className="text-[12px] font-semibold text-night-label px-3 pb-1.5">{g.label}</span>
+          <span className="text-[12px] font-semibold text-night-label px-3 pb-1.5 [@media(max-height:900px)]:pb-0.5">{g.label}</span>
           {g.items.map((it) => {
             const on = it.id === active;
             if (it.disabled) {
               return (
-                <span key={it.id} aria-disabled="true" className="flex items-center gap-3 min-h-11 px-3 rounded-[10px] text-[15px] font-medium text-[#7586A3]">
+                <span key={it.id} aria-disabled="true" className="flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-[15px] font-medium text-[#7586A3]">
                   <span aria-hidden="true" className="inline-flex">{it.icon}</span>
                   <span className="flex-1">{it.label}</span>
                   {it.disabledLabel && <span className="text-[11px] font-semibold text-[#A9B6CC] border border-night-line-2 rounded-full px-2 py-0.5">{it.disabledLabel}</span>}
@@ -64,7 +64,7 @@ export function SideNav({ brand, groups, active, onSelect, footer, navId, classN
                 aria-current={on ? "page" : undefined}
                 onClick={() => onSelect(it.id)}
                 className={cx(
-                  "flex items-center gap-3 min-h-11 px-3 rounded-[10px] text-[15px] font-medium text-start border-0 cursor-pointer transition-colors w-full",
+                  "flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-[15px] font-medium text-start border-0 cursor-pointer transition-colors w-full",
                   on ? "bg-gold/[0.16] text-[#FFF7DD]" : "bg-transparent text-night-link hover:bg-white/[0.08]",
                 )}
               >
