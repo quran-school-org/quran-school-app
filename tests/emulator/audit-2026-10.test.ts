@@ -1,13 +1,14 @@
 /**
- * Audit de sécurité d'octobre 2026 : preuves sur émulateurs (données FICTIVES)
- * des constats A-01 à A-04 (docs/revues/REVUE-SECURITE-2026-10.md).
- * Chaque test décrit le comportement ACTUEL : il échouera une fois le constat
- * corrigé, et devra alors être inversé en test de non-régression.
+ * Audit de sécurité d'octobre 2026 (docs/revues/REVUE-SECURITE-2026-10.md),
+ * sur émulateurs, données FICTIVES. Correctifs A-01, A-02 et A-04 (D83) :
+ * ces tests vérifient que les abus démontrés par l'audit sont refusés.
+ * A-03 est reporté (décision du 24/10/2026) : son test décrit le comportement
+ * actuel et devra être inversé quand il sera corrigé.
  */
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { collection, doc, getDocs, setDoc, updateDoc, type Firestore } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, type Firestore } from "firebase/firestore";
 import { deleteApp, initializeApp, type FirebaseApp } from "firebase/app";
 import { connectAuthEmulator, getAuth, signInWithEmailAndPassword, signOut, type Auth } from "firebase/auth";
 import { connectFunctionsEmulator, getFunctions, httpsCallable, type Functions } from "firebase/functions";
@@ -28,6 +29,10 @@ const S = "ecole";
 let env: RulesTestEnvironment;
 
 const as = (uid: string) => env.authenticatedContext(uid).firestore() as unknown as Firestore;
+const notif = (id: string, audience: string | null, message: string) => ({
+  schoolId: S, id, title: "t", message, type: audience === "office" ? "مالي" : "تنبيه", isRead: false,
+  ...(audience ? { audience } : {}),
+});
 
 describe("règles", () => {
   beforeAll(async () => {
@@ -40,13 +45,16 @@ describe("règles", () => {
       await setDoc(doc(db, "schools", S), { name: "École fictive" });
       await member("menage", "عامل نظافة / صيانة");
       await member("benevole", "متطوع");
+      await member("prof", "مدرس");
       await member("admin", "إداري");
       await member("parent", "ولي أمر", { linkedStudentIds: ["S-1"] });
       await setDoc(doc(db, "schools", S, "salaryPayments", "sal1"), { schoolId: S, personName: "أستاذ وهمي", amount: 1800 });
-      // Copie automatique écrite par useFinanceActions.handleSaveSalaryPayment.
-      await setDoc(doc(db, "schools", S, "notifications", "n_sal"), {
-        schoolId: S, id: "n_sal", title: "إصدار مستحق راتب", message: "تم تسجيل مستحق أستاذ وهمي لمبلغ 1800 د.م.", type: "مالي", isRead: false,
-      });
+      // Copie automatique écrite par useFinanceActions.handleSaveSalaryPayment (bureau).
+      await setDoc(doc(db, "schools", S, "notifications", "n_sal"), notif("n_sal", "office", "تم تسجيل مستحق أستاذ وهمي لمبلغ 1800 د.م."));
+      // Notification héritée, sans destinataires : bureau seulement.
+      await setDoc(doc(db, "schools", S, "notifications", "n_old"), notif("n_old", null, "مبلغ 500 د.م."));
+      await setDoc(doc(db, "schools", S, "notifications", "n_note"), notif("n_note", "educators", "نتيجة اختبار جديدة"));
+      await setDoc(doc(db, "schools", S, "notifications", "n_tous"), notif("n_tous", "staff", "اجتماع الطاقم"));
       await setDoc(doc(db, "schools", S, "teachers", "t_dir"), { schoolId: S, fullName: "مدير وهمي", isArchived: false });
     });
   });
@@ -55,22 +63,68 @@ describe("règles", () => {
     await env?.cleanup();
   });
 
-  it("A-01 : l'agent d'entretien et le bénévole lisent les salaires recopiés dans les notifications", async () => {
-    for (const uid of ["menage", "benevole"]) {
-      await assertFails(getDocs(collection(as(uid), "schools", S, "salaryPayments")));
-      const notes = await assertSucceeds(getDocs(collection(as(uid), "schools", S, "notifications")));
-      expect(notes.docs.map((d) => d.data().message).join(" ")).toContain("1800");
-    }
+  describe("A-01 corrigé : notifications par destinataires", () => {
+    const ids = (snap: { docs: { id: string }[] }) => snap.docs.map((d) => d.id).sort();
+
+    it("entretien et bénévole : ni salaires ni notifications du bureau, seulement « tout le personnel »", async () => {
+      for (const uid of ["menage", "benevole"]) {
+        const db = as(uid);
+        await assertFails(getDocs(collection(db, "schools", S, "salaryPayments")));
+        await assertFails(getDocs(collection(db, "schools", S, "notifications")));
+        for (const id of ["n_sal", "n_old", "n_note"]) await assertFails(getDoc(doc(db, "schools", S, "notifications", id)));
+        const mine = await assertSucceeds(getDocs(query(collection(db, "schools", S, "notifications"), where("audience", "in", ["staff"]))));
+        expect(ids(mine)).toEqual(["n_tous"]);
+        await assertFails(getDocs(query(collection(db, "schools", S, "notifications"), where("audience", "in", ["educators", "staff"]))));
+      }
+    });
+
+    it("enseignant : notifications pédagogiques et générales, jamais celles du bureau", async () => {
+      const db = as("prof");
+      await assertFails(getDocs(collection(db, "schools", S, "notifications")));
+      await assertFails(getDoc(doc(db, "schools", S, "notifications", "n_sal")));
+      const mine = await assertSucceeds(getDocs(query(collection(db, "schools", S, "notifications"), where("audience", "in", ["educators", "staff"]))));
+      expect(ids(mine)).toEqual(["n_note", "n_tous"]);
+    });
+
+    it("le bureau lit tout, y compris les notifications héritées", async () => {
+      const all = await assertSucceeds(getDocs(collection(as("admin"), "schools", S, "notifications")));
+      expect(ids(all)).toEqual(["n_note", "n_old", "n_sal", "n_tous"]);
+    });
+
+    it("personne ne crée une notification pour des destinataires qu'il ne voit pas", async () => {
+      await assertFails(setDoc(doc(as("prof"), "schools", S, "notifications", "n_x1"), notif("n_x1", "office", "faux")));
+      await assertFails(setDoc(doc(as("prof"), "schools", S, "notifications", "n_x2"), notif("n_x2", null, "faux")));
+      await assertSucceeds(setDoc(doc(as("prof"), "schools", S, "notifications", "n_x3"), notif("n_x3", "educators", "absence")));
+      await assertFails(setDoc(doc(as("benevole"), "schools", S, "notifications", "n_x4"), notif("n_x4", "educators", "faux")));
+      await assertSucceeds(setDoc(doc(as("benevole"), "schools", S, "notifications", "n_x5"), notif("n_x5", "staff", "info")));
+      await assertSucceeds(setDoc(doc(as("admin"), "schools", S, "notifications", "n_x6"), notif("n_x6", "office", "recette")));
+    });
+
+    it("hors bureau, on ne marque comme lue qu'une notification qu'on peut lire", async () => {
+      await assertFails(updateDoc(doc(as("benevole"), "schools", S, "notifications", "n_sal"), { isRead: true }));
+      await assertSucceeds(updateDoc(doc(as("benevole"), "schools", S, "notifications", "n_tous"), { isRead: true }));
+    });
   });
 
-  it("A-02 (étape règles) : un إداري peut archiver n'importe quelle fiche du personnel", async () => {
+  it("A-02 (étape règles, inchangée) : un إداري peut archiver une fiche du personnel ; le trigger protège le directeur", async () => {
     await assertSucceeds(updateDoc(doc(as("admin"), "schools", S, "teachers", "t_dir"), { isArchived: true }));
   });
 
-  it("A-04 : un parent écrit dans son propre nom un objet ou un texte de 900 Ko", async () => {
-    const self = doc(as("parent"), "schools", S, "members", "parent");
-    await assertSucceeds(setDoc(self, { fullName: { piege: 1 } }, { merge: true }));
-    await assertSucceeds(setDoc(self, { fullName: "x".repeat(900_000) }, { merge: true }));
+  describe("A-04 corrigé : nom et téléphone de son profil bornés", () => {
+    const self = () => doc(as("parent"), "schools", S, "members", "parent");
+
+    it("objet, texte de 900 Ko ou téléphone non textuel : refusés", async () => {
+      await assertFails(setDoc(self(), { fullName: { piege: 1 } }, { merge: true }));
+      await assertFails(setDoc(self(), { fullName: "x".repeat(900_000) }, { merge: true }));
+      await assertFails(setDoc(self(), { fullName: "x".repeat(121) }, { merge: true }));
+      await assertFails(setDoc(self(), { phone: 612345678 }, { merge: true }));
+      await assertFails(setDoc(self(), { lastLogin: { t: 1 } }, { merge: true }));
+    });
+
+    it("un nom et un téléphone normaux passent toujours", async () => {
+      await assertSucceeds(setDoc(self(), { fullName: "محمد العلمي", phone: "0661000001", lastLogin: new Date().toISOString() }, { merge: true }));
+      await assertSucceeds(setDoc(self(), { phone: null }, { merge: true }));
+    });
   });
 });
 
@@ -101,7 +155,7 @@ async function waitFor(check: () => Promise<boolean>, ms = 15_000) {
   return false;
 }
 
-/** Second directeur d'alfajr, sans la protection « u1 » ni le claim super-admin. */
+/** Second directeur, sans la protection « u1 » ni le claim super-admin. */
 async function addSecondDirector(schoolId: string, extra: Record<string, unknown> = {}) {
   const email = `${DIR2.username}@comptes.kuttab.local`;
   const uid = (await admin.auth.createUser({ email, password: normalizeAuthPassword(DIR2.password) })).uid;
@@ -112,6 +166,12 @@ async function addSecondDirector(schoolId: string, extra: Record<string, unknown
   });
   await admin.db.doc(`users/${uid}`).set({ username: DIR2.username, schoolIds: FieldValue.arrayUnion(schoolId), mustChangePassword: false }, { merge: true });
   return uid;
+}
+
+async function removeSecondDirector(uid: string, schoolId: string) {
+  await admin.auth.deleteUser(uid);
+  await admin.db.doc(`usernames/${DIR2.username}`).delete();
+  await admin.db.doc(`schools/${schoolId}/members/${uid}`).delete();
 }
 
 describe("Cloud Functions", () => {
@@ -136,22 +196,27 @@ describe("Cloud Functions", () => {
     await admin?.close();
   });
 
-  it("A-02 : archiver la fiche liée à un directeur (non u1) suspend son appartenance et désactive son compte", async () => {
+  it("A-02 corrigé : archiver la fiche liée à un directeur ne le suspend pas ; un enseignant lié reste suspendu", async () => {
     const dirUid = await addSecondDirector("annour", { linkedTeacherId: "t_dir" });
     await admin.db.doc("schools/annour/teachers/t_dir").set({ schoolId: "annour", fullName: "مدير ثان", isArchived: false });
-    // Écriture permise à un إداري par les règles (test « A-02 (étape règles) »).
+    const profUid = await uidOf(SECOND_SCHOOL.teacher.username); // مدرس lié à la fiche t1 d'annour
     await admin.db.doc("schools/annour/teachers/t_dir").update({ isArchived: true });
+    await admin.db.doc("schools/annour/teachers/t1").update({ isArchived: true });
 
-    const suspended = await waitFor(async () => (await admin.db.doc(`schools/annour/members/${dirUid}`).get()).data()?.isActive === false);
-    expect(suspended).toBe(true);
-    expect(await waitFor(async () => (await admin.auth.getUser(dirUid)).disabled === true)).toBe(true);
-    // Remise en état pour les tests suivants.
-    await admin.auth.deleteUser(dirUid);
-    await admin.db.doc(`usernames/${DIR2.username}`).delete();
-    await admin.db.doc(`schools/annour/members/${dirUid}`).delete();
+    // Témoin : l'enseignant lié est bien suspendu par le même trigger.
+    expect(await waitFor(async () => (await admin.db.doc(`schools/annour/members/${profUid}`).get()).data()?.isActive === false)).toBe(true);
+    // Laisse au trigger de la fiche t_dir (écrite avant t1) le temps de passer.
+    await new Promise((r) => setTimeout(r, 2000));
+    const director = (await admin.db.doc(`schools/annour/members/${dirUid}`).get()).data();
+    expect(director?.isActive).toBe(true);
+    expect((await admin.auth.getUser(dirUid)).disabled).toBe(false);
+
+    await admin.db.doc("schools/annour/teachers/t1").update({ isArchived: false });
+    await waitFor(async () => (await admin.db.doc(`schools/annour/members/${profUid}`).get()).data()?.isActive === true);
+    await removeSecondDirector(dirUid, "annour");
   });
 
-  it("A-03 : le directeur d'une autre école rattache un compte d'alfajr ; le directeur d'alfajr ne peut plus réinitialiser son mot de passe ni le désactiver en le retirant", async () => {
+  it("A-03 (reporté, comportement actuel) : un rattachement par une autre école retire au directeur d'origine la réinitialisation", async () => {
     await addSecondDirector("alfajr");
     const victim = await uidOf("youssef_baqali");
     const reset = httpsCallable(functions, "resetUserPassword");

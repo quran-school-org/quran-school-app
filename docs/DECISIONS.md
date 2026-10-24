@@ -1778,3 +1778,34 @@ là-bas (R-06).
   leur type de la valeur (`NoInfer`).
 - **Retour arrière** : `git revert` du commit ; ou retirer `strict` du
   `tsconfig.json` si une urgence l'exige.
+
+### D83. Correctifs de l'audit d'octobre 2026 (A-01, A-02, A-04, A-05, A-06)
+- **Contexte** : audit de sécurité du 24/10/2026
+  (`docs/revues/REVUE-SECURITE-2026-10.md`) ; Mélik a retenu ces cinq
+  constats (décisions sur la page de synthèse) ; A-03 et A-07 sont reportés.
+- **Décision** :
+  - **A-01** : chaque notification porte ses destinataires (`audience` :
+    `office`, `educators`, `staff`). Les règles ne laissent lire que le bureau
+    (tout), la pédagogie (`educators`, `staff`) et le reste du personnel
+    (`staff`) ; une notification sans destinataires (anciennes données) est
+    réservée au bureau. Personne ne crée une notification pour des
+    destinataires qu'il ne voit pas. Côté client, hors bureau, l'abonnement
+    filtre sur `audience` ; les notes et absences sont adressées à la
+    pédagogie, le reste par défaut au groupe de l'auteur.
+  - **A-02** : `syncAccountsOnTeacherArchive` ne suspend jamais un membre de
+    rôle `مدير` (seul `setMemberRole`, réservé aux directeurs, le peut).
+  - **A-04** : dans son propre profil, `fullName` (120), `phone` et
+    `lastLogin` (40), `passwordChangedAt` (40) sont nuls ou des chaînes
+    bornées, contrôlés seulement s'ils changent.
+  - **A-05** : `src/utils/csv.ts` (`csvCell`) préfixe d'une apostrophe les
+    cellules qui commencent par `= @ + -`, tabulation ou retour chariot, sauf
+    nombres et téléphones ; utilisé par les deux exports.
+  - **A-06** : `ops.yml` importe et essaie la clé publique avant toute
+    opération ; le chiffrement supprime le clair seulement après succès ; les
+    artefacts ne partent que si le chiffrement a réussi (ou, pour un rapport,
+    si aucune clé n'est posée, comme avant).
+  Tests : `tests/emulator/audit-2026-10.test.ts` (inversés),
+  `tests/unit/csv.test.ts`, `tests/unit/workflows.test.ts`.
+- **Retour arrière** : `git revert` des commits ; pour A-01, les
+  notifications créées entre-temps gardent un champ `audience` sans effet sur
+  l'ancienne règle.
