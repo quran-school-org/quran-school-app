@@ -7,7 +7,6 @@ import { AppUser, UserRole, UserPermissions, getDefaultPermissionsForRole } from
 import { MIN_NEW_PASSWORD_LENGTH } from "../../security/accounts";
 import type { FeeOverride } from "../../types";
 import { generateUniqueUsername } from "../../db";
-import { Save } from "lucide-react";
 import { isPrimaryDirector } from "./shared";
 import type { SettingsManagementProps } from "../SettingsManagement";
 

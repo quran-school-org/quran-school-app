@@ -2,9 +2,9 @@
  * Module activités et sorties (participants, dépenses, lien comptable).
  * Découpé mécaniquement depuis ActivitiesManagement.tsx (Lot 2, sans changement de comportement).
  */
-import React, { useState, useMemo } from "react";
+import { useState } from "react";
 import { ActivityTrip, ActivityParticipant, ActivityExpense, ActivityType, ActivityStatus, ParticipantPaymentStatus, ActivityExpenseCategory } from "../../types";
-import { ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { ActivitiesManagementProps } from "../ActivitiesManagement";
 
 export function useActivitiesForms(props: ActivitiesManagementProps) {

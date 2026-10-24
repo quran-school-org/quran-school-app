@@ -2,7 +2,6 @@
  * Fenêtre de saisie d'un résultat d'examen (charte « لوحة الكتّاب »).
  * Mêmes champs, mêmes valeurs et même enregistrement qu'auparavant.
  */
-import React from "react";
 import { useApp } from "../../app/AppContext";
 import { Button, FormField, Input, Modal, Select, Textarea } from "../../ui";
 

@@ -4,7 +4,6 @@
  */
 import React, { useState, useMemo } from "react";
 import { Teacher, StaffCategory, ContractType, UserRole } from "../../types";
-import { Archive, Search, Filter } from "lucide-react";
 import type { TeacherManagementProps } from "../TeacherManagement";
 import { canReadStaffPrivate } from "../../security/access";
 import { stripStaffPrivate } from "../../security/staffPrivate";

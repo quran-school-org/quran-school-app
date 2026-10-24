@@ -2,7 +2,6 @@
  * Élèves : liste filtrable, fiche détaillée et aperçu de la carte.
  * Mêmes données, mêmes actions et mêmes droits que l'écran d'origine.
  */
-import React from "react";
 import { Archive, Download, Edit3, Eye, FileJson, FileSpreadsheet, Phone, Plus, Printer, Search, Trash2, Users } from "lucide-react";
 import { checkUserPermission } from "../types";
 import { StudentAvatar } from "../utils/studentAvatar";

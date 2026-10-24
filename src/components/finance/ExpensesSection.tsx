@@ -7,7 +7,6 @@ import { useFinance } from "./FinanceContext";
 
 export default function ExpensesSection() {
   const {
-    expenses,
     onDeleteExpense,
     canCreate,
     canUpdate,

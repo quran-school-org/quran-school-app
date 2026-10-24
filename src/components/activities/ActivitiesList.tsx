@@ -2,7 +2,6 @@
  * Module activités et sorties (participants, dépenses, lien comptable).
  * Liste filtrable des activités (charte « لوحة الكتّاب »), même logique qu'auparavant.
  */
-import React from "react";
 import { Compass, MapPin, Calendar, CheckCircle2, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { ACTIVITY_TYPES, ACTIVITY_STATUSES } from "./shared";
 import { useActivities } from "./ActivitiesContext";

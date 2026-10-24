@@ -2,7 +2,6 @@
  * Présences du jour (charte « لوحة الكتّاب ») : filtres, lecteur QR / manuel,
  * alertes d'absences consécutives, liste de pointage. Même logique qu'auparavant.
  */
-import React from "react";
 import { AlertTriangle, Bell, Camera, CheckCircle2, Clock3, FileText, Info, Keyboard, QrCode, Search, Volume2, X, XCircle } from "lucide-react";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { useApp } from "../app/AppContext";

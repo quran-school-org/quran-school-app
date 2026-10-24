@@ -36,7 +36,6 @@ export function useStudentActions(s: DerivedScope) {
     getMonthsToGenerate,
     getSubscriptionAmount,
     loadDatabase,
-    payments,
     progressDate,
     progressMemorization,
     progressNotes,

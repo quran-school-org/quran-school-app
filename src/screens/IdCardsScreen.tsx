@@ -1,7 +1,7 @@
 /**
  * Laboratoire des cartes (officielles et numériques) : charte « لوحة الكتّاب ».
  */
-import { Student, checkUserPermission } from "../types";
+import { checkUserPermission } from "../types";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { Award, Sparkles, Search, Trash2, Printer, FileText, QrCode } from "lucide-react";
 import { useApp } from "../app/AppContext";
@@ -12,7 +12,6 @@ export default function IdCardsScreen() {
   const {
     students,
     classes,
-    payments,
     systemSettings,
     currentUser,
     idCardLabTab,

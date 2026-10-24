@@ -14,13 +14,11 @@ export function useSessionActions(s: CoreScope) {
   const {
     activeSchoolId,
     authUid,
-    currentUser,
     loadDatabase,
     loginInProgressRef,
     loginPassword,
     loginUsername,
     paymentsLoadedRef,
-    schools,
     setActiveSchoolId,
     setActiveTab,
     setActivities,

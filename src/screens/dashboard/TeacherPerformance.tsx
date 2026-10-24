@@ -1,5 +1,5 @@
 /** « أداء المحفّظين » : moyennes ḥifẓ / tajwīd ou effectif par muḥaffiẓ (maquette). */
-import React, { useState } from "react";
+import { useState } from "react";
 import type { Class, Grade, Student, Teacher } from "../../types";
 import { Card, CardHeader, InitialAvatar, ProgressBar, SegmentedControl, TextAction } from "../../ui";
 import { bestClass, studentsLabel, teacherPerformance } from "./dashboardData";

@@ -36,16 +36,7 @@ import { SessionContext, type SessionContextValue } from "./session/SessionConte
 export default function App() {
   const s = useAppController();
   const {
-    students,
-    teachers,
-    classes,
-    attendance,
-    grades,
-    payments,
-    notifications,
     systemSettings,
-    activities,
-    firestoreQuotaExceeded,
     currentUser,
     authChecking,
     authUid,
@@ -57,7 +48,6 @@ export default function App() {
     schoolError,
     schoolBusy,
     activeTab,
-    isMobileMenuOpen,
     showStudentModal,
     showGradeModal,
     showTeacherStudentFileModal,

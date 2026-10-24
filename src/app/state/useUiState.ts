@@ -2,9 +2,8 @@
  * Extrait mécaniquement d'App.tsx (Lot 2, sans changement de comportement).
  */
 import React, { useState } from "react";
-import { Student, Teacher, Attendance, Grade, Payment, TajweedLevel } from "../../types";
+import { Student, Payment, TajweedLevel } from "../../types";
 import { MONTHS_AR } from "../../school/businessRules";
-import { User } from "lucide-react";
 
 export function useUiState() {
   const [activeTab, setActiveTab] = useState<string>("dashboard");

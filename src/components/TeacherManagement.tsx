@@ -31,9 +31,6 @@ export interface TeacherManagementProps {
 
 export default function TeacherManagement(props: TeacherManagementProps) {
   const state = useStaffState(props);
-  const {
-    teachers,
-  } = state;
   return (
     <StaffContext.Provider value={state}>
     <div data-screen="teachers" className="space-y-6" dir="rtl">

@@ -2,7 +2,6 @@
  * Module activités et sorties : en-tête et indicateurs (charte « لوحة الكتّاب »).
  * Mêmes actions, mêmes droits et mêmes chiffres qu'auparavant.
  */
-import React from "react";
 import { Landmark, Plus } from "lucide-react";
 import { useActivities } from "./ActivitiesContext";
 import { Button, KpiGrid, KpiTile, PageHeader } from "../../ui";

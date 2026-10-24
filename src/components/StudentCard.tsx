@@ -2,7 +2,7 @@
  * Aperçu imprimable de la carte officielle de l'élève (recto et verso), dans la
  * fiche de l'élève. Impression via la fenêtre d'impression de la charte.
  */
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { Printer } from "lucide-react";
 import type { Class, Student } from "../types";
 import { RealmSimDB } from "../db";

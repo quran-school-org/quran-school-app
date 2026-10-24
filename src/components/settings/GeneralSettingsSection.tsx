@@ -3,12 +3,11 @@
  * Découpé mécaniquement depuis SettingsManagement.tsx (Lot 2, sans changement de comportement).
  */
 import { MONTHS_AR } from "../../school/businessRules";
-import { Building, Phone, Mail, MapPin, Trash2, DollarSign, ToggleLeft, ToggleRight, Save, Upload, Landmark, FileCheck, CreditCard, Award, Calendar, Tag, Info, FileText, Plus } from "lucide-react";
+import { Building, Phone, Mail, MapPin, Trash2, DollarSign, ToggleLeft, ToggleRight, Save, Upload, Landmark, FileCheck, CreditCard, Award, Calendar, Tag, FileText, Plus } from "lucide-react";
 import { useSettings } from "./SettingsContext";
 
 export default function GeneralSettingsSection() {
   const {
-    settings,
     canUpdate,
     subTab,
     associationName,

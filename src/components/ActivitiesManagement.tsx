@@ -38,9 +38,6 @@ export interface ActivitiesManagementProps {
 
 export default function ActivitiesManagement(props: ActivitiesManagementProps) {
   const state = useActivitiesState(props);
-  const {
-    activities,
-  } = state;
   return (
     <ActivitiesContext.Provider value={state}>
     <div id="activities-management-module" data-screen="activities" className="space-y-6">

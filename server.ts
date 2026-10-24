@@ -15,11 +15,11 @@ app.use(express.json());
 // Ce serveur ne sert que l'application (développement : Vite ; ancienne
 // production AI Studio : fichiers statiques de dist/).
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", time: new Date().toISOString() });
 });
 
-app.all("/api/*", (req, res) => {
+app.all("/api/*", (_req, res) => {
   res.status(410).json({ error: "moved", detail: "Utiliser la fonction api (Cloud Functions)." });
 });
 
@@ -34,7 +34,7 @@ async function setupServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

@@ -3,21 +3,13 @@
  */
 import React  from "react";
 import { RealmSimDB } from "../../db";
-import { Check } from "lucide-react";
 import type { DerivedScope } from "../scope";
 
 export function useExportBackupActions(s: DerivedScope) {
   const {
     addSysNotification,
-    appUsers,
-    attendance,
-    classes,
-    grades,
     loadDatabase,
-    notifications,
-    payments,
     students,
-    teachers,
   } = s;
 
   const handleExportStudentsCSV = () => {

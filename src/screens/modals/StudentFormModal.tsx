@@ -2,7 +2,6 @@
  * Fenêtre d'inscription / de modification d'un élève (charte « لوحة الكتّاب »).
  * Mêmes champs, mêmes valeurs et même enregistrement qu'auparavant.
  */
-import React from "react";
 import { Check, ImagePlus, UserRound, X } from "lucide-react";
 import type { TajweedLevel } from "../../types";
 import { useApp } from "../../app/AppContext";

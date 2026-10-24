@@ -1,7 +1,6 @@
 /**
  * Attente de la vérification de session (charte « لوحة الكتّاب »).
  */
-import React from "react";
 import { RefreshCw } from "lucide-react";
 import { Emblem } from "../ui";
 

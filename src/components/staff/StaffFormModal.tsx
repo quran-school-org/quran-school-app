@@ -3,7 +3,7 @@
  * Découpé mécaniquement depuis TeacherManagement.tsx (Lot 2, sans changement de comportement).
  */
 import { StaffCategory, ContractType } from "../../types";
-import { UserPlus, Phone, X, Sparkles } from "lucide-react";
+import { UserPlus, X, Sparkles } from "lucide-react";
 import { STAFF_CATEGORIES_CONFIG, DEFAULT_STAFF_ICON } from "./shared";
 import { useStaff } from "./StaffContext";
 

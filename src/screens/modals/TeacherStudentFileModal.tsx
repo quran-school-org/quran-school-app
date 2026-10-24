@@ -3,7 +3,6 @@
  */
 import { checkUserPermission, TajweedLevel } from "../../types";
 import { StudentAvatar } from "../../utils/studentAvatar";
-import React from "react";
 import { BookOpen, Award, Trash2, Check, FileText } from "lucide-react";
 import { Button, EmptyState, FormField, IconButton, Input, Ltr, Modal, Pill, Select, Textarea, cx } from "../../ui";
 import { useApp } from "../../app/AppContext";
@@ -21,7 +20,6 @@ function tajweedSelectValue(level: string | undefined): TajweedLevel {
 
 export default function TeacherStudentFileModal() {
   const {
-    students,
     dailyProgress,
     currentUser,
     setShowTeacherStudentFileModal,

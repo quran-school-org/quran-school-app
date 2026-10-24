@@ -12,9 +12,7 @@ import type { BaseScope } from "./scope";
 export function useCore(s: BaseScope) {
   const {
     activeSchoolId,
-    activities,
     currentUser,
-    notifications,
     schools,
     selectedLabStudentId,
     selectedStudent,

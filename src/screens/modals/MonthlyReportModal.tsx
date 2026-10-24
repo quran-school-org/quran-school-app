@@ -3,7 +3,6 @@
  * mois, synthèse, détail jour par jour, partage WhatsApp et impression A4.
  * Mêmes calculs qu'auparavant ; l'en-tête imprimé reprend les paramètres de l'école.
  */
-import React from "react";
 import { Calendar, Printer, X } from "lucide-react";
 import { checkUserPermission } from "../../types";
 import { useApp } from "../../app/AppContext";

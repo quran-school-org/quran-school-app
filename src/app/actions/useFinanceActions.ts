@@ -103,10 +103,7 @@ export function useFinanceActions(s: DerivedScope) {
   };
 
   const handleSyncActivityToFinance = (
-    activity?: ActivityTrip, 
-    netBalance?: number, 
-    totalContributions?: number, 
-    totalExpenses?: number
+    activity?: ActivityTrip,
   ) => {
     RealmSimDB.syncAllActivitiesToFinance();
     loadDatabase();

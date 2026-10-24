@@ -5,7 +5,6 @@
  * - Carte numérique (330 × 500) : recto identité, verso QR et code-barres.
  * Les identifiants `*-front-*` / `*-back-*` servent à l'impression recto ou verso.
  */
-import React from "react";
 import { Calendar, MapPin, Phone } from "lucide-react";
 import type { Payment, Student, SystemSettings } from "../../types";
 import { StudentAvatar } from "../../utils/studentAvatar";

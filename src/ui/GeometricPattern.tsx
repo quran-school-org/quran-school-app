@@ -2,7 +2,7 @@
  * Motif géométrique doré (étoile à huit branches dans un carré, maquette) en
  * SVG, en fond décoratif (aria-hidden, sans interaction).
  */
-import React, { useId } from "react";
+import { useId } from "react";
 import { cx } from "./cx";
 
 export function GeometricPattern({ size = 64, opacity = 0.09, fade, className, color = "#D4A017", fadeColor = "#102446" }: { size?: number; opacity?: number; fade?: "top" | "bottom"; className?: string; color?: string; fadeColor?: string }) {

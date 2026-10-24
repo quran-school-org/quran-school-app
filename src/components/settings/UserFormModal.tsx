@@ -2,7 +2,7 @@
  * Paramètres de l'école et gestion des comptes (matrice de droits).
  * Découpé mécaniquement depuis SettingsManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { UserRole, getDefaultPermissionsForRole, Teacher, Student } from "../../types";
+import { UserRole, getDefaultPermissionsForRole } from "../../types";
 import { MIN_NEW_PASSWORD_LENGTH } from "../../security/accounts";
 import { PermissionMatrixEditor } from "../PermissionMatrixEditor";
 import { Lock, X, AlertTriangle, Sparkles, Eye, EyeOff, KeyRound } from "lucide-react";

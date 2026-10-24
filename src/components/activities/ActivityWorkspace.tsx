@@ -2,13 +2,12 @@
  * Module activités et sorties (participants, dépenses, lien comptable).
  * Découpé mécaniquement depuis ActivitiesManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Printer, CheckCircle2, TrendingUp, Search, FileText, RefreshCw, CheckCircle, Info, Filter } from "lucide-react";
+import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Printer, CheckCircle2, TrendingUp, Search, FileText, RefreshCw, CheckCircle, Info } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
 
 export default function ActivityWorkspace() {
   const {
-    participants,
     canCreateActivity,
     canUpdateActivity,
     canDeleteActivity,

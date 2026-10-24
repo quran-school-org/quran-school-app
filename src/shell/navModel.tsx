@@ -3,7 +3,6 @@
  * visibilité de chaque onglet selon les droits du compte (mêmes règles que
  * l'ancien menu, voir D39 pour le portail enseignant).
  */
-import React from "react";
 import { Award, Bell, BookOpen, Briefcase, Compass, CreditCard, LayoutGrid, QrCode, Settings, UserCheck, Users, Coins, NotebookPen } from "lucide-react";
 import { checkUserPermission, type AppUser, type UserRole } from "../types";
 import type { NavGroup } from "../ui";

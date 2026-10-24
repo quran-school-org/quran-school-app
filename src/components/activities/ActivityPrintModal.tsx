@@ -7,7 +7,6 @@ import { useActivities } from "./ActivitiesContext";
 
 export default function ActivityPrintModal() {
   const {
-    participants,
     systemSettings,
     printType,
     setPrintType,

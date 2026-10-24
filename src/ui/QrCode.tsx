@@ -4,7 +4,7 @@
  * recopiés dans les fenêtres d'impression). Constat O-05 : plus aucune donnée
  * d'élève ou de membre du personnel n'est envoyée à un service tiers.
  */
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import QRCode from "qrcode";
 
 export function qrPath(value: string): { size: number; d: string } {

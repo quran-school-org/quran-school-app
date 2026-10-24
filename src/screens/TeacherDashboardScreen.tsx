@@ -2,7 +2,6 @@
  * Portail de l'enseignant (charte « لوحة الكتّاب ») : ses halaqas, ses élèves, le suivi du ḥifẓ.
  */
 import { StudentAvatar } from "../utils/studentAvatar";
-import React from "react";
 import { BookOpen, Clock3, NotebookPen, Users } from "lucide-react";
 import { Button, Card, CardHeader, EmptyState, KpiGrid, KpiTile, PageHeader, Pill, ProgressBar, Table, TableWrap, Td, Th, Tr } from "../ui";
 import { useApp } from "../app/AppContext";

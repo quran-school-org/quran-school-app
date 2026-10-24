@@ -2,7 +2,6 @@
  * Comptabilité : en-tête et indicateurs globaux (charte « لوحة الكتّاب »).
  * Mêmes chiffres et même action d'impression qu'auparavant.
  */
-import React from "react";
 import { Printer } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { Button, KpiGrid, KpiTile, PageHeader } from "../../ui";

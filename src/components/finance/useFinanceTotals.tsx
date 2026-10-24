@@ -3,8 +3,7 @@
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
 import { openPrintWindow } from "../../print/printWindow";
-import React, { useState, useMemo } from "react";
-import { Student } from "../../types";
+import { useMemo } from "react";
 import type { useFinanceForms } from "./useFinanceForms";
 
 export function useFinanceTotals(s: ReturnType<typeof useFinanceForms>) {

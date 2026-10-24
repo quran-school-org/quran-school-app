@@ -1,5 +1,5 @@
 /** « الحضور هذا الأسبوع » : taux quotidien comparé à la semaine précédente. */
-import React, { useState } from "react";
+import { useState } from "react";
 import type { Attendance, Class, Student } from "../../types";
 import { Card, CardHeader, Select } from "../../ui";
 import { weeklyAttendance } from "./dashboardData";

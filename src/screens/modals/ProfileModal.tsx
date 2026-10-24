@@ -2,7 +2,6 @@
  * Profil et mot de passe du compte connecté (charte « لوحة الكتّاب »). Même logique
  * qu'auparavant ; sans fermeture possible tant qu'un changement de mot de passe est imposé.
  */
-import React from "react";
 import { AtSign, Check, Eye, EyeOff, Lock, ShieldAlert, User } from "lucide-react";
 import { ActionAlert, Button, FormField, InitialAvatar, Modal, SearchInput } from "../../ui";
 import { useApp } from "../../app/AppContext";

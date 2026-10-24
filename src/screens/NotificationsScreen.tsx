@@ -2,7 +2,6 @@
  * Boîte de notifications (charte « لوحة الكتّاب »), selon le rôle.
  * Mêmes actions qu'auparavant (marquer comme lu, tout effacer pour le directeur).
  */
-import React from "react";
 import { AlertTriangle, Bell, CheckCircle2, Coins, Inbox, Trash2 } from "lucide-react";
 import { RealmSimDB } from "../db";
 import { useApp } from "../app/AppContext";

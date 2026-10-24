@@ -2,7 +2,6 @@
  * Examens et attestations (charte « لوحة الكتّاب ») : synthèse des résultats,
  * liste des examens validés, encart d'attestation. Mêmes actions et mêmes droits.
  */
-import React from "react";
 import { Award, FileBadge2, Plus, Trash2 } from "lucide-react";
 import { checkUserPermission } from "../types";
 import { useApp } from "../app/AppContext";

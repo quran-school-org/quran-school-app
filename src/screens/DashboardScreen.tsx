@@ -2,7 +2,7 @@
  * Tableau de bord « لوحة الكتّاب » (maquette design/Main.dc.html), branché sur
  * les données réelles de l'école active.
  */
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { useApp } from "../app/AppContext";
 import { buildNavGroups, visibleTabs } from "../shell/navModel";

@@ -1,5 +1,5 @@
 /** « تقدّم الحفظ » : ḥizb mémorisés sur 60 par élève, filtrés par halaqa. */
-import React, { useState } from "react";
+import { useState } from "react";
 import type { Class, Student } from "../../types";
 import { Button, Card, CardHeader, FilterChips } from "../../ui";
 import { hizbOf } from "../../ui/HifzMap";

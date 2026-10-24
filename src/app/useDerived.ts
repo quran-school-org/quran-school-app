@@ -4,7 +4,6 @@
 import { useMemo, useCallback } from "react";
 import { Student, Payment, UserRole } from "../types";
 import { linkedStudentIdsOf, linkedTeacherIdOf } from "../security/accountAlignment";
-import { Plus, Search } from "lucide-react";
 import { getYearAndMonthFromDate } from "./helpers";
 import type { SessionScope } from "./scope";
 

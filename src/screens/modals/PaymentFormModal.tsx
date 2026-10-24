@@ -2,7 +2,6 @@
  * Fenêtre d'ajout / de modification d'une cotisation mensuelle (charte « لوحة الكتّاب »).
  * Mêmes champs, mêmes valeurs et même enregistrement qu'auparavant.
  */
-import React from "react";
 import { useApp } from "../../app/AppContext";
 import { Button, FormField, Input, Modal, Select, Textarea } from "../../ui";
 

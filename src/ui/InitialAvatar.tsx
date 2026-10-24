@@ -1,5 +1,4 @@
 /** Avatar à initiale (Reem Kufi gras), tons de la maquette. */
-import React from "react";
 import { cx } from "./cx";
 
 const TONES = {

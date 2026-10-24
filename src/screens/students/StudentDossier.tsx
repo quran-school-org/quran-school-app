@@ -1,5 +1,4 @@
 /** Fiche de l'élève sélectionné : informations, documents, carte. */
-import React from "react";
 import { Check, UserRound, X } from "lucide-react";
 import { checkUserPermission, type Class } from "../../types";
 import StudentCard from "../../components/StudentCard";

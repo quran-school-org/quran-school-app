@@ -2,7 +2,6 @@
  * Écran de connexion (charte « لوحة الكتّاب ») : panneau bleu nuit à motif doré
  * (bureau), formulaire inchangé (identifiant, mot de passe, envoi).
  */
-import React from "react";
 import { ShieldAlert, RefreshCw, Eye, Lock, User, LogIn, EyeOff } from "lucide-react";
 import { ActionAlert, Button, Emblem, FormField, GeometricPattern, SearchInput } from "../ui";
 import { useApp } from "../app/AppContext";

@@ -33,9 +33,6 @@ export interface SettingsManagementProps {
 
 export default function SettingsManagement(props: SettingsManagementProps) {
   const state = useSettingsState(props);
-  const {
-    settings,
-  } = state;
   return (
     <SettingsContext.Provider value={state}>
     <div data-screen="settings" className="flex flex-col gap-6" id="settings-management-panel">

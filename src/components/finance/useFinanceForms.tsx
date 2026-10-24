@@ -2,7 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { OtherIncome, SalaryPayment, Expense } from "../../types";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { FinanceManagementProps } from "../FinanceManagement";

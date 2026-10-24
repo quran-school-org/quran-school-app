@@ -3,7 +3,6 @@
  */
 import { useState } from "react";
 import { Student, Teacher, Class, Attendance, Grade, Payment, Notification, SystemSettings, AppUser, DailyProgress, OtherIncome, SalaryPayment, Expense, ActivityTrip, ActivityParticipant, ActivityExpense } from "../types";
-import { Database } from "lucide-react";
 
 export function useSchoolDataState() {
   // State from LocalStorage database

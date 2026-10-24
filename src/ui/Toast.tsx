@@ -1,5 +1,4 @@
 /** Message bref en bas de l'écran (maquette : fond #1A1F2B, coche dorée). */
-import React from "react";
 import { Check } from "lucide-react";
 
 export function Toast({ message }: { message: string }) {

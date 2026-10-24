@@ -118,7 +118,6 @@ export const translitArabicToEnglish = (name: string): string => {
 export const generateUniqueUsername = (
   fullName: string,
   existingUsernames: string[],
-  currentUserId?: string
 ): string => {
   const base = translitArabicToEnglish(fullName);
   let candidate = base;

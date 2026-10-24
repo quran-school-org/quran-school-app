@@ -2,7 +2,7 @@
  * Module activités et sorties (participants, dépenses, lien comptable).
  * Découpé mécaniquement depuis ActivitiesManagement.tsx (Lot 2, sans changement de comportement).
  */
-import React, { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { ActivityParticipant, Teacher, ParticipantPaymentStatus } from "../../types";
 import type { useActivitiesForms } from "./useActivitiesForms";
 

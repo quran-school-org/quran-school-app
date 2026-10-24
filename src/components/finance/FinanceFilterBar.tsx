@@ -2,7 +2,6 @@
  * Comptabilité : sections (recettes, salaires, dépenses, rapport), recherche et
  * exercice (charte « لوحة الكتّاب »). Mêmes états qu'auparavant.
  */
-import React from "react";
 import { Briefcase, Coins, PieChart, Receipt, Search } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { SearchInput, SegmentedControl, Select } from "../../ui";

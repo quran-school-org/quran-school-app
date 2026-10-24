@@ -1,8 +1,7 @@
 import { 
   Student, Teacher, Class, Attendance, Grade, Payment, Notification, 
   SystemSettings, AppUser, DailyProgress, OtherIncome, SalaryPayment, 
-  Expense, UserRole, ActivityTrip, ActivityParticipant, ActivityExpense,
-  getDefaultPermissionsForRole
+  Expense, ActivityTrip, ActivityParticipant, ActivityExpense,
 } from "./types";
 import { saveToFirestore, deleteFromFirestore, saveStaffToFirestore, deleteStaffFromFirestore, setMemberRoleRemote, stripPassword } from "./firebase";
 import { clearAllCaches, getCacheScope, hasCacheScope, purgeLegacyAlfajrKeys, scopedKey, setCacheScope } from "./cache/localCache";
@@ -677,7 +676,6 @@ export const RealmSimDB = {
     let expensesModified = false;
     let activitiesModified = false;
 
-    const validActivityIds = new Set(activities.map(a => a.id));
 
     // 1. Remove synthetic legacy sync records from otherIncomes and expenses
     const prevIncomesCount = otherIncomes.length;

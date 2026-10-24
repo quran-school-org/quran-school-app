@@ -2,7 +2,6 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Expense } from "../../types";
 import { TrendingUp, TrendingDown, Printer, Coins, PieChart } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 

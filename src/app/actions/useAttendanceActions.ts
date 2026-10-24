@@ -6,7 +6,6 @@ import { useEffect, useRef } from "react";
 import { RealmSimDB } from "../../db";
 import { Student, Attendance } from "../../types";
 import { Html5Qrcode } from "html5-qrcode";
-import { Check, Camera } from "lucide-react";
 import { parseClassSchedule } from "../helpers";
 import type { DerivedScope } from "../scope";
 
