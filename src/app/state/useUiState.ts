@@ -217,7 +217,7 @@ export function useUiState() {
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [paymentFormStudentId, setPaymentFormStudentId] = useState("");
   const [paymentFormYear, setPaymentFormYear] = useState<number>(new Date().getFullYear());
-  const [paymentFormMonth, setPaymentFormMonth] = useState(MONTHS_AR[new Date().getMonth()]);
+  const [paymentFormMonth, setPaymentFormMonth] = useState<string>(MONTHS_AR[new Date().getMonth()]);
   const [paymentFormAmount, setPaymentFormAmount] = useState<number>(70);
   const [paymentFormStatus, setPaymentFormStatus] = useState<"مدفوع" | "غير مدفوع">("غير مدفوع");
   const [paymentFormDate, setPaymentFormDate] = useState("");

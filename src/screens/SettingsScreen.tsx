@@ -23,6 +23,8 @@ export default function SettingsScreen() {
     handleDeleteAppUser,
     handleHarmonizeUsersWithStaff,
   } = useApp();
+  // App.tsx n'affiche l'écran qu'une fois les paramètres chargés.
+  if (!systemSettings) return null;
 
   return (
     <SettingsManagement

@@ -22,6 +22,8 @@ export default function MonthlyReportModal() {
     teachers, classes, attendance, currentUser, selectedStudentForReport, setSelectedStudentForReport,
     setShowMonthlyReportModal, reportYearMonth, setReportYearMonth, currentRole, schoolName, systemSettings, handlePrintReport,
   } = useApp();
+  // App.tsx n'affiche la fenêtre qu'avec un élève choisi.
+  if (!selectedStudentForReport) return null;
 
           const [yearStr, monthStr] = reportYearMonth.split("-");
           const year = parseInt(yearStr);

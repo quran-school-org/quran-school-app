@@ -1759,3 +1759,22 @@ là-bas (R-06).
   Test : `tests/unit/permissions.test.ts`.
 - **Retour arrière** : `git revert` du commit ; pour un directeur, corriger sa
   matrice dans Paramètres › المستخدمين (ou passer `permissions: null`).
+
+### D82. Le front est vérifié par TypeScript en mode strict, avec les types de React
+- **Contexte** : le projet généré par AI Studio n'installait pas
+  `@types/react` (`src/jsx-shim.d.ts` le contournait) et le `tsconfig.json`
+  du front n'activait pas `strict` (les Cloud Functions l'avaient déjà). Tout
+  le JSX était donc typé `any` : `npm run lint` laissait passer les erreurs
+  d'interface (6 516 erreurs en mode strict). Constat du plan de structure
+  (`docs/audit-2026-10/PLAN-STRUCTURE.md`, jalon S1).
+- **Décision** : installer `@types/react` et `@types/react-dom` (19.2, comme
+  React), retirer `src/jsx-shim.d.ts`, activer `strict: true`. Les erreurs
+  révélées sont corrigées sans changement de comportement (types d'état,
+  gardes `null` sur des fenêtres qui ne s'affichent déjà qu'avec leur
+  donnée), sauf une : la fiche d'élève de l'enseignant lisait deux champs
+  inexistants (`studentNumber`, `educationLevel`) et affichait toujours
+  « N/A » et « — » ; elle affiche maintenant l'identifiant de l'élève
+  (`S-101`), comme son dossier. `SegmentedControl` et `FilterChips` déduisent
+  leur type de la valeur (`NoInfer`).
+- **Retour arrière** : `git revert` du commit ; ou retirer `strict` du
+  `tsconfig.json` si une urgence l'exige.

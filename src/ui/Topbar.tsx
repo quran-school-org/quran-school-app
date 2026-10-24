@@ -58,7 +58,7 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
           </button>
         )}
         {mobileBrand && <div className="lg:hidden min-w-0">{mobileBrand}</div>}
-        <div className={cx("flex flex-col gap-0.5 min-w-0", mobileBrand && "hidden lg:flex")}>
+        <div className={cx("flex flex-col gap-0.5 min-w-0", Boolean(mobileBrand) && "hidden lg:flex")}>
           <span className="text-[13px] text-ink-3">{dateLabel}</span>
           {season && <span className="text-[15px] font-semibold">الموسم الدراسي {season}</span>}
         </div>

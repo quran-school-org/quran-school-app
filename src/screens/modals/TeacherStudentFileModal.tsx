@@ -43,6 +43,8 @@ export default function TeacherStudentFileModal() {
     handleSaveDailyProgress,
     handleDeleteDailyProgress,
   } = useApp();
+  // App.tsx n'affiche la fenêtre qu'avec un élève choisi.
+  if (!teacherSelectedStudent) return null;
 
   const close = () => {
     setShowTeacherStudentFileModal(false);
@@ -63,7 +65,7 @@ export default function TeacherStudentFileModal() {
         </span>
       }
       title={`الملف التعليمي للطالب: ${teacherSelectedStudent.fullName}`}
-      subtitle={`رقم العضوية: ${teacherSelectedStudent.studentNumber || "N/A"} | المستوى الدراسي: ${teacherSelectedStudent.educationLevel || "—"}`}
+      subtitle={`رقم العضوية: ${teacherSelectedStudent.id}`}
       onClose={close}
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

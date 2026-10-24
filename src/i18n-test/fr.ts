@@ -1716,7 +1716,7 @@ export const FR: Record<string, string> = {
   "الطالب المؤرشف لن يظهر في القائمة الافتراضية للطلاب النشطين، ولن يطالب بسداد الرسوم الجديدة.": "Un élève archivé n'apparaît plus dans la liste par défaut des élèves actifs et aucune nouvelle cotisation ne lui est demandée.",
   // screens/modals/TeacherStudentFileModal.tsx
   "الملف التعليمي للطالب: {0}": "Dossier pédagogique de l'élève : {0}",
-  "رقم العضوية: {0} | المستوى الدراسي: {1}": "N° d'adhérent : {0} | Niveau : {1}",
+  "رقم العضوية: {0}": "N° d'adhérent : {0}",
   "تعديل الحالة الراهنة وبيانات التدريس": "Mettre à jour la situation actuelle et les informations pédagogiques",
   "مثال: البقرة - الآية 142": "Ex. : Al-Baqara - verset 142",
   "ممتاز (مخارج صحيحة وأحكام كاملة)": "Excellent (articulation correcte, règles maîtrisées)",

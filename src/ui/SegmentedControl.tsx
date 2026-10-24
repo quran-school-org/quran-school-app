@@ -12,7 +12,7 @@ export interface SegmentOption<T extends string> {
   attrs?: Record<string, string>;
 }
 
-export function SegmentedControl<T extends string>({ options, value, onChange, label, className, size = "md" }: { options: SegmentOption<T>[]; value: T; onChange: (v: T) => void; label: string; className?: string; size?: "md" | "sm" }) {
+export function SegmentedControl<T extends string>({ options, value, onChange, label, className, size = "md" }: { options: SegmentOption<T>[]; value: T; onChange: (v: NoInfer<T>) => void; label: string; className?: string; size?: "md" | "sm" }) {
   return (
     <div role="group" aria-label={label} className={cx("inline-flex flex-wrap p-[3px] rounded-[10px] bg-sunken gap-0.5 max-w-full", className)}>
       {options.map((o) => {
@@ -39,7 +39,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
   );
 }
 
-export function FilterChips<T extends string>({ options, value, onChange, label, className }: { options: SegmentOption<T>[]; value: T; onChange: (v: T) => void; label: string; className?: string }) {
+export function FilterChips<T extends string>({ options, value, onChange, label, className }: { options: SegmentOption<T>[]; value: T; onChange: (v: NoInfer<T>) => void; label: string; className?: string }) {
   return (
     <div role="group" aria-label={label} className={cx("flex flex-wrap gap-1.5", className)}>
       {options.map((o) => {

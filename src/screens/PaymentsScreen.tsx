@@ -83,7 +83,7 @@ export default function PaymentsScreen() {
               <Tooltip
                 cursor={{ fill: "rgba(212, 160, 23, 0.08)" }}
                 contentStyle={{ direction: "rtl", textAlign: "right", borderRadius: 12, borderColor: "#D9DBD0", background: "#F8F8F3", fontFamily: "IBM Plex Sans Arabic" }}
-                formatter={(value: any, name: string) => [`${value} درهم`, name]}
+                formatter={(value, name) => [`${value} درهم`, String(name)]}
               />
               <RechartsBar dataKey="المداخيل المحصلة" fill="#1B3A6B" radius={[4, 4, 0, 0]} maxBarSize={28} />
               <RechartsBar dataKey="المستحقات المعلقة" fill="#D4A017" radius={[4, 4, 0, 0]} maxBarSize={28} />
