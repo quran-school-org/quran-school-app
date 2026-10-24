@@ -1,0 +1,39 @@
+# Mises à jour proposées en PR (jamais fusionnées automatiquement) :
+# chaque PR passe la CI et la relecture habituelle.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Correctifs et versions mineures regroupés en une seule PR par semaine.
+      mineures:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "Dépendances (app)"
+
+  - package-ecosystem: npm
+    directory: /functions
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      mineures:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: "Dépendances (Functions)"
+
+  # Actions GitHub épinglées par SHA : Dependabot met à jour le SHA et le commentaire de version.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "CI"
