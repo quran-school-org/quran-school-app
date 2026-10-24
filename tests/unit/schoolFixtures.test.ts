@@ -124,6 +124,11 @@ describe("jeu de données fictif d'une école (D82)", () => {
       expect(String(s.parentPhone)).toMatch(/^06 00 \d{2} \d{2} \d{2}$/);
       expect(["ممتاز", "متوسط", "ضعيف"]).toContain(s.tajweedLevel);
     }
+    for (const s of students) {
+      const ageAtRegistration = (Date.parse(String(s.registrationDate)) - Date.parse(String(s.birthDate))) / (365.25 * 86_400_000);
+      expect(ageAtRegistration, String(s.id)).toBeGreaterThanOrEqual(4.9);
+      expect(String(s.registrationDate) <= "2026-10-24").toBe(true);
+    }
     expect(students.some((s) => !s.docPhotos)).toBe(true);
     expect(students.some((s) => s.isArchived)).toBe(true);
     expect(new Set(students.map((s) => s.fullName)).size).toBeGreaterThan(120);

@@ -225,19 +225,19 @@ interface StaffDef {
 
 /** 15 membres du personnel, toutes catégories. */
 export const STAFF_DEFS: StaffDef[] = [
-  { key: "T01", fullName: "عبد الرحيم الوزاني", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ رئيسي", specialty: "حفظ وتثبيت", contractType: "عقد عمل دائم", salary: 3000, duties: "تحفيظ حلقتي النور والتقوى، تتبع الحفظ اليومي" },
-  { key: "T02", fullName: "فاطمة الزهراء بناني", gender: "أنثى", category: "أستاذ / محفظ", roleTitle: "محفظة", specialty: "حفظ وتثبيت", contractType: "مكافأة شهرية", salary: 2600, duties: "تحفيظ البراعم والبيان" },
-  { key: "T03", fullName: "محمد أمين الشرقاوي", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ ومجاز في التجويد", specialty: "تجويد وقراءات", contractType: "عقد عمل دائم", salary: 2800, duties: "حلقتا الفرقان والإتقان، الإجازات" },
-  { key: "T04", fullName: "خديجة العمراني", gender: "أنثى", category: "أستاذ / محفظ", roleTitle: "محفظة", specialty: "حفظ وتثبيت", contractType: "مكافأة شهرية", salary: 2400, duties: "حلقتا الزهور والرحمة" },
-  { key: "T05", fullName: "إسماعيل البوعزاوي", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ", specialty: "حفظ وتثبيت", contractType: "عقد مؤقت / بالساعة", salary: 2200, duties: "حلقة الإيمان" },
-  { key: "T06", fullName: "نزهة الإدريسي", gender: "أنثى", category: "أستاذ / محفظ", roleTitle: "محفظة ومدرسة تجويد", specialty: "تجويد وقراءات", contractType: "مكافأة شهرية", salary: 2400, duties: "حلقتا الهدى والتجويد" },
-  { key: "T07", fullName: "الحسن أيت بلا", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ احتياطي", specialty: "مراجعة وتثبيت", contractType: "منحة تدريب", salary: 1200, duties: "التعويض والمراجعة الجماعية" },
-  { key: "T08", fullName: "رشيد المنصوري", gender: "ذكر", category: "مؤطر / مشرف تربوي", roleTitle: "مشرف تربوي", specialty: "تأطير أنشطة", contractType: "عقد عمل دائم", salary: 2800, duties: "الإشراف التربوي، لجنة الامتحانات" },
-  { key: "T09", fullName: "سميرة الكتاني", gender: "أنثى", category: "مؤطر / مشرف تربوي", roleTitle: "مؤطرة الأنشطة", specialty: "تأطير أنشطة", contractType: "مكافأة شهرية", salary: 2000, duties: "حلقة اليقين، الأنشطة والرحلات" },
-  { key: "T10", fullName: "عبد الإله الصقلي", gender: "ذكر", category: "إداري / كاتب", roleTitle: "كاتب عام", specialty: "إدارة وتسيير", contractType: "عقد عمل دائم", salary: 3200, duties: "التسجيلات، المراسلات، الملفات الإدارية" },
-  { key: "T11", fullName: "حنان الطاهري", gender: "أنثى", category: "إداري / كاتب", roleTitle: "مكلفة بالمالية", specialty: "إدارة وتسيير", contractType: "عقد عمل دائم", salary: 2700, duties: "الرسوم، الوصولات، المصاريف" },
-  { key: "T12", fullName: "مصطفى بوشعيب", gender: "ذكر", category: "عامل نظافة / صيانة", roleTitle: "عون صيانة", specialty: "نظافة وصيانة", contractType: "عقد عمل دائم", salary: 1700, duties: "الصيانة والإصلاحات الصغيرة" },
-  { key: "T13", fullName: "زهرة الحمداوي", gender: "أنثى", category: "عامل نظافة / صيانة", roleTitle: "عاملة نظافة", specialty: "نظافة وصيانة", contractType: "عقد مؤقت / بالساعة", salary: 1500, duties: "نظافة القاعات والمرافق" },
+  { key: "T01", fullName: "عبد الرحيم الوزاني", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ رئيسي", specialty: "حفظ وتثبيت", contractType: "عقد عمل دائم", salary: 2000, duties: "تحفيظ حلقتي النور والتقوى، تتبع الحفظ اليومي" },
+  { key: "T02", fullName: "فاطمة الزهراء بناني", gender: "أنثى", category: "أستاذ / محفظ", roleTitle: "محفظة", specialty: "حفظ وتثبيت", contractType: "مكافأة شهرية", salary: 1500, duties: "تحفيظ البراعم والبيان" },
+  { key: "T03", fullName: "محمد أمين الشرقاوي", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ ومجاز في التجويد", specialty: "تجويد وقراءات", contractType: "عقد عمل دائم", salary: 1800, duties: "حلقتا الفرقان والإتقان، الإجازات" },
+  { key: "T04", fullName: "خديجة العمراني", gender: "أنثى", category: "أستاذ / محفظ", roleTitle: "محفظة", specialty: "حفظ وتثبيت", contractType: "مكافأة شهرية", salary: 1500, duties: "حلقتا الزهور والرحمة" },
+  { key: "T05", fullName: "إسماعيل البوعزاوي", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ", specialty: "حفظ وتثبيت", contractType: "عقد مؤقت / بالساعة", salary: 1200, duties: "حلقة الإيمان" },
+  { key: "T06", fullName: "نزهة الإدريسي", gender: "أنثى", category: "أستاذ / محفظ", roleTitle: "محفظة ومدرسة تجويد", specialty: "تجويد وقراءات", contractType: "مكافأة شهرية", salary: 1500, duties: "حلقتا الهدى والتجويد" },
+  { key: "T07", fullName: "الحسن أيت بلا", gender: "ذكر", category: "أستاذ / محفظ", roleTitle: "محفظ احتياطي", specialty: "مراجعة وتثبيت", contractType: "منحة تدريب", salary: 600, duties: "التعويض والمراجعة الجماعية" },
+  { key: "T08", fullName: "رشيد المنصوري", gender: "ذكر", category: "مؤطر / مشرف تربوي", roleTitle: "مشرف تربوي", specialty: "تأطير أنشطة", contractType: "عقد عمل دائم", salary: 1500, duties: "الإشراف التربوي، لجنة الامتحانات" },
+  { key: "T09", fullName: "سميرة الكتاني", gender: "أنثى", category: "مؤطر / مشرف تربوي", roleTitle: "مؤطرة الأنشطة", specialty: "تأطير أنشطة", contractType: "مكافأة شهرية", salary: 1000, duties: "حلقة اليقين، الأنشطة والرحلات" },
+  { key: "T10", fullName: "عبد الإله الصقلي", gender: "ذكر", category: "إداري / كاتب", roleTitle: "كاتب عام", specialty: "إدارة وتسيير", contractType: "عقد عمل دائم", salary: 2000, duties: "التسجيلات، المراسلات، الملفات الإدارية" },
+  { key: "T11", fullName: "حنان الطاهري", gender: "أنثى", category: "إداري / كاتب", roleTitle: "مكلفة بالمالية", specialty: "إدارة وتسيير", contractType: "عقد عمل دائم", salary: 1500, duties: "الرسوم، الوصولات، المصاريف" },
+  { key: "T12", fullName: "مصطفى بوشعيب", gender: "ذكر", category: "عامل نظافة / صيانة", roleTitle: "عون صيانة", specialty: "نظافة وصيانة", contractType: "عقد عمل دائم", salary: 1000, duties: "الصيانة والإصلاحات الصغيرة" },
+  { key: "T13", fullName: "زهرة الحمداوي", gender: "أنثى", category: "عامل نظافة / صيانة", roleTitle: "عاملة نظافة", specialty: "نظافة وصيانة", contractType: "عقد مؤقت / بالساعة", salary: 800, duties: "نظافة القاعات والمرافق" },
   { key: "T14", fullName: "أنور الفاسي", gender: "ذكر", category: "متطوع", roleTitle: "متطوع لدعم الحفظ", specialty: "تطوع", contractType: "تطوعي", salary: 0, duties: "مساعدة المحفظين في التسميع" },
   { key: "T15", fullName: "سلمى الرايس", gender: "أنثى", category: "متطوع", roleTitle: "متطوعة في الأنشطة", specialty: "تطوع", contractType: "تطوعي", salary: 0, duties: "مرافقة الرحلات والحفلات" },
 ];
@@ -438,7 +438,7 @@ export function buildSchoolFixtures(opts: BuildOptions): SchoolFixtures {
       const hizb = Math.min(60, Math.max(0, rng.int(c.hizb[0], c.hizb[1])));
       const tajweed: TajweedLevel = rng.weighted<TajweedLevel>(hizb >= 30 ? [["ممتاز", 5], ["متوسط", 4], ["ضعيف", 1]] : hizb >= 10 ? [["ممتاز", 2], ["متوسط", 6], ["ضعيف", 2]] : [["ممتاز", 1], ["متوسط", 5], ["ضعيف", 4]]);
       // Inscription : nouvelle cette saison (~15 %), sinon une rentrée précédente.
-      const maxYears = Math.max(0, Math.min(age - 5, 4));
+      const maxYears = Math.max(0, Math.min(age - 6, 4)); // inscrit à 5 ans au plus tôt
       const yearsAgo = rng.chance(0.15) || maxYears === 0 ? 0 : rng.int(1, maxYears);
       let reg = yearsAgo === 0 ? addDays(today, -rng.int(3, 75)) : dayOfMonth(nowY - yearsAgo, rng.pick([8, 8, 9, 0]), rng.int(1, 28));
       if (reg > today) reg = addDays(today, -rng.int(3, 30));
@@ -621,14 +621,14 @@ export function buildSchoolFixtures(opts: BuildOptions): SchoolFixtures {
     addExpense(e);
   }
   const incomes: [string, OtherIncome["category"], number, number, string | undefined][] = [
-    ["تبرع لفائدة الحلقات", "تبرعات", 500, 2000, "محسن (اسم وهمي)"],
-    ["منحة دعم الأنشطة القرآنية", "دعم حكومي/مؤسساتي", 3000, 8000, "مؤسسة داعمة (وهمية)"],
+    ["تبرع لفائدة الحلقات", "تبرعات", 2000, 5000, "محسن (اسم وهمي)"],
+    ["منحة دعم الأنشطة القرآنية", "دعم حكومي/مؤسساتي", 15000, 25000, "مؤسسة داعمة (وهمية)"],
     ["تبرع بمناسبة ختم القرآن", "تبرعات", 300, 1500, "أسرة أحد الطلاب"],
     ["مداخيل الحفل السنوي", "أنشطة ومهرجانات", 1200, 3500, undefined],
     ["اشتراكات أعضاء الجمعية", "اشتراكات أعضاء الجمعية", 600, 1500, undefined],
     ["تبرع لاقتناء المصاحف", "تبرعات", 800, 2500, "محسنة (اسم وهمي)"],
-    ["دعم المجلس الجماعي", "دعم حكومي/مؤسساتي", 2000, 5000, "مجلس جماعي (وهمي)"],
-    ["تبرع شهري منتظم", "تبرعات", 200, 500, "محسن (اسم وهمي)"],
+    ["دعم المجلس الجماعي", "دعم حكومي/مؤسساتي", 8000, 12000, "مجلس جماعي (وهمي)"],
+    ["تبرع شهري منتظم", "تبرعات", 1000, 2000, "محسن (اسم وهمي)"],
     ["بيع منتوجات معرض الأنشطة", "أنشطة ومهرجانات", 400, 1200, undefined],
     ["تبرع عيني محول إلى نقدي", "أخرى", 300, 900, undefined],
   ];
@@ -655,8 +655,8 @@ export function buildSchoolFixtures(opts: BuildOptions): SchoolFixtures {
         month: MONTHS_AR[m],
         year: y,
         paymentDate: iso(dayOfMonth(y, m, 28)),
-        paymentMethod: s.salary >= 2500 ? "تحويل بنكي" : "نقداً",
-        paymentSource: s.salary >= 2500 ? "حساب الجمعية البنكي" : "الصندوق",
+        paymentMethod: s.salary >= 1500 ? "تحويل بنكي" : "نقداً",
+        paymentSource: s.salary >= 1500 ? "حساب الجمعية البنكي" : "الصندوق",
         status: current ? "مستحق (قيد الانتظار)" : "تم الصرف",
       };
       if (!current) sp.receiptNo = `SAL-${y}-D${pad(sal, 3)}`;
