@@ -7,6 +7,8 @@ import {
   setDoc,
   deleteDoc,
   deleteField,
+  arrayUnion,
+  updateDoc,
   writeBatch,
   onSnapshot,
   getDoc,
@@ -198,6 +200,11 @@ export async function updateOwnUserFields(uid: string, fields: Partial<Pick<User
 }
 
 /** Champs anodins de son appartenance à une école (nom affiché, dernière connexion). */
+/** Marque une notification comme lue pour ce compte seulement (U-03, D84). */
+export async function markNotificationReadBy(schoolId: string, notificationId: string, uid: string) {
+  await updateDoc(schoolDocRef(schoolId, "notifications", notificationId), { readBy: arrayUnion(uid) });
+}
+
 export async function updateOwnMemberFields(schoolId: string, uid: string, fields: Partial<Pick<AppUser, "lastLogin" | "fullName" | "phone">>) {
   await setDoc(schoolDocRef(schoolId, "members", uid), sanitizeForFirestore(fields), { merge: true });
 }

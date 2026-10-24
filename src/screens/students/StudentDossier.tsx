@@ -4,10 +4,11 @@ import { checkUserPermission, type Class } from "../../types";
 import StudentCard from "../../components/StudentCard";
 import { StudentAvatar } from "../../utils/studentAvatar";
 import { useApp } from "../../app/AppContext";
+import { isFamilyRole } from "../../security/access";
 import { ActionAlert, Button, Card, CardHeader, EmptyState, InfoRow, Ltr, Pill, WhatsAppIcon } from "../../ui";
 
 export default function StudentDossier({ classes }: { classes: Class[] }) {
-  const { selectedStudent, schoolName } = useApp();
+  const { selectedStudent, schoolName, currentRole } = useApp();
 
   if (!selectedStudent) {
     return (
@@ -56,9 +57,12 @@ export default function StudentDossier({ classes }: { classes: Class[] }) {
           <InfoRow label="السورة الحالية">{st.currentSurah}</InfoRow>
           <InfoRow label="مستوى التجويد">{st.tajweedLevel}</InfoRow>
         </dl>
-        <Button id="whatsapp-contact-parent-btn" block onClick={openWhatsApp} icon={<WhatsAppIcon className="w-4 h-4 text-success-700" />}>
-          مراسلة ولي الأمر عبر واتساب
-        </Button>
+        {/* Le parent ne s'écrit pas à lui-même (U-04). */}
+        {!isFamilyRole(currentRole) && (
+          <Button id="whatsapp-contact-parent-btn" block onClick={openWhatsApp} icon={<WhatsAppIcon className="w-4 h-4 text-success-700" />}>
+            مراسلة ولي الأمر عبر واتساب
+          </Button>
+        )}
         <div className="flex flex-col gap-2 border-t border-line-soft pt-4">
           <p className="m-0 text-[14px] font-semibold text-ink">الوثائق والملفات الإدارية المقدمة</p>
           <ul className="m-0 p-0 list-none flex flex-col gap-1.5">

@@ -90,14 +90,9 @@ export function useStudentActions(s: DerivedScope) {
 
     RealmSimDB.saveDailyProgress(newProgress);
 
-    // Save the student updates as well
-    RealmSimDB.saveStudent(teacherSelectedStudent);
-
-    addSysNotification(
-      "تسجيل متابعة حفظ",
-      `تم تسجيل تقييم ومتابعة الحفظ للطالب(ة) ${teacherSelectedStudent.fullName} بنجاح.`,
-      "نجاح"
-    );
+    // Seuls les champs de suivi modifiés dans la fenêtre (U-04).
+    const { currentSurah, tajweedLevel, hizbCount, notes } = teacherSelectedStudent;
+    RealmSimDB.updateStudentFields(teacherSelectedStudent.id, { currentSurah, tajweedLevel, hizbCount, notes });
 
     // Reset progress inputs
     setProgressMemorization("");
@@ -111,11 +106,6 @@ export function useStudentActions(s: DerivedScope) {
 
   const handleDeleteDailyProgress = (id: string) => {
     RealmSimDB.deleteDailyProgress(id);
-    addSysNotification(
-      "حذف متابعة حفظ",
-      "تم حذف سجل متابعة الحفظ بنجاح.",
-      "تنبيه"
-    );
     loadDatabase();
   };
   // Student CRUD Operations
@@ -243,12 +233,6 @@ export function useStudentActions(s: DerivedScope) {
         "تسجيل طالب جديد",
         `تم إضافة الطالب ${newStudent.fullName} بنجاح إلى النظام برقم تعريف (${newStudent.id}) وتخصيص طلبات المدفوعات المستحقة له بدءاً من شهر تسجيله.`,
         "نجاح"
-      );
-    } else {
-      addSysNotification(
-        "تعديل بيانات طالب",
-        `تم تحديث ملف الطالب ${newStudent.fullName} بنجاح.`,
-        "إداري"
       );
     }
 

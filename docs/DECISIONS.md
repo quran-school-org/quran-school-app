@@ -1809,3 +1809,25 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits ; pour A-01, les
   notifications créées entre-temps gardent un champ `audience` sans effet sur
   l'ancienne règle.
+
+### D84. Notifications lues par personne et moins de bruit (U-03), petits bugs visibles (U-04)
+- **Contexte** : audit UX d'octobre 2026 (`docs/audit-2026-10/AUDIT-UX.md`),
+  points retenus par Mélik.
+- **Décision** :
+  - **« Lu » par personne** : champ `readBy` (liste d'uid) ; hors bureau,
+    une mise à jour n'ajoute que son propre uid (`arrayUnion`) ; `isRead` ne
+    sert plus qu'aux anciennes notifications (lues pour tous).
+  - **Moins de bruit** : plus de notification pour les confirmations de ses
+    propres actions (impression de cartes, sauvegarde et restauration,
+    modification de son profil, suivi du hifz, modification d'une fiche
+    élève). Les événements utiles restent (inscription, paiements, comptes,
+    absences, notes, suppressions).
+  - **Parent et élève** : plus d'export, de filtre d'archivage ni de bouton
+    WhatsApp « écrire au parent » sur leur écran.
+  - Texte « @admin_alfajr » retiré de la fenêtre de compte (multi-écoles).
+  - Tableau des élèves de l'enseignant : cartes sur téléphone.
+  - Le suivi du hifz n'écrit plus que `currentSurah`, `tajweedLevel`,
+    `hizbCount` et `notes` (`RealmSimDB.updateStudentFields`) : il n'annule
+    plus un archivage fait entre-temps par le bureau.
+- **Retour arrière** : `git revert` des commits ; les champs `readBy` déjà
+  écrits restent sans effet sur l'ancienne règle.

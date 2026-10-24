@@ -17,7 +17,6 @@ import type { DerivedScope } from "../scope";
 
 export function usePrintActions(s: DerivedScope) {
   const {
-    addSysNotification,
     bulkSelectedIds,
     filteredPayments,
     filteredStudents,
@@ -165,12 +164,6 @@ export function usePrintActions(s: DerivedScope) {
         delay: 600,
       });
       if (!w) return;
-
-      addSysNotification(
-        "طباعة بطاقة الهوية",
-        `تم إرسال بطاقة الطالب(ة) ${labStudent.fullName}${sideSuffix} للطباعة بالمقياس المخصص: ${Math.round(labScale * 100)}%`,
-        "نجاح"
-      );
     } else {
       if (bulkSelectedIds.length === 0) {
         alert("الرجاء تحديد طالب واحد على الأقل من القائمة الجانبية للطباعة الجماعية.");
@@ -192,12 +185,6 @@ export function usePrintActions(s: DerivedScope) {
         delay: 800,
       });
       if (!w) return;
-
-      addSysNotification(
-        "الطباعة الجماعية",
-        `تم إرسال عدد ${bulkSelectedIds.length} بطاقات${sideSuffix} للطباعة الجماعية بالمقياس المخصص: ${Math.round(labScale * 100)}%`,
-        "نجاح"
-      );
     }
   };
 

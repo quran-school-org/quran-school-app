@@ -5,6 +5,7 @@
 import { AlertTriangle, Bell, CheckCircle2, Coins, Inbox, Trash2 } from "lucide-react";
 import { RealmSimDB } from "../db";
 import { useApp } from "../app/AppContext";
+import { isNotificationRead } from "../types";
 import { Button, Card, EmptyState, Ltr, PageHeader, Pill, cx } from "../ui";
 
 const TYPE_ICON: Record<string, { icon: any; cls: string }> = {
@@ -14,8 +15,8 @@ const TYPE_ICON: Record<string, { icon: any; cls: string }> = {
 };
 
 export default function NotificationsScreen() {
-  const { currentRole, loadDatabase, userNotifications } = useApp();
-  const unread = userNotifications.filter((n) => !n.isRead).length;
+  const { currentRole, loadDatabase, userNotifications, authUid } = useApp();
+  const unread = userNotifications.filter((n) => !isNotificationRead(n, authUid)).length;
 
   return (
     <div data-screen="notifications" className="flex flex-col gap-6">
@@ -49,6 +50,7 @@ export default function NotificationsScreen() {
         <Card padded={false} className="overflow-hidden">
           <ul className="m-0 p-0 list-none divide-y divide-line-faint">
             {userNotifications.map((n) => {
+              const read = isNotificationRead(n, authUid);
               const t = TYPE_ICON[n.type] || { icon: Bell, cls: "bg-primary-100 text-primary" };
               const Icon = t.icon;
               return (
@@ -56,12 +58,12 @@ export default function NotificationsScreen() {
                   <button
                     type="button"
                     onClick={() => {
-                      RealmSimDB.markNotificationAsRead(n.id);
+                      if (!read && authUid) RealmSimDB.markNotificationAsRead(n.id, authUid);
                       loadDatabase();
                     }}
                     className={cx(
                       "w-full text-start flex gap-4 px-5 py-4 cursor-pointer border-0 border-s-4 transition-colors hover:bg-surface-2",
-                      !n.isRead ? "bg-primary-50/60 border-s-gold" : "bg-transparent border-s-transparent",
+                      !read ? "bg-primary-50/60 border-s-gold" : "bg-transparent border-s-transparent",
                     )}
                   >
                     <span aria-hidden="true" className={cx("w-10 h-10 rounded-full flex items-center justify-center shrink-0", t.cls)}>
@@ -69,11 +71,11 @@ export default function NotificationsScreen() {
                     </span>
                     <span className="flex-1 min-w-0 flex flex-col gap-1">
                       <span className="flex flex-wrap justify-between items-center gap-2">
-                        <span className={cx("text-[15px] text-ink", !n.isRead ? "font-bold" : "font-semibold")}>{n.title}</span>
+                        <span className={cx("text-[15px] text-ink", !read ? "font-bold" : "font-semibold")}>{n.title}</span>
                         <Ltr className="text-[12.5px] text-ink-3">{n.date}</Ltr>
                       </span>
                       <span className="text-[14px] text-ink-2 leading-relaxed">{n.message}</span>
-                      {!n.isRead && <Pill tone="warn" className="self-start">جديد • انقر لتعليم كمقروء</Pill>}
+                      {!read && <Pill tone="warn" className="self-start">جديد • انقر لتعليم كمقروء</Pill>}
                     </span>
                   </button>
                 </li>

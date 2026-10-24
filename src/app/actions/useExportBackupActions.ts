@@ -8,7 +8,6 @@ import { csvCell } from "../../utils/csv";
 
 export function useExportBackupActions(s: DerivedScope) {
   const {
-    addSysNotification,
     loadDatabase,
     students,
   } = s;
@@ -103,12 +102,6 @@ export function useExportBackupActions(s: DerivedScope) {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      addSysNotification(
-        "تنزيل النسخة الاحتياطية",
-        "تم تصدير وتحميل النسخة الاحتياطية الكاملة من قاعدة البيانات (RealmDB) بصيغة JSON بنجاح.",
-        "نجاح"
-      );
     } catch (error) {
       console.error(error);
       alert("حدث خطأ أثناء محاولة نسخ البيانات احتياطياً.");
@@ -142,12 +135,6 @@ export function useExportBackupActions(s: DerivedScope) {
 
         RealmSimDB.restoreBackup(backupData);
         loadDatabase();
-
-        addSysNotification(
-          "استرجاع النسخة الاحتياطية",
-          "تم استيراد واسترجاع النسخة الاحتياطية الكاملة وإعادة بناء قاعدة البيانات (RealmDB) بنجاح.",
-          "نجاح"
-        );
         alert("تم استرجاع النسخة الاحتياطية وتحديث النظام بنجاح! سيتم الآن إعادة تحميل الصفحة لتطبيق التغييرات بشكل كامل.");
         window.location.reload();
       } catch (err) {

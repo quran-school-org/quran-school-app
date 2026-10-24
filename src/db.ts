@@ -3,7 +3,7 @@ import {
   SystemSettings, AppUser, DailyProgress, OtherIncome, SalaryPayment, 
   Expense, ActivityTrip, ActivityParticipant, ActivityExpense,
 } from "./types";
-import { saveToFirestore, deleteFromFirestore, saveStaffToFirestore, deleteStaffFromFirestore, setMemberRoleRemote, stripPassword } from "./firebase";
+import { saveToFirestore, deleteFromFirestore, saveStaffToFirestore, deleteStaffFromFirestore, setMemberRoleRemote, stripPassword, markNotificationReadBy } from "./firebase";
 import { clearAllCaches, getCacheScope, hasCacheScope, purgeLegacyAlfajrKeys, scopedKey, setCacheScope } from "./cache/localCache";
 
 export { getRoleAndPermissionsForStaff } from "./security/staffRoles";
@@ -176,6 +176,16 @@ export const RealmSimDB = {
   getStudents(): Student[] {
     return getStoredData(STORAGE_KEYS.STUDENTS, INITIAL_STUDENTS);
   },
+  /**
+   * Met à jour quelques champs d'une fiche élève sans réécrire le reste : une
+   * fiche ouverte depuis longtemps n'écrase plus un archivage ou une
+   * modification faite entre-temps par le bureau (U-04).
+   */
+  updateStudentFields(id: string, fields: Partial<Pick<Student, "currentSurah" | "tajweedLevel" | "hizbCount" | "notes">>): void {
+    const students = this.getStudents().map((s) => (s.id === id ? { ...s, ...fields } : s));
+    setStoredData(STORAGE_KEYS.STUDENTS, students);
+    saveToFirestore(sid(), "students", id, fields);
+  },
   saveStudent(student: Student): void {
     const students = this.getStudents();
     const index = students.findIndex((s) => s.id === student.id);
@@ -339,16 +349,13 @@ export const RealmSimDB = {
     setStoredData(STORAGE_KEYS.NOTIFICATIONS, list);
     saveToFirestore(sid(), "notifications", notification.id, notification);
   },
-  markNotificationAsRead(id: string): void {
-    const list = this.getNotifications().map((n) => {
-      if (n.id === id) {
-        const updated = { ...n, isRead: true };
-        saveToFirestore(sid(), "notifications", id, updated);
-        return updated;
-      }
-      return n;
-    });
+  /** « Lu » pour ce compte seulement (U-03, D84). */
+  markNotificationAsRead(id: string, uid: string): void {
+    const list = this.getNotifications().map((n) =>
+      n.id === id ? { ...n, readBy: Array.from(new Set([...(n.readBy ?? []), uid])) } : n,
+    );
     setStoredData(STORAGE_KEYS.NOTIFICATIONS, list);
+    markNotificationReadBy(sid(), id, uid).catch((err) => console.warn("markNotificationReadBy failed:", err));
   },
   clearAllNotifications(): void {
     const list = this.getNotifications();

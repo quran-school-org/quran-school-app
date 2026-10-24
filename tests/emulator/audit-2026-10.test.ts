@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, type Firestore } from "firebase/firestore";
+import { arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, type Firestore } from "firebase/firestore";
 import { deleteApp, initializeApp, type FirebaseApp } from "firebase/app";
 import { connectAuthEmulator, getAuth, signInWithEmailAndPassword, signOut, type Auth } from "firebase/auth";
 import { connectFunctionsEmulator, getFunctions, httpsCallable, type Functions } from "firebase/functions";
@@ -101,8 +101,8 @@ describe("règles", () => {
     });
 
     it("hors bureau, on ne marque comme lue qu'une notification qu'on peut lire", async () => {
-      await assertFails(updateDoc(doc(as("benevole"), "schools", S, "notifications", "n_sal"), { isRead: true }));
-      await assertSucceeds(updateDoc(doc(as("benevole"), "schools", S, "notifications", "n_tous"), { isRead: true }));
+      await assertFails(updateDoc(doc(as("benevole"), "schools", S, "notifications", "n_sal"), { readBy: arrayUnion("benevole") }));
+      await assertSucceeds(updateDoc(doc(as("benevole"), "schools", S, "notifications", "n_tous"), { readBy: arrayUnion("benevole") }));
     });
   });
 

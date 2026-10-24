@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { collection, deleteField, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch, type Firestore } from "firebase/firestore";
+import { arrayUnion, collection, deleteField, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch, type Firestore } from "firebase/firestore";
 
 const A = "alfajr";
 const B = "annour";
@@ -159,14 +159,16 @@ describe("R-07 corrigé (D65) : notifications réservées au personnel", () => {
     await assertFails(setDoc(doc(as("eleve"), "schools", A, "notifications", "n_eleve"), { title: "x", message: "y", schoolId: A }));
   });
 
-  it("le personnel crée une notification ; hors bureau, il ne peut que la marquer comme lue", async () => {
+  it("le personnel crée une notification ; hors bureau, il ne peut que la marquer comme lue pour lui-même (D84)", async () => {
     await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "notifications", "n_prof"), { title: "x", message: "y", isRead: false, audience: "educators", schoolId: A }));
-    await assertSucceeds(setDoc(doc(as("benevole"), "schools", A, "notifications", "n_1"), { title: "t", message: "m", type: "إداري", isRead: true, audience: "staff", schoolId: A }, { merge: true }));
+    await assertSucceeds(updateDoc(doc(as("benevole"), "schools", A, "notifications", "n_1"), { readBy: arrayUnion("benevole") }));
     await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { message: "payez sur le compte X" }));
     await assertFails(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { title: "faux", message: "faux", isRead: false, schoolId: A }));
-    // Document hérité sans champ `id` : le client le recopie en marquant comme lu (identique à l'identifiant).
-    await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { id: "n_1", isRead: true, schoolId: A }, { merge: true }));
-    await assertFails(setDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { id: "autre", isRead: true, schoolId: A }, { merge: true }));
+    // Le « lu » commun à tous n'est plus modifiable hors bureau, ni le « lu » d'un autre compte.
+    await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { isRead: true }));
+    await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { readBy: arrayUnion("autre") }));
+    await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { readBy: ["prof"] }));
+    await assertSucceeds(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { readBy: arrayUnion("prof") }));
     await assertSucceeds(updateDoc(doc(as("admin"), "schools", A, "notifications", "n_1"), { message: "corrigé" }));
   });
 

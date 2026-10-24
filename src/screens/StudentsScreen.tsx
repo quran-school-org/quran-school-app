@@ -4,6 +4,7 @@
  */
 import { Archive, Download, Edit3, Eye, FileJson, FileSpreadsheet, Phone, Plus, Printer, Search, Trash2, Users } from "lucide-react";
 import { checkUserPermission } from "../types";
+import { isFamilyRole } from "../security/access";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { useApp } from "../app/AppContext";
 import { Button, Card, DropdownMenu, EmptyState, IconButton, Ltr, PageHeader, Pill, SearchInput, Select, Table, TableWrap, Td, Th, Tr, cx } from "../ui";
@@ -28,6 +29,8 @@ export default function StudentsScreen() {
     handleToggleArchiveStudent, handlePrintStudentsReport, handleExportStudentsCSV, handleExportStudentsJSON,
   } = useApp();
   const can = (a: "create" | "update" | "delete" | "print") => checkUserPermission(currentUser, currentRole, "students", a);
+  // Parent, élève : ni export, ni filtre d'archivage (outils du personnel, U-04).
+  const family = isFamilyRole(currentRole);
   const title = currentRole === "طالب" ? "ملفي الشخصي وسجل الحفظ القرآني" : currentRole === "ولي أمر" ? "متابعة الأبناء وسجلات الحفظ" : "إدارة ملفات الطلاب والوثائق الإدارية";
   const description = currentRole === "طالب" ? "استعراض مقدار الحفظ الحالي، مستوى التجويد، والوثائق الإدارية المعتمدة." : "سجل معلومات الطلاب، تتبع أوراقهم، ومقدار حفظهم وتجويدهم.";
   const select = (st: any) => { setSelectedStudent(st); };
@@ -55,12 +58,12 @@ export default function StudentsScreen() {
           onChange={(e: any) => setSearchQuery(e.target.value)}
           className="flex-[1_1_260px] max-w-md"
         />
-        <Select aria-label="حالة الطلاب" value={studentArchiveFilter} onChange={(e: any) => setStudentArchiveFilter(e.target.value)} className="w-auto">
+        {!family && <Select aria-label="حالة الطلاب" value={studentArchiveFilter} onChange={(e: any) => setStudentArchiveFilter(e.target.value)} className="w-auto">
           <option value="active">الطلاب النشطون</option>
           <option value="archived">الطلاب المؤرشفون</option>
           <option value="all">الكل (نشط ومؤرشف)</option>
-        </Select>
-        {can("print") && (
+        </Select>}
+        {can("print") && !family && (
           <DropdownMenu
             label="تصدير البيانات"
             icon={ic(Download, "w-[18px] h-[18px]")}

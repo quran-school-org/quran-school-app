@@ -6,6 +6,7 @@
 import React, { useEffect, useMemo } from "react";
 import SchoolSwitcher from "../school/SchoolSwitcher";
 import { useApp } from "../app/AppContext";
+import { isNotificationRead } from "../types";
 import { AppShell, Emblem, NavBrand, SideNav, Topbar } from "../ui";
 import { buildNavGroups, visibleTabs } from "./navModel";
 import QuotaBanner from "./QuotaBanner";
@@ -30,10 +31,10 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
     systemSettings, schoolName, syncStatus, userNotifications, accountOwnerName, handleOpenProfileModal,
     handleLogout, firestoreQuotaExceeded, isStaffOrAdmin, totalStudentsCount, teacherStudents,
     parentStudentsCount, currentStudentObj, furthestHizb, teacherFurthestHizb, parentFurthestHizb,
-    setSelectedStudent,
+    setSelectedStudent, authUid,
   } = useApp();
 
-  const unread = userNotifications.filter((n) => !n.isRead).length;
+  const unread = userNotifications.filter((n) => !isNotificationRead(n, authUid)).length;
   const groups = useMemo(() => buildNavGroups({ currentUser, currentRole, unread }), [currentUser, currentRole, unread]);
   const tabs = visibleTabs(groups);
   const tabsKey = tabs.join("|");

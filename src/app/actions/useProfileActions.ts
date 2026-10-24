@@ -13,7 +13,6 @@ export function useProfileActions(s: DerivedScope) {
   const {
     accountOwnerName,
     activeSchoolId,
-    addSysNotification,
     currentRole,
     currentUser,
     mustChangePassword,
@@ -101,12 +100,6 @@ export function useProfileActions(s: DerivedScope) {
       RealmSimDB.updateSystemSettingsFields({ directorName });
       setSystemSettings((prev: SystemSettings | null) => (prev ? { ...prev, directorName } : prev));
     }
-
-    addSysNotification(
-      "تعديل البيانات الشخصية",
-      `تم تحديث بيانات الملف الشخصي لـ (${profileFullName.trim()}) بنجاح.`,
-      "نجاح"
-    );
     setProfilePassword("");
     setProfileCurrentPassword("");
     alert(newPassword ? "تم تغيير كلمة المرور وتحديث الملف الشخصي بنجاح!" : "تم تحديث بيانات الملف الشخصي بنجاح!");

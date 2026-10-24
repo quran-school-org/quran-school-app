@@ -1044,7 +1044,7 @@ export const FR: Record<string, string> = {
   "ملف العامل / المدرس المرتبط": "Fiche du membre du personnel / de l'enseignant liée",
   "— بدون ربط —": "— Aucun lien —",
   "يُستعمل لعرض حلقات المدرس وإيقاف الحساب تلقائياً عند أرشفة الملف.": "Sert à afficher les halaqas de l'enseignant et à suspendre automatiquement le compte lors de l'archivage de la fiche.",
-  "حساب المدير الأساسي (@admin_alfajr) له الصلاحيات المطلقة دائماً ولا يمكن تعديل نوع حسابه أو حظره لضمان عدم انقطاع الوصول إلى النظام.": "Le compte du directeur principal (@admin_alfajr) conserve toujours tous les droits : son type ne peut être modifié et il ne peut être bloqué, afin de garantir l'accès au système.",
+  "حساب المدير الأساسي لهذه المدرسة له الصلاحيات المطلقة دائماً ولا يمكن تعديل نوع حسابه أو حظره لضمان عدم انقطاع الوصول إلى النظام.": "Le compte du directeur principal de cette école conserve toujours tous les droits : son type ne peut être modifié et il ne peut être bloqué, afin de garantir l'accès au système.",
   "جاري الحفظ...": "Enregistrement…",
   "حفظ الحساب": "Enregistrer le compte",
   // components/settings/UsersSection.tsx
@@ -1338,6 +1338,7 @@ export const FR: Record<string, string> = {
   "اختيار مدرسة…": "Choisir une école…",
   // screens/AttendanceScreen.tsx
   "غير مرصود": "Non pointé",
+  "الحضور": "Présence",
   "الحضور والغياب": "Présences et absences",
   "حصر الحضور والغياب اليومي لحلقات القرآن: اختر الحلقة والتاريخ ثم ارصد الحضور بنقرة واحدة.": "Relevé quotidien des présences et absences des halaqas : choisissez la halaqa et la date, puis pointez les présences d'un clic.",
   "بحث عن طالب (نشط أو مؤرشف)": "Rechercher un élève (actif ou archivé)",

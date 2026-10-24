@@ -131,7 +131,13 @@ export interface Notification {
   isRead: boolean;
   /** Destinataires (firestore.rules, D83) ; absent : bureau seulement. */
   audience?: NotificationAudience;
+  /** Comptes (uid) qui l'ont lue (U-03, D84) ; `isRead` reste pour les anciennes. */
+  readBy?: string[];
 }
+
+/** Lue par ce compte : marquée par lui, ou marquée « lue » pour tous (anciennes notifications). */
+export const isNotificationRead = (n: Notification, uid: string | null | undefined) =>
+  n.isRead === true || (!!uid && (n.readBy ?? []).includes(uid));
 
 /** 'office' : bureau ; 'educators' : pédagogie ; 'staff' : tout le personnel. */
 export type NotificationAudience = "office" | "educators" | "staff";

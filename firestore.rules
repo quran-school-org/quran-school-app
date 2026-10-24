@@ -272,8 +272,9 @@ service cloud.firestore {
       // de notifications. Destinataires par le champ `audience` (A-01, D83) :
       // 'office' (bureau : finances, comptes…), 'educators' (pédagogie : notes,
       // absences), 'staff' (tout le personnel). Sans champ : bureau seulement.
-      // Hors bureau, une mise à jour ne peut que marquer comme lue une
-      // notification qu'on a le droit de lire.
+      // Hors bureau, une mise à jour ne peut qu'ajouter son propre uid à
+      // `readBy` (« lu » par personne, U-03, D84), sur une notification qu'on
+      // a le droit de lire.
       match /notifications/{notificationId} {
         allow read: if canSeeNotification(s, resource.data.get('audience', 'office'));
         allow create: if isStaff(s) && validWrite(s, notificationId)
@@ -281,8 +282,10 @@ service cloud.firestore {
         allow update: if validWrite(s, notificationId)
           && (isOffice(s)
               || (canSeeNotification(s, resource.data.get('audience', 'office'))
-                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'id'])
-                  && request.resource.data.get('id', notificationId) == notificationId));
+                  && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy'])
+                  && request.resource.data.readBy is list
+                  && request.resource.data.readBy.toSet()
+                       == resource.data.get('readBy', []).toSet().union([request.auth.uid].toSet())));
         allow delete: if isOffice(s);
       }
     }

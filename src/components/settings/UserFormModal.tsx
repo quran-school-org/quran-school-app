@@ -409,7 +409,7 @@ export default function UserFormModal() {
               {isPrimaryDirector(editingUser) && (
                 <div className="bg-gold-50 border border-gold-200 text-gold-800 p-3 rounded-xl flex items-start gap-2 text-[11.5px]">
                   <AlertTriangle className="w-4 h-4 text-gold-600 shrink-0 mt-0.5" />
-                  <p>حساب المدير الأساسي (@admin_alfajr) له الصلاحيات المطلقة دائماً ولا يمكن تعديل نوع حسابه أو حظره لضمان عدم انقطاع الوصول إلى النظام.</p>
+                  <p>حساب المدير الأساسي لهذه المدرسة له الصلاحيات المطلقة دائماً ولا يمكن تعديل نوع حسابه أو حظره لضمان عدم انقطاع الوصول إلى النظام.</p>
                 </div>
               )}
 
