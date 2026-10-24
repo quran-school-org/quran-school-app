@@ -4,6 +4,7 @@
 import React  from "react";
 import { RealmSimDB } from "../../db";
 import type { DerivedScope } from "../scope";
+import { csvCell } from "../../utils/csv";
 
 export function useExportBackupActions(s: DerivedScope) {
   const {
@@ -47,7 +48,7 @@ export function useExportBackupActions(s: DerivedScope) {
         s.tajweedLevel,
         s.isArchived ? "مؤرشف" : "نشط",
         s.notes || "—"
-      ].map(val => `"${String(val).replace(/"/g, '""')}"`);
+      ].map(csvCell);
     });
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");

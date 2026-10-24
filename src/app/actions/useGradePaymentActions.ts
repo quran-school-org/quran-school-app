@@ -6,6 +6,7 @@ import { RealmSimDB } from "../../db";
 import { Grade, Payment } from "../../types";
 import { getYearAndMonthFromDate } from "../helpers";
 import type { DerivedScope } from "../scope";
+import { csvCell } from "../../utils/csv";
 
 export function useGradePaymentActions(s: DerivedScope) {
   const {
@@ -79,7 +80,7 @@ export function useGradePaymentActions(s: DerivedScope) {
     };
     RealmSimDB.saveGrade(newGrade);
     const studName = students.find(st => st.id === gradeStudentId)?.fullName || "";
-    addSysNotification("إصدار شهادة اختبار", `تم رصد نتيجة اختبار جديدة للطالب ${studName} بتقدير ${gradeOverall}.`, "نجاح");
+    addSysNotification("إصدار شهادة اختبار", `تم رصد نتيجة اختبار جديدة للطالب ${studName} بتقدير ${gradeOverall}.`, "نجاح", "educators");
     loadDatabase();
     setShowGradeModal(false);
   };
@@ -258,7 +259,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
         p.paymentMethod || "—",
         p.receiptNo || "—",
         p.notes || "—"
-      ].map(val => `"${String(val).replace(/"/g, '""')}"`);
+      ].map(csvCell);
     });
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
