@@ -96,7 +96,7 @@ export function useCore(s: BaseScope) {
     }
   };
   // Helper to trigger automated notifications
-  // Destinataires par défaut (D83) : le bureau pour ses propres opérations,
+  // Destinataires par défaut (D84) : le bureau pour ses propres opérations,
   // la pédagogie pour celles d'un enseignant ou d'un encadrant, tout le
   // personnel pour les autres rôles (seule valeur que les règles leur permettent).
   const addSysNotification = (title: string, message: string, type: "نجاح" | "تنبيه" | "مالي" | "إداري", audience?: NotificationAudience) => {

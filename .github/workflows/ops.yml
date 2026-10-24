@@ -4,8 +4,8 @@
 #   (gh workflow run) après le « go » du propriétaire : docs/runbooks/OPERATIONS-CLAUDE.md.
 # - Compte de service github-ops (WIF, sans clé), distinct de github-deploy.
 # - Entrées : des choix fermés, sauf `confirm` (comparé, jamais exécuté),
-#   `import_source` et `username` (validés par une expression régulière
-#   stricte avant usage).
+#   `import_source`, `username` et `school_id` (validés par une expression
+#   régulière stricte avant usage).
 #   Aucune entrée n'est interpolée dans un script : tout passe par env.
 # - Simulation par défaut (apply=false). Toute écriture (apply=true) exige
 #   confirm = identifiant du projet ; en production, toute action autre que
@@ -31,6 +31,12 @@
 #   superAdmin, aucune école, mot de passe dans l'artefact chiffré) et
 #   dev-super-admin-revoke (retrait du claim) : dev SEULEMENT, mêmes garde-fous
 #   que seed-demo. En production, le super-admin vient de migrate-to-tenants.
+# - Données fictives dans une école de test (D82) : seed-school-fixtures
+#   (école existante `school_id`, jeu small ou large marqué demoData / DEMO-,
+#   comptes test_*, mots de passe dans l'artefact chiffré) et
+#   remove-school-fixtures (retrait des seuls documents et comptes générés) :
+#   dev SEULEMENT, mêmes garde-fous que seed-demo ; `school_id` validé par une
+#   expression régulière stricte, `alfajr` (copie des données réelles) refusée.
 # - Configuration GitHub (D75) : environnements `dev` / `production` (Team,
 #   Enterprise : job `operation`) ou variables de dépôt préfixées DEV_ / PROD_
 #   (Free : job `operation-sans-environnement`, sans `environment:`), choisie
@@ -48,10 +54,10 @@ on:
       action:
         description: "Opération"
         type: choice
-        options: [describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke]
+        options: [describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures, remove-school-fixtures]
         default: describe-db
       apply:
-        description: "Appliquer (sinon simulation) : lot0-provision, migrate-to-tenants, import-firestore ; obligatoire pour seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke"
+        description: "Appliquer (sinon simulation) : lot0-provision, migrate-to-tenants, import-firestore ; obligatoire pour seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures, remove-school-fixtures"
         type: boolean
         default: false
       rotate_passwords:
@@ -69,6 +75,16 @@ on:
         type: string
         required: false
         default: ""
+      school_id:
+        description: "seed-school-fixtures, remove-school-fixtures : identifiant de l'école de test (^[a-z0-9-]{3,40}$, jamais alfajr)"
+        type: string
+        required: false
+        default: ""
+      size:
+        description: "seed-school-fixtures : volume du jeu fictif (large ~150 élèves, small ~15)"
+        type: choice
+        options: [large, small]
+        default: large
       confirm:
         description: "Recopier l'identifiant du projet visé pour confirmer"
         type: string
@@ -178,6 +194,8 @@ jobs:
           CONFIRM: ${{ inputs.confirm }}
           IMPORT_SOURCE: ${{ inputs.import_source }}
           USERNAME_INPUT: ${{ inputs.username }}
+          SCHOOL_ID_INPUT: ${{ inputs.school_id }}
+          SIZE_INPUT: ${{ inputs.size }}
           REF: ${{ github.ref }}
         run: |
           set -euo pipefail
@@ -192,7 +210,7 @@ jobs:
           if [ "${APPLY}" = "true" ] && [ "${ROTATE}" != "none" ] && [ -z "${ARTIFACT_KEY}" ]; then
             fail "rotate_passwords=${ROTATE} appliqué exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
           fi
-          case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke) ;; *) fail "Action inconnue.";; esac
+          case "${ACTION}" in describe-db|export-firestore|import-firestore|lot0-provision|migrate-to-tenants|verify-counts|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke|seed-school-fixtures|remove-school-fixtures) ;; *) fail "Action inconnue.";; esac
           case "${ROTATE}" in none|weak|all) ;; *) fail "rotate_passwords inconnu.";; esac
           case "${APPLY}" in true|false) ;; *) fail "apply invalide.";; esac
           if [ -z "${PROJECT_ID}" ] || [ -z "${DATABASE_ID}" ] || [ -z "${WIF_PROVIDER}" ] || [ -z "${OPS_SA}" ] || [ -z "${BACKUP_BUCKET}" ]; then
@@ -221,14 +239,15 @@ jobs:
 
           # Cohérence des entrées avec l'action.
           case "${ACTION}" in
-            lot0-provision|migrate-to-tenants|import-firestore|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke) ;;
+            lot0-provision|migrate-to-tenants|import-firestore|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke|seed-school-fixtures|remove-school-fixtures) ;;
             *) [ "${APPLY}" = "false" ] || fail "apply=true n'a pas de sens pour ${ACTION}." ;;
           esac
           # D77 : école de démonstration, sur le dev SEULEMENT (jamais la production).
           # D80 : super-admin du dev, mêmes garde-fous (en prod : migrate-to-tenants).
+          # D82 : données fictives dans une école de test, mêmes garde-fous.
           case "${ACTION}" in
-            seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke)
-              [ "${ENVIRONMENT}" = "dev" ] || fail "${ACTION} est refusé en production (dev seulement, D77, D80)."
+            seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke|seed-school-fixtures|remove-school-fixtures)
+              [ "${ENVIRONMENT}" = "dev" ] || fail "${ACTION} est refusé en production (dev seulement, D77, D80, D82)."
               [ "${PROJECT_ID}" != "${PROD_PROJECT_ID}" ] || fail "${ACTION} : le projet visé est la prod."
               [ "${APPLY}" = "true" ] || fail "${ACTION} exige apply=true (et confirm = identifiant du projet de dev)."
               [ "${CONFIRM}" = "${PROJECT_ID}" ] || fail "Confirmation incorrecte : recopier l'identifiant du projet de dev dans « confirm »."
@@ -241,6 +260,20 @@ jobs:
           if [ "${ACTION}" = "dev-super-admin" ] && [ -z "${ARTIFACT_KEY}" ]; then
             fail "dev-super-admin exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
           fi
+          if [ "${ACTION}" = "seed-school-fixtures" ] && [ -z "${ARTIFACT_KEY}" ]; then
+            fail "seed-school-fixtures exige la variable ${VAR_PREFIX:+${VAR_PREFIX}ARTIFACT_GPG_PUBLIC_KEY ou }ARTIFACT_GPG_PUBLIC_KEY (artefact des mots de passe chiffré) : CI-DEPLOIEMENT.md §2 bis."
+          fi
+          # D82 : école de test, format strict (jamais exécuté, passé par env) ; alfajr
+          # (copie des données réelles sur le dev) refusée ici et par le script.
+          case "${ACTION}" in
+            seed-school-fixtures|remove-school-fixtures)
+              [[ "${SCHOOL_ID_INPUT}" =~ ^[a-z0-9-]{3,40}$ ]] || fail "school_id invalide : attendu ^[a-z0-9-]{3,40}$ (ex. test1234)."
+              [ "${SCHOOL_ID_INPUT}" != "alfajr" ] || fail "school_id=alfajr refusé : copie des données réelles (D82)."
+              ;;
+            *) [ -z "${SCHOOL_ID_INPUT}" ] || fail "school_id ne concerne que seed-school-fixtures et remove-school-fixtures." ;;
+          esac
+          case "${SIZE_INPUT}" in large|small) ;; *) fail "size inconnu.";; esac
+          [ "${ACTION}" = "seed-school-fixtures" ] || [ "${SIZE_INPUT}" = "large" ] || fail "size ne concerne que seed-school-fixtures."
           # D80 : identifiant du super-admin du dev, format strict (jamais exécuté, passé par env).
           case "${ACTION}" in
             dev-super-admin|dev-super-admin-revoke)
@@ -278,7 +311,7 @@ jobs:
           # Code à extraire : références FIXES.
           case "${ACTION}" in
             lot0-provision) echo "code_ref=release/lot0" >> "$GITHUB_OUTPUT" ;;
-            migrate-to-tenants|verify-counts|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke) echo "code_ref=main" >> "$GITHUB_OUTPUT" ;;
+            migrate-to-tenants|verify-counts|seed-demo|remove-demo|dev-super-admin|dev-super-admin-revoke|seed-school-fixtures|remove-school-fixtures) echo "code_ref=main" >> "$GITHUB_OUTPUT" ;;
             *) echo "code_ref=" >> "$GITHUB_OUTPUT" ;;
           esac
           echo "stamp=$(date -u +%Y%m%d-%H%M%SZ)" >> "$GITHUB_OUTPUT"
@@ -286,7 +319,7 @@ jobs:
           { echo "REPORTS=${RUNNER_TEMP}/rapports"; echo "SECRETS_DIR=${RUNNER_TEMP}/secret"; } >> "$GITHUB_ENV"
           echo "${ACTION} sur ${PROJECT_ID} / ${DATABASE_ID} (${ENVIRONMENT}, configuration ${CONFIG_MODE}${VAR_PREFIX:+ ${VAR_PREFIX}*}), apply=${APPLY}, rotate_passwords=${ROTATE}"
 
-      # A-06 (D83) : la clé publique est importée et essayée AVANT toute opération ;
+      # A-06 (D84) : la clé publique est importée et essayée AVANT toute opération ;
       # une clé inutilisable arrête le run sans rien avoir écrit, et les artefacts
       # ne partent jamais en clair.
       - name: Clé de chiffrement utilisable
@@ -445,9 +478,11 @@ jobs:
 
       - name: ${{ inputs.action }} (script Admin SDK, journal en artefact)
         id: script
-        if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants' || inputs.action == 'seed-demo' || inputs.action == 'remove-demo' || inputs.action == 'dev-super-admin' || inputs.action == 'dev-super-admin-revoke'
+        if: inputs.action == 'lot0-provision' || inputs.action == 'migrate-to-tenants' || inputs.action == 'seed-demo' || inputs.action == 'remove-demo' || inputs.action == 'dev-super-admin' || inputs.action == 'dev-super-admin-revoke' || inputs.action == 'seed-school-fixtures' || inputs.action == 'remove-school-fixtures'
         env:
           USERNAME_INPUT: ${{ inputs.username }}
+          SCHOOL_ID_INPUT: ${{ inputs.school_id }}
+          SIZE_INPUT: ${{ inputs.size }}
         run: |
           set -euo pipefail
           mkdir -p "${REPORTS}"
@@ -464,6 +499,15 @@ jobs:
             SCRIPT=scripts/admin/dev-super-admin.ts
             ARGS+=(--username="${USERNAME_INPUT}")
             [ "${ACTION}" = "dev-super-admin-revoke" ] && ARGS+=(--revoke)
+          elif [ "${ACTION}" = "seed-school-fixtures" ] || [ "${ACTION}" = "remove-school-fixtures" ]; then
+            # Revalidé ici (défense en profondeur) : dev seulement, école stricte, jamais alfajr ; le script refuse aussi.
+            if [ "${ENVIRONMENT}" != "dev" ] || [ "${PROJECT_ID}" = "${PROD_PROJECT_ID}" ]; then echo "::error::${ACTION} refusé hors dev."; exit 1; fi
+            [[ "${SCHOOL_ID_INPUT}" =~ ^[a-z0-9-]{3,40}$ ]] || { echo "::error::school_id invalide."; exit 1; }
+            [ "${SCHOOL_ID_INPUT}" != "alfajr" ] || { echo "::error::school_id=alfajr refusé."; exit 1; }
+            case "${SIZE_INPUT}" in large|small) ;; *) echo "::error::size invalide."; exit 1 ;; esac
+            SCRIPT=scripts/dev/seed-school-fixtures.ts
+            ARGS+=(--school="${SCHOOL_ID_INPUT}")
+            if [ "${ACTION}" = "remove-school-fixtures" ]; then ARGS+=(--remove); else ARGS+=(--size="${SIZE_INPUT}"); fi
           elif [ "${ACTION}" = "lot0-provision" ]; then
             SCRIPT=scripts/admin/lot0-provision-auth.ts
             ARGS+=(--rotate-passwords="${ROTATE}")
@@ -481,12 +525,15 @@ jobs:
           echo "Code de sortie du script : ${CODE}"
           if [ "${CODE}" -ne 0 ]; then
             # Seules les lignes d'erreur générales, adresses et numéros masqués.
-            grep -E '^\[(lot0|migration|seed-demo|dev-super-admin)\] (ÉCHEC|Anomalies critiques)|compte\(s\) en échec' "${REPORTS}/journal.txt" \
+            grep -E '^\[(lot0|migration|seed-demo|dev-super-admin|seed-school-fixtures)\] (ÉCHEC|Anomalies critiques)|compte\(s\) en échec' "${REPORTS}/journal.txt" \
               | sed -E 's/[[:alnum:]._%+-]+@[[:alnum:].-]+/<email>/g; s/[0-9]{6,}/<n>/g' | head -n 5 || true
           fi
           if [ "${ACTION}" = "seed-demo" ] || [ "${ACTION}" = "remove-demo" ]; then
             RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/seed-demo-*/resume.json' | head -n 1)
             FILTER='{mode, schoolId, collections, accounts, superAdminClaims, otherSchoolMemberships, passwordsFile, schoolExisted, accountsRemoved}'
+          elif [ "${ACTION}" = "seed-school-fixtures" ] || [ "${ACTION}" = "remove-school-fixtures" ]; then
+            RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/seed-school-fixtures-*/resume.json' | head -n 1)
+            FILTER='{mode, operation, schoolId, size, collections, writes, skippedUnmarked, unmarkedKept, paymentMonths, accounts, superAdminClaims, otherSchoolMemberships, passwordsFile, removed, orphansLeft}'
           elif [ "${ACTION}" = "dev-super-admin" ] || [ "${ACTION}" = "dev-super-admin-revoke" ]; then
             RESUME=$(find "${REPORTS}" -mindepth 2 -maxdepth 2 -path '*/dev-super-admin-*/resume.json' | head -n 1)
             FILTER='{mode, operation, username, accountFound, created, reset, superAdmin, schoolMemberships, disabled, sessionsRevoked, passwordsFile}'

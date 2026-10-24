@@ -5,7 +5,7 @@ import './index.css';
 import { frTestEnabled } from './config/env';
 import { applyPalette, readPalette } from './ui/palette';
 
-// Couleur choisie par la personne (D85), appliquée avant le premier rendu.
+// Couleur choisie par la personne (D86), appliquée avant le premier rendu.
 applyPalette(readPalette());
 
 const render = () =>

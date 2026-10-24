@@ -1760,7 +1760,126 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` du commit ; pour un directeur, corriger sa
   matrice dans Paramètres › المستخدمين (ou passer `permissions: null`).
 
-### D82. Le front est vérifié par TypeScript en mode strict, avec les types de React
+### D82. Données fictives en volume dans une école de test du dev (`ops.yml` › `seed-school-fixtures`)
+- **Contexte** : le propriétaire veut essayer l'application multi-écoles sur
+  le dev `fajr-c4c6e` avec beaucoup de données, dans l'école de test
+  `test1234` qu'il a créée depuis l'interface en super-admin (D80), où il a
+  déjà saisi quelques documents (1 fiche du personnel, 2 membres, des
+  notifications) à garder. Le dev contient aussi `alfajr`, **copie des
+  données réelles** d'élèves mineurs (D77, D80). `seed-demo` ne convient pas :
+  il remplace toute l'école `demo` et refuse une base qui contient d'autres
+  données.
+- **Décision (script `scripts/dev/seed-school-fixtures.ts`, Admin SDK, jeu
+  pur `scripts/dev/fixtures/school-fixtures.ts`)** :
+  - options `--project`, `--school=<id>` (obligatoire,
+    `^[a-z0-9-]{3,40}$`), `--size=small|large` (`large` par défaut),
+    simulation par défaut, `--apply`, `--confirm-prod=<projet>` et
+    `--database` sur un vrai projet (`scripts/admin/lib/cli.ts`), `--remove` ;
+  - **refus contrôlés en premier, sans option pour les lever** : projet
+    `gen-lang-client-0481880143` (le projet seul, comme `seed-demo`), avant
+    toute autre analyse ; école `alfajr` (toutes graphies), avant toute
+    connexion, puis à nouveau dans les fonctions ; école absente
+    (`schools/{id}` est écrit par `createSchool`) : `SCHOOL_NOT_FOUND` ;
+    école de plus de 20 élèves non générés : `REAL_SCHOOL`. Ces refus valent
+    aussi pour `--remove` ;
+  - **jeu `large`** (volumes pour `test1234` au 24 octobre 2026, ouverture
+    en octobre ; ils varient un peu avec l'école et la date) : 150 élèves
+    (5 à 17 ans, garçons et filles, fratries, 0 à 60 hizbs, sourate en cours,
+    tajwid, documents fournis ou manquants, 4 archivés), 12 halaqas (aucune le
+    vendredi), 15 membres du personnel de toutes catégories (fiche publique +
+    `staffPrivate` : salaire, contrat, CIN `XX…`, naissance, adresse
+    « (عنوان وهمي) », contact d'urgence), 4 824 présences (chaque jour de
+    halaqa des 3 derniers mois), 1 522 suivis quotidiens du hifz (30 jours),
+    264 examens (notes et mentions d'attestation), 146 cotisations avec
+    retards et impayés, 18 dépenses, 10 autres recettes, 39 salaires (mois passés
+    versés, mois en cours en attente), 4 activités avec 88 participants et 6
+    dépenses, 30 notifications : 7 143 documents, **7 155 écritures** comptes
+    compris. `small` : 15 élèves, 2 halaqas, 6 membres du personnel, 592
+    présences, 886 documents, 898 écritures. Écriture par
+    lots de 400 ; le test unitaire borne `large` sous 20 000 écritures ;
+  - **cotisations** : depuis le début de la saison (septembre de
+    `activeAcademicSeason`), **jamais avant le mois d'ouverture** des
+    paramètres (l'application masque ces mois), plus le mois d'ouverture
+    s'il précède la saison (sinon l'application crée elle-même des lignes
+    `p_init_*` non marquées). `test1234`, créée en octobre, n'a donc que les
+    cotisations d'octobre ; pour voir septembre, régler le mois d'ouverture
+    sur شتمبر dans الإعدادات avant le seed. Les paramètres ne sont que lus ;
+  - **marquage** : `demoData: true` et identifiant `DEMO-…` (`DEMO-S-001`,
+    `DEMO-C-01`, `DEMO-T-01`, `DEMO-P-…`…), avec deux exceptions :
+    `staffPrivate` (les règles y imposent une liste fermée de champs et
+    l'interface y écrit en fusion : `demoData` y rendrait la fiche RH
+    impossible à modifier ; marquage = identifiant `DEMO-T-…` égal à
+    `teacherId`, fiche publique marquée) et `attendance` (l'interface
+    identifie une présence par `a_<date>_<élève>` : un identifiant `DEMO-…`
+    créerait un doublon à la première modification ; marquage = `demoData`
+    + identifiant `a_<date>_DEMO-S-…`). Vérifié avec les règles : un
+    document marqué se relit et se modifie en fusion depuis l'interface
+    (élève, fiche publique et fiche RH, présence, notification marquée lue
+    par un enseignant), et `demoData` reste en place ;
+  - **relance idempotente** : jeu déterministe (école, taille, date) ;
+    documents marqués réécrits, marqués hors du jeu supprimés ; un document
+    **non marqué** de même identifiant n'est jamais réécrit (compté
+    `skippedUnmarked`) ; `--remove` ne supprime que les documents marqués et
+    compte les documents non marqués que l'interface a créés pour un élève
+    `DEMO-` (`orphansLeft`, ex. absence automatique), sans les toucher ;
+  - **comptes** `test_admin` (إداري, fiche `DEMO-T-10`), `test_enseignant`
+    (مدرس, fiche `DEMO-T-01` et ses halaqas), `test_parent` (ولي أمر, deux
+    élèves d'une fratrie), `test_eleve` (طالب, l'élève le plus âgé) :
+    convention de `createSchoolUser` (`usernameToEmail` vers
+    `comptes.kuttab.local`, `usernames`, `users`, `members`), membres de
+    l'école visée seulement, aucun claim (retiré à la relance),
+    `mustChangePassword: false` (comptes d'essai, mot de passe neuf à chaque
+    relance) ; marqués `users.demoAccount` + `demoSchoolId`,
+    `usernames.source = seed-school-fixtures`, `members.demoData`. Un
+    identifiant pris par un autre compte (registre, compte Auth non marqué,
+    compte historique) ou marqué pour une autre école : `ACCOUNT_CONFLICT`
+    avant toute écriture ; `--remove` l'ignore (`accounts.skipped`) ;
+  - mots de passe aléatoires de 19 caractères, dans le seul fichier secret
+    `seed-school-fixtures-<horodatage>/mots-de-passe-temporaires.csv`
+    (mode 600) ; `resume.json` sans mot de passe : `mode`, `operation`,
+    `schoolId`, `size`, `collections`, `writes`, `skippedUnmarked`,
+    `unmarkedKept`, `paymentMonths`, `accounts`, `superAdminClaims`,
+    `otherSchoolMemberships`, `passwordsFile` (et pour le retrait
+    `removed`, `orphansLeft`) ;
+  - exception assumée à « les comptes ne s'écrivent que par les Cloud
+    Functions » (comme `seed-demo` et `dev-super-admin`).
+- **Décision (`ops.yml`)** : actions `seed-school-fixtures` et
+  `remove-school-fixtures`, garde-fous de `seed-demo` : refusées en
+  production dans le job de garde-fous puis dans l'étape du script, code de
+  `main`, `apply=true` et `confirm` = projet de dev, `ARTIFACT_GPG_PUBLIC_KEY`
+  exigée pour le seed (mots de passe dans l'artefact chiffré
+  `mots-de-passe-temporaires-*`, 1 jour). Entrée `school_id` validée par
+  `^[a-z0-9-]{3,40}$` puis **refus explicite d'`alfajr`**, dans les deux
+  étapes, passée par `env`, jamais affichée si elle est invalide, refusée
+  pour toute autre action. Entrée `size` en choix fermé (`large` par défaut,
+  `small`), refusée à `small` hors seed. Résumé en liste blanche.
+- **Contrôle visuel** (émulateurs, école `annour` peuplée en `large`, compte
+  directeur, Chromium 1440 px, 7 302 écritures) : tableau de bord, élèves,
+  paiements, présences, comptabilité et examens s'affichent correctement ;
+  seed en 3 s sur les émulateurs.
+  Lenteur notable mais pas bloquante : changement d'onglet en 0,8 à 0,9 s
+  pour élèves, paiements, présences et examens (0,1 à 0,25 s sans le jeu),
+  listes sans pagination (148 lignes, 11 000 nœuds DOM pour les examens),
+  cache local de 1,2 Mio. Le directeur s'abonne à toutes les collections :
+  **environ 7 150 lectures Firestore par ouverture de session** sur le dev.
+  Non optimisé ici.
+- **Vérifié localement** : `tests/unit/schoolFixtures.test.ts` (volumes,
+  quotas, marquage, références, horaires lus comme l'application, cotisations
+  et ouverture), `tests/emulator/seed-school-fixtures.test.ts` (volumes,
+  saisies manuelles intactes avant et après seed et retrait, refus prod,
+  `alfajr`, école absente, plus de 20 vrais élèves, idempotence, conflits de
+  comptes, connexion comme l'application et droits par rôle, marquage
+  compatible avec les règles, aucun mot de passe dans la sortie),
+  `tests/unit/workflows.test.ts` (garde-fou joué avec bash),
+  `zizmor --offline` sans constat.
+- **Non testé sur GitHub** : aucun workflow déclenché.
+- **Retour arrière** : `remove-school-fixtures` sur le dev (documents
+  marqués et comptes `test_*` supprimés ; les documents non marqués restent,
+  y compris ceux créés par l'interface pour des élèves `DEMO-`, à supprimer
+  depuis l'interface si besoin), puis `git revert` des commits de
+  `feat/seed-ecole-test`.
+
+### D83. Le front est vérifié par TypeScript en mode strict, avec les types de React
 - **Contexte** : le projet généré par AI Studio n'installait pas
   `@types/react` (`src/jsx-shim.d.ts` le contournait) et le `tsconfig.json`
   du front n'activait pas `strict` (les Cloud Functions l'avaient déjà). Tout
@@ -1779,7 +1898,7 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` du commit ; ou retirer `strict` du
   `tsconfig.json` si une urgence l'exige.
 
-### D83. Correctifs de l'audit d'octobre 2026 (A-01, A-02, A-04, A-05, A-06)
+### D84. Correctifs de l'audit d'octobre 2026 (A-01, A-02, A-04, A-05, A-06)
 - **Contexte** : audit de sécurité du 24/10/2026
   (`docs/revues/REVUE-SECURITE-2026-10.md`) ; Mélik a retenu ces cinq
   constats (décisions sur la page de synthèse) ; A-03 et A-07 sont reportés.
@@ -1810,7 +1929,7 @@ là-bas (R-06).
   notifications créées entre-temps gardent un champ `audience` sans effet sur
   l'ancienne règle.
 
-### D84. Notifications lues par personne et moins de bruit (U-03), petits bugs visibles (U-04)
+### D85. Notifications lues par personne et moins de bruit (U-03), petits bugs visibles (U-04)
 - **Contexte** : audit UX d'octobre 2026 (`docs/audit-2026-10/AUDIT-UX.md`),
   points retenus par Mélik.
 - **Décision** :
@@ -1832,7 +1951,7 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits ; les champs `readBy` déjà
   écrits restent sans effet sur l'ancienne règle.
 
-### D85. Palette verte à l'essai, au choix de chaque personne
+### D86. Palette verte à l'essai, au choix de chaque personne
 - **Contexte** : l'école a demandé d'essayer le vert à la place du bleu.
   Mélik a choisi d'en faire une option, puis de passer tout le front en vert
   si le rendu convainc (échange du 24/10/2026).

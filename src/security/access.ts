@@ -35,7 +35,7 @@ export function fullyReadableCollections(role: UserRole): string[] {
 
 /**
  * Destinataires de notifications lisibles hors bureau (miroir de
- * `canSeeNotification` dans firestore.rules, D83). Le bureau lit toute la
+ * `canSeeNotification` dans firestore.rules, D84). Le bureau lit toute la
  * collection ; les familles n'en lisent aucune.
  */
 export function readableNotificationAudiences(role: UserRole): NotificationAudience[] {

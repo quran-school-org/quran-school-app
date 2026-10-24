@@ -159,6 +159,56 @@ pour `createSchool`) ; clé publique `ARTIFACT_GPG_PUBLIC_KEY` posée (Free :
 - L'orchestrateur ne télécharge pas l'artefact et ne lit jamais le mot de
   passe ; il ne transmet au propriétaire que l'URL du run.
 
+## 1 quater. Données fictives en volume dans une école de test (D82)
+
+But : le propriétaire essaie l'application avec beaucoup de données
+**fictives** dans l'école de test qu'il a créée depuis l'interface en
+super-admin (`test1234`), en gardant ce qu'il y a saisi à la main. Le script ne
+touche que des documents qu'il a lui-même marqués (`demoData: true` et
+identifiant `DEMO-…`), et n'écrit **jamais** dans `alfajr` (copie des données
+réelles) : refus par le garde-fou d'`ops.yml`, par l'étape du script et par le
+script lui-même. Il refuse aussi une école absente (`SCHOOL_NOT_FOUND`) et une
+école qui contient plus de 20 élèves non générés (`REAL_SCHOOL`).
+
+**Production : action interdite** (garde-fou, étape et script).
+
+Prérequis : `feat/seed-ecole-test` fusionnée dans `main` (le code exécuté est
+celui de `main`) ; école `test1234` créée depuis l'interface (S.2) ; clé
+publique `ARTIFACT_GPG_PUBLIC_KEY` posée (Free : `DEV_ARTIFACT_GPG_PUBLIC_KEY`
+ou `ARTIFACT_GPG_PUBLIC_KEY`), sans quoi `seed-school-fixtures` s'arrête au
+garde-fou.
+
+| # | Commande | À vérifier | Si échec |
+|---|---|---|---|
+| F.1 | `run ops.yml -f environment=dev -f action=seed-school-fixtures -f school_id=test1234 -f apply=true -f confirm=$DEV` (facultatif : `-f size=small`, ~900 écritures au lieu de ~7 150) | run vert ; `RESUME_JSON` : `mode: application`, `operation: seed`, `schoolId: test1234`, `size: large`, `collections.students: 150`, `classes: 12`, `teachers: 15`, `staffPrivate: 15`, `notifications: 30`, `writes.total` < 20 000, `skippedUnmarked: 0`, `unmarkedKept` = les saisies manuelles (`teachers: 1`, `members: 2`, `notifications` ≥ 1…), `accounts.created + accounts.reset = 4`, `superAdminClaims: 0`, `otherSchoolMemberships: 0`, `passwordsFile: true` ; artefact `mots-de-passe-temporaires-dev-<run>-<tentative>` (chiffré, 1 jour) | `SCHOOL_NOT_FOUND` : école non créée ou mal orthographiée ; `REAL_SCHOOL` : **arrêt**, mauvaise école visée, rapport au propriétaire ; `ACCOUNT_CONFLICT` : un identifiant `test_*` est pris par un autre compte, ou les comptes de test appartiennent à une autre école de test (un seul jeu de comptes `test_*` sur le dev) : arrêt, rapport ; `school_id invalide` : corriger l'entrée ; clé publique absente : la faire poser |
+| F.2 | (propriétaire) télécharger l'artefact, `unzip`, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, lire `mots-de-passe-temporaires-1.csv`, se connecter sur `https://$DEV.web.app` | en super-admin (directeur de `test1234`) : tableau de bord, élèves, paiements, présences, comptabilité remplis ; saisies manuelles toujours là ; `test_admin` (إداري), `test_enseignant` (مدرس, halaqas النور et التقوى), `test_parent` (ولي أمر, deux enfants), `test_eleve` (طالب) ne voient que `test1234`, selon leur rôle | connexion refusée : relancer F.1 (nouveaux mots de passe) |
+
+- **Cotisations** : générées depuis septembre, mais **jamais avant le mois
+  d'ouverture** de l'école (Paramètres), que l'application masque :
+  `paymentMonths` du résumé les liste (une école créée en octobre n'a que
+  celles d'octobre). Pour voir la saison entière, régler le mois d'ouverture
+  sur شتمبر dans الإعدادات, puis relancer F.1.
+- **Relance** (jeu remis à neuf, nouveaux mots de passe, sessions révoquées) :
+  la même commande F.1. Les documents marqués sont réécrits (les
+  modifications faites depuis l'interface sur des documents `DEMO-` sont
+  perdues), ceux qui ne font plus partie du jeu sont supprimés
+  (`writes.deleted`) ; un document non marqué n'est jamais réécrit
+  (`skippedUnmarked`).
+- **Quotas** : `large` ≈ 7 150 écritures par run (lots de 400) ; chaque
+  ouverture de session d'un compte du bureau lit toutes les collections de
+  l'école, soit **environ 7 150 lectures** : à garder en tête sur le dev.
+- **Retrait** (fin des essais) :
+  `run ops.yml -f environment=dev -f action=remove-school-fixtures -f school_id=test1234 -f apply=true -f confirm=$DEV`.
+  `RESUME_JSON` : `operation: remove`, `removed.*` = les volumes de F.1,
+  `accounts.removed: 4` (0 si déjà fait), `accounts.skipped: 0`,
+  `unmarkedKept` inchangé, `orphansLeft` = documents **non marqués** créés par
+  l'interface pour des élèves `DEMO-` (absences automatiques, cotisations
+  d'ouverture) : gardés, à supprimer depuis l'interface si besoin. Rien
+  d'autre n'est supprimé (école, paramètres, saisies manuelles, autres
+  comptes).
+- L'orchestrateur ne télécharge pas l'artefact et ne lit jamais les mots de
+  passe ; il ne transmet au propriétaire que l'URL du run.
+
 ## 2. Lot 0 : simulation sur la prod → **go n°1**
 
 | # | Commande | À vérifier |
@@ -266,10 +316,12 @@ l'application (super-admin). Retour arrière : MIGRATION-BASCULE.md §6, avec
 | | `force` | `false` (défaut), `true` : `--force` (supprime les fonctions absentes de `release/lot0`) |
 | | `confirm` | production : `gen-lang-client-0481880143` |
 | `ops.yml` | `environment` | `dev`, `production` |
-| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts`, `seed-demo` (dev), `remove-demo` (dev), `dev-super-admin` (dev), `dev-super-admin-revoke` (dev) |
-| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore ; **obligatoire** pour seed-demo, remove-demo, dev-super-admin et dev-super-admin-revoke |
+| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts`, `seed-demo` (dev), `remove-demo` (dev), `dev-super-admin` (dev), `dev-super-admin-revoke` (dev), `seed-school-fixtures` (dev), `remove-school-fixtures` (dev) |
+| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore ; **obligatoire** pour seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures et remove-school-fixtures |
 | | `rotate_passwords` | `none` (défaut, D53), `weak`, `all` : lot0-provision, migrate-to-tenants |
 | | `import_source` | import-firestore : `AAAAMMJJ-HHMMSSZ-(manuel\|avant-lot0-provision\|avant-migrate-to-tenants)` |
 | | `username` | dev-super-admin, dev-super-admin-revoke (obligatoire, vide pour les autres actions) : `^[a-z0-9][a-z0-9._-]{1,39}$`, ex. `superadmin_melik` |
+| | `school_id` | seed-school-fixtures, remove-school-fixtures (obligatoire, vide pour les autres actions) : `^[a-z0-9-]{3,40}$`, jamais `alfajr`, ex. `test1234` |
+| | `size` | seed-school-fixtures : `large` (défaut), `small` ; `large` pour toute autre action |
 | | `confirm` | identifiant du projet visé : obligatoire pour `apply=true`, et en production pour tout sauf `describe-db` et `verify-counts` |
 | `deploy.yml` | `environment`, `target`, `confirm` | comme avant ; `force` (`false` par défaut) pour la bascule |

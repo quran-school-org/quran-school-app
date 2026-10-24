@@ -9,7 +9,7 @@ import { readPalette, savePalette, type Palette } from "../../ui/palette";
 import { useApp } from "../../app/AppContext";
 
 export default function ProfileModal() {
-  // Couleur de l'interface (D85) : appliquée tout de suite, sur cet appareil.
+  // Couleur de l'interface (D86) : appliquée tout de suite, sur cet appareil.
   const [palette, setPalette] = useState<Palette>(readPalette);
   const {
     setShowProfileEditModal,

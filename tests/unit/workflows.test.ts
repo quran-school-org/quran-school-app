@@ -16,7 +16,9 @@
  *  - D77 : `seed-demo` / `remove-demo` d'ops.yml réservés au dev (garde-fou
  *    joué avec bash sur des variables factices) ;
  *  - D80 : `dev-super-admin` / `dev-super-admin-revoke` réservés au dev, entrée
- *    `username` validée par une expression régulière stricte, passée par env.
+ *    `username` validée par une expression régulière stricte, passée par env ;
+ *  - D82 : `seed-school-fixtures` / `remove-school-fixtures` réservés au dev,
+ *    entrée `school_id` stricte, `alfajr` refusée, passée par env.
  * Analyse ligne à ligne (pas de dépendance YAML) : suffisante pour ces fichiers.
  */
 import { spawnSync } from "node:child_process";
@@ -189,7 +191,7 @@ describe("workflows GitHub Actions (D68)", () => {
     expect(text).toMatch(/\[ "\$\{ROTATE\}" != "none" \] && \[ -z "\$\{ARTIFACT_KEY\}" \]/);
   });
 
-  describe("ops.yml (A-06, D83) : chiffrement des artefacts sans échec ouvert", () => {
+  describe("ops.yml (A-06, D84) : chiffrement des artefacts sans échec ouvert", () => {
     const lines = read("ops.yml").split("\n");
     const stepIndex = (name: string) => lines.findIndex((l) => l.trim() === `- name: ${name}`);
     /** Bloc YAML complet de l'étape nommée. */
@@ -318,7 +320,7 @@ describe("workflows GitHub Actions (D68)", () => {
         OPS_SA: `github-ops@${project}.iam.gserviceaccount.com`,
         ARTIFACT_KEY: "cle-publique-factice", SUPER_ADMIN_USERNAME: "",
         OTHER_PROJECT_ID: "", OTHER_WIF_PROVIDER: "", OTHER_OPS_SA: "", OTHER_BACKUP_BUCKET: "",
-        CONFIRM: project, IMPORT_SOURCE: "", USERNAME_INPUT: "", REF: "refs/heads/main",
+        CONFIRM: project, IMPORT_SOURCE: "", USERNAME_INPUT: "", SCHOOL_ID_INPUT: "", SIZE_INPUT: "large", REF: "refs/heads/main",
         ...vars,
       };
       const r = spawnSync("bash", [script], { env, encoding: "utf8" });
@@ -326,7 +328,7 @@ describe("workflows GitHub Actions (D68)", () => {
     };
 
     it("choix d'action : seed-demo et remove-demo", () => {
-      expect(text).toMatch(/options: \[describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke\]/);
+      expect(text).toMatch(/options: \[describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures, remove-school-fixtures\]/);
     });
 
     it("dev, apply=true, confirm = projet de dev, clé publique : accepté, code de main", () => {
@@ -369,7 +371,7 @@ describe("workflows GitHub Actions (D68)", () => {
       expect(script).toMatch(/if \[ "\$\{ENVIRONMENT\}" != "dev" \] \|\| \[ "\$\{PROJECT_ID\}" = "\$\{PROD_PROJECT_ID\}" \]; then echo "::error::\$\{ACTION\} refusé hors dev."; exit 1; fi/);
       expect(script).toContain("-path '*/seed-demo-*/resume.json'");
       expect(script).toContain("-name 'mots-de-passe-temporaires.csv'");
-      expect(text).toMatch(/if: inputs\.action == 'lot0-provision' \|\| inputs\.action == 'migrate-to-tenants' \|\| inputs\.action == 'seed-demo' \|\| inputs\.action == 'remove-demo' \|\| inputs\.action == 'dev-super-admin' \|\| inputs\.action == 'dev-super-admin-revoke'\n/);
+      expect(text).toMatch(/if: inputs\.action == 'lot0-provision' \|\| inputs\.action == 'migrate-to-tenants' \|\| inputs\.action == 'seed-demo' \|\| inputs\.action == 'remove-demo' \|\| inputs\.action == 'dev-super-admin' \|\| inputs\.action == 'dev-super-admin-revoke' \|\| inputs\.action == 'seed-school-fixtures' \|\| inputs\.action == 'remove-school-fixtures'\n/);
       const secret = text.slice(text.indexOf("- name: Mots de passe temporaires (SECRET, 1 jour)"));
       expect(secret).toMatch(/^\s+retention-days: 1$/m);
       const imp = stepScript("import-firestore (dev seulement)");
@@ -450,6 +452,94 @@ describe("workflows GitHub Actions (D68)", () => {
         // L'entrée n'arrive dans les scripts que par env.
         expect(text).toMatch(/^\s+USERNAME_INPUT: \$\{\{ inputs\.username \}\}$/m);
         expect(runScripts(text).some((r) => r.content.includes("inputs.username"))).toBe(false);
+      });
+    });
+
+    describe("D82 : données fictives dans une école de test (seed-school-fixtures, remove-school-fixtures)", () => {
+      const SCHOOL = "test1234";
+      const ACTIONS = ["seed-school-fixtures", "remove-school-fixtures"];
+
+      it("dev, apply=true, confirm = projet de dev, école valide, clé publique : accepté, code de main", () => {
+        for (const action of ACTIONS) {
+          const r = run({ ACTION: action, SCHOOL_ID_INPUT: SCHOOL });
+          expect(r.code, r.out).toBe(0);
+          expect(r.outputs).toContain("code_ref=main");
+        }
+        expect(run({ ACTION: "seed-school-fixtures", SCHOOL_ID_INPUT: SCHOOL, SIZE_INPUT: "small" }).code).toBe(0);
+        for (const ok of ["abc", "ecole-test-2", "a".repeat(40), "123"]) {
+          expect(run({ ACTION: "seed-school-fixtures", SCHOOL_ID_INPUT: ok }).code, ok).toBe(0);
+        }
+        // Le retrait ne produit aucun mot de passe : la clé publique n'est pas exigée.
+        expect(run({ ACTION: "remove-school-fixtures", SCHOOL_ID_INPUT: SCHOOL, ARTIFACT_KEY: "" }).code).toBe(0);
+      });
+
+      it("refusé en production (même confirmé, depuis main), sans apply, sans confirmation exacte", () => {
+        for (const action of ACTIONS) {
+          const prod = run({ ENVIRONMENT: "production", ACTION: action, SCHOOL_ID_INPUT: SCHOOL });
+          expect(prod.code).toBe(1);
+          expect(prod.out).toMatch(/refusé en production/);
+          const noApply = run({ ACTION: action, SCHOOL_ID_INPUT: SCHOOL, APPLY: "false" });
+          expect(noApply.code).toBe(1);
+          expect(noApply.out).toMatch(/exige apply=true/);
+          const noConfirm = run({ ACTION: action, SCHOOL_ID_INPUT: SCHOOL, CONFIRM: "" });
+          expect(noConfirm.code).toBe(1);
+          expect(noConfirm.out).toMatch(/Confirmation incorrecte/);
+          expect(run({ ACTION: action, SCHOOL_ID_INPUT: SCHOOL, CONFIRM: PROD }).code).toBe(1);
+          expect(run({ ACTION: action, SCHOOL_ID_INPUT: SCHOOL, ROTATE: "all" }).out).toMatch(/rotate_passwords ne concerne/);
+        }
+        const croise = run({ ACTION: "seed-school-fixtures", SCHOOL_ID_INPUT: SCHOOL, PROJECT_ID: PROD, CONFIRM: PROD, OPS_SA: `github-ops@${PROD}.iam.gserviceaccount.com`, BACKUP_BUCKET: "autre-bucket" });
+        expect(croise.code).toBe(1);
+        expect(croise.out).toMatch(/pointe vers la prod/);
+      });
+
+      it("école alfajr refusée explicitement, identifiant invalide ou absent refusé sans être affiché", () => {
+        for (const action of ACTIONS) {
+          const alfajr = run({ ACTION: action, SCHOOL_ID_INPUT: "alfajr" });
+          expect(alfajr.code).toBe(1);
+          expect(alfajr.out).toMatch(/school_id=alfajr refusé/);
+          const bad = ["", "ab", "Alfajr", "ALFAJR", "alfajr ", " alfajr", "test_1234", "a".repeat(41), "a;id", "$(id)", "a`id`", "::error::x", "a\nb", "../alfajr", "école"];
+          for (const u of bad) {
+            const r = run({ ACTION: action, SCHOOL_ID_INPUT: u });
+            expect(r.code, JSON.stringify(u)).toBe(1);
+            expect(r.out, JSON.stringify(u)).toMatch(/school_id invalide/);
+            if (u.length > 3) expect(r.out).not.toContain(u);
+          }
+        }
+        // L'entrée ne sert à aucune autre action ; size seulement au seed.
+        expect(run({ ACTION: "seed-demo", SCHOOL_ID_INPUT: SCHOOL }).out).toMatch(/school_id ne concerne que/);
+        expect(run({ ACTION: "describe-db", APPLY: "false", CONFIRM: "", SCHOOL_ID_INPUT: SCHOOL }).code).toBe(1);
+        expect(run({ ACTION: "remove-school-fixtures", SCHOOL_ID_INPUT: SCHOOL, SIZE_INPUT: "small" }).out).toMatch(/size ne concerne que/);
+        expect(run({ ACTION: "seed-demo", SIZE_INPUT: "small" }).out).toMatch(/size ne concerne que/);
+        expect(run({ ACTION: "seed-school-fixtures", SCHOOL_ID_INPUT: SCHOOL, SIZE_INPUT: "huge" }).out).toMatch(/size inconnu/);
+      });
+
+      it("clé publique absente : seed-school-fixtures refusé (mots de passe chiffrés seulement)", () => {
+        const noKey = run({ ACTION: "seed-school-fixtures", SCHOOL_ID_INPUT: SCHOOL, ARTIFACT_KEY: "" });
+        expect(noKey.code).toBe(1);
+        expect(noKey.out).toMatch(/seed-school-fixtures exige la variable DEV_ARTIFACT_GPG_PUBLIC_KEY/);
+      });
+
+      it("script : revalidé hors dev et pour alfajr, entrées par env, résumé en liste blanche, mots de passe vers l'artefact chiffré", () => {
+        const script = stepScript("${{ inputs.action }} (script Admin SDK, journal en artefact)");
+        const start = script.indexOf('elif [ "${ACTION}" = "seed-school-fixtures" ]');
+        const branch = script.slice(start, script.indexOf("elif", start + 10));
+        expect(branch).toMatch(/if \[ "\$\{ENVIRONMENT\}" != "dev" \] \|\| \[ "\$\{PROJECT_ID\}" = "\$\{PROD_PROJECT_ID\}" \]; then echo "::error::\$\{ACTION\} refusé hors dev."; exit 1; fi/);
+        expect(branch).toContain('[[ "${SCHOOL_ID_INPUT}" =~ ^[a-z0-9-]{3,40}$ ]]');
+        expect(branch).toContain('[ "${SCHOOL_ID_INPUT}" != "alfajr" ]');
+        expect(branch).toContain("SCRIPT=scripts/dev/seed-school-fixtures.ts");
+        expect(branch).toContain('ARGS+=(--school="${SCHOOL_ID_INPUT}")');
+        expect(branch).toContain('ARGS+=(--remove); else ARGS+=(--size="${SIZE_INPUT}")');
+        expect(script).toContain("-path '*/seed-school-fixtures-*/resume.json'");
+        const filter = script.match(/FILTER='(\{mode, operation, schoolId, size[^']*\})'/)?.[1];
+        expect(filter).toBeDefined();
+        expect(filter).not.toMatch(/password[^s]|reportDir|credentials/i);
+        expect(script).toMatch(/seed-school-fixtures\)\\\] \(ÉCHEC/);
+        for (const input of ["school_id", "size"]) {
+          expect(runScripts(text).some((r) => r.content.includes(`inputs.${input}`)), input).toBe(false);
+        }
+        expect(text.match(/^\s+SCHOOL_ID_INPUT: \$\{\{ inputs\.school_id \}\}$/gm)).toHaveLength(2);
+        // Jamais confondue avec l'école migrée (SCHOOL_ID = alfajr, migrate-to-tenants).
+        expect(branch).not.toMatch(/\$\{SCHOOL_ID\}/);
       });
     });
   });

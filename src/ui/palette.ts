@@ -1,5 +1,5 @@
 /**
- * Couleur de l'interface choisie par la personne (D85) : bleu de la charte ou
+ * Couleur de l'interface choisie par la personne (D86) : bleu de la charte ou
  * vert à l'essai. Gardée sur cet appareil, hors du cache cloisonné par école
  * (`kuttab:*`, vidé à la déconnexion).
  */

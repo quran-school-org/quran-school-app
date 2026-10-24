@@ -200,7 +200,7 @@ export async function updateOwnUserFields(uid: string, fields: Partial<Pick<User
 }
 
 /** Champs anodins de son appartenance à une école (nom affiché, dernière connexion). */
-/** Marque une notification comme lue pour ce compte seulement (U-03, D84). */
+/** Marque une notification comme lue pour ce compte seulement (U-03, D85). */
 export async function markNotificationReadBy(schoolId: string, notificationId: string, uid: string) {
   await updateDoc(schoolDocRef(schoolId, "notifications", notificationId), { readBy: arrayUnion(uid) });
 }

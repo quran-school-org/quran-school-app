@@ -159,7 +159,7 @@ describe("R-07 corrigé (D65) : notifications réservées au personnel", () => {
     await assertFails(setDoc(doc(as("eleve"), "schools", A, "notifications", "n_eleve"), { title: "x", message: "y", schoolId: A }));
   });
 
-  it("le personnel crée une notification ; hors bureau, il ne peut que la marquer comme lue pour lui-même (D84)", async () => {
+  it("le personnel crée une notification ; hors bureau, il ne peut que la marquer comme lue pour lui-même (D85)", async () => {
     await assertSucceeds(setDoc(doc(as("prof"), "schools", A, "notifications", "n_prof"), { title: "x", message: "y", isRead: false, audience: "educators", schoolId: A }));
     await assertSucceeds(updateDoc(doc(as("benevole"), "schools", A, "notifications", "n_1"), { readBy: arrayUnion("benevole") }));
     await assertFails(updateDoc(doc(as("prof"), "schools", A, "notifications", "n_1"), { message: "payez sur le compte X" }));

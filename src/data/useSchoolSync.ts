@@ -152,7 +152,7 @@ export function useSchoolSync(s: SessionScope) {
       if (readable.has("notifications")) {
         sub<Notification>("notifications", "notifications", setNotifications);
       } else {
-        // Hors bureau : seulement les destinataires permis par les règles (D83).
+        // Hors bureau : seulement les destinataires permis par les règles (D84).
         const audiences = readableNotificationAudiences(role);
         unsubscribes.push(subscribeToQueryIn<Notification>(schoolId, "notifications", "audience", audiences, (items) => {
           if (active) setNotifications(items);
