@@ -6,8 +6,8 @@
  * réactivation, claims gardés), conflits, --revoke, refus de la prod, aucun
  * mot de passe dans la sortie.
  */
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { POSIX_MODES, runScript } from "./runScript";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -131,7 +131,7 @@ describe("arguments : prod refusée, identifiant validé comme dans les Function
 
   it("le script lancé sur la prod s'arrête avant toute connexion (code 1), --force compris", () => {
     for (const extra of [["--force", "--apply"], ["--revoke", "--apply", `--confirm-prod=${PROD}`, `--database=${PROD_DB}`]]) {
-      const r = spawnSync("npx", ["tsx", "scripts/admin/dev-super-admin.ts", `--project=${PROD}`, `--username=${USER}`, ...extra], { encoding: "utf8", env: { ...process.env } });
+      const r = runScript(["scripts/admin/dev-super-admin.ts", `--project=${PROD}`, `--username=${USER}`, ...extra], { encoding: "utf8", env: { ...process.env } });
       expect(r.status).toBe(1);
       expect(r.stderr).toMatch(/\[dev-super-admin\] ÉCHEC : Projet de PRODUCTION/);
       expect(r.stdout).not.toMatch(/ÉMULATEURS|PROJET RÉEL/);
@@ -304,7 +304,7 @@ describe("compte super-admin", () => {
 
   it("CLI sur les émulateurs : mot de passe dans le seul fichier secret (mode 600), jamais dans la sortie ni le résumé", () => {
     const out = mkdtempSync(join(tmpdir(), "dev-super-admin-"));
-    const r = spawnSync("npx", ["tsx", "scripts/admin/dev-super-admin.ts", `--project=${PROJECT}`, "--username=superadmin_cli", "--full-name=Compte CLI", "--apply", `--out=${out}`], { encoding: "utf8", env: { ...process.env } });
+    const r = runScript(["scripts/admin/dev-super-admin.ts", `--project=${PROJECT}`, "--username=superadmin_cli", "--full-name=Compte CLI", "--apply", `--out=${out}`], { encoding: "utf8", env: { ...process.env } });
     expect(r.status, r.stderr).toBe(0);
     const dirs = readdirSync(out);
     expect(dirs).toHaveLength(1);
@@ -312,7 +312,7 @@ describe("compte super-admin", () => {
     const dir = join(out, dirs[0]);
     expect(readdirSync(dir).sort()).toEqual(["mots-de-passe-temporaires.csv", "resume.json"]);
     const csvPath = join(dir, "mots-de-passe-temporaires.csv");
-    expect(statSync(csvPath).mode & 0o777).toBe(0o600);
+    if (POSIX_MODES) expect(statSync(csvPath).mode & 0o777).toBe(0o600);
     const rows = readFileSync(csvPath, "utf8").replace(/^﻿/, "").trim().split("\r\n");
     expect(rows[0]).toBe("compte,role,identifiant,motDePasseTemporaire");
     expect(rows).toHaveLength(2);
@@ -323,11 +323,11 @@ describe("compte super-admin", () => {
     for (const text of [r.stdout, r.stderr, resume]) expect(text).not.toContain(pw);
 
     // Relance et retrait par la CLI : toujours aucun mot de passe affiché.
-    const again = spawnSync("npx", ["tsx", "scripts/admin/dev-super-admin.ts", `--project=${PROJECT}`, "--username=superadmin_cli", "--apply", `--out=${out}`], { encoding: "utf8", env: { ...process.env } });
+    const again = runScript(["scripts/admin/dev-super-admin.ts", `--project=${PROJECT}`, "--username=superadmin_cli", "--apply", `--out=${out}`], { encoding: "utf8", env: { ...process.env } });
     expect(again.status, again.stderr).toBe(0);
     expect(again.stdout).toMatch(/"reset": true/);
     expect(again.stdout + again.stderr).not.toMatch(/[a-z2-9]{4}-[a-z2-9]{4}-[a-z2-9]{4}-[a-z2-9]{4}/);
-    const revoke = spawnSync("npx", ["tsx", "scripts/admin/dev-super-admin.ts", `--project=${PROJECT}`, "--username=superadmin_cli", "--revoke", "--apply", `--out=${out}`], { encoding: "utf8", env: { ...process.env } });
+    const revoke = runScript(["scripts/admin/dev-super-admin.ts", `--project=${PROJECT}`, "--username=superadmin_cli", "--revoke", "--apply", `--out=${out}`], { encoding: "utf8", env: { ...process.env } });
     expect(revoke.status, revoke.stderr).toBe(0);
     expect(revoke.stdout).toMatch(/"operation": "revoke"/);
     expect(revoke.stdout).toMatch(/"disabled": true/);
