@@ -8,6 +8,7 @@ import { PermissionMatrixEditor } from "../PermissionMatrixEditor";
 import { Lock, X, AlertTriangle, Sparkles, Eye, EyeOff, KeyRound } from "lucide-react";
 import { isPrimaryDirector } from "./shared";
 import { useSettings } from "./SettingsContext";
+import { Select } from "../../ui";
 
 export default function UserFormModal() {
   const {
@@ -175,11 +176,13 @@ export default function UserFormModal() {
               <div className="grid grid-cols-2 gap-4 border-t pt-4">
                 <div className="space-y-1">
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نوع الصلاحية الافتراضية</label>
-                  <select
+                  <Select
+                    aria-label="نوع الصلاحية الافتراضية"
+                    data-field="user-role"
                     value={formRole}
                     disabled={isPrimaryDirector(editingUser)}
-                    onChange={(e) => {
-                      const newRole = e.target.value as UserRole;
+                    onChange={(v) => {
+                      const newRole = v as UserRole;
                       setFormRole(newRole);
                       // Auto-apply roles preset
                       if (newRole === "مدير") {
@@ -308,7 +311,6 @@ export default function UserFormModal() {
                       // Update permissions matrix to match new role
                       setFormPermissions(getDefaultPermissionsForRole(newRole));
                     }}
-                    className="w-full p-2.5 border border-line-strong rounded-xl text-[13px]"
                   >
                     <option value="مدير">مدير (Director - كامل الصلاحيات)</option>
                     <option value="إداري">إداري / عضو مكتب تنفيذي (Administrator)</option>
@@ -319,20 +321,20 @@ export default function UserFormModal() {
                     <option value="ولي أمر">ولي أمر (Parent Portal)</option>
                     <option value="طالب">طالب (Student Portal - 15+ سنة)</option>
                     <option value="أخرى">أخرى (Other)</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div className="space-y-1">
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">حالة الحساب</label>
-                  <select
+                  <Select
+                    aria-label="حالة الحساب"
                     value={formIsActive ? "active" : "blocked"}
                     disabled={isPrimaryDirector(editingUser)}
-                    onChange={(e) => setFormIsActive(e.target.value === "active")}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setFormIsActive(v === "active")}
                   >
                     <option value="active">نشط ومفعل</option>
                     <option value="blocked">موقوف / مجمد</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -381,16 +383,16 @@ export default function UserFormModal() {
                 ) : (
                   <div className="space-y-1">
                     <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">ملف العامل / المدرس المرتبط</label>
-                    <select
+                    <Select
+                      aria-label="ملف العامل / المدرس المرتبط"
                       value={formLinkedTeacherId}
-                      onChange={(e) => setFormLinkedTeacherId(e.target.value)}
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                      onChange={(v) => setFormLinkedTeacherId(v)}
                     >
                       <option value="">— بدون ربط —</option>
                       {teachers.map((t) => (
                         <option key={t.id} value={t.id}>{t.fullName}{t.roleTitle ? ` (${t.roleTitle})` : ""}</option>
                       ))}
-                    </select>
+                    </Select>
                     <p className="text-[11.5px] text-ink-3">يُستعمل لعرض حلقات المدرس وإيقاف الحساب تلقائياً عند أرشفة الملف.</p>
                   </div>
                 )}

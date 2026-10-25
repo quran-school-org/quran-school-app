@@ -103,7 +103,7 @@ export default function PaymentsScreen() {
         </FormField>
         <FormField label="حالة الدفع">
           {(id) => (
-            <Select id={id} value={paymentFilterStatus} onChange={(e: any) => setPaymentFilterStatus(e.target.value)} className="w-auto">
+            <Select id={id} value={paymentFilterStatus} onChange={(v) => setPaymentFilterStatus(v)} className="w-auto">
               <option value="all">كل حالات السداد</option>
               <option value="مدفوع">مدفوع</option>
               <option value="غير مدفوع">غير مدفوع</option>

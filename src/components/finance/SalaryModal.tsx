@@ -5,6 +5,7 @@
 import { Briefcase, X } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
+import { Select } from "../../ui";
 
 export default function SalaryModal() {
   const {
@@ -67,28 +68,28 @@ export default function SalaryModal() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">فئة المستفيد</label>
-                  <select
+                  <Select
+                    aria-label="فئة المستفيد"
                     value={salaryPersonType}
-                    onChange={(e) => setSalaryPersonType(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setSalaryPersonType(v as any)}
                   >
                     <option value="أستاذ / محفظ">أستاذ / محفظ القرآن</option>
                     <option value="إطار إداري">إطار إداري / كاتب</option>
                     <option value="عامل / مستخدم">عامل نظافة / صيانة</option>
                     <option value="أخرى">أخرى</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">حالة الصرف</label>
-                  <select
+                  <Select
+                    aria-label="حالة الصرف"
                     value={salaryStatus}
-                    onChange={(e) => setSalaryStatus(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setSalaryStatus(v as any)}
                   >
                     <option value="تم الصرف">تم الصرف والتأدية</option>
                     <option value="مستحق (قيد الانتظار)">مستحق (قيد الانتظار)</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -98,17 +99,17 @@ export default function SalaryModal() {
                     <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اختر من لائحة الأطر والعاملين المسجلين</label>
                     <span className="text-[11.5px] text-primary-700 font-bold">يتم ملء الصفة والمبلغ تلقائياً</span>
                   </div>
-                  <select
+                  <Select
+                    aria-label="اختر من لائحة الأطر والعاملين المسجلين"
                     value={salaryPersonId}
-                    onChange={(e) => {
-                      if (e.target.value === "custom") {
+                    onChange={(v) => {
+                      if (v === "custom") {
                         setSalaryPersonId("");
                         setSalaryPersonName("");
                       } else {
-                        handleTeacherSelect(e.target.value);
+                        handleTeacherSelect(v);
                       }
                     }}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="">-- اختر كادر / عامل من السجل --</option>
                     {teachers.map(t => (
@@ -117,7 +118,7 @@ export default function SalaryModal() {
                       </option>
                     ))}
                     <option value="custom">إدخال يدوي لشخص آخر...</option>
-                  </select>
+                  </Select>
                 </div>
               ) : null}
 
@@ -159,15 +160,15 @@ export default function SalaryModal() {
 
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الشهر المستحق</label>
-                  <select
+                  <Select
+                    aria-label="الشهر المستحق"
                     value={salaryMonth}
-                    onChange={(e) => setSalaryMonth(e.target.value)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setSalaryMonth(v)}
                   >
                     {MONTHS_LIST.map(m => (
                       <option key={m} value={m}>{m}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
@@ -184,27 +185,27 @@ export default function SalaryModal() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">مصدر الصرف</label>
-                  <select
+                  <Select
+                    aria-label="مصدر الصرف"
                     value={salaryPaymentSource}
-                    onChange={(e) => setSalaryPaymentSource(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setSalaryPaymentSource(v as any)}
                   >
                     <option value="الصندوق">الصندوق</option>
                     <option value="حساب الجمعية البنكي">حساب الجمعية البنكي</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">طريقة الدفع</label>
-                  <select
+                  <Select
+                    aria-label="طريقة الدفع"
                     value={salaryPaymentMethod}
-                    onChange={(e) => setSalaryPaymentMethod(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setSalaryPaymentMethod(v as any)}
                   >
                     <option value="نقداً">نقداً</option>
                     <option value="تحويل بنكي">تحويل بنكي</option>
                     <option value="شيك">شيك بنكي</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>

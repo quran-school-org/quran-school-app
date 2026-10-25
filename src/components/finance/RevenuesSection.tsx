@@ -6,6 +6,7 @@ import { Student } from "../../types";
 import { TrendingUp, Plus, Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, Users, ExternalLink } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
+import { Select } from "../../ui";
 
 export default function RevenuesSection() {
   const {
@@ -131,11 +132,14 @@ export default function RevenuesSection() {
                   <label htmlFor="income-category-filter" className="text-[13px] font-bold text-ink-2 whitespace-nowrap">
                     نوع الدخل:
                   </label>
-                  <select
+                  <Select
                     id="income-category-filter"
                     value={selectedIncomeCategory}
-                    onChange={(e) => setSelectedIncomeCategory(e.target.value)}
-                    className="text-[13px] bg-transparent font-bold text-ink focus:outline-none cursor-pointer pr-1"
+                    onChange={(v) => setSelectedIncomeCategory(v)}
+                    variant="bare"
+                    size="sm"
+                    className="w-auto"
+                    triggerClassName="text-[13px] font-bold"
                   >
                     <option value="all">جميع أنواع المداخيل</option>
                     <option value="تبرعات">تبرعات</option>
@@ -143,7 +147,7 @@ export default function RevenuesSection() {
                     <option value="أنشطة ومهرجانات">أنشطة ومهرجانات</option>
                     <option value="اشتراكات أعضاء الجمعية">اشتراكات أعضاء الجمعية</option>
                     <option value="أخرى">أخرى</option>
-                  </select>
+                  </Select>
                 </div>
 
                 {canCreate && (
@@ -393,16 +397,18 @@ export default function RevenuesSection() {
               </div>
 
               <div className="flex items-center gap-2">
-                <select
+                <Select
                   value={selectedMonthFilter}
-                  onChange={(e) => setSelectedMonthFilter(e.target.value)}
-                  className="text-[13px] bg-white border border-line-strong rounded-xl px-3 py-1.5 font-bold text-ink-2"
+                  onChange={(v) => setSelectedMonthFilter(v)}
+                  aria-label="تصفية حسب الشهر"
+                  size="sm"
+                  className="w-auto"
                 >
                   <option value="all">جميع الشهور</option>
                   {MONTHS_LIST.map(m => (
                     <option key={m} value={m}>{m}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 

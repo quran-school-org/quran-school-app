@@ -1878,3 +1878,95 @@ là-bas (R-06).
   y compris ceux créés par l'interface pour des élèves `DEMO-`, à supprimer
   depuis l'interface si besoin), puis `git revert` des commits de
   `feat/seed-ecole-test`.
+
+### D83. Liste déroulante maison, pagination des élèves et des attestations
+- **Contexte** : retours d'interface du propriétaire sur le dev (école de
+  test peuplée, D82 : 150 élèves fictifs, 264 examens), testés en FR (D79) :
+  `<select>` natifs hors charte (menu du système, libellés tronqués,
+  « Tous les » dans le registre des activités, tri qui sort de la carte),
+  listes d'élèves et d'attestations sans pagination (11 000 nœuds DOM pour
+  les examens, aperçu de la carte de l'élève sous 150 lignes), attestations
+  du plus ancien au plus récent, et bugs d'affichage (bouton WhatsApp sur
+  le badge d'absences, bloc « liaison financière » écrasé, badges des
+  activités coupés). Choix tranchés par le propriétaire : **tous** les
+  `<select>` remplacés, pagination « flèches + numéros », **8 élèves** et
+  **20 attestations** par page.
+- **Décision** :
+  - **`src/ui/Select.tsx`** (aucune dépendance ajoutée) : API proche de
+    `<select>` (`value`, `onChange(value)`, `options` ou enfants `<option>`
+    lus sans être rendus, `placeholder`, `disabled`, `required`, `id` pour le
+    `<label>` d'un `FormField`, `name`), **valeurs inchangées** (rôles en
+    arabe, identifiants). Motif « combobox à liste » de l'APG : bouton
+    `role="combobox"`, `listbox` / `option`, `aria-activedescendant` ;
+    clavier ↑ ↓ Début Fin Page↑ Page↓ Entrée Espace Échap Tab et première
+    lettre ; Échap ne ferme pas la fenêtre `Modal` qui contient la liste.
+    Menu dans un portail `position: fixed` (`z-[60]`, au-dessus des
+    fenêtres), aligné sur le début de ligne selon le sens CSS **effectif**
+    (`src/ui/useDirection.ts` : en FR de test, `dir="rtl"` reste dans le
+    code), jamais hors de l'écran, retourné vers le haut s'il manque de
+    place, fermé au clic extérieur ; options de 44 px. Recherche intégrée
+    au-delà de 10 options (`SEARCH_THRESHOLD`), insensible aux voyelles,
+    formes d'alif et accents (`src/ui/textSearch.ts`). `w-auto` : largeur de
+    la plus longue option (comme un `<select>`). `required` / `name` : champ
+    caché qui garde la validation du formulaire (exclu du focus initial de
+    `Modal`).
+  - **Traduction de test (D79)** : libellés rendus en nœuds texte (traduits
+    par la couche), valeur gardée par React et exposée en `data-value`,
+    attribut jamais traduit ; la recherche et la première lettre lisent le
+    texte **affiché** et le libellé d'origine. Vérifié en e2e
+    (`tests/e2e/ux-listes.spec.ts`, `i18n-fr.spec.ts`).
+  - **54 listes remplacées** (33 `<select>` et 21 `Select` qui les
+    enveloppaient), sur 25 fichiers : barre du haut (changement d'école,
+    « كل المدارس… »), élèves, présences, paiements, tableau de bord,
+    examens, halaqas, personnel, comptabilité (recettes, dépenses,
+    salaires), activités (filtres, tri, participants, dépenses, fenêtres),
+    paramètres (utilisateurs, ouverture, tarifs). Les listes sans libellé
+    associé reçoivent un `aria-label`. Garde-fou : plus aucun `<select>`
+    dans `src/` (`tests/unit/uiGuards.test.ts`). Tests e2e : `chooseOption`
+    (`tests/e2e/helpers.ts`) remplace `selectOption` ; repères stables
+    `#school-switcher`, `data-filter`, `data-field`, `data-value`,
+    `[data-select-menu]` (D54).
+  - **Pagination** : `src/ui/Pagination.tsx` (« ‹ 1 2 3 … 19 › », `nav`
+    étiquetée, `aria-current="page"`, flèches selon le sens effectif ; en
+    mobile, première, courante et dernière page) et `src/ui/pagination.ts`
+    (calculs purs, `usePagination` : retour à la page 1 quand la clé de
+    recherche et de filtres change). Résumé en arabe en un seul texte
+    (« الطلاب 9–16 من 150 », traduit par motif).
+  - **Élèves** : 8 par page ; page de l'élève sélectionné à l'ouverture ;
+    fiche conservée quand on change de page, avec un lien « عرض صفحة الطالب
+    المحدد » ; liste et fiche alignées en haut, aperçu de la carte juste
+    sous ce bloc.
+  - **Attestations** : du plus récent au plus ancien (date d'examen, puis
+    ordre de saisie) ; filtres nom de l'élève ou partie examinée, halaqa
+    actuelle de l'élève, mention (`overallGrade`), période (saison scolaire,
+    à partir d'août comme `defaultSchoolSettings`, ou mois) ; 20 par page
+    (`src/screens/grades/gradeFilters.ts`, module pur).
+  - **Affichage** : alertes d'absences (bouton sous le badge et les
+    informations), liaison financière d'une activité (texte d'abord, boutons
+    en dessous ou sur la même ligne s'il y a la place, pastille sur une
+    ligne), registre des activités (filtres qui passent à la ligne, tri dans
+    la carte, badges de type et de statut sur des lignes séparées si
+    besoin), et cas voisins : boutons de l'en-tête d'une activité, barres de
+    filtre des participants et des dépenses (champ de recherche écrasé),
+    colonnes liste / détail des activités empilées sous 1 280 px (la liste
+    faisait 215 px à 1 024 px).
+  - **Notifications** : « مسح جميع التنبيهات » ouvre une fenêtre `Modal` de
+    confirmation (nombre de notifications de l'école, suppression
+    définitive) ; « إلغاء » a le focus.
+- **Laissé de côté** : filtre par « type d'examen » ou d'attestation (le
+  modèle `Grade` n'en a pas : `testedPortion` est un texte libre, couvert par
+  la recherche) ; listes à choix multiple (aucune dans l'application) ;
+  sélecteur natif du système sur mobile (remplacé par le menu de la charte,
+  choix du propriétaire).
+- **Vérifié localement** (émulateurs, école `annour` peuplée en `large` par
+  `seed-school-fixtures`, AR et FR, 1 440, 1 024 et 390 px) : captures
+  avant / après dans `docs/design/captures/ux-2026-10/` ; tests unitaires
+  `pagination`, `gradeFilters`, `selectHelpers`, `uiGuards` ; e2e
+  `ux-listes.spec.ts` (clavier, Échap, clic extérieur, recherche, FR,
+  pagination, confirmation).
+- **Retour arrière** : `git revert` des commits de
+  `feat/ux-listes-selecteurs`. Pour revenir aux `<select>` natifs sans
+  perdre le reste : remettre l'ancien `Select` de `src/ui/Form.tsx`
+  (`<select>` stylé) et rétablir `onChange={(e) => …(e.target.value)}`
+  aux appels ; pour changer la taille des pages : `PAGE_SIZES`
+  (`src/ui/Pagination.tsx`).

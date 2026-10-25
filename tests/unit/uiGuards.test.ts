@@ -29,4 +29,8 @@ describe("interface : valeurs codées en dur retirées", () => {
     expect(offending(/<option value="مبتدئ"/)).toEqual([]);
     expect(readFileSync("src/types.ts", "utf8")).toContain('export type TajweedLevel = "ممتاز" | "متوسط" | "ضعيف";');
   });
+
+  it("aucun <select> natif : liste déroulante de la charte (src/ui/Select.tsx, D83)", () => {
+    expect(offending(/^\s*<select\b/m)).toEqual([]);
+  });
 });

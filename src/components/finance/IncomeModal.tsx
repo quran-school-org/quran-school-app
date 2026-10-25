@@ -4,6 +4,7 @@
  */
 import { Coins, X } from "lucide-react";
 import { useFinance } from "./FinanceContext";
+import { Select } from "../../ui";
 
 export default function IncomeModal() {
   const {
@@ -68,17 +69,17 @@ export default function IncomeModal() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نوع الدخل</label>
-                  <select
+                  <Select
+                    aria-label="نوع الدخل"
                     value={incomeCategory}
-                    onChange={(e) => setIncomeCategory(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setIncomeCategory(v as any)}
                   >
                     <option value="تبرعات">تبرعات محسنين</option>
                     <option value="دعم حكومي/مؤسساتي">دعم حكومي / مؤسساتي</option>
                     <option value="أنشطة ومهرجانات">أنشطة ومهرجانات</option>
                     <option value="اشتراكات أعضاء الجمعية">اشتراكات أعضاء الجمعية</option>
                     <option value="أخرى">مداخيل أخرى</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
@@ -97,14 +98,14 @@ export default function IncomeModal() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">مكان الإيداع / المصدر</label>
-                  <select
+                  <Select
+                    aria-label="مكان الإيداع / المصدر"
                     value={incomeSource}
-                    onChange={(e) => setIncomeSource(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setIncomeSource(v as any)}
                   >
                     <option value="الصندوق">الصندوق النقدي</option>
                     <option value="حساب الجمعية البنكي">حساب الجمعية البنكي</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>

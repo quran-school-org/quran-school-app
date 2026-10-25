@@ -8,7 +8,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, desktopTabs, loginAs, logout, openTab, type DemoAccount } from "./helpers";
+import { ACCOUNTS, desktopTabs, loginAs, logout, openTab, type DemoAccount, chooseOption } from "./helpers";
 
 const DIR = process.env.CAPTURE_DIR || "";
 const DESKTOP = { width: 1440, height: 900 };
@@ -122,7 +122,7 @@ test.describe.serial("captures", () => {
         await shot(page, folder, "settings-users");
         await shotModal(page, folder, "fenetre-compte", () => page.locator('[data-action="open-user-form"]').click(), closeOverlay);
         // Page de choix et de création d'école (super-admin).
-        await page.locator("#school-switcher").selectOption("__picker__");
+        await chooseOption(page, page.locator("#school-switcher"), "__picker__");
         await expect(page.locator('[data-screen="school-picker"]')).toBeVisible();
         await shot(page, folder, "choix-ecole-superadmin");
         await page.getByRole("button", { name: /جمعية الفجر الجديد/ }).first().click();
@@ -131,7 +131,7 @@ test.describe.serial("captures", () => {
 
       if (folder === "administratif" && EXTRAS) {
         // Page de choix d'école (compte présent dans deux écoles).
-        await page.locator("#school-switcher").selectOption("__picker__");
+        await chooseOption(page, page.locator("#school-switcher"), "__picker__");
         await expect(page.locator('[data-screen="school-picker"]')).toBeVisible();
         await shot(page, folder, "choix-ecole");
         await page.getByRole("button", { name: /جمعية الفجر الجديد/ }).first().click();

@@ -6,6 +6,7 @@ import { ActivityExpenseCategory } from "../../types";
 import { DollarSign, X } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
+import { Select } from "../../ui";
 
 export default function ActivityExpenseModal() {
   const {
@@ -67,15 +68,15 @@ export default function ActivityExpenseModal() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الصنف / الفئة *</label>
-                  <select
+                  <Select
+                    aria-label="الصنف / الفئة"
                     value={expCategory}
-                    onChange={(e) => setExpCategory(e.target.value as ActivityExpenseCategory)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setExpCategory(v as ActivityExpenseCategory)}
                   >
                     {EXPENSE_CATEGORIES.map(c => (
                       <option key={c} value={c}>{c}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
@@ -106,15 +107,15 @@ export default function ActivityExpenseModal() {
 
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">طريقة الدفع</label>
-                  <select
+                  <Select
+                    aria-label="طريقة الدفع"
                     value={expPaymentMethod}
-                    onChange={(e) => setExpPaymentMethod(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setExpPaymentMethod(v as any)}
                   >
                     <option value="نقداً">نقداً</option>
                     <option value="تحويل بنكي">تحويل بنكي</option>
                     <option value="شيك">شيك</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 

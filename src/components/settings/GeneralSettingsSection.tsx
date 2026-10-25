@@ -5,6 +5,7 @@
 import { MONTHS_AR } from "../../school/businessRules";
 import { Building, Phone, Mail, MapPin, Trash2, DollarSign, ToggleLeft, ToggleRight, Save, Upload, Landmark, FileCheck, CreditCard, Award, Calendar, Tag, Info, FileText, Plus } from "lucide-react";
 import { useSettings } from "./SettingsContext";
+import { Select } from "../../ui";
 
 export default function GeneralSettingsSection() {
   const {
@@ -317,14 +318,14 @@ export default function GeneralSettingsSection() {
                   </div>
                   <div className="space-y-1">
                     <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">شهر الافتتاح الرسمي</label>
-                    <select
+                    <Select
+                      aria-label="شهر الافتتاح الرسمي"
                       value={openingMonth}
-                      onChange={(e) => setOpeningMonth(e.target.value)}
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                      onChange={(v) => setOpeningMonth(v)}
                     >
                       <option value="">—</option>
                       {MONTHS_AR.map((m) => <option key={m} value={m}>{m}</option>)}
-                    </select>
+                    </Select>
                   </div>
                 </div>
 
@@ -338,13 +339,15 @@ export default function GeneralSettingsSection() {
                         onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, year: Number(e.target.value) } : x)))}
                         className="col-span-2 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
                       />
-                      <select
+                      <Select
                         value={o.month}
-                        onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, month: e.target.value } : x)))}
-                        className="col-span-2 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
+                        onChange={(v) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, month: v } : x)))}
+                        aria-label="الشهر"
+                        size="sm"
+                        className="col-span-2"
                       >
                         {MONTHS_AR.map((m) => <option key={m} value={m}>{m}</option>)}
-                      </select>
+                      </Select>
                       <input
                         type="number"
                         value={o.amount}

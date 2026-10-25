@@ -5,6 +5,7 @@
 import { Shield, UserPlus, Edit2, Trash2, Check, X, Search, Users, RefreshCw, LayoutGrid, List, CheckCircle2, XCircle, Clock, ShieldCheck, Filter, KeyRound } from "lucide-react";
 import { isPrimaryDirector } from "./shared";
 import { useSettings } from "./SettingsContext";
+import { Select } from "../../ui";
 
 export default function UsersSection() {
   const {
@@ -162,10 +163,12 @@ export default function UsersSection() {
               {/* Role filter */}
               <div className="flex items-center gap-1.5">
                 <Filter className="w-3.5 h-3.5 text-ink-3 hidden sm:inline" />
-                <select
+                <Select
+                  aria-label="تصفية حسب الدور"
                   value={userRoleFilter}
-                  onChange={(e) => setUserRoleFilter(e.target.value)}
-                  className="px-3 py-2 border border-line-strong rounded-xl text-[13px] bg-white text-ink-2 font-bold focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition cursor-pointer"
+                  onChange={(v) => setUserRoleFilter(v)}
+                  size="sm"
+                  className="w-auto"
                 >
                   <option value="all">جميع الأدوار</option>
                   <option value="مدير">مدراء ومسيرو الجمعية (رئيس / مدير)</option>
@@ -177,19 +180,21 @@ export default function UsersSection() {
                   <option value="ولي أمر">أولياء أمور</option>
                   <option value="طالب">طلاب (15+ سنة)</option>
                   <option value="أخرى">أخرى</option>
-                </select>
+                </Select>
               </div>
 
               {/* Status filter */}
-              <select
+              <Select
+                aria-label="تصفية حسب حالة الحساب"
                 value={userStatusFilter}
-                onChange={(e) => setUserStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-line-strong rounded-xl text-[13px] bg-white text-ink-2 font-bold focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition cursor-pointer"
+                onChange={(v) => setUserStatusFilter(v)}
+                size="sm"
+                className="w-auto"
               >
                 <option value="all">جميع الحالات</option>
                 <option value="active">الحسابات النشطة فقط</option>
                 <option value="inactive">الحسابات الموقوفة فقط</option>
-              </select>
+              </Select>
 
               {/* View Switcher Toggle (matching dark styled switcher in screenshot) */}
               <div className="flex items-center bg-sand-900 border border-sand-800 rounded-xl p-1 gap-1 shadow-inner">

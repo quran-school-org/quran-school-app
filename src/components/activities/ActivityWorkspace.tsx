@@ -5,6 +5,7 @@
 import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Printer, CheckCircle2, TrendingUp, Search, FileText, RefreshCw, CheckCircle, Info, Filter } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
+import { Select } from "../../ui";
 
 export default function ActivityWorkspace() {
   const {
@@ -66,13 +67,13 @@ export default function ActivityWorkspace() {
   return (
     <>
       {/* Right Column: Selected Activity Detailed Workspace (8 cols) */}
-      <div className="lg:col-span-8">
+      <div className="xl:col-span-8 min-w-0">
         {currentActivity ? (
           <div className="bg-surface rounded-2xl border border-sand-200/80 overflow-hidden space-y-0">
             {/* Activity Detailed Header */}
             <div className="p-5 bg-gradient-to-r from-sand-900 via-sand-800 to-primary-950 text-white">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="bg-primary-500/20 text-primary-300 border border-primary-500/30 text-[13px] px-2.5 py-0.5 rounded-full font-semibold">
                       {currentActivity.type}
@@ -104,11 +105,11 @@ export default function ActivityWorkspace() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-end md:self-center">
+                <div className="flex flex-wrap items-center gap-2 self-end md:self-center shrink-0">
                   {canUpdateActivity && (
                     <button
                       onClick={() => handleOpenEditActivity(currentActivity)}
-                      className="bg-white/10 hover:bg-white/20 text-white text-[13px] font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                      className="bg-white/10 hover:bg-white/20 text-white text-[13px] font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       <span>تعديل النشاط</span>
@@ -122,7 +123,7 @@ export default function ActivityWorkspace() {
                           setSelectedActivityId(null);
                         }
                       }}
-                      className="bg-danger-500/20 hover:bg-danger-500/30 text-danger-300 border border-danger-500/30 text-[13px] font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                      className="bg-danger-500/20 hover:bg-danger-500/30 text-danger-300 border border-danger-500/30 text-[13px] font-medium px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>حذف</span>
@@ -269,8 +270,8 @@ export default function ActivityWorkspace() {
                 </div>
 
                 {/* Participants Filter and Sort Bar */}
-                <div className="bg-sand-50 p-3 rounded-xl border border-line flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-                  <div className="relative flex-1">
+                <div className="bg-sand-50 p-3 rounded-xl border border-line flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="relative flex-[1_1_16rem] min-w-0">
                     <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
                     <input
                       type="text"
@@ -282,29 +283,33 @@ export default function ActivityWorkspace() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <select
+                    <Select
+                      aria-label="تصفية حسب الصفة"
                       value={partTypeFilter}
-                      onChange={(e) => setPartTypeFilter(e.target.value)}
-                      className="py-1.5 px-2 text-[13px] bg-white border border-line rounded-lg text-ink-2 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                      onChange={(v) => setPartTypeFilter(v)}
+                      size="sm"
+                      className="w-auto"
                     >
                       <option value="all">كل الصفات والمشاركين</option>
                       <option value="طالب">طالب</option>
                       {availablePartRoles.filter(r => r !== "طالب").map(role => (
                         <option key={role} value={role}>{role}</option>
                       ))}
-                    </select>
+                    </Select>
 
-                    <select
+                    <Select
+                      aria-label="تصفية حسب حالة الأداء"
                       value={partStatusFilter}
-                      onChange={(e) => setPartStatusFilter(e.target.value)}
-                      className="py-1.5 px-2 text-[13px] bg-white border border-line rounded-lg text-ink-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      onChange={(v) => setPartStatusFilter(v)}
+                      size="sm"
+                      className="w-auto"
                     >
                       <option value="all">كل حالات الأداء</option>
                       <option value="مدفوع">مدفوع</option>
                       <option value="مدفوع جزئياً">مدفوع جزئياً</option>
                       <option value="غير مدفوع">غير مدفوع</option>
                       <option value="معفى">معفى</option>
-                    </select>
+                    </Select>
 
                     <span className="text-[12.5px] font-semibold text-ink-3 bg-white px-2 py-1.5 rounded-lg border border-line shrink-0">
                       العدد: {filteredParticipants.length} / {currentParticipants.length}
@@ -462,8 +467,8 @@ export default function ActivityWorkspace() {
                 </div>
 
                 {/* Expenses Filter Bar */}
-                <div className="bg-sand-50 p-3 rounded-xl border border-line flex flex-col md:flex-row md:items-center justify-between gap-2.5">
-                  <div className="relative flex-1">
+                <div className="bg-sand-50 p-3 rounded-xl border border-line flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="relative flex-[1_1_16rem] min-w-0">
                     <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
                     <input
                       type="text"
@@ -475,16 +480,18 @@ export default function ActivityWorkspace() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <select
+                    <Select
+                      aria-label="تصفية حسب فئة المصروف"
                       value={expCategoryFilter}
-                      onChange={(e) => setExpCategoryFilter(e.target.value)}
-                      className="py-1.5 px-2 text-[13px] bg-white border border-line rounded-lg text-ink-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      onChange={(v) => setExpCategoryFilter(v)}
+                      size="sm"
+                      className="w-auto"
                     >
                       <option value="all">كل الفئات والمصاريف</option>
                       {EXPENSE_CATEGORIES.map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
-                    </select>
+                    </Select>
 
                     <span className="text-[12.5px] font-semibold text-ink-3 bg-white px-2 py-1.5 rounded-lg border border-line shrink-0">
                       العدد: {filteredExpenses.length} / {currentExpenses.length}
@@ -631,15 +638,15 @@ export default function ActivityWorkspace() {
 
                 {/* Association Accounting Automatic Sync Box */}
                 <div className="bg-gradient-to-l from-primary-50 to-primary-50 border border-primary-200/90 rounded-2xl p-5">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-start gap-3.5 flex-[1_1_26rem] min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-primary-600 text-white flex items-center justify-center shrink-0">
                         <CheckCircle className="w-5 h-5" />
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-bold text-primary-950 text-sm">الربط المالي التلقائي مع المحاسبة والمالية الجمعوية</h4>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-100/90 border border-primary-300 text-primary-800 rounded-full text-[11.5px] font-bold">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-100/90 border border-primary-300 text-primary-800 rounded-full text-[11.5px] font-bold whitespace-nowrap shrink-0">
                             <span className="w-1.5 h-1.5 rounded-full bg-primary-600 animate-pulse"></span>
                             ربط تلقائي فوري مفعّل
                           </span>
@@ -650,31 +657,31 @@ export default function ActivityWorkspace() {
                       </div>
                     </div>
 
-                    <div className="shrink-0 flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <div className="flex flex-wrap items-center gap-2 max-w-full">
                       {onNavigateToFinance && (
                         <button
                           onClick={onNavigateToFinance}
                           title="الانتقال إلى المحاسبة والمالية الجمعوية لمعاينة القيود والتقارير"
-                          className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 w-full sm:w-auto justify-center gap-1.5"
+                          className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 w-full sm:w-auto max-w-full justify-center gap-1.5 text-center"
                         >
-                          <FileText className="w-3.5 h-3.5" />
+                          <FileText className="w-3.5 h-3.5 shrink-0" />
                           <span>معاينة في المحاسبة</span>
                         </button>
                       )}
                       <button
                         onClick={handleSyncActivityFinance}
                         title="تحديث فوري والتحقق من المزامنة"
-                        className="w-full sm:w-auto bg-white hover:bg-primary-50 text-primary-800 border border-primary-300 text-[13px] font-semibold px-3 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5"
+                        className="w-full sm:w-auto max-w-full min-h-11 bg-white hover:bg-primary-50 text-primary-800 border border-primary-300 text-[13px] font-semibold px-3 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 text-center"
                       >
-                        <RefreshCw className="w-3.5 h-3.5 text-primary-600" />
+                        <RefreshCw className="w-3.5 h-3.5 text-primary-600 shrink-0" />
                         <span>تحقق من المزامنة</span>
                       </button>
                     </div>
                   </div>
 
                   <div className="mt-3.5 pt-3 border-t border-primary-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[13px] text-primary-900">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-primary-600 shrink-0" />
+                    <div className="flex items-start gap-2 min-w-0">
+                      <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary-600 shrink-0" />
                       <span className="font-medium">
                         القيد المالي المباشر: {currentFinances.netBalance > 0 
                           ? `مقيد آلياً كـ [فائض إيرادات أنشطة +${currentFinances.netBalance.toLocaleString()} د.م]`

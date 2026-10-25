@@ -4,6 +4,7 @@
  */
 import { Receipt, X } from "lucide-react";
 import { useFinance } from "./FinanceContext";
+import { Select } from "../../ui";
 
 export default function ExpenseModal() {
   const {
@@ -68,10 +69,10 @@ export default function ExpenseModal() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نوع / فئة النفقة</label>
-                  <select
+                  <Select
+                    aria-label="نوع / فئة النفقة"
                     value={expenseCategory}
-                    onChange={(e) => setExpenseCategory(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setExpenseCategory(v as any)}
                   >
                     <option value="فواتير وخدمات">فواتير وخدمات (ماء، كهرباء...)</option>
                     <option value="مشتريات وتجهيزات">مشتريات وتجهيزات مكتبية</option>
@@ -79,7 +80,7 @@ export default function ExpenseModal() {
                     <option value="صيانة وإصلاحات">صيانة وإصلاح المقر</option>
                     <option value="ضيافة وتنقل">ضيافة وتنقلات</option>
                     <option value="أخرى">مصاريف أخرى</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
@@ -98,14 +99,14 @@ export default function ExpenseModal() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المصدر المالي</label>
-                  <select
+                  <Select
+                    aria-label="المصدر المالي"
                     value={expenseSource}
-                    onChange={(e) => setExpenseSource(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setExpenseSource(v as any)}
                   >
                     <option value="الصندوق">الصندوق النقدي</option>
                     <option value="حساب الجمعية البنكي">حساب الجمعية البنكي</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>

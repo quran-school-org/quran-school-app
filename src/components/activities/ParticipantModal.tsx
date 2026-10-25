@@ -5,6 +5,7 @@
 import { ParticipantPaymentStatus } from "../../types";
 import { Users, X } from "lucide-react";
 import { useActivities } from "./ActivitiesContext";
+import { Select } from "../../ui";
 
 export default function ParticipantModal() {
   const {
@@ -99,11 +100,12 @@ export default function ParticipantModal() {
               {partSourceType === "student" && (
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اختر الطالب المسجل بالجمعية *</label>
-                  <select
+                  <Select
+                    aria-label="اختر الطالب المسجل بالجمعية"
                     value={selectedStudentRefId}
-                    onChange={(e) => {
-                      setSelectedStudentRefId(e.target.value);
-                      const st = students.find(s => s.id === e.target.value);
+                    onChange={(v) => {
+                      setSelectedStudentRefId(v);
+                      const st = students.find(s => s.id === v);
                       if (st) {
                         setPartFullName(st.fullName);
                         setPartPhone(st.parentPhone);
@@ -111,24 +113,24 @@ export default function ParticipantModal() {
                       }
                     }}
                     required
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="">-- اختر طالباً --</option>
                     {students.filter(s => !s.isArchived).map(s => (
                       <option key={s.id} value={s.id}>{s.fullName} ({s.parentPhone})</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
 
               {partSourceType === "staff" && (
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اختر الأستاذ / الموظف / الإداري *</label>
-                  <select
+                  <Select
+                    aria-label="اختر الأستاذ / الموظف / الإداري"
                     value={selectedStaffRefId}
-                    onChange={(e) => {
-                      setSelectedStaffRefId(e.target.value);
-                      const st = allStaff.find(t => t.id === e.target.value);
+                    onChange={(v) => {
+                      setSelectedStaffRefId(v);
+                      const st = allStaff.find(t => t.id === v);
                       if (st) {
                         setPartFullName(st.fullName);
                         setPartPhone(st.phone);
@@ -136,7 +138,6 @@ export default function ParticipantModal() {
                       }
                     }}
                     required
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
                   >
                     <option value="">-- اختر كادراً أو موظفاً أو أستاذاً --</option>
                     {allStaff.map(t => (
@@ -144,7 +145,7 @@ export default function ParticipantModal() {
                         {t.fullName} — [{t.roleTitle || t.category || t.specialty || "كادر"}]
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               )}
 
@@ -214,14 +215,14 @@ export default function ParticipantModal() {
 
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الجنس</label>
-                  <select
+                  <Select
+                    aria-label="الجنس"
                     value={partGender}
-                    onChange={(e) => setPartGender(e.target.value as any)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setPartGender(v as any)}
                   >
                     <option value="ذكر">ذكر</option>
                     <option value="أنثى">أنثى</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
 
@@ -256,30 +257,30 @@ export default function ParticipantModal() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">حالة الأداء</label>
-                    <select
+                    <Select
+                      aria-label="حالة الأداء"
                       value={partPaymentStatus}
-                      onChange={(e) => setPartPaymentStatus(e.target.value as ParticipantPaymentStatus)}
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                      onChange={(v) => setPartPaymentStatus(v as ParticipantPaymentStatus)}
                     >
                       <option value="مدفوع">مدفوع بالكامل</option>
                       <option value="مدفوع جزئياً">مدفوع جزئياً</option>
                       <option value="غير مدفوع">غير مدفوع (مستحق)</option>
                       <option value="معفى">معفى من المساهمة</option>
-                    </select>
+                    </Select>
                   </div>
 
                   <div>
                     <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">طريقة الدفع</label>
-                    <select
+                    <Select
+                      aria-label="طريقة الدفع"
                       value={partPaymentMethod}
-                      onChange={(e) => setPartPaymentMethod(e.target.value as any)}
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                      onChange={(v) => setPartPaymentMethod(v as any)}
                     >
                       <option value="نقداً">نقداً</option>
                       <option value="تحويل بنكي">تحويل بنكي</option>
                       <option value="شيك">شيك</option>
                       <option value="أخرى">أخرى</option>
-                    </select>
+                    </Select>
                   </div>
                 </div>
 

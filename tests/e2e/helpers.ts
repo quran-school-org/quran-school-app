@@ -3,7 +3,7 @@
  * `npm run seed:emulator`). Les mots de passe ci-dessous sont des valeurs de
  * démonstration propres aux émulateurs.
  */
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 export const SCHOOL_1 = "جمعية الفجر الجديد (بيانات تجريبية)";
 export const SCHOOL_2 = "مدرسة النور القرآنية (بيانات تجريبية)";
@@ -80,4 +80,17 @@ export async function desktopTabs(page: Page): Promise<string[]> {
 
 export async function openTab(page: Page, tab: string) {
   await page.locator(`[data-nav="desktop"] [data-tab="${tab}"]`).click();
+}
+
+/**
+ * Liste déroulante de la charte (D83, src/ui/Select.tsx) : ouvre le bouton
+ * `trigger` (rôle combobox) et clique l'option de valeur `value` (attribut
+ * `data-value`, jamais traduit). Remplace `selectOption` des <select> natifs.
+ */
+export async function chooseOption(page: Page, trigger: Locator, value: string) {
+  await trigger.click();
+  const option = page.locator(`[data-select-menu] [role="option"][data-value="${value}"]`);
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(page.locator("[data-select-menu]")).toHaveCount(0);
 }
