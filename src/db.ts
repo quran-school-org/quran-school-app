@@ -349,7 +349,7 @@ export const RealmSimDB = {
     setStoredData(STORAGE_KEYS.NOTIFICATIONS, list);
     saveToFirestore(sid(), "notifications", notification.id, notification);
   },
-  /** « Lu » pour ce compte seulement (U-03, D85). */
+  /** « Lu » pour ce compte seulement (U-03, D87). */
   markNotificationAsRead(id: string, uid: string): void {
     const list = this.getNotifications().map((n) =>
       n.id === id ? { ...n, readBy: Array.from(new Set([...(n.readBy ?? []), uid])) } : n,

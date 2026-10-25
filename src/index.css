@@ -1,9 +1,14 @@
 @import "tailwindcss";
+/* Thèmes de couleur par école (D84) : variables par [data-theme], fichier généré. */
+@import "./theme/themes.css";
 
 /*
  * Charte « لوحة الكتّاب » (maquette design/Main.dc.html) : jetons du thème.
  * Les échelles primary / gold / danger / success / sand remplacent les palettes
  * émeraude / ambre / rose / ardoise de l'ancienne interface (voir D38).
+ * Les valeurs ci-dessous sont celles du thème « bleu-nuit » (défaut) ; les
+ * autres thèmes les redéfinissent sous [data-theme="…"] (src/theme/themes.css,
+ * généré depuis src/theme/palettes.ts, D84).
  */
 @theme {
   --font-sans: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
@@ -25,6 +30,9 @@
   --color-night-muted: #B8C4D8;
   --color-night-label: #8FA0BD;
   --color-night-link: #C9D3E3;
+  --color-night-soft: #A9B6CC;
+  --color-night-dim: #7586A3;
+  --color-night-tick: #3A5785;
   --color-ink: #1A1F2B;
   --color-ink-2: #4A5060;
   --color-ink-3: #6B7080;
@@ -63,6 +71,8 @@
   --color-gold-900: #4A3600;
   --color-gold-950: #3A2A00;
   --color-gold-light: #FFE08A;
+  --color-gold-glow: #FFF7DD;
+  --color-gold-pale: #FFF2C7;
 
   /* Danger */
   --color-danger: #A33A2E;

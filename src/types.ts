@@ -129,9 +129,9 @@ export interface Notification {
   date: string;
   type: "نجاح" | "تنبيه" | "مالي" | "إداري";
   isRead: boolean;
-  /** Destinataires (firestore.rules, D84) ; absent : bureau seulement. */
+  /** Destinataires (firestore.rules, D86) ; absent : bureau seulement. */
   audience?: NotificationAudience;
-  /** Comptes (uid) qui l'ont lue (U-03, D85) ; `isRead` reste pour les anciennes. */
+  /** Comptes (uid) qui l'ont lue (U-03, D87) ; `isRead` reste pour les anciennes. */
   readBy?: string[];
 }
 
@@ -189,6 +189,10 @@ export interface SystemSettings {
   openingYear?: number; // ouverture officielle : aucun paiement généré avant
   openingMonth?: string;
   studentAccountMinAge?: number; // âge minimal pour un compte élève (défaut 15)
+
+  // 5. Thème de couleur de l'école (D84) : identifiant de src/theme/palettes.ts
+  // (bleu-nuit, emeraude, sauge, foret, olive) ; absent ou inconnu = bleu-nuit.
+  theme?: string;
 }
 
 export type ModuleId =

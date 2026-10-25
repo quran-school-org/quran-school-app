@@ -1879,7 +1879,180 @@ là-bas (R-06).
   depuis l'interface si besoin), puis `git revert` des commits de
   `feat/seed-ecole-test`.
 
-### D83. Le front est vérifié par TypeScript en mode strict, avec les types de React
+### D83. Liste déroulante maison, pagination des élèves et des attestations
+- **Contexte** : retours d'interface du propriétaire sur le dev (école de
+  test peuplée, D82 : 150 élèves fictifs, 264 examens), testés en FR (D79) :
+  `<select>` natifs hors charte (menu du système, libellés tronqués,
+  « Tous les » dans le registre des activités, tri qui sort de la carte),
+  listes d'élèves et d'attestations sans pagination (11 000 nœuds DOM pour
+  les examens, aperçu de la carte de l'élève sous 150 lignes), attestations
+  du plus ancien au plus récent, et bugs d'affichage (bouton WhatsApp sur
+  le badge d'absences, bloc « liaison financière » écrasé, badges des
+  activités coupés). Choix tranchés par le propriétaire : **tous** les
+  `<select>` remplacés, pagination « flèches + numéros », **8 élèves** et
+  **20 attestations** par page.
+- **Décision** :
+  - **`src/ui/Select.tsx`** (aucune dépendance ajoutée) : API proche de
+    `<select>` (`value`, `onChange(value)`, `options` ou enfants `<option>`
+    lus sans être rendus, `placeholder`, `disabled`, `required`, `id` pour le
+    `<label>` d'un `FormField`, `name`), **valeurs inchangées** (rôles en
+    arabe, identifiants). Motif « combobox à liste » de l'APG : bouton
+    `role="combobox"`, `listbox` / `option`, `aria-activedescendant` ;
+    clavier ↑ ↓ Début Fin Page↑ Page↓ Entrée Espace Échap Tab et première
+    lettre ; Échap ne ferme pas la fenêtre `Modal` qui contient la liste.
+    Menu dans un portail `position: fixed` (`z-[60]`, au-dessus des
+    fenêtres), aligné sur le début de ligne selon le sens CSS **effectif**
+    (`src/ui/useDirection.ts` : en FR de test, `dir="rtl"` reste dans le
+    code), jamais hors de l'écran, retourné vers le haut s'il manque de
+    place, fermé au clic extérieur ; options de 44 px. Recherche intégrée
+    au-delà de 10 options (`SEARCH_THRESHOLD`), insensible aux voyelles,
+    formes d'alif et accents (`src/ui/textSearch.ts`). `w-auto` : largeur de
+    la plus longue option (comme un `<select>`). `required` / `name` : champ
+    caché qui garde la validation du formulaire (exclu du focus initial de
+    `Modal`).
+  - **Traduction de test (D79)** : libellés rendus en nœuds texte (traduits
+    par la couche), valeur gardée par React et exposée en `data-value`,
+    attribut jamais traduit ; la recherche et la première lettre lisent le
+    texte **affiché** et le libellé d'origine. Vérifié en e2e
+    (`tests/e2e/ux-listes.spec.ts`, `i18n-fr.spec.ts`).
+  - **54 listes remplacées** (33 `<select>` et 21 `Select` qui les
+    enveloppaient), sur 25 fichiers : barre du haut (changement d'école,
+    « كل المدارس… »), élèves, présences, paiements, tableau de bord,
+    examens, halaqas, personnel, comptabilité (recettes, dépenses,
+    salaires), activités (filtres, tri, participants, dépenses, fenêtres),
+    paramètres (utilisateurs, ouverture, tarifs). Les listes sans libellé
+    associé reçoivent un `aria-label`. Garde-fou : plus aucun `<select>`
+    dans `src/` (`tests/unit/uiGuards.test.ts`). Tests e2e : `chooseOption`
+    (`tests/e2e/helpers.ts`) remplace `selectOption` ; repères stables
+    `#school-switcher`, `data-filter`, `data-field`, `data-value`,
+    `[data-select-menu]` (D54).
+  - **Pagination** : `src/ui/Pagination.tsx` (« ‹ 1 2 3 … 19 › », `nav`
+    étiquetée, `aria-current="page"`, flèches selon le sens effectif ; en
+    mobile, première, courante et dernière page) et `src/ui/pagination.ts`
+    (calculs purs, `usePagination` : retour à la page 1 quand la clé de
+    recherche et de filtres change). Résumé en arabe en un seul texte
+    (« الطلاب 9–16 من 150 », traduit par motif).
+  - **Élèves** : 8 par page ; page de l'élève sélectionné à l'ouverture ;
+    fiche conservée quand on change de page, avec un lien « عرض صفحة الطالب
+    المحدد » ; liste et fiche alignées en haut, aperçu de la carte juste
+    sous ce bloc.
+  - **Attestations** : du plus récent au plus ancien (date d'examen, puis
+    ordre de saisie) ; filtres nom de l'élève ou partie examinée, halaqa
+    actuelle de l'élève, mention (`overallGrade`), période (saison scolaire,
+    à partir d'août comme `defaultSchoolSettings`, ou mois) ; 20 par page
+    (`src/screens/grades/gradeFilters.ts`, module pur).
+  - **Affichage** : alertes d'absences (bouton sous le badge et les
+    informations), liaison financière d'une activité (texte d'abord, boutons
+    en dessous ou sur la même ligne s'il y a la place, pastille sur une
+    ligne), registre des activités (filtres qui passent à la ligne, tri dans
+    la carte, badges de type et de statut sur des lignes séparées si
+    besoin), et cas voisins : boutons de l'en-tête d'une activité, barres de
+    filtre des participants et des dépenses (champ de recherche écrasé),
+    colonnes liste / détail des activités empilées sous 1 280 px (la liste
+    faisait 215 px à 1 024 px).
+  - **Notifications** : « مسح جميع التنبيهات » ouvre une fenêtre `Modal` de
+    confirmation (nombre de notifications de l'école, suppression
+    définitive) ; « إلغاء » a le focus.
+- **Laissé de côté** : filtre par « type d'examen » ou d'attestation (le
+  modèle `Grade` n'en a pas : `testedPortion` est un texte libre, couvert par
+  la recherche) ; listes à choix multiple (aucune dans l'application) ;
+  sélecteur natif du système sur mobile (remplacé par le menu de la charte,
+  choix du propriétaire).
+- **Vérifié localement** (émulateurs, école `annour` peuplée en `large` par
+  `seed-school-fixtures`, AR et FR, 1 440, 1 024 et 390 px) : captures
+  avant / après dans `docs/design/captures/ux-2026-10/` ; tests unitaires
+  `pagination`, `gradeFilters`, `selectHelpers`, `uiGuards` ; e2e
+  `ux-listes.spec.ts` (clavier, Échap, clic extérieur, recherche, FR,
+  pagination, confirmation).
+- **Retour arrière** : `git revert` des commits de
+  `feat/ux-listes-selecteurs`. Pour revenir aux `<select>` natifs sans
+  perdre le reste : remettre l'ancien `Select` de `src/ui/Form.tsx`
+  (`<select>` stylé) et rétablir `onChange={(e) => …(e.target.value)}`
+  aux appels ; pour changer la taille des pages : `PAGE_SIZES`
+  (`src/ui/Pagination.tsx`).
+
+### D84. Thème de couleur par école (bleu nuit + quatre palettes vertes)
+- **Contexte** : le propriétaire veut choisir dans les Paramètres la palette
+  de l'application, entre le bleu actuel et quatre palettes vertes de la
+  charte « لوحة الكتّاب » (émeraude et or, sauge et laiton, forêt de nuit,
+  olive et sable ; contrastes vérifiés). Le choix vaut **pour l'école** :
+  tous ses utilisateurs le voient.
+- **Décision** :
+  - **Réglage** : champ `theme` de `schools/{id}/settings/system`, parmi
+    `bleu-nuit` (défaut), `emeraude`, `sauge`, `foret`, `olive` ; absent ou
+    inconnu = `bleu-nuit` (`resolveThemeId`). **Aucun changement de
+    `firestore.rules`** : les paramètres n'ont pas de liste fermée de champs
+    (`validWrite` : identifiant, `schoolId`, pas de `password`) et restent
+    écrits par le directeur ou le super-admin seulement.
+  - **Variables CSS** : les jetons de `@theme` (`src/index.css`) restent les
+    valeurs du bleu nuit, donc ce thème est **identique au pixel près**
+    (captures comparées avant / après : connexion, tableau de bord, élèves,
+    paiements). Les autres thèmes redéfinissent les mêmes variables
+    `--color-*` sous `[data-theme="…"]`, posé sur `<html>`, dans
+    `src/theme/themes.css`, **généré** depuis `src/theme/palettes.ts`
+    (`npx tsx scripts/dev/gen-theme-css.ts` ; `tests/unit/themes.test.ts`
+    échoue s'il n'est plus à jour). Chaque thème = 4 couleurs de base
+    (barre latérale `night`, `primary`, `gold`, fond `app`) ; les nuances
+    (`night-2`, `night-line*`, `night-text/muted/label/link`,
+    `primary-50…950`, `gold-light`, survols, fonds pâles des badges,
+    ombres, sélection) sont **transposées** depuis le bleu en OKLCH (même
+    écart de teinte, chroma proportionnelle, luminosité recalée), avec un
+    garde-fou : une nuance lisible à 4,5:1 dans le bleu l'est aussi dans le
+    thème (`src/theme/color.ts`). `primary-hover` et `primary-900` (encre
+    des chiffres) = la barre latérale du thème. L'échelle `gold-50…300` /
+    `gold-600…950` est **commune** : elle sert aussi d'ambre sémantique
+    (« متوسط », avertissements). Rouge, vert « payé / synchronisé », ambre :
+    inchangés.
+  - **Couleurs codées en dur** branchées sur les variables : `HifzMap`
+    (points, graduations, noms), `GeometricPattern` et `Emblem` (défauts
+    `var(--color-gold)` / `var(--color-night)`, en `style` SVG), `SideNav`
+    (`night-dim`, `night-soft`, `gold-glow` : nouveaux jetons aux valeurs
+    d'avant), point « synchronisation » et statistiques du menu, surlignage
+    de l'élève choisi, ligne du scanner QR, graphique et légende des
+    paiements, légende du tajwid du tableau de bord, frise de `HifzProgress`,
+    case à cocher (`accent-primary`), ombre de la bascule segmentée.
+    `tests/unit/themes.test.ts` interdit ces couleurs dans `src/` hors
+    `src/theme/`, `src/print/`, `src/index.css` et la traduction de test.
+  - **Application** : `useSchoolTheme` (`App.tsx`) applique le thème de
+    l'école active dès que ses paramètres sont là (cache cloisonné
+    `kuttab:{id}:settings_system`, puis Firestore) et à chaque changement
+    d'école (barre du haut ou page de choix) ; `<meta name="theme-color">`
+    suit la barre latérale. Au démarrage (`main.tsx`) et sur l'écran de
+    connexion : **dernier thème de l'appareil** (`kuttab-device:lastTheme`,
+    hors du préfixe `kuttab:` purgé à la déconnexion ; seulement un
+    identifiant de palette), d'où pas de flash bleu au rechargement. En
+    changeant d'école, la nouvelle école peut afficher le bleu le temps que
+    ses paramètres arrivent (son cache a été purgé en la quittant).
+  - **Paramètres** (`إعدادات الجمعية والمدرسة`, bloc « ألوان التطبيق »,
+    `src/components/settings/ThemePicker.tsx`) : 5 vignettes (barre
+    latérale, principal, or, nom, coche), vrais `<button>` avec
+    `aria-pressed`, désactivées sans le droit de modifier les paramètres.
+    Aperçu immédiat au clic ; enregistrement avec le bouton existant ; en
+    quittant l'écran sans enregistrer, le thème enregistré revient.
+- **Hors périmètre** : les **impressions** (`src/print/`, fenêtres
+  d'impression : `<html>` sans `data-theme`, donc couleurs de la charte
+  bleue) et les **cartes** (cartes d'élève de `src/print/cards/` et badge du
+  personnel portent `data-theme="bleu-nuit"`, à l'écran comme à
+  l'impression) gardent leurs couleurs. Les aperçus à l'écran d'autres
+  documents (rapport mensuel, rapport financier) suivent le thème mais
+  s'impriment en bleu. Thème des documents imprimés : à décider plus tard.
+- **Vérifié localement** (émulateurs, données fictives) :
+  `tests/unit/themes.test.ts` (identifiant → jetons, défaut, contrastes
+  ≥ 4,5:1, CSS généré, bleu = `@theme`, garde-fou des couleurs en dur) ;
+  e2e `tests/e2e/themes.spec.ts` (choix de `foret` au clavier → barre
+  latérale et `theme-color`, enregistrement, rechargement, écran de
+  connexion, changement d'école, autre directeur en bleu, aperçu annulé) ;
+  captures des 5 thèmes (tableau de bord, élèves, paramètres, survol du
+  menu, AR, 1 440 px) dans `docs/design/captures/themes/`
+  (`tests/e2e/themes-captures.spec.ts`, `THEME_CAPTURE_DIR`).
+- **Retour arrière** : `git revert` des commits de `feat/themes-ecole`. Sans
+  retirer le code : effacer le champ `theme` des paramètres d'une école
+  (retour au bleu) ; pour retirer un thème, l'enlever de `THEMES`
+  (`src/theme/palettes.ts`) et régénérer `themes.css` (une école qui
+  l'avait repasse au bleu). Le champ `theme` laissé dans Firestore est
+  ignoré par une version sans thèmes.
+
+### D85. Le front est vérifié par TypeScript en mode strict, avec les types de React
 - **Contexte** : le projet généré par AI Studio n'installait pas
   `@types/react` (`src/jsx-shim.d.ts` le contournait) et le `tsconfig.json`
   du front n'activait pas `strict` (les Cloud Functions l'avaient déjà). Tout
@@ -1898,7 +2071,7 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` du commit ; ou retirer `strict` du
   `tsconfig.json` si une urgence l'exige.
 
-### D84. Correctifs de l'audit d'octobre 2026 (A-01, A-02, A-04, A-05, A-06)
+### D86. Correctifs de l'audit d'octobre 2026 (A-01, A-02, A-04, A-05, A-06)
 - **Contexte** : audit de sécurité du 24/10/2026
   (`docs/revues/REVUE-SECURITE-2026-10.md`) ; Mélik a retenu ces cinq
   constats (décisions sur la page de synthèse) ; A-03 et A-07 sont reportés.
@@ -1929,7 +2102,7 @@ là-bas (R-06).
   notifications créées entre-temps gardent un champ `audience` sans effet sur
   l'ancienne règle.
 
-### D85. Notifications lues par personne et moins de bruit (U-03), petits bugs visibles (U-04)
+### D87. Notifications lues par personne et moins de bruit (U-03), petits bugs visibles (U-04)
 - **Contexte** : audit UX d'octobre 2026 (`docs/audit-2026-10/AUDIT-UX.md`),
   points retenus par Mélik.
 - **Décision** :

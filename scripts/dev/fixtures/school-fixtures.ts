@@ -740,7 +740,7 @@ export function buildSchoolFixtures(opts: BuildOptions): SchoolFixtures {
   }
 
   // ------------------------------------------------------------ notifications
-  // Destinataires comme ceux que fixe l'interface (D84) : finances et inscriptions
+  // Destinataires comme ceux que fixe l'interface (D86) : finances et inscriptions
   // au bureau, notes et absences à la pédagogie, réunions à tout le personnel.
   const notifTemplates: ((st: StudentInfo) => Partial<Notification>)[] = [
     (st) => ({ title: "تسجيل طالب جديد", message: `تم إضافة الطالب(ة) ${st.name} إلى ${CLASS_DEFS.find((c) => c.key === st.classKey)!.name}`, type: "نجاح", audience: "office" }),

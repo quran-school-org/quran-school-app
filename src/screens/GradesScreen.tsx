@@ -1,18 +1,27 @@
 /**
  * Examens et attestations (charte « لوحة الكتّاب ») : synthèse des résultats,
  * liste des examens validés, encart d'attestation. Mêmes actions et mêmes droits.
+ * Liste du plus récent au plus ancien, filtrable (élève, halaqa, mention,
+ * période) et paginée par 20 (D83, ./grades/gradeFilters.ts).
  */
-import { Award, FileBadge2, Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Award, FileBadge2, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { checkUserPermission } from "../types";
 import { useApp } from "../app/AppContext";
-import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, Ltr, PageHeader, Pill, ProgressBar } from "../ui";
+import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, Ltr, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, usePagination } from "../ui";
+import { ALL, EMPTY_GRADE_FILTERS, OVERALL_GRADES, filterGrades, isFiltered, periodOptions, type GradeFilters } from "./grades/gradeFilters";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} aria-hidden="true" />;
 const OVERALL_TONE: Record<string, any> = { "ممتاز": "gold", "جيد جداً": "success", "جيد": "primary", "مقبول": "neutral" };
 const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : 0);
 
 export default function GradesScreen() {
-  const { students, teachers, grades, currentUser, currentRole, schoolName, handleOpenGradeForm, handleDeleteGrade, handlePrintCertificate } = useApp();
+  const { students, teachers, classes, grades, currentUser, currentRole, schoolName, handleOpenGradeForm, handleDeleteGrade, handlePrintCertificate } = useApp();
+  const [filters, setFilters] = useState<GradeFilters>(EMPTY_GRADE_FILTERS);
+  const set = (patch: Partial<GradeFilters>) => setFilters((f) => ({ ...f, ...patch }));
+  const visible = useMemo(() => filterGrades(grades, students, filters), [grades, students, filters]);
+  const periods = useMemo(() => periodOptions(grades), [grades]);
+  const pg = usePagination(visible, PAGE_SIZES.certificates, JSON.stringify(filters));
   const can = (a: "create" | "delete" | "print") => checkUserPermission(currentUser, currentRole, "grades", a);
   const mem = avg(grades.map((g) => Number(g.memorizationGrade) || 0));
   const taj = avg(grades.map((g) => Number(g.tajweedGrade) || 0));
@@ -49,18 +58,49 @@ export default function GradesScreen() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         <Card padded={false} className="lg:col-span-2 overflow-hidden" aria-labelledby="grades-title">
-          <div className="px-5 py-4 border-b border-line-soft">
-            <h2 id="grades-title" className="m-0 font-display font-semibold text-[20px] text-primary">قائمة شهادات الاختبار المعتمدة</h2>
+          <div className="flex flex-col gap-3 px-5 py-4 border-b border-line-soft">
+            <div className="flex flex-wrap justify-between items-center gap-2">
+              <h2 id="grades-title" className="m-0 font-display font-semibold text-[20px] text-primary">قائمة شهادات الاختبار المعتمدة</h2>
+              <span className="text-[13.5px] text-ink-2">النتائج: <strong className="text-ink tabular-nums">{visible.length}</strong></span>
+            </div>
+            {grades.length > 0 && (
+              <div data-grade-filters="" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <SearchInput
+                  icon={ic(Search)}
+                  aria-label="بحث باسم الطالب أو الامتحان"
+                  placeholder="بحث باسم الطالب أو الامتحان..."
+                  value={filters.query}
+                  onChange={(e: any) => set({ query: e.target.value })}
+                  className="sm:col-span-3"
+                />
+                <Select aria-label="الحلقة" data-filter="class" value={filters.classId} onChange={(v) => set({ classId: v })}>
+                  <option value={ALL}>جميع الحلقات</option>
+                  {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+                <Select aria-label="التقدير" data-filter="overall" value={filters.overall} onChange={(v) => set({ overall: v })}>
+                  <option value={ALL}>جميع التقديرات</option>
+                  {OVERALL_GRADES.map((o) => <option key={o} value={o}>{o}</option>)}
+                </Select>
+                <Select aria-label="الفترة" data-filter="period" value={filters.period} onChange={(v) => set({ period: v })} options={[{ value: ALL, label: "جميع الفترات" }, ...periods]} />
+              </div>
+            )}
+            {isFiltered(filters) && (
+              <Button size="xs" variant="ghost" className="self-start" icon={ic(RotateCcw, "w-3.5 h-3.5")} onClick={() => setFilters(EMPTY_GRADE_FILTERS)}>
+                إعادة تعيين الفلاتر
+              </Button>
+            )}
           </div>
           {grades.length === 0 ? (
             <div className="p-5"><EmptyState icon={ic(Award, "w-8 h-8")} title="لا نتائج بعد">لم يتم رصد اختبارات أو شهادات تقديرية للطلاب بعد.</EmptyState></div>
+          ) : visible.length === 0 ? (
+            <div className="p-5"><EmptyState icon={ic(Search, "w-8 h-8")} title="لا نتائج">لا توجد شهادات تطابق خيارات البحث الحالية.</EmptyState></div>
           ) : (
-            <ul className="m-0 p-0 list-none divide-y divide-line-faint">
-              {grades.map((gr) => {
+            <ul data-grade-list="" className="m-0 p-0 list-none divide-y divide-line-faint">
+              {pg.pageItems.map((gr) => {
                 const stud = students.find((s) => s.id === gr.studentId);
                 const teacher = teachers.find((t) => t.id === gr.examinerId);
                 return (
-                  <li key={gr.id} className="px-5 py-4 flex flex-col md:flex-row justify-between gap-4 hover:bg-surface-2">
+                  <li key={gr.id} data-grade={gr.id} data-exam-date={gr.examDate} className="px-5 py-4 flex flex-col md:flex-row justify-between gap-4 hover:bg-surface-2">
                     <div className="flex flex-col gap-2.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="m-0 font-sans font-semibold text-[15px] text-ink">{stud?.fullName || "طالب مجهول"}</h3>
@@ -95,6 +135,18 @@ export default function GradesScreen() {
                 );
               })}
             </ul>
+          )}
+          {visible.length > 0 && (
+            <div className="px-5 py-3.5 border-t border-line-soft">
+              <Pagination
+                data-pagination="grades"
+                label="ترقيم صفحات قائمة الشهادات"
+                page={pg.page}
+                pageCount={pg.pageCount}
+                onPageChange={pg.setPage}
+                summary={`الشهادات ${pg.start}–${pg.end} من ${pg.total}`}
+              />
+            </div>
           )}
         </Card>
 

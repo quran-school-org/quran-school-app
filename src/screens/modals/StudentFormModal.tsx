@@ -101,7 +101,7 @@ export default function StudentFormModal() {
           <FormField label="تاريخ التسجيل بالنادي">{(id) => <Input id={id} type="date" required value={formRegistrationDate} onChange={(e: any) => setFormRegistrationDate(e.target.value)} />}</FormField>
           <FormField label="الجنس">
             {(id) => (
-              <Select id={id} value={formGender} onChange={(e: any) => setFormGender(e.target.value as "ذكر" | "أنثى")}>
+              <Select id={id} value={formGender} onChange={(v) => setFormGender(v as "ذكر" | "أنثى")}>
                 <option value="ذكر">ذكر</option>
                 <option value="أنثى">أنثى</option>
               </Select>
@@ -112,7 +112,7 @@ export default function StudentFormModal() {
           <FormField label="البريد الإلكتروني لولي الأمر">{(id) => <Input id={id} type="email" dir="ltr" value={formParentEmail} onChange={(e: any) => setFormParentEmail(e.target.value)} placeholder="example@gmail.com" className="text-end" />}</FormField>
           <FormField label="الفصل الدراسي / الحلقة">
             {(id) => (
-              <Select id={id} value={formClassId} onChange={(e: any) => setFormClassId(e.target.value)}>
+              <Select id={id} value={formClassId} onChange={(v) => setFormClassId(v)}>
                 {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Select>
             )}
@@ -120,7 +120,7 @@ export default function StudentFormModal() {
           <FormField label="عدد الأحزاب المحفوظة (من 1 إلى 60)">{(id) => <Input id={id} type="number" min={1} max={60} required value={formHizbCount} onChange={(e: any) => setFormHizbCount(Number(e.target.value))} />}</FormField>
           <FormField label="مستوى التجويد الحالي">
             {(id) => (
-              <Select id={id} value={formTajweedLevel} onChange={(e: any) => setFormTajweedLevel(e.target.value as TajweedLevel)}>
+              <Select id={id} value={formTajweedLevel} onChange={(v) => setFormTajweedLevel(v as TajweedLevel)}>
                 <option value="ممتاز">ممتاز</option>
                 <option value="متوسط">متوسط</option>
                 <option value="ضعيف">ضعيف</option>

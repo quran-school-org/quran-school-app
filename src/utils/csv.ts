@@ -1,5 +1,5 @@
 /**
- * Cellule CSV sûre pour un tableur (A-05, D84) : une valeur qui commence par
+ * Cellule CSV sûre pour un tableur (A-05, D86) : une valeur qui commence par
  * `=`, `@`, une tabulation, un retour chariot, `+` ou `-` serait lue comme une
  * formule par Excel ou LibreOffice. On la préfixe d'une apostrophe, sauf les
  * nombres et téléphones (`-50`, `+212 6 61 00 00 01`), qui restent tels quels.

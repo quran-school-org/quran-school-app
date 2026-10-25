@@ -191,7 +191,7 @@ describe("workflows GitHub Actions (D68)", () => {
     expect(text).toMatch(/\[ "\$\{ROTATE\}" != "none" \] && \[ -z "\$\{ARTIFACT_KEY\}" \]/);
   });
 
-  describe("ops.yml (A-06, D84) : chiffrement des artefacts sans échec ouvert", () => {
+  describe("ops.yml (A-06, D86) : chiffrement des artefacts sans échec ouvert", () => {
     const lines = read("ops.yml").split("\n");
     const stepIndex = (name: string) => lines.findIndex((l) => l.trim() === `- name: ${name}`);
     /** Bloc YAML complet de l'étape nommée. */

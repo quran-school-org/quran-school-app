@@ -1,6 +1,6 @@
 /**
  * Audit de sécurité d'octobre 2026 (docs/revues/REVUE-SECURITE-2026-10.md),
- * sur émulateurs, données FICTIVES. Correctifs A-01, A-02 et A-04 (D84) :
+ * sur émulateurs, données FICTIVES. Correctifs A-01, A-02 et A-04 (D86) :
  * ces tests vérifient que les abus démontrés par l'audit sont refusés.
  * A-03 est reporté (décision du 24/10/2026) : son test décrit le comportement
  * actuel et devra être inversé quand il sera corrigé.

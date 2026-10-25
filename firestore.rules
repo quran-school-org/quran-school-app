@@ -102,14 +102,14 @@ service cloud.firestore {
     }
 
     // Champ texte facultatif d'une mise à jour de son propre profil : s'il est
-    // modifié, il est nul ou une chaîne d'au plus `max` caractères (A-04, D84).
+    // modifié, il est nul ou une chaîne d'au plus `max` caractères (A-04, D86).
     function selfTextOk(key, max) {
       return !(key in request.resource.data.diff(resource.data).affectedKeys())
         || request.resource.data.get(key, null) == null
         || (request.resource.data[key] is string && request.resource.data[key].size() <= max);
     }
 
-    // Destinataires d'une notification (champ `audience`, A-01, D84).
+    // Destinataires d'une notification (champ `audience`, A-01, D86).
     function canSeeNotification(s, audience) {
       return isOffice(s)
         || (isEducator(s) && audience in ['educators', 'staff'])
@@ -269,11 +269,11 @@ service cloud.firestore {
 
       // ------------------------------------------------------- notifications
       // Personnel seulement (R-07, D65) : les familles ne lisent ni n'écrivent
-      // de notifications. Destinataires par le champ `audience` (A-01, D84) :
+      // de notifications. Destinataires par le champ `audience` (A-01, D86) :
       // 'office' (bureau : finances, comptes…), 'educators' (pédagogie : notes,
       // absences), 'staff' (tout le personnel). Sans champ : bureau seulement.
       // Hors bureau, une mise à jour ne peut qu'ajouter son propre uid à
-      // `readBy` (« lu » par personne, U-03, D85), sur une notification qu'on
+      // `readBy` (« lu » par personne, U-03, D87), sur une notification qu'on
       // a le droit de lire.
       match /notifications/{notificationId} {
         allow read: if canSeeNotification(s, resource.data.get('audience', 'office'));

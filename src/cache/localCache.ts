@@ -79,3 +79,29 @@ export function readLastSchool(): string | null {
     return null;
   }
 }
+
+/**
+ * Préférence d'affichage de l'APPAREIL (D84) : dernier thème de couleur
+ * appliqué, pour l'écran de connexion et le rechargement (pas de flash bleu
+ * avant de connaître l'école). Clé hors du préfixe `kuttab:` : elle survit
+ * volontairement à la déconnexion. Elle ne contient qu'un identifiant de
+ * palette (aucune donnée de l'école ni de l'utilisateur). Le thème de chaque
+ * école est aussi dans son cache cloisonné (`kuttab:{schoolId}:settings_system`).
+ */
+const LAST_THEME_KEY = `${CACHE_PREFIX}-device:lastTheme`;
+
+export function rememberLastTheme(themeId: string): void {
+  try {
+    localStorage.setItem(LAST_THEME_KEY, themeId);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function readLastTheme(): string | null {
+  try {
+    return localStorage.getItem(LAST_THEME_KEY);
+  } catch {
+    return null;
+  }
+}

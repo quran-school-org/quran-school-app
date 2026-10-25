@@ -30,7 +30,7 @@ export default function GradeFormModal() {
       <div className="flex flex-col gap-4">
         <FormField label="الطالب الممتحن">
           {(id) => (
-            <Select id={id} value={gradeStudentId} onChange={(e: any) => setGradeStudentId(e.target.value)}>
+            <Select id={id} value={gradeStudentId} onChange={(v) => setGradeStudentId(v)}>
               {students.map((s) => <option key={s.id} value={s.id}>{s.fullName}</option>)}
             </Select>
           )}
@@ -48,7 +48,7 @@ export default function GradeFormModal() {
         </div>
         <FormField label="التقدير الإجمالي والتحفيزي">
           {(id) => (
-            <Select id={id} value={gradeOverall} onChange={(e: any) => setGradeOverall(e.target.value as any)}>
+            <Select id={id} value={gradeOverall} onChange={(v) => setGradeOverall(v as any)}>
               <option value="ممتاز">ممتاز</option>
               <option value="جيد جداً">جيد جداً</option>
               <option value="جيد">جيد</option>

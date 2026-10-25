@@ -319,7 +319,7 @@ jobs:
           { echo "REPORTS=${RUNNER_TEMP}/rapports"; echo "SECRETS_DIR=${RUNNER_TEMP}/secret"; } >> "$GITHUB_ENV"
           echo "${ACTION} sur ${PROJECT_ID} / ${DATABASE_ID} (${ENVIRONMENT}, configuration ${CONFIG_MODE}${VAR_PREFIX:+ ${VAR_PREFIX}*}), apply=${APPLY}, rotate_passwords=${ROTATE}"
 
-      # A-06 (D84) : la clé publique est importée et essayée AVANT toute opération ;
+      # A-06 (D86) : la clé publique est importée et essayée AVANT toute opération ;
       # une clé inutilisable arrête le run sans rien avoir écrit, et les artefacts
       # ne partent jamais en clair.
       - name: Clé de chiffrement utilisable

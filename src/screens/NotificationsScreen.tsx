@@ -1,12 +1,15 @@
 /**
  * Boîte de notifications (charte « لوحة الكتّاب »), selon le rôle.
- * Mêmes actions qu'auparavant (marquer comme lu, tout effacer pour le directeur).
+ * Mêmes actions qu'auparavant (marquer comme lu, tout effacer pour le directeur,
+ * désormais après confirmation dans une fenêtre de la charte : nombre et
+ * caractère définitif de la suppression).
  */
+import { useState } from "react";
 import { AlertTriangle, Bell, CheckCircle2, Coins, Inbox, Trash2 } from "lucide-react";
 import { RealmSimDB } from "../db";
 import { useApp } from "../app/AppContext";
 import { isNotificationRead } from "../types";
-import { Button, Card, EmptyState, Ltr, PageHeader, Pill, cx } from "../ui";
+import { ActionAlert, Button, Card, EmptyState, Ltr, Modal, PageHeader, Pill, cx } from "../ui";
 
 const TYPE_ICON: Record<string, { icon: any; cls: string }> = {
   "نجاح": { icon: CheckCircle2, cls: "bg-success-100 text-success-700" },
@@ -15,8 +18,16 @@ const TYPE_ICON: Record<string, { icon: any; cls: string }> = {
 };
 
 export default function NotificationsScreen() {
-  const { currentRole, loadDatabase, userNotifications, authUid } = useApp();
+  const { currentRole, loadDatabase, userNotifications, notifications, authUid } = useApp();
   const unread = userNotifications.filter((n) => !isNotificationRead(n, authUid)).length;
+  const [confirmClear, setConfirmClear] = useState(false);
+  /** Toutes les notifications de l'école (celles que la suppression efface), pas seulement la liste filtrée. */
+  const schoolTotal = (notifications || userNotifications).length;
+  const clearAll = () => {
+    RealmSimDB.clearAllNotifications();
+    loadDatabase();
+    setConfirmClear(false);
+  };
 
   return (
     <div data-screen="notifications" className="flex flex-col gap-6">
@@ -34,11 +45,10 @@ export default function NotificationsScreen() {
           currentRole === "مدير" && (
             <Button
               variant="danger"
+              data-action="clear-notifications"
+              disabled={schoolTotal === 0}
               icon={<Trash2 className="w-4 h-4" strokeWidth={1.75} />}
-              onClick={() => {
-                RealmSimDB.clearAllNotifications();
-                loadDatabase();
-              }}
+              onClick={() => setConfirmClear(true)}
             >
               مسح جميع التنبيهات
             </Button>
@@ -85,6 +95,29 @@ export default function NotificationsScreen() {
         </Card>
       ) : (
         <EmptyState icon={<Inbox className="w-8 h-8" strokeWidth={1.5} />} title="لا إشعارات">لا توجد إشعارات أو تنبيهات موجهة لك حالياً.</EmptyState>
+      )}
+
+      {confirmClear && (
+        <Modal
+          modalId="confirm-clear-notifications"
+          size="sm"
+          title="مسح جميع التنبيهات؟"
+          icon={<AlertTriangle className="w-6 h-6" strokeWidth={1.75} />}
+          onClose={() => setConfirmClear(false)}
+          footer={
+            <>
+              <Button onClick={() => setConfirmClear(false)}>إلغاء</Button>
+              <Button variant="danger-solid" data-action="confirm-clear-notifications" icon={<Trash2 className="w-4 h-4" strokeWidth={1.75} />} onClick={clearAll}>
+                {`حذف نهائي (${schoolTotal})`}
+              </Button>
+            </>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            <p className="m-0 text-[14.5px] text-ink leading-relaxed">{`عدد التنبيهات التي ستُحذف: ${schoolTotal} (جميع تنبيهات المدرسة، المقروءة وغير المقروءة، لدى جميع المستخدمين).`}</p>
+            <ActionAlert tone="danger" title="إجراء نهائي">لا يمكن التراجع عن هذا الحذف ولا استرجاع التنبيهات بعده.</ActionAlert>
+          </div>
+        </Modal>
       )}
     </div>
   );

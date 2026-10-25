@@ -58,7 +58,7 @@ export default function AttendanceScreen() {
         </FormField>
         <FormField label="حلقة التحفيظ">
           {(id) => (
-            <Select id={id} value={selectedClassId} onChange={(e: any) => setSelectedClassId(e.target.value)} className="w-auto">
+            <Select id={id} value={selectedClassId} onChange={(v) => setSelectedClassId(v)} className="w-auto">
               <option value="all">الكل (جميع الحلقات والطلاب)</option>
               {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
@@ -178,7 +178,7 @@ export default function AttendanceScreen() {
               {isScanning ? (
                 <div className="w-full max-w-[280px] flex flex-col gap-3">
                   <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-night border-4 border-gold/40">
-                    <div className="absolute inset-x-0 h-0.5 bg-gold shadow-[0_0_10px_#D4A017] z-20 pointer-events-none" style={{ animation: "scan-line-movement 3s infinite linear" }} />
+                    <div className="absolute inset-x-0 h-0.5 bg-gold shadow-[0_0_10px_var(--color-gold)] z-20 pointer-events-none" style={{ animation: "scan-line-movement 3s infinite linear" }} />
                     <div className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-gold z-10 rounded-tl-md pointer-events-none" />
                     <div className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-gold z-10 rounded-tr-md pointer-events-none" />
                     <div className="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-gold z-10 rounded-bl-md pointer-events-none" />
@@ -212,13 +212,13 @@ export default function AttendanceScreen() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {urgent.map(({ student, count }) => (
-              <div key={student.id} className="bg-surface border border-danger-200 rounded-xl p-3 flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-1 min-w-0">
+              <div key={student.id} data-absence-alert={student.id} className="bg-surface border border-danger-200 rounded-xl p-3 flex flex-col items-start gap-2.5 min-w-0">
+                <div className="flex flex-col gap-1 min-w-0 max-w-full">
                   <span className="font-semibold text-[14px] text-ink">{student.fullName}</span>
-                  <Pill tone="danger" className="self-start">متغيب لـ {count} حصص متتالية</Pill>
+                  <Pill tone="danger" className="self-start max-w-full whitespace-normal! text-start">متغيب لـ {count} حصص متتالية</Pill>
                   <span className="text-[12.5px] text-ink-3">ولي الأمر: {student.parentName} (<Ltr>{student.parentPhone}</Ltr>)</span>
                 </div>
-                <Button size="sm" variant="danger-solid" className="shrink-0" onClick={() => handleSendAbsenceWarning(student)} icon={<WhatsAppIcon className="w-3.5 h-3.5" />}>إرسال إنذار غياب</Button>
+                <Button size="sm" variant="danger-solid" className="max-w-full whitespace-normal text-start" onClick={() => handleSendAbsenceWarning(student)} icon={<WhatsAppIcon className="w-3.5 h-3.5" />}>إرسال إنذار غياب</Button>
               </div>
             ))}
           </div>

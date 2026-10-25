@@ -26,7 +26,7 @@ export default function FinanceFilterBar() {
       />
       <div className="flex items-center gap-2 flex-wrap">
         <SearchInput aria-label="بحث في السجلات المالية" icon={<Search className="w-4 h-4" strokeWidth={1.75} />} placeholder="بحث بالاسم أو رقم الإيصال..." value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} className="w-56" />
-        <Select aria-label="السنة المالية" value={selectedYear} onChange={(e: any) => setSelectedYear(e.target.value)} className="w-auto">
+        <Select aria-label="السنة المالية" value={selectedYear} onChange={(v) => setSelectedYear(v)} className="w-auto">
           {[0, 1, 2].map((d) => {
             const y = new Date().getFullYear() - d;
             return <option key={y} value={String(y)}>السنة المالية {y}</option>;

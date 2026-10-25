@@ -3,7 +3,7 @@
  * d'école. Données FICTIVES (npm run seed:emulator), émulateurs uniquement.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, SCHOOL_1, SCHOOL_2, loginAs, logout, openTab } from "./helpers";
+import { ACCOUNTS, SCHOOL_1, SCHOOL_2, loginAs, logout, openTab, chooseOption } from "./helpers";
 
 test.describe.serial("parcours par rôle", () => {
   test("un identifiant inconnu est refusé", async ({ page }) => {
@@ -56,15 +56,13 @@ test.describe.serial("parcours par rôle", () => {
     await openTab(page, "students");
     await expect(page.getByText("ياسين العلمي").first()).toBeVisible();
 
-    await page.locator("#school-switcher").click();
-    await page.locator('[data-school-option="annour"]').click();
+    await chooseOption(page, page.locator("#school-switcher"), "annour");
     await expect(page.locator("[data-active-school]").getByText(SCHOOL_2)).toBeVisible();
     await expect(page.getByText("ياسين العلمي")).toHaveCount(0);
     const keys = await page.evaluate(() => Object.keys(localStorage));
     expect(keys.filter((k) => k.startsWith("kuttab:alfajr:"))).toEqual([]);
 
-    await page.locator("#school-switcher").click();
-    await page.locator('[data-school-option="alfajr"]').click();
+    await chooseOption(page, page.locator("#school-switcher"), "alfajr");
     await expect(page.locator("[data-active-school]").getByText(SCHOOL_1)).toBeVisible();
     await logout(page);
   });

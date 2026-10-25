@@ -32,6 +32,7 @@ import ProfileModal from "./screens/modals/ProfileModal";
 import { useAppController } from "./app/useAppController";
 import { AppContext } from "./app/AppContext";
 import { SessionContext, type SessionContextValue } from "./session/SessionContext";
+import { useSchoolTheme } from "./theme/applyTheme";
 
 export default function App() {
   const s = useAppController();
@@ -64,6 +65,9 @@ export default function App() {
     handleOpenSchoolPicker,
     handleLogout,
   } = s;
+
+  // Thème de couleur de l'école active (D84) ; sans école, le thème courant reste.
+  useSchoolTheme(currentUser && activeSchoolId ? systemSettings : null);
 
   if (!currentUser && authUid && showSchoolPicker) {
     return (

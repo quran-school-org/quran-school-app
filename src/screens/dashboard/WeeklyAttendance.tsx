@@ -30,7 +30,7 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
         actions={
           <label className="flex items-center gap-2 text-[14px] text-ink-2">
             الحلقة
-            <Select value={classId} onChange={(e) => setClassId(e.target.value)} className="min-h-10 w-auto">
+            <Select aria-label="الحلقة" value={classId} onChange={(v) => setClassId(v)} size="sm" className="w-auto">
               <option value="all">جميع الحلقات</option>
               {live.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>

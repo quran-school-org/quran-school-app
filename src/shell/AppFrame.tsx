@@ -13,7 +13,7 @@ import QuotaBanner from "./QuotaBanner";
 
 const SYNC_TEXT = {
   synced: { dot: "#7FC56B", text: "قاعدة البيانات متصلة، والبيانات متزامنة الآن" },
-  syncing: { dot: "#D4A017", text: "جارٍ الاتصال بقاعدة البيانات ومزامنة البيانات…" },
+  syncing: { dot: "var(--color-gold)", text: "جارٍ الاتصال بقاعدة البيانات ومزامنة البيانات…" },
   error: { dot: "#E08A7E", text: "تعذّر الاتصال بقاعدة البيانات، العمل على النسخة المحلية" },
 } as const;
 
@@ -90,7 +90,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
         title={currentRole === "طالب" ? "الانتقال إلى ملف الحفظ والتجويد الشخصي" : "استعراض الإحصائيات"}
         className="text-start border border-night-line-2 rounded-[14px] p-3.5 flex flex-col gap-1.5 bg-night/85 hover:bg-white/[0.06] cursor-pointer transition-colors text-night-text"
       >
-        <span className="text-[12.5px] text-[#A9B6CC]">{statsLabel}</span>
+        <span className="text-[12.5px] text-night-soft">{statsLabel}</span>
         <span className="flex items-end justify-between gap-3">
           <span className="flex items-baseline gap-1.5">
             <span className="text-[24px] font-bold tabular-nums text-white leading-none">{statsValue}</span>
@@ -102,7 +102,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           </span>
         </span>
       </button>
-      <div className="flex items-center gap-2.5 px-1.5 text-[12.5px] text-[#A9B6CC]" role="status">
+      <div className="flex items-center gap-2.5 px-1.5 text-[12.5px] text-night-soft" role="status">
         <span aria-hidden="true" className="w-2 h-2 rounded-full shrink-0" style={{ background: sync.dot }} />
         <span>{sync.text}</span>
       </div>

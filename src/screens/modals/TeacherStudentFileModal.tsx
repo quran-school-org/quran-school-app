@@ -80,7 +80,7 @@ export default function TeacherStudentFileModal() {
                   </FormField>
                   <FormField label="مستوى التجويد الحالي">
                     {(id) => (
-                      <Select id={id} value={tajweedSelectValue(teacherSelectedStudent.tajweedLevel)} onChange={(e: any) => update({ tajweedLevel: e.target.value as TajweedLevel })}>
+                      <Select id={id} value={tajweedSelectValue(teacherSelectedStudent.tajweedLevel)} onChange={(v) => update({ tajweedLevel: v as TajweedLevel })}>
                         <option value="ممتاز">ممتاز (مخارج صحيحة وأحكام كاملة)</option>
                         <option value="متوسط">متوسط (يحتاج لبعض التوجيه)</option>
                         <option value="ضعيف">ضعيف (يتعلم القواعد الأساسية)</option>

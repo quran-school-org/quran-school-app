@@ -16,7 +16,7 @@ import { busiestHizb, classPlacement, classesLabel } from "./dashboard/dashboard
 const TAJWEED = [
   { key: "ممتاز", color: "var(--color-primary)" },
   { key: "متوسط", color: "var(--color-primary-400)" },
-  { key: "ضعيف", color: "#D4A017" },
+  { key: "ضعيف", color: "var(--color-gold)" },
 ];
 
 export default function DashboardScreen() {

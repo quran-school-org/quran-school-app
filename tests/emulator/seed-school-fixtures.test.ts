@@ -332,9 +332,9 @@ describe("école test1234 : seed large, droits, idempotence", () => {
     const att = (await admin.db.doc(`schools/${S}/attendance/${attId}`).get()).data()!;
     expect(attId).toBe(`a_${TODAY}_${att.studentId}`);
     await assertSucceeds(setDoc(doc(prof, "schools", S, "attendance", attId), { id: attId, date: TODAY, studentId: att.studentId, status: "متأخر", schoolId: S }, { merge: true }));
-    // Notification de la pédagogie marquée comme lue par un enseignant, pour lui seul (D85).
+    // Notification de la pédagogie marquée comme lue par un enseignant, pour lui seul (D87).
     await assertSucceeds(updateDoc(doc(prof, "schools", S, "notifications", "DEMO-N-002"), { readBy: arrayUnion(uids.get("test_enseignant")!) }));
-    // Les notifications du bureau (inscriptions, finances) lui restent invisibles (D84).
+    // Les notifications du bureau (inscriptions, finances) lui restent invisibles (D86).
     await assertFails(getDoc(doc(prof, "schools", S, "notifications", "DEMO-N-001")));
     // Le compte se met à jour lui-même (dernière connexion).
     await assertSucceeds(setDoc(doc(prof, "schools", S, "members", uids.get("test_enseignant")!), { lastLogin: NOW.toISOString() }, { merge: true }));

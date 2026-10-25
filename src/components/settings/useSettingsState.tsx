@@ -2,13 +2,15 @@
  * Paramètres de l'école et gestion des comptes (matrice de droits).
  * Découpé mécaniquement depuis SettingsManagement.tsx (Lot 2, sans changement de comportement).
  */
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AppUser, UserRole, UserPermissions, getDefaultPermissionsForRole } from "../../types";
 import { MIN_NEW_PASSWORD_LENGTH } from "../../security/accounts";
 import type { FeeOverride } from "../../types";
 import { generateUniqueUsername } from "../../db";
 import { isPrimaryDirector } from "./shared";
 import type { SettingsManagementProps } from "../SettingsManagement";
+import { resolveThemeId, type ThemeId } from "../../theme/palettes";
+import { applyTheme } from "../../theme/applyTheme";
 
 export function useSettingsState(props: SettingsManagementProps) {
   const {
@@ -142,6 +144,19 @@ export function useSettingsState(props: SettingsManagementProps) {
   const [internalBylaws, setInternalBylaws] = useState(settings.internalBylaws || "");
   const [footerNotice, setFooterNotice] = useState(settings.footerNotice || "");
 
+  // Thème de couleur de l'école (D84) : aperçu immédiat au clic, enregistré
+  // avec les autres paramètres. En quittant l'écran sans enregistrer, le thème
+  // enregistré de l'école est rétabli.
+  const [theme, setTheme] = useState<ThemeId>(resolveThemeId(settings.theme));
+  const savedThemeRef = useRef(settings.theme);
+  savedThemeRef.current = settings.theme;
+  useEffect(() => () => { applyTheme(savedThemeRef.current, { remember: false }); }, []);
+  const chooseTheme = (id: ThemeId) => {
+    if (!canUpdate) return;
+    setTheme(id);
+    applyTheme(id, { remember: false });
+  };
+
   // Logo uploading states & handlers
   const [isDragging, setIsDragging] = useState(false);
 
@@ -256,6 +271,9 @@ export function useSettingsState(props: SettingsManagementProps) {
       receiptPrefixFormat,
       internalBylaws,
       footerNotice,
+
+      // 5. Thème de couleur (D84)
+      theme,
     });
   };
 
@@ -592,6 +610,8 @@ export function useSettingsState(props: SettingsManagementProps) {
     setFormParentRegisterInActivities,
     formPermissions,
     setFormPermissions,
+    theme,
+    chooseTheme,
     handleSettingsSubmit,
     handleFullNameChange,
     handleAutoGenerateUsername,

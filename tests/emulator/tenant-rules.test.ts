@@ -105,7 +105,7 @@ const payload = (s: string, extra: Record<string, unknown> = {}) => ({ title: "v
 /** Contenu d'écriture valide selon la collection (staffPrivate : liste fermée de champs RH). */
 const payloadFor = (col: string, s: string) =>
   col === "staffPrivate" ? { monthlySalary: 1500, cinNumber: "XX1", schoolId: s }
-  : col === "notifications" ? payload(s, { audience: "staff" }) // destinataires : tout le personnel (D84)
+  : col === "notifications" ? payload(s, { audience: "staff" }) // destinataires : tout le personnel (D86)
   : payload(s);
 
 describe("accès sans appartenance", () => {
@@ -152,7 +152,7 @@ const MATRIX: Record<string, { list: Role[]; write: Role[]; remove: Role[] }> = 
   activities: { list: ROLES, write: EDUCATORS, remove: OFFICE },
   activityParticipants: { list: [...EDUCATORS, "متطوع"], write: EDUCATORS, remove: EDUCATORS },
   activityExpenses: { list: EDUCATORS, write: EDUCATORS, remove: EDUCATORS },
-  notifications: { list: OFFICE, write: STAFF, remove: OFFICE }, // R-07 (D65) ; liste complète : bureau (D84)
+  notifications: { list: OFFICE, write: STAFF, remove: OFFICE }, // R-07 (D65) ; liste complète : bureau (D86)
   settings: { list: ROLES, write: ["مدير"], remove: [] },
 };
 

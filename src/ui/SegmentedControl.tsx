@@ -27,7 +27,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
             className={cx(
               "inline-flex items-center justify-center gap-1.5 border-0 rounded-lg font-semibold cursor-pointer transition-colors",
               size === "md" ? "min-h-[38px] px-3.5 text-[13.5px]" : "min-h-8 px-2.5 text-[12.5px]",
-              on ? "bg-white text-primary shadow-[0_1px_2px_rgba(16,36,70,0.08)]" : "bg-transparent text-ink-2 hover:text-ink",
+              on ? "bg-white text-primary shadow-[0_1px_2px_color-mix(in_srgb,var(--color-night)_8%,transparent)]" : "bg-transparent text-ink-2 hover:text-ink",
             )}
           >
             {o.icon && <span aria-hidden="true" className="inline-flex">{o.icon}</span>}

@@ -1,13 +1,16 @@
 /**
  * Élèves : liste filtrable, fiche détaillée et aperçu de la carte.
  * Mêmes données, mêmes actions et mêmes droits que l'écran d'origine.
+ * Liste paginée (8 élèves par page, D83) : retour à la page 1 quand la
+ * recherche ou le filtre change ; l'élève sélectionné garde sa fiche même
+ * s'il n'est pas sur la page affichée (lien vers sa page).
  */
 import { Archive, Download, Edit3, Eye, FileJson, FileSpreadsheet, Phone, Plus, Printer, Search, Trash2, Users } from "lucide-react";
 import { checkUserPermission } from "../types";
 import { isFamilyRole } from "../security/access";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { useApp } from "../app/AppContext";
-import { Button, Card, DropdownMenu, EmptyState, IconButton, Ltr, PageHeader, Pill, SearchInput, Select, Table, TableWrap, Td, Th, Tr, cx } from "../ui";
+import { Button, Card, DropdownMenu, EmptyState, IconButton, Ltr, PAGE_SIZES, PageHeader, Pagination, Pill, SearchInput, Select, Table, TableWrap, Td, Th, Tr, cx, pageOfIndex, usePagination } from "../ui";
 import StudentDossier, { StudentCardPreview } from "./students/StudentDossier";
 import { tajweedTone } from "./students/tajweed";
 
@@ -34,6 +37,10 @@ export default function StudentsScreen() {
   const title = currentRole === "طالب" ? "ملفي الشخصي وسجل الحفظ القرآني" : currentRole === "ولي أمر" ? "متابعة الأبناء وسجلات الحفظ" : "إدارة ملفات الطلاب والوثائق الإدارية";
   const description = currentRole === "طالب" ? "استعراض مقدار الحفظ الحالي، مستوى التجويد، والوثائق الإدارية المعتمدة." : "سجل معلومات الطلاب، تتبع أوراقهم، ومقدار حفظهم وتجويدهم.";
   const select = (st: any) => { setSelectedStudent(st); };
+  const size = PAGE_SIZES.students;
+  const selectedIndex = selectedStudent ? filteredStudents.findIndex((s) => s.id === selectedStudent.id) : -1;
+  const pg = usePagination(filteredStudents, size, `${searchQuery}\u0000${studentArchiveFilter}`, pageOfIndex(selectedIndex, size));
+  const selectedPage = selectedIndex >= 0 ? pageOfIndex(selectedIndex, size) : 0;
 
   return (
     <div data-screen="students" className="flex flex-col gap-6">
@@ -58,7 +65,7 @@ export default function StudentsScreen() {
           onChange={(e: any) => setSearchQuery(e.target.value)}
           className="flex-[1_1_260px] max-w-md"
         />
-        {!family && <Select aria-label="حالة الطلاب" value={studentArchiveFilter} onChange={(e: any) => setStudentArchiveFilter(e.target.value)} className="w-auto">
+        {!family && <Select aria-label="حالة الطلاب" data-filter="student-status" value={studentArchiveFilter} onChange={(v) => setStudentArchiveFilter(v as typeof studentArchiveFilter)} className="w-auto">
           <option value="active">الطلاب النشطون</option>
           <option value="archived">الطلاب المؤرشفون</option>
           <option value="all">الكل (نشط ومؤرشف)</option>
@@ -102,11 +109,11 @@ export default function StudentsScreen() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStudents.map((st) => {
+                  {pg.pageItems.map((st) => {
                     const on = selectedStudent?.id === st.id;
                     return (
                       <Tr key={st.id} selected={on} onClick={() => select(st)} className="cursor-pointer">
-                        <Td className={cx(on && "shadow-[inset_-3px_0_0_#D4A017]")}>
+                        <Td className={cx(on && "shadow-[inset_-3px_0_0_var(--color-gold)]")}>
                           <div className="flex items-center gap-3 min-w-[180px]">
                             <span className="w-10 h-10 rounded-full overflow-hidden bg-sunken shrink-0 border border-line">
                               <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />
@@ -151,6 +158,23 @@ export default function StudentsScreen() {
                 </tbody>
               </Table>
             </TableWrap>
+          )}
+          {filteredStudents.length > 0 && (
+            <div className="flex flex-col gap-2 px-5 py-3.5 border-t border-line-soft">
+              <Pagination
+                data-pagination="students"
+                label="ترقيم صفحات قائمة الطلاب"
+                page={pg.page}
+                pageCount={pg.pageCount}
+                onPageChange={pg.setPage}
+                summary={`الطلاب ${pg.start}–${pg.end} من ${pg.total}`}
+              />
+              {selectedPage > 0 && selectedPage !== pg.page && (
+                <button type="button" data-action="show-selected-student-page" onClick={() => pg.setPage(selectedPage)} className="self-start bg-transparent border-0 p-0 min-h-8 text-[13px] font-semibold text-primary underline underline-offset-2 cursor-pointer hover:text-primary-hover">
+                  {`عرض صفحة الطالب المحدد (${selectedPage})`}
+                </button>
+              )}
+            </div>
           )}
         </Card>
 
