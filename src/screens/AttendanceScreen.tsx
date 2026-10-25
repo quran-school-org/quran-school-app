@@ -213,13 +213,13 @@ export default function AttendanceScreen() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {urgent.map(({ student, count }) => (
-              <div key={student.id} className="bg-surface border border-danger-200 rounded-xl p-3 flex items-center justify-between gap-4">
-                <div className="flex flex-col gap-1 min-w-0">
+              <div key={student.id} data-absence-alert={student.id} className="bg-surface border border-danger-200 rounded-xl p-3 flex flex-col items-start gap-2.5 min-w-0">
+                <div className="flex flex-col gap-1 min-w-0 max-w-full">
                   <span className="font-semibold text-[14px] text-ink">{student.fullName}</span>
-                  <Pill tone="danger" className="self-start">متغيب لـ {count} حصص متتالية</Pill>
+                  <Pill tone="danger" className="self-start max-w-full whitespace-normal! text-start">متغيب لـ {count} حصص متتالية</Pill>
                   <span className="text-[12.5px] text-ink-3">ولي الأمر: {student.parentName} (<Ltr>{student.parentPhone}</Ltr>)</span>
                 </div>
-                <Button size="sm" variant="danger-solid" className="shrink-0" onClick={() => handleSendAbsenceWarning(student)} icon={<WhatsAppIcon className="w-3.5 h-3.5" />}>إرسال إنذار غياب</Button>
+                <Button size="sm" variant="danger-solid" className="max-w-full whitespace-normal text-start" onClick={() => handleSendAbsenceWarning(student)} icon={<WhatsAppIcon className="w-3.5 h-3.5" />}>إرسال إنذار غياب</Button>
               </div>
             ))}
           </div>

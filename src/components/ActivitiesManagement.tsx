@@ -49,7 +49,7 @@ export default function ActivitiesManagement(props: ActivitiesManagementProps) {
         <ActivitiesOverview />
 
       {/* Main Two-Column or Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         <ActivitiesList />
 
         <ActivityWorkspace />
