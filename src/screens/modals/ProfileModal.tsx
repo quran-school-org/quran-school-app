@@ -3,14 +3,10 @@
  * qu'auparavant ; sans fermeture possible tant qu'un changement de mot de passe est imposé.
  */
 import { AtSign, Check, Eye, EyeOff, Lock, ShieldAlert, User } from "lucide-react";
-import { useState } from "react";
-import { ActionAlert, Button, FormField, InitialAvatar, Modal, SearchInput, SegmentedControl } from "../../ui";
-import { readPalette, savePalette, type Palette } from "../../ui/palette";
+import { ActionAlert, Button, FormField, InitialAvatar, Modal, SearchInput } from "../../ui";
 import { useApp } from "../../app/AppContext";
 
 export default function ProfileModal() {
-  // Couleur de l'interface (D86) : appliquée tout de suite, sur cet appareil.
-  const [palette, setPalette] = useState<Palette>(readPalette);
   const {
     setShowProfileEditModal,
     profileFullName,
@@ -103,19 +99,6 @@ export default function ProfileModal() {
                 {showProfilePassword ? <EyeOff className="w-4 h-4" strokeWidth={1.75} /> : <Eye className="w-4 h-4" strokeWidth={1.75} />}
               </button>
             </div>
-          )}
-        </FormField>
-        <FormField label="لون الواجهة" hint="يُطبَّق فوراً على هذا الجهاز فقط.">
-          {() => (
-            <SegmentedControl
-              label="لون الواجهة"
-              value={palette}
-              onChange={(p) => { setPalette(p); savePalette(p); }}
-              options={[
-                { value: "bleu", label: "أزرق", attrs: { "data-palette-option": "bleu" } },
-                { value: "vert", label: "أخضر", attrs: { "data-palette-option": "vert" } },
-              ]}
-            />
           )}
         </FormField>
       </div>

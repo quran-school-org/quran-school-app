@@ -62,12 +62,6 @@ const ROLES: [string, DemoAccount][] = [
 test.describe.serial("captures", () => {
   test.use({ viewport: DESKTOP });
 
-  // CAPTURE_PALETTE=vert : couleur de l'interface choisie avant le chargement (D86).
-  test.beforeEach(async ({ page }) => {
-    const palette = process.env.CAPTURE_PALETTE;
-    if (palette) await page.addInitScript((p) => localStorage.setItem("kuttab-ui:palette", p), palette);
-  });
-
   test("connexion et changement de mot de passe imposé", async ({ page }) => {
     test.skip(!EXTRAS, "extras filtrés");
     await page.goto("/");
