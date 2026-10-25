@@ -14,9 +14,9 @@ import WeeklyAttendance from "./dashboard/WeeklyAttendance";
 import { busiestHizb, classPlacement, classesLabel } from "./dashboard/dashboardData";
 
 const TAJWEED = [
-  { key: "ممتاز", color: "#1B3A6B" },
-  { key: "متوسط", color: "#5B7FB0" },
-  { key: "ضعيف", color: "#D4A017" },
+  { key: "ممتاز", color: "var(--color-primary)" },
+  { key: "متوسط", color: "var(--color-primary-400)" },
+  { key: "ضعيف", color: "var(--color-gold)" },
 ];
 
 export default function DashboardScreen() {

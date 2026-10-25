@@ -179,7 +179,7 @@ export default function AttendanceScreen() {
               {isScanning ? (
                 <div className="w-full max-w-[280px] flex flex-col gap-3">
                   <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-night border-4 border-gold/40">
-                    <div className="absolute inset-x-0 h-0.5 bg-gold shadow-[0_0_10px_#D4A017] z-20 pointer-events-none" style={{ animation: "scan-line-movement 3s infinite linear" }} />
+                    <div className="absolute inset-x-0 h-0.5 bg-gold shadow-[0_0_10px_var(--color-gold)] z-20 pointer-events-none" style={{ animation: "scan-line-movement 3s infinite linear" }} />
                     <div className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-gold z-10 rounded-tl-md pointer-events-none" />
                     <div className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-gold z-10 rounded-tr-md pointer-events-none" />
                     <div className="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-gold z-10 rounded-bl-md pointer-events-none" />

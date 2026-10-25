@@ -72,7 +72,7 @@ export default function PaymentsScreen() {
           id="flow-title"
           title={`التدفق المالي والمداخيل الشهرية لعام ${year}`}
           description="إجمالي الاشتراكات المحصلة شهرياً مقارنة بالمستحقات المعلقة."
-          actions={<Legend columns={2} items={[{ label: "المداخيل المحصلة", color: "#1B3A6B" }, { label: "المستحقات المعلقة", color: "#D4A017" }]} />}
+          actions={<Legend columns={2} items={[{ label: "المداخيل المحصلة", color: "var(--color-primary)" }, { label: "المستحقات المعلقة", color: "var(--color-gold)" }]} />}
         />
         <div className="h-72 w-full" role="img" aria-label={`مخطط المداخيل الشهرية لعام ${year}`}>
           <ResponsiveContainer width="100%" height="100%">
@@ -81,12 +81,12 @@ export default function PaymentsScreen() {
               <XAxis dataKey="name" reversed minTickGap={4} tick={{ fill: "#4A5060", fontSize: 11.5, fontFamily: "IBM Plex Sans Arabic" }} stroke="#D0D3C6" tickLine={false} />
               <YAxis orientation="right" tickFormatter={(val) => `${val}`} width={44} tick={{ fill: "#6B7080", fontSize: 11.5 }} stroke="#D0D3C6" tickLine={false} axisLine={false} />
               <Tooltip
-                cursor={{ fill: "rgba(212, 160, 23, 0.08)" }}
+                cursor={{ fill: "var(--color-gold)", fillOpacity: 0.08 }}
                 contentStyle={{ direction: "rtl", textAlign: "right", borderRadius: 12, borderColor: "#D9DBD0", background: "#F8F8F3", fontFamily: "IBM Plex Sans Arabic" }}
                 formatter={(value: any, name: string) => [`${value} درهم`, name]}
               />
-              <RechartsBar dataKey="المداخيل المحصلة" fill="#1B3A6B" radius={[4, 4, 0, 0]} maxBarSize={28} />
-              <RechartsBar dataKey="المستحقات المعلقة" fill="#D4A017" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <RechartsBar dataKey="المداخيل المحصلة" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+              <RechartsBar dataKey="المستحقات المعلقة" fill="var(--color-gold)" radius={[4, 4, 0, 0]} maxBarSize={28} />
             </RechartsBarChart>
           </ResponsiveContainer>
         </div>

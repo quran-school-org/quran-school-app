@@ -82,7 +82,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
                   className={cx("flex flex-col-reverse items-center gap-[3px] py-1 border-0 rounded-md min-w-0 cursor-pointer transition-colors", on ? "bg-gold/[0.22]" : "bg-transparent hover:bg-gold/[0.12]")}
                 >
                   {shown.map((s, i) => (
-                    <span key={s.id} className="hifz-dot w-2 h-2 rounded-full shrink-0" style={{ background: on ? "#FFE08A" : "#D4A017", animationDelay: `${120 + n * 45 + i * 28}ms` }} />
+                    <span key={s.id} className="hifz-dot w-2 h-2 rounded-full shrink-0" style={{ background: on ? "var(--color-gold-light)" : "var(--color-gold)", animationDelay: `${120 + n * 45 + i * 28}ms` }} />
                   ))}
                   {here.length > MAX_DOTS && <span className="text-[9px] font-bold text-gold-light leading-none">+{here.length - MAX_DOTS}</span>}
                 </button>
@@ -94,7 +94,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
               const major = n === 1 || n % 10 === 0;
               return (
                 <span key={n} className="flex flex-col items-center gap-1 min-w-0">
-                  <span className="w-px" style={{ height: major ? 10 : 4, background: major ? "#D4A017" : "#3A5785" }} />
+                  <span className="w-px" style={{ height: major ? 10 : 4, background: major ? "var(--color-gold)" : "var(--color-night-tick)" }} />
                   <span className="text-[11.5px] text-night-muted tabular-nums h-[15px] whitespace-nowrap">{major ? n : ""}</span>
                 </span>
               );
@@ -108,7 +108,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
         <span className="text-[14px] text-night-muted">{selCount}</span>
         <span className="flex flex-wrap gap-1.5">
           {selList.map((s) => (
-            <span key={s.id} className="text-[13.5px] px-2.5 py-1 rounded-full bg-gold/[0.16] text-[#FFF2C7]">{s.name}</span>
+            <span key={s.id} className="text-[13.5px] px-2.5 py-1 rounded-full bg-gold/[0.16] text-gold-pale">{s.name}</span>
           ))}
         </span>
       </div>

@@ -111,7 +111,7 @@ export default function StudentsScreen() {
                     const on = selectedStudent?.id === st.id;
                     return (
                       <Tr key={st.id} selected={on} onClick={() => select(st)} className="cursor-pointer">
-                        <Td className={cx(on && "shadow-[inset_-3px_0_0_#D4A017]")}>
+                        <Td className={cx(on && "shadow-[inset_-3px_0_0_var(--color-gold)]")}>
                           <div className="flex items-center gap-3 min-w-[180px]">
                             <span className="w-10 h-10 rounded-full overflow-hidden bg-sunken shrink-0 border border-line">
                               <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />

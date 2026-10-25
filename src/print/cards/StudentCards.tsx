@@ -44,6 +44,11 @@ export function isMonthPaid(paid: Payment[], monthName: string): boolean {
 
 const seasonOf = (s: SystemSettings | null) => (s?.activeAcademicSeason || "").trim().replace("/", "–");
 
+/**
+ * Les cartes d'élève gardent la charte bleu nuit quel que soit le thème de
+ * l'école (D84) : chaque carte porte `data-theme="bleu-nuit"`, qui rétablit les
+ * variables de couleur de référence pour tout son contenu (aperçu et impression).
+ */
 function Logo({ settings, size, dark }: { settings: SystemSettings | null; size: number; dark?: boolean }) {
   if (settings?.associationLogo) {
     return (
@@ -62,6 +67,7 @@ export function OfficialCardFront({ student, ctx }: { student: Student; ctx: Car
   return (
     <div
       id={`official-card-front-${student.id}`}
+      data-theme="bleu-nuit"
       className="w-[390px] h-[550px] bg-white text-ink relative border-[10px] border-primary rounded-[34px] p-5 select-none flex flex-col justify-between overflow-hidden shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.18)]"
       style={{ boxSizing: "border-box", direction: "rtl" }}
     >
@@ -118,6 +124,7 @@ export function OfficialCardBack({ student, payments, ctx }: { student: Student;
   return (
     <div
       id={`official-card-back-${student.id}`}
+      data-theme="bleu-nuit"
       className="w-[390px] h-[550px] bg-white text-ink relative border-[10px] border-primary rounded-[34px] p-4 select-none flex flex-col justify-between overflow-hidden shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.18)]"
       style={{ boxSizing: "border-box", direction: "rtl" }}
     >
@@ -182,6 +189,7 @@ export function DigitalCardFront({ student, studentClassName, ctx }: { student: 
   return (
     <div
       id={`student-card-front-${student.id}`}
+      data-theme="bleu-nuit"
       className="w-[330px] h-[500px] rounded-[26px] bg-night text-night-text relative overflow-hidden border border-night-line select-none flex flex-col justify-between shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.25)]"
       style={{ direction: "rtl" }}
     >
@@ -227,6 +235,7 @@ export function DigitalCardBack({ student, ctx }: { student: Student; ctx: CardC
   return (
     <div
       id={`student-card-back-${student.id}`}
+      data-theme="bleu-nuit"
       className="w-[330px] h-[500px] rounded-[26px] bg-night-2 text-night-text relative overflow-hidden border border-night-line select-none flex flex-col justify-between shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.25)]"
       style={{ direction: "rtl" }}
     >
