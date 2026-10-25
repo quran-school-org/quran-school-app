@@ -6,6 +6,7 @@ import { MONTHS_AR } from "../../school/businessRules";
 import { Building, Phone, Mail, MapPin, Trash2, DollarSign, ToggleLeft, ToggleRight, Save, Upload, Landmark, FileCheck, CreditCard, Award, Calendar, Tag, Info, FileText, Plus } from "lucide-react";
 import { useSettings } from "./SettingsContext";
 import { Select } from "../../ui";
+import ThemePicker from "./ThemePicker";
 
 export default function GeneralSettingsSection() {
   const {
@@ -71,6 +72,9 @@ export default function GeneralSettingsSection() {
       {/* 1. General Association Settings */}
       {subTab === "general" && (
         <form onSubmit={handleSettingsSubmit} className="space-y-8 bg-surface p-6 sm:p-8 rounded-3xl border border-line">
+
+          {/* 0. Thème de couleur de l'école (D84) */}
+          <ThemePicker />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
