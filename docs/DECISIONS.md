@@ -1970,3 +1970,84 @@ là-bas (R-06).
   (`<select>` stylé) et rétablir `onChange={(e) => …(e.target.value)}`
   aux appels ; pour changer la taille des pages : `PAGE_SIZES`
   (`src/ui/Pagination.tsx`).
+
+### D84. Thème de couleur par école (bleu nuit + quatre palettes vertes)
+- **Contexte** : le propriétaire veut choisir dans les Paramètres la palette
+  de l'application, entre le bleu actuel et quatre palettes vertes de la
+  charte « لوحة الكتّاب » (émeraude et or, sauge et laiton, forêt de nuit,
+  olive et sable ; contrastes vérifiés). Le choix vaut **pour l'école** :
+  tous ses utilisateurs le voient.
+- **Décision** :
+  - **Réglage** : champ `theme` de `schools/{id}/settings/system`, parmi
+    `bleu-nuit` (défaut), `emeraude`, `sauge`, `foret`, `olive` ; absent ou
+    inconnu = `bleu-nuit` (`resolveThemeId`). **Aucun changement de
+    `firestore.rules`** : les paramètres n'ont pas de liste fermée de champs
+    (`validWrite` : identifiant, `schoolId`, pas de `password`) et restent
+    écrits par le directeur ou le super-admin seulement.
+  - **Variables CSS** : les jetons de `@theme` (`src/index.css`) restent les
+    valeurs du bleu nuit, donc ce thème est **identique au pixel près**
+    (captures comparées avant / après : connexion, tableau de bord, élèves,
+    paiements). Les autres thèmes redéfinissent les mêmes variables
+    `--color-*` sous `[data-theme="…"]`, posé sur `<html>`, dans
+    `src/theme/themes.css`, **généré** depuis `src/theme/palettes.ts`
+    (`npx tsx scripts/dev/gen-theme-css.ts` ; `tests/unit/themes.test.ts`
+    échoue s'il n'est plus à jour). Chaque thème = 4 couleurs de base
+    (barre latérale `night`, `primary`, `gold`, fond `app`) ; les nuances
+    (`night-2`, `night-line*`, `night-text/muted/label/link`,
+    `primary-50…950`, `gold-light`, survols, fonds pâles des badges,
+    ombres, sélection) sont **transposées** depuis le bleu en OKLCH (même
+    écart de teinte, chroma proportionnelle, luminosité recalée), avec un
+    garde-fou : une nuance lisible à 4,5:1 dans le bleu l'est aussi dans le
+    thème (`src/theme/color.ts`). `primary-hover` et `primary-900` (encre
+    des chiffres) = la barre latérale du thème. L'échelle `gold-50…300` /
+    `gold-600…950` est **commune** : elle sert aussi d'ambre sémantique
+    (« متوسط », avertissements). Rouge, vert « payé / synchronisé », ambre :
+    inchangés.
+  - **Couleurs codées en dur** branchées sur les variables : `HifzMap`
+    (points, graduations, noms), `GeometricPattern` et `Emblem` (défauts
+    `var(--color-gold)` / `var(--color-night)`, en `style` SVG), `SideNav`
+    (`night-dim`, `night-soft`, `gold-glow` : nouveaux jetons aux valeurs
+    d'avant), point « synchronisation » et statistiques du menu, surlignage
+    de l'élève choisi, ligne du scanner QR, graphique et légende des
+    paiements, légende du tajwid du tableau de bord, frise de `HifzProgress`,
+    case à cocher (`accent-primary`), ombre de la bascule segmentée.
+    `tests/unit/themes.test.ts` interdit ces couleurs dans `src/` hors
+    `src/theme/`, `src/print/`, `src/index.css` et la traduction de test.
+  - **Application** : `useSchoolTheme` (`App.tsx`) applique le thème de
+    l'école active dès que ses paramètres sont là (cache cloisonné
+    `kuttab:{id}:settings_system`, puis Firestore) et à chaque changement
+    d'école (barre du haut ou page de choix) ; `<meta name="theme-color">`
+    suit la barre latérale. Au démarrage (`main.tsx`) et sur l'écran de
+    connexion : **dernier thème de l'appareil** (`kuttab-device:lastTheme`,
+    hors du préfixe `kuttab:` purgé à la déconnexion ; seulement un
+    identifiant de palette), d'où pas de flash bleu au rechargement. En
+    changeant d'école, la nouvelle école peut afficher le bleu le temps que
+    ses paramètres arrivent (son cache a été purgé en la quittant).
+  - **Paramètres** (`إعدادات الجمعية والمدرسة`, bloc « ألوان التطبيق »,
+    `src/components/settings/ThemePicker.tsx`) : 5 vignettes (barre
+    latérale, principal, or, nom, coche), vrais `<button>` avec
+    `aria-pressed`, désactivées sans le droit de modifier les paramètres.
+    Aperçu immédiat au clic ; enregistrement avec le bouton existant ; en
+    quittant l'écran sans enregistrer, le thème enregistré revient.
+- **Hors périmètre** : les **impressions** (`src/print/`, fenêtres
+  d'impression : `<html>` sans `data-theme`, donc couleurs de la charte
+  bleue) et les **cartes** (cartes d'élève de `src/print/cards/` et badge du
+  personnel portent `data-theme="bleu-nuit"`, à l'écran comme à
+  l'impression) gardent leurs couleurs. Les aperçus à l'écran d'autres
+  documents (rapport mensuel, rapport financier) suivent le thème mais
+  s'impriment en bleu. Thème des documents imprimés : à décider plus tard.
+- **Vérifié localement** (émulateurs, données fictives) :
+  `tests/unit/themes.test.ts` (identifiant → jetons, défaut, contrastes
+  ≥ 4,5:1, CSS généré, bleu = `@theme`, garde-fou des couleurs en dur) ;
+  e2e `tests/e2e/themes.spec.ts` (choix de `foret` au clavier → barre
+  latérale et `theme-color`, enregistrement, rechargement, écran de
+  connexion, changement d'école, autre directeur en bleu, aperçu annulé) ;
+  captures des 5 thèmes (tableau de bord, élèves, paramètres, survol du
+  menu, AR, 1 440 px) dans `docs/design/captures/themes/`
+  (`tests/e2e/themes-captures.spec.ts`, `THEME_CAPTURE_DIR`).
+- **Retour arrière** : `git revert` des commits de `feat/themes-ecole`. Sans
+  retirer le code : effacer le champ `theme` des paramètres d'une école
+  (retour au bleu) ; pour retirer un thème, l'enlever de `THEMES`
+  (`src/theme/palettes.ts`) et régénérer `themes.css` (une école qui
+  l'avait repasse au bleu). Le champ `theme` laissé dans Firestore est
+  ignoré par une version sans thèmes.
