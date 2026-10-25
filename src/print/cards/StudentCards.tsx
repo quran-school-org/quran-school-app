@@ -56,7 +56,7 @@ function Logo({ settings, size, dark }: { settings: SystemSettings | null; size:
       </span>
     );
   }
-  return <Emblem size={size} background={dark ? "#102446" : "#FFFFFF"} />;
+  return dark ? <Emblem size={size} /> : <Emblem size={size} accent="var(--color-gold)" />;
 }
 
 /* ---------------------------------------------------------------- officielle */

@@ -39,16 +39,20 @@ export function GeometricPattern({ size = 64, opacity = 0.09, fade, className, c
   );
 }
 
-/** Emblème (étoile dorée) utilisé comme logo par défaut de l'école (couleurs du thème, D84). */
-export function Emblem({ size = 44, className, background = "var(--color-night)", color = "var(--color-gold)" }: { size?: number; className?: string; background?: string; color?: string }) {
+/**
+ * Emblème : soleil levant sur un livre ouvert (logo de l'école, D88), version
+ * simplifiée pour les petites tailles, aux couleurs du thème actif (D84).
+ * `accent` : page claire du livre ; sur fond clair, passer `accent={color}`.
+ */
+export function Emblem({ size = 44, className, color = "var(--color-gold)", accent = "var(--color-gold-200)" }: { size?: number; className?: string; color?: string; accent?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <g style={{ fill: color }}>
-        <rect x="5.5" y="5.5" width="13" height="13" />
-        <rect x="5.5" y="5.5" width="13" height="13" transform="rotate(45 12 12)" />
+    <svg width={size} height={size} viewBox="14 14 484 484" aria-hidden="true" className={className}>
+      <g fill="none" strokeLinecap="round" strokeLinejoin="round" transform="translate(256 262) scale(1.3) translate(-256 -270)">
+        <path d="M 351 225.5 L 385.4 201.4 M 256 176 L 256 134 M 161 225.5 L 126.6 201.4 M 312.3 186 L 326.4 159.6 M 199.7 186 L 185.6 159.6" style={{ stroke: color }} strokeWidth="20" />
+        <path d="M 166.9 279.5 A 90 90 0 0 1 345.1 279.5" style={{ stroke: color }} strokeWidth="22" />
+        <path d="M 110 302 Q 196 298 256 350 Q 316 298 402 302" style={{ stroke: accent }} strokeWidth="18" />
+        <path d="M 84 336 Q 186 330 256 396 Q 326 330 428 336" style={{ stroke: color }} strokeWidth="22" />
       </g>
-      <circle cx="12" cy="12" r="4.2" style={{ fill: background }} />
-      <circle cx="12" cy="12" r="1.6" style={{ fill: color }} />
     </svg>
   );
 }

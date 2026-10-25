@@ -67,16 +67,17 @@ test.describe.serial("thème de couleur par école", () => {
   });
 
   test("aperçu sans enregistrement : le thème enregistré revient en quittant Paramètres", async ({ page }) => {
+    // Aucun thème enregistré : émeraude par défaut (D88).
     await loginAs(page, ACCOUNTS.directeur);
-    await expect.poll(() => navBackground(page)).toBe(BLEU);
-    await openTab(page, "settings");
-    const emeraude = page.locator('[data-theme-option="emeraude"]');
-    await expect(page.locator('[data-theme-option="bleu-nuit"]')).toHaveAttribute("aria-pressed", "true");
-    await emeraude.click();
-    await expect(emeraude).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => navBackground(page)).toBe(EMERAUDE);
-    await openTab(page, "dashboard");
+    await openTab(page, "settings");
+    const bleu = page.locator('[data-theme-option="bleu-nuit"]');
+    await expect(page.locator('[data-theme-option="emeraude"]')).toHaveAttribute("aria-pressed", "true");
+    await bleu.click();
+    await expect(bleu).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => navBackground(page)).toBe(BLEU);
+    await openTab(page, "dashboard");
+    await expect.poll(() => navBackground(page)).toBe(EMERAUDE);
     await logout(page);
   });
 
@@ -86,7 +87,7 @@ test.describe.serial("thème de couleur par école", () => {
       await loginAs(page, ACCOUNTS.directeur);
       await openTab(page, "settings");
       const before = await navBackground(page);
-      expect(before).toBe(BLEU);
+      expect(before).toBe(EMERAUDE);
 
       // Clavier : la vignette est un vrai bouton (Tab puis Espace).
       const foret = page.locator('[data-theme-option="foret"]');
@@ -113,15 +114,15 @@ test.describe.serial("thème de couleur par école", () => {
       await loginAs(page, ACCOUNTS.administratif);
       await expect.poll(() => navBackground(page)).toBe(FORET);
       await chooseOption(page, page.locator("#school-switcher"), "annour");
-      await expect.poll(() => navBackground(page)).toBe(BLEU);
-      expect(await htmlTheme(page)).toBe("bleu-nuit");
+      await expect.poll(() => navBackground(page)).toBe(EMERAUDE);
+      expect(await htmlTheme(page)).toBe("emeraude");
       await chooseOption(page, page.locator("#school-switcher"), "alfajr");
       await expect.poll(() => navBackground(page)).toBe(FORET);
       await logout(page);
 
-      // Directeur de l'autre école : son école garde le bleu.
+      // Directeur de l'autre école : son école garde le thème par défaut.
       await loginAs(page, ACCOUNTS.directeurAnnour);
-      await expect.poll(() => navBackground(page)).toBe(BLEU);
+      await expect.poll(() => navBackground(page)).toBe(EMERAUDE);
       expect(await admin.theme("annour")).toBeUndefined();
       await logout(page);
     } finally {

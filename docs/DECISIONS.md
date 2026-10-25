@@ -1499,6 +1499,7 @@ là-bas (R-06).
   commits de `feat/demo-dev` (script, actions d'`ops.yml`, tests, docs).
 
 ### D78. Logo temporaire de l'école (favicon, icônes, écran de connexion)
+- **Remplacé** par le logo de D88 (mêmes fichiers de `public/`).
 - **Contexte** : l'école n'a pas encore de logo définitif ; `public/favicon.svg`
   ne correspondait pas à la charte « لوحة الكتّاب ». Un logo temporaire a été
   dessiné dans la charte (`design/logo-temporaire/` : étoile à huit branches
@@ -2123,3 +2124,30 @@ là-bas (R-06).
     plus un archivage fait entre-temps par le bureau.
 - **Retour arrière** : `git revert` des commits ; les champs `readBy` déjà
   écrits restent sans effet sur l'ancienne règle.
+
+### D88. Thème émeraude et or par défaut, logo « soleil levant sur un livre ouvert »
+- **Contexte** : après comparaison des cinq thèmes (D84), Elias et Mélik
+  retiennent « الزمردي والذهبي » (émeraude et or) pour l'application, et le
+  logo proposé par Mélik (soleil levant sur un livre ouvert, bleu et or),
+  décliné aux couleurs de ce thème (échange du 25/10/2026). D'autres écoles
+  vont arriver : chacune garde le choix de son thème dans Paramètres.
+- **Décision** :
+  - `DEFAULT_THEME` vaut `emeraude` : toute école sans thème enregistré (champ
+    `theme` absent) s'affiche en émeraude, l'écran de connexion aussi tant
+    qu'aucun thème n'est connu sur l'appareil ; `theme-color` de `index.html`
+    passe à `#0E3B2E`. Une école qui a enregistré un thème le garde ; les cinq
+    thèmes restent proposés dans Paramètres (bleu nuit compris, pour essai).
+  - Logo redessiné en vectoriel (`public/logo.svg`, 512 px, fond `#0E3B2E`,
+    or `#C9A227`, or pâle `#EBD9A6`) ; variante simplifiée pour les petites
+    tailles (`favicon.svg`, sans les rayons courts ni l'arc intérieur, traits
+    plus épais) ; `favicon.ico` (32 px), `apple-touch-icon.png` (180 px, sans
+    coins arrondis : iOS les arrondit) et `icon-192.png` regénérés. Ils
+    remplacent le logo temporaire de D78 (mêmes noms, mêmes tailles).
+  - L'`Emblem` de l'interface (barre latérale, connexion, choix d'école,
+    rapports) prend la forme simplifiée, aux couleurs du thème actif (`gold`,
+    `gold-200`) ; sur fond clair (cartes d'élève claires), le livre est tout
+    en or. Les documents imprimés gardent la charte bleu nuit (`EMBLEM_SVG`
+    dans `src/print/docStyles.ts`), avec la nouvelle forme.
+  - Le logo saisi dans Paramètres (`associationLogo`) reste prioritaire.
+- **Retour arrière** : `git revert` du commit ; ou, pour le thème seul,
+  remettre `DEFAULT_THEME` à `bleu-nuit` et `theme-color` à `#102446`.

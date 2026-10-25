@@ -73,7 +73,7 @@ describe("en-têtes de sécurité Hosting", () => {
     expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/favicon.svg" />');
     expect(html).toContain('<link rel="icon" href="/favicon.ico" sizes="32x32" />');
     expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />');
-    expect(html).toContain('<meta name="theme-color" content="#102446" />');
+    expect(html).toContain('<meta name="theme-color" content="#0E3B2E" />');
     for (const f of ["favicon.svg", "favicon.ico", "apple-touch-icon.png", "icon-192.png", "logo.svg"]) {
       expect(existsSync(`public/${f}`), f).toBe(true);
     }

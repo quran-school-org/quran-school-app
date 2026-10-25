@@ -1995,6 +1995,7 @@ export const FR: Record<string, string> = {
   "الأحزاب الستون": "Les soixante hizbs",
   "الحزب {0}، {1} طالب": "Hizb {0}, {1} élève(s)",
   "الحزب": "Hizb",
+  "الحزب {0}": "Hizb {0}",
   // ui/Topbar.tsx
   "متزامن": "Synchronisé",
   "البيانات متزامنة مع قاعدة البيانات في الوقت الفعلي": "Données synchronisées en temps réel avec la base de données",

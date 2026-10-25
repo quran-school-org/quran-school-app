@@ -65,7 +65,8 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
       </div>
 
       <div className="relative mt-6 overflow-x-auto pb-1" tabIndex={0} role="region" aria-label="الأحزاب الستون، مرّر أفقياً">
-        <div className="min-w-[760px]">
+        {/* px-2 : les numéros des bords (1, 60) débordaient d'un pixel et faisaient apparaître la barre de défilement. */}
+        <div className="min-w-[680px] px-2">
           <div role="group" aria-label="الأحزاب الستون" className="grid gap-0.5 h-[236px] items-stretch" style={{ gridTemplateColumns: "repeat(60, minmax(0, 1fr))" }}>
             {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
               const here = byHizb.get(n) || [];
@@ -104,7 +105,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
       </div>
 
       <div aria-live="polite" className="relative mt-[18px] flex flex-wrap items-center gap-x-3.5 gap-y-2.5 px-4 py-3.5 rounded-[14px] bg-white/[0.06] border border-night-line">
-        <span className="font-display text-[18px] text-gold-100">الحزب {selected}</span>
+        <span className="font-display text-[18px] text-gold-100">{`الحزب ${selected}`}</span>
         <span className="text-[14px] text-night-muted">{selCount}</span>
         <span className="flex flex-wrap gap-1.5">
           {selList.map((s) => (

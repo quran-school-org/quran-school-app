@@ -12,7 +12,8 @@ import { contrast, ensureContrast, rgbTriplet, transposeShade } from "./color";
 
 export const THEME_IDS = ["bleu-nuit", "emeraude", "sauge", "foret", "olive"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
-export const DEFAULT_THEME: ThemeId = "bleu-nuit";
+/** Thème des écoles qui n'en ont pas choisi : émeraude et or (D88). */
+export const DEFAULT_THEME: ThemeId = "emeraude";
 
 /** Couleurs de base d'un thème (charte « لوحة الكتّاب »). */
 export interface ThemeBase {
