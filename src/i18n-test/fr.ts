@@ -951,6 +951,15 @@ export const FR: Record<string, string> = {
   "الأقسام والخدمات العامة والإدارية": "Rubriques générales et administratives",
   "بوابة المدرسين والمحفظين": "Espace enseignants et muhaffiz",
   "بوابة الطلاب وأولياء الأمور": "Espace élèves et parents",
+  // components/settings/ThemePicker.tsx + theme/palettes.ts (D84)
+  "ألوان التطبيق": "Couleurs de l'application",
+  "تظهر الألوان المختارة لجميع مستخدمي هذه المدرسة. المعاينة فورية، ولا يُعتمد الاختيار إلا بعد الحفظ.": "Les couleurs choisies s'affichent pour tous les utilisateurs de cette école. L'aperçu est immédiat ; le choix n'est retenu qu'après l'enregistrement.",
+  "تظهر هذه الألوان لجميع مستخدمي هذه المدرسة. تغييرها من صلاحيات مدير المدرسة.": "Ces couleurs s'affichent pour tous les utilisateurs de cette école. Leur modification relève du directeur de l'école.",
+  "الأزرق الليلي": "Bleu nuit",
+  "الزمردي والذهبي": "Émeraude et or",
+  "الأخضر الرمادي والنحاسي": "Sauge et laiton",
+  "أخضر الغابة": "Forêt de nuit",
+  "الزيتوني والرملي": "Olive et sable",
   // components/settings/GeneralSettingsSection.tsx
   "معلومات المؤسسة والاتصال الرئيسية": "Informations de l'établissement et coordonnées",
   "اسم الجمعية / المدرسة": "Nom de l'association / de l'école",

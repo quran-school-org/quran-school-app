@@ -1,0 +1,201 @@
+/*
+ * FICHIER GÉNÉRÉ par scripts/dev/gen-theme-css.ts depuis src/theme/palettes.ts
+ * (D84). Ne pas modifier à la main : relancer `npx tsx scripts/dev/gen-theme-css.ts`.
+ * Le bloc bleu-nuit répète les valeurs de @theme (src/index.css) : il sert aux
+ * éléments qui gardent la charte d'origine quel que soit le thème (cartes d'élève).
+ */
+/* bleu-nuit : الأزرق الليلي */
+[data-theme="bleu-nuit"] {
+  --color-app: #ECEDE6;
+  --color-night: #102446;
+  --color-night-2: #1B2F55;
+  --color-night-line: #2E4A78;
+  --color-night-line-2: #2B4470;
+  --color-night-text: #EEF1F7;
+  --color-night-muted: #B8C4D8;
+  --color-night-label: #8FA0BD;
+  --color-night-link: #C9D3E3;
+  --color-night-soft: #A9B6CC;
+  --color-night-dim: #7586A3;
+  --color-night-tick: #3A5785;
+  --color-primary: #1B3A6B;
+  --color-primary-hover: #102446;
+  --color-primary-50: #EEF2F8;
+  --color-primary-100: #E3E9F2;
+  --color-primary-200: #C9D5E6;
+  --color-primary-300: #9FB3D1;
+  --color-primary-400: #5B7FB0;
+  --color-primary-500: #3A5E92;
+  --color-primary-600: #1B3A6B;
+  --color-primary-700: #1B3A6B;
+  --color-primary-800: #142D55;
+  --color-primary-900: #102446;
+  --color-primary-950: #0B1A34;
+  --color-gold: #D4A017;
+  --color-gold-400: #D4A017;
+  --color-gold-500: #D4A017;
+  --color-gold-light: #FFE08A;
+  --color-gold-glow: #FFF7DD;
+  --color-gold-pale: #FFF2C7;
+  --shadow-toast: 0 10px 30px rgba(16, 36, 70, 0.25);
+  --shadow-pop: 0 12px 32px rgba(16, 36, 70, 0.16);
+}
+[data-theme="bleu-nuit"] ::selection {
+  background: rgba(212, 160, 23, 0.35);
+}
+/* emeraude : الزمردي والذهبي */
+[data-theme="emeraude"] {
+  --color-app: #EFEFE6;
+  --color-night: #0E3B2E;
+  --color-night-2: #164739;
+  --color-night-line: #2A6250;
+  --color-night-line-2: #265C4C;
+  --color-night-text: #EEF4F2;
+  --color-night-muted: #B9CDC5;
+  --color-night-label: #90AEA3;
+  --color-night-link: #CADAD3;
+  --color-night-soft: #AAC0B8;
+  --color-night-dim: #77958A;
+  --color-night-tick: #386E5B;
+  --color-primary: #1F6F4A;
+  --color-primary-hover: #0E3B2E;
+  --color-primary-50: #EFF6F2;
+  --color-primary-100: #E6F0E9;
+  --color-primary-200: #CEE3D5;
+  --color-primary-300: #A6CBB4;
+  --color-primary-400: #66A77F;
+  --color-primary-500: #39845B;
+  --color-primary-600: #1F6F4A;
+  --color-primary-700: #1F6F4A;
+  --color-primary-800: #17583A;
+  --color-primary-900: #0E3B2E;
+  --color-primary-950: #0A2C22;
+  --color-gold: #C9A227;
+  --color-gold-400: #C9A227;
+  --color-gold-500: #C9A227;
+  --color-gold-light: #F7E290;
+  --color-gold-glow: #FCF8DF;
+  --color-gold-pale: #FBF3CA;
+  --shadow-toast: 0 10px 30px rgba(14, 59, 46, 0.25);
+  --shadow-pop: 0 12px 32px rgba(14, 59, 46, 0.16);
+}
+[data-theme="emeraude"] ::selection {
+  background: rgba(201, 162, 39, 0.35);
+}
+/* sauge : الأخضر الرمادي والنحاسي */
+[data-theme="sauge"] {
+  --color-app: #EEF0EA;
+  --color-night: #1E3A34;
+  --color-night-2: #27453F;
+  --color-night-line: #3B6057;
+  --color-night-line-2: #375A53;
+  --color-night-text: #EFF3F2;
+  --color-night-muted: #BDCCC8;
+  --color-night-label: #97ACA7;
+  --color-night-link: #CDD9D6;
+  --color-night-soft: #AFBFBB;
+  --color-night-dim: #7F948F;
+  --color-night-tick: #486C63;
+  --color-primary: #2F6B5E;
+  --color-primary-hover: #1E3A34;
+  --color-primary-50: #F0F6F4;
+  --color-primary-100: #E7EFED;
+  --color-primary-200: #D0E1DC;
+  --color-primary-300: #AAC9C0;
+  --color-primary-400: #6EA393;
+  --color-primary-500: #478173;
+  --color-primary-600: #2F6B5E;
+  --color-primary-700: #2F6B5E;
+  --color-primary-800: #24554B;
+  --color-primary-900: #1E3A34;
+  --color-primary-950: #162B27;
+  --color-gold: #D4A017;
+  --color-gold-400: #D4A017;
+  --color-gold-500: #D4A017;
+  --color-gold-light: #FFE08A;
+  --color-gold-glow: #FFF7DD;
+  --color-gold-pale: #FFF2C7;
+  --shadow-toast: 0 10px 30px rgba(30, 58, 52, 0.25);
+  --shadow-pop: 0 12px 32px rgba(30, 58, 52, 0.16);
+}
+[data-theme="sauge"] ::selection {
+  background: rgba(212, 160, 23, 0.35);
+}
+/* foret : أخضر الغابة */
+[data-theme="foret"] {
+  --color-app: #EDEFE9;
+  --color-night: #0B2A1E;
+  --color-night-2: #143629;
+  --color-night-line: #2B5241;
+  --color-night-line-2: #264C3D;
+  --color-night-text: #EDF2F0;
+  --color-night-muted: #B8C7BF;
+  --color-night-label: #8EA49A;
+  --color-night-link: #C9D5CF;
+  --color-night-soft: #A8B9B1;
+  --color-night-dim: #748A80;
+  --color-night-tick: #395F4D;
+  --color-primary: #166534;
+  --color-primary-hover: #0B2A1E;
+  --color-primary-50: #EFF6F0;
+  --color-primary-100: #E5EFE6;
+  --color-primary-200: #CDE0CF;
+  --color-primary-300: #A3C7AA;
+  --color-primary-400: #62A06C;
+  --color-primary-500: #3C834E;
+  --color-primary-600: #166534;
+  --color-primary-700: #166534;
+  --color-primary-800: #105028;
+  --color-primary-900: #0B2A1E;
+  --color-primary-950: #071F15;
+  --color-gold: #E0B84C;
+  --color-gold-400: #E0B84C;
+  --color-gold-500: #E0B84C;
+  --color-gold-light: #FFE99B;
+  --color-gold-glow: #FFFAE2;
+  --color-gold-pale: #FEF6CF;
+  --shadow-toast: 0 10px 30px rgba(11, 42, 30, 0.25);
+  --shadow-pop: 0 12px 32px rgba(11, 42, 30, 0.16);
+}
+[data-theme="foret"] ::selection {
+  background: rgba(224, 184, 76, 0.35);
+}
+/* olive : الزيتوني والرملي */
+[data-theme="olive"] {
+  --color-app: #F2EFE6;
+  --color-night: #2E3A1F;
+  --color-night-2: #374528;
+  --color-night-line: #4F5F3B;
+  --color-night-line-2: #4A5A38;
+  --color-night-text: #F1F3EF;
+  --color-night-muted: #C4CBBD;
+  --color-night-label: #A1AC96;
+  --color-night-link: #D3D8CD;
+  --color-night-soft: #B7BFAF;
+  --color-night-dim: #89947E;
+  --color-night-tick: #5B6B47;
+  --color-primary: #4D5E26;
+  --color-primary-hover: #2E3A1F;
+  --color-primary-50: #F3F5EF;
+  --color-primary-100: #EAEEE5;
+  --color-primary-200: #D8DDCC;
+  --color-primary-300: #B8C2A4;
+  --color-primary-400: #899862;
+  --color-primary-500: #6C7D43;
+  --color-primary-600: #4D5E26;
+  --color-primary-700: #4D5E26;
+  --color-primary-800: #3C4B1D;
+  --color-primary-900: #2E3A1F;
+  --color-primary-950: #222B17;
+  --color-gold: #D9B05A;
+  --color-gold-400: #D9B05A;
+  --color-gold-500: #D9B05A;
+  --color-gold-light: #FEE5A4;
+  --color-gold-glow: #FFF8E4;
+  --color-gold-pale: #FEF4D3;
+  --shadow-toast: 0 10px 30px rgba(46, 58, 31, 0.25);
+  --shadow-pop: 0 12px 32px rgba(46, 58, 31, 0.16);
+}
+[data-theme="olive"] ::selection {
+  background: rgba(217, 176, 90, 0.35);
+}

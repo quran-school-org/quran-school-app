@@ -36,7 +36,7 @@ export default function StaffBadgeModal() {
 
             <div className="p-6 flex flex-col items-center justify-center bg-sand-100">
               {/* Badge Container (Printable Area) */}
-              <div id="staff-badge-print-area" className="w-[320px] bg-surface rounded-2xl shadow-lg border-2 border-primary-800 overflow-hidden text-right font-sans relative">
+              <div id="staff-badge-print-area" data-theme="bleu-nuit" className="w-[320px] bg-surface rounded-2xl shadow-lg border-2 border-primary-800 overflow-hidden text-right font-sans relative">
                 {/* Badge Top Header */}
                 <div className="bg-primary-800 text-white p-3.5 text-center relative">
                   <div className="text-[11.5px] font-medium opacity-90">{systemSettings?.associationName || ""}</div>

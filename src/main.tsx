@@ -3,6 +3,11 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { frTestEnabled } from './config/env';
+import { applyLastKnownTheme } from './theme/applyTheme';
+
+// Thème de couleur (D84) : dernier thème connu sur l'appareil, avant de
+// connaître l'école (écran de connexion, rechargement sans flash bleu).
+applyLastKnownTheme();
 
 const render = () =>
   createRoot(document.getElementById('root')!).render(

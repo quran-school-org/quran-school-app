@@ -44,7 +44,7 @@ export default function HifzProgress({ students, classes, onOpenStudent }: { stu
               <div role="img" aria-label={`${s.fullName}، ${h} من 60 حزباً`} className="relative h-3 rounded-[3px] bg-line-soft overflow-hidden">
                 <div className="absolute inset-y-0 start-0 bg-primary" style={{ width: `${(h / 60) * 100}%` }} />
                 <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(to left, transparent 0, transparent calc(100% / 60 - 1.5px), #F8F8F3 calc(100% / 60 - 1.5px), #F8F8F3 calc(100% / 60))" }} />
-                <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(to left, transparent 0, transparent calc(100% / 6 - 2px), #D4A017 calc(100% / 6 - 2px), #D4A017 calc(100% / 6))" }} />
+                <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(to left, transparent 0, transparent calc(100% / 6 - 2px), var(--color-gold) calc(100% / 6 - 2px), var(--color-gold) calc(100% / 6))" }} />
               </div>
               <span className="text-[13.5px] text-ink-2 tabular-nums text-end" dir="ltr"><strong className="text-ink">{h}</strong> / 60</span>
             </div>

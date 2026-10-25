@@ -1,5 +1,5 @@
 /**
- * Menu latéral bleu nuit (maquette Nav.dc.html) : marque, groupes (التعليم /
+ * Menu latéral (couleur `night` du thème, D84) (maquette Nav.dc.html) : marque, groupes (التعليم /
  * المالية / الإدارة), éléments de 44 px, point doré sur l'élément actif,
  * badges, éléments désactivés, motif géométrique doré en pied.
  */
@@ -49,10 +49,10 @@ export function SideNav({ brand, groups, active, onSelect, footer, navId, classN
             const on = it.id === active;
             if (it.disabled) {
               return (
-                <span key={it.id} aria-disabled="true" className="flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-[15px] font-medium text-[#7586A3]">
+                <span key={it.id} aria-disabled="true" className="flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-[15px] font-medium text-night-dim">
                   <span aria-hidden="true" className="inline-flex">{it.icon}</span>
                   <span className="flex-1">{it.label}</span>
-                  {it.disabledLabel && <span className="text-[11px] font-semibold text-[#A9B6CC] border border-night-line-2 rounded-full px-2 py-0.5">{it.disabledLabel}</span>}
+                  {it.disabledLabel && <span className="text-[11px] font-semibold text-night-soft border border-night-line-2 rounded-full px-2 py-0.5">{it.disabledLabel}</span>}
                 </span>
               );
             }
@@ -65,7 +65,7 @@ export function SideNav({ brand, groups, active, onSelect, footer, navId, classN
                 onClick={() => onSelect(it.id)}
                 className={cx(
                   "flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-[15px] font-medium text-start border-0 cursor-pointer transition-colors w-full",
-                  on ? "bg-gold/[0.16] text-[#FFF7DD]" : "bg-transparent text-night-link hover:bg-white/[0.08]",
+                  on ? "bg-gold/[0.16] text-gold-glow" : "bg-transparent text-night-link hover:bg-white/[0.08]",
                 )}
               >
                 <span aria-hidden="true" className="inline-flex shrink-0">{it.icon}</span>
