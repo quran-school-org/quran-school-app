@@ -1,5 +1,5 @@
 /**
- * Champs de formulaire de la charte : hauteur 44 px, rayon 10 px, bordure
+ * Champs de formulaire de la charte (liste déroulante : ./Select.tsx) : hauteur 44 px, rayon 10 px, bordure
  * #D0D3C6, fond blanc ; libellé 13,5 px / 600.
  */
 import React, { useId } from "react";
@@ -13,14 +13,6 @@ const widthOf = (className?: string) => (/(^|\s)(w-|flex-)/.test(className || ""
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
   return <input ref={ref} className={cx(fieldClass, widthOf(className), className)} {...rest} />;
-});
-
-export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(function Select({ className, children, ...rest }, ref) {
-  return (
-    <select ref={ref} className={cx(fieldClass, widthOf(className), "pe-8 cursor-pointer", className)} {...rest}>
-      {children}
-    </select>
-  );
 });
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...rest }, ref) {

@@ -32,7 +32,7 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    const first = panel.current?.querySelector<HTMLElement>("input:not([type=hidden]):not([disabled]), select, textarea, button:not([data-modal-close])");
+    const first = panel.current?.querySelector<HTMLElement>("input:not([type=hidden]):not([disabled]):not([tabindex='-1']), select, textarea, button:not([data-modal-close])");
     (first || panel.current)?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && onClose) {

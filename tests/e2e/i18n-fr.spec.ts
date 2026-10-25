@@ -11,7 +11,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, desktopTabs, openTab, type DemoAccount } from "./helpers";
+import { ACCOUNTS, desktopTabs, openTab, type DemoAccount, chooseOption } from "./helpers";
 
 const CAPTURE_DIR = process.env.CAPTURE_DIR || "";
 const MISSING_OUT = process.env.I18N_MISSING_OUT || "";
@@ -121,9 +121,14 @@ test.describe.serial("traduction FR de test (D79)", () => {
     await openTab(page, "settings");
     await page.locator('[data-screen="settings"] [data-subtab="users"]').click();
     await page.locator('[data-action="open-user-form"]').click();
-    const roleOption = page.locator('option[value="مدير"]').first();
+    // Liste déroulante de la charte (D83) : la valeur est en `data-value`, jamais traduite.
+    const roleSelect = page.locator('[data-field="user-role"]');
+    await roleSelect.click();
+    const roleOption = page.locator('[data-select-menu] [role="option"][data-value="مدير"]');
     await expect(roleOption).toHaveCount(1);
     await expect(roleOption).toContainText("Directeur");
+    await page.keyboard.press("Escape");
+    await expect(page.locator("[data-select-menu]")).toHaveCount(0);
     await page.keyboard.press("Escape");
     await page.locator(".fixed.inset-0, [data-modal]").last().getByRole("button", { name: /Annuler|Fermer/ }).first().click().catch(() => undefined);
 
@@ -228,7 +233,7 @@ test.describe.serial("traduction FR de test (D79)", () => {
         await shot("directeur-fenetre-compte", false);
         await page.keyboard.press("Escape");
         await page.locator(".fixed.inset-0, [data-modal]").last().getByRole("button", { name: /Annuler|Fermer/ }).first().click().catch(() => undefined);
-        await page.locator("#school-switcher").selectOption("__picker__");
+        await chooseOption(page, page.locator("#school-switcher"), "__picker__");
         await expect(page.locator('[data-screen="school-picker"]')).toBeVisible();
         await shot("directeur-choix-ecole");
         await page.getByRole("button", { name: /جمعية الفجر الجديد/ }).first().click();

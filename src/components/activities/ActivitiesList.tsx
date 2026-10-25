@@ -41,18 +41,18 @@ export default function ActivitiesList() {
 
         <SearchInput aria-label="بحث في الأنشطة" icon={<Search className="w-4 h-4" strokeWidth={1.75} />} value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} placeholder="بحث باسم النشاط أو الوجهة..." />
         <div className="grid grid-cols-2 gap-2">
-          <Select aria-label="نوع النشاط" value={typeFilter} onChange={(e: any) => setTypeFilter(e.target.value)}>
+          <Select aria-label="نوع النشاط" value={typeFilter} onChange={(v) => setTypeFilter(v)}>
             <option value="all">كل الأنواع</option>
             {ACTIVITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </Select>
-          <Select aria-label="حالة النشاط" value={statusFilter} onChange={(e: any) => setStatusFilter(e.target.value)}>
+          <Select aria-label="حالة النشاط" value={statusFilter} onChange={(v) => setStatusFilter(v)}>
             <option value="all">كل الحالات</option>
             {ACTIVITY_STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
           </Select>
         </div>
         <div className="flex items-center gap-2 text-[13px]">
           <span className="text-ink-3 shrink-0 flex items-center gap-1"><ArrowUpDown className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />ترتيب</span>
-          <Select aria-label="ترتيب الأنشطة" value={activitySortKey} onChange={(e: any) => setActivitySortKey(e.target.value)} className="flex-1">
+          <Select aria-label="ترتيب الأنشطة" value={activitySortKey} onChange={(v) => setActivitySortKey(v)} className="flex-1">
             <option value="startDate">تاريخ الانطلاق</option>
             <option value="title">الاسم الأبجدي</option>
             <option value="contributionFee">قيمة المساهمة</option>

@@ -389,7 +389,7 @@ export default function ClassManagement({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <FormField label="المحفظ المشرف">
                 {(id) => (
-                  <Select id={id} value={formTeacherId} onChange={(e: any) => setFormTeacherId(e.target.value)}>
+                  <Select id={id} value={formTeacherId} onChange={(v) => setFormTeacherId(v)}>
                     <option value="">-- اختر محفظاً للحلقة --</option>
                     {teachers
                       .filter((t) => !t.isArchived)

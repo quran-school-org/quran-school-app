@@ -6,6 +6,7 @@ import { ActivityType, ActivityStatus } from "../../types";
 import { Compass, X } from "lucide-react";
 import { ACTIVITY_TYPES, ACTIVITY_STATUSES, TARGET_AUDIENCE_PRESETS } from "./shared";
 import { useActivities } from "./ActivitiesContext";
+import { Select } from "../../ui";
 
 export default function ActivityFormModal() {
   const {
@@ -77,28 +78,28 @@ export default function ActivityFormModal() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نوع النشاط *</label>
-                  <select
+                  <Select
+                    aria-label="نوع النشاط"
                     value={formType}
-                    onChange={(e) => setFormType(e.target.value as ActivityType)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setFormType(v as ActivityType)}
                   >
                     {ACTIVITY_TYPES.map(t => (
                       <option key={t} value={t}>{t}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">حالة النشاط *</label>
-                  <select
+                  <Select
+                    aria-label="حالة النشاط"
                     value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as ActivityStatus)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setFormStatus(v as ActivityStatus)}
                   >
                     {ACTIVITY_STATUSES.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
               </div>
 

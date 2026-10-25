@@ -18,7 +18,7 @@ export default function StaffFilterBar() {
           onChange={(e: any) => setSearchQuery(e.target.value)}
           className="flex-[1_1_260px] max-w-md"
         />
-        <Select aria-label="نوع التعاقد" value={contractFilter} onChange={(e: any) => setContractFilter(e.target.value)} className="w-auto">
+        <Select aria-label="نوع التعاقد" value={contractFilter} onChange={(v) => setContractFilter(v)} className="w-auto">
           <option value="all">جميع أنواع التعاقد</option>
           <option value="عقد عمل دائم">عقد عمل دائم</option>
           <option value="عقد مؤقت / بالساعة">عقد مؤقت / بالساعة</option>

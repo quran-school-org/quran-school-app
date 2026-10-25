@@ -35,7 +35,7 @@ export default function PaymentFormModal() {
       <div className="flex flex-col gap-4">
         <FormField label="الطالب المستهدف">
           {(id) => (
-            <Select id={id} required value={paymentFormStudentId} onChange={(e: any) => setPaymentFormStudentId(e.target.value)}>
+            <Select id={id} required value={paymentFormStudentId} onChange={(v) => setPaymentFormStudentId(v)}>
               <option value="">-- اختر الطالب --</option>
               {students.map((s) => <option key={s.id} value={s.id}>{s.fullName} (ولي الأمر: {s.parentName})</option>)}
             </Select>
@@ -44,14 +44,14 @@ export default function PaymentFormModal() {
         <div className="grid grid-cols-2 gap-3">
           <FormField label="السنة المستهدفة">
             {(id) => (
-              <Select id={id} value={paymentFormYear} onChange={(e: any) => handleFormYearChange(Number(e.target.value))}>
+              <Select id={id} value={paymentFormYear} onChange={(v) => handleFormYearChange(Number(v))}>
                 {YEARS.map((yr) => <option key={yr} value={yr}>{yr}</option>)}
               </Select>
             )}
           </FormField>
           <FormField label="الشهر المستهدف">
             {(id) => (
-              <Select id={id} value={paymentFormMonth} onChange={(e: any) => handleFormMonthChange(e.target.value)}>
+              <Select id={id} value={paymentFormMonth} onChange={(v) => handleFormMonthChange(v)}>
                 {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
               </Select>
             )}
@@ -62,7 +62,7 @@ export default function PaymentFormModal() {
         </FormField>
         <FormField label="حالة الدفع">
           {(id) => (
-            <Select id={id} value={paymentFormStatus} onChange={(e: any) => setPaymentFormStatus(e.target.value as "مدفوع" | "غير مدفوع")}>
+            <Select id={id} value={paymentFormStatus} onChange={(v) => setPaymentFormStatus(v as "مدفوع" | "غير مدفوع")}>
               <option value="غير مدفوع">غير مدفوع</option>
               <option value="مدفوع">مدفوع</option>
             </Select>
@@ -76,7 +76,7 @@ export default function PaymentFormModal() {
               </FormField>
               <FormField label="طريقة الدفع">
                 {(id) => (
-                  <Select id={id} value={paymentFormMethod} onChange={(e: any) => setPaymentFormMethod(e.target.value as any)}>
+                  <Select id={id} value={paymentFormMethod} onChange={(v) => setPaymentFormMethod(v as any)}>
                     <option value="نقداً">نقداً</option>
                     <option value="تحويل بنكي">تحويل بنكي</option>
                     <option value="شيك">شيك</option>

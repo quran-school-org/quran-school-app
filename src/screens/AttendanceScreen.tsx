@@ -59,7 +59,7 @@ export default function AttendanceScreen() {
         </FormField>
         <FormField label="حلقة التحفيظ">
           {(id) => (
-            <Select id={id} value={selectedClassId} onChange={(e: any) => setSelectedClassId(e.target.value)} className="w-auto">
+            <Select id={id} value={selectedClassId} onChange={(v) => setSelectedClassId(v)} className="w-auto">
               <option value="all">الكل (جميع الحلقات والطلاب)</option>
               {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>

@@ -5,6 +5,7 @@
 import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Printer, CheckCircle2, TrendingUp, Search, FileText, RefreshCw, CheckCircle, Info, Filter } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
+import { Select } from "../../ui";
 
 export default function ActivityWorkspace() {
   const {
@@ -282,29 +283,33 @@ export default function ActivityWorkspace() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <select
+                    <Select
+                      aria-label="تصفية حسب الصفة"
                       value={partTypeFilter}
-                      onChange={(e) => setPartTypeFilter(e.target.value)}
-                      className="py-1.5 px-2 text-[13px] bg-white border border-line rounded-lg text-ink-2 focus:outline-none focus:ring-2 focus:ring-primary-500 font-medium"
+                      onChange={(v) => setPartTypeFilter(v)}
+                      size="sm"
+                      className="w-auto"
                     >
                       <option value="all">كل الصفات والمشاركين</option>
                       <option value="طالب">طالب</option>
                       {availablePartRoles.filter(r => r !== "طالب").map(role => (
                         <option key={role} value={role}>{role}</option>
                       ))}
-                    </select>
+                    </Select>
 
-                    <select
+                    <Select
+                      aria-label="تصفية حسب حالة الأداء"
                       value={partStatusFilter}
-                      onChange={(e) => setPartStatusFilter(e.target.value)}
-                      className="py-1.5 px-2 text-[13px] bg-white border border-line rounded-lg text-ink-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      onChange={(v) => setPartStatusFilter(v)}
+                      size="sm"
+                      className="w-auto"
                     >
                       <option value="all">كل حالات الأداء</option>
                       <option value="مدفوع">مدفوع</option>
                       <option value="مدفوع جزئياً">مدفوع جزئياً</option>
                       <option value="غير مدفوع">غير مدفوع</option>
                       <option value="معفى">معفى</option>
-                    </select>
+                    </Select>
 
                     <span className="text-[12.5px] font-semibold text-ink-3 bg-white px-2 py-1.5 rounded-lg border border-line shrink-0">
                       العدد: {filteredParticipants.length} / {currentParticipants.length}
@@ -475,16 +480,18 @@ export default function ActivityWorkspace() {
                   </div>
 
                   <div className="flex items-center gap-2 flex-wrap">
-                    <select
+                    <Select
+                      aria-label="تصفية حسب فئة المصروف"
                       value={expCategoryFilter}
-                      onChange={(e) => setExpCategoryFilter(e.target.value)}
-                      className="py-1.5 px-2 text-[13px] bg-white border border-line rounded-lg text-ink-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      onChange={(v) => setExpCategoryFilter(v)}
+                      size="sm"
+                      className="w-auto"
                     >
                       <option value="all">كل الفئات والمصاريف</option>
                       {EXPENSE_CATEGORIES.map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
-                    </select>
+                    </Select>
 
                     <span className="text-[12.5px] font-semibold text-ink-3 bg-white px-2 py-1.5 rounded-lg border border-line shrink-0">
                       العدد: {filteredExpenses.length} / {currentExpenses.length}

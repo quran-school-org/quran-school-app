@@ -56,7 +56,7 @@ export default function StudentsScreen() {
           onChange={(e: any) => setSearchQuery(e.target.value)}
           className="flex-[1_1_260px] max-w-md"
         />
-        <Select aria-label="حالة الطلاب" value={studentArchiveFilter} onChange={(e: any) => setStudentArchiveFilter(e.target.value)} className="w-auto">
+        <Select aria-label="حالة الطلاب" data-filter="student-status" value={studentArchiveFilter} onChange={(v) => setStudentArchiveFilter(v)} className="w-auto">
           <option value="active">الطلاب النشطون</option>
           <option value="archived">الطلاب المؤرشفون</option>
           <option value="all">الكل (نشط ومؤرشف)</option>

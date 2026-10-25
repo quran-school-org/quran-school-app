@@ -6,6 +6,7 @@ import { StaffCategory, ContractType } from "../../types";
 import { UserPlus, Phone, X, Sparkles } from "lucide-react";
 import { STAFF_CATEGORIES_CONFIG, DEFAULT_STAFF_ICON } from "./shared";
 import { useStaff } from "./StaffContext";
+import { Select } from "../../ui";
 
 export default function StaffFormModal() {
   const {
@@ -329,17 +330,17 @@ export default function StaffFormModal() {
                 {/* Contract Type */}
                 <div className="space-y-1">
                   <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نوع التعاقد أو التطوع</label>
-                  <select
+                  <Select
+                    aria-label="نوع التعاقد أو التطوع"
                     value={formContractType}
-                    onChange={(e) => setFormContractType(e.target.value as ContractType)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
+                    onChange={(v) => setFormContractType(v as ContractType)}
                   >
                     <option value="مكافأة شهرية">مكافأة شهرية</option>
                     <option value="عقد عمل دائم">عقد عمل دائم</option>
                     <option value="عقد مؤقت / بالساعة">عقد مؤقت / بالساعة</option>
                     <option value="تطوعي">تطوعي (بدون أجر)</option>
                     <option value="منحة تدريب">منحة تدريب</option>
-                  </select>
+                  </Select>
                 </div>
 
                 {/* Monthly Salary / Stipend */}
