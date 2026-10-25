@@ -21,8 +21,11 @@ Les données de prod sont **réelles** (élèves mineurs, paiements, salaires).
   Firebase/Firestore/Identity Toolkit de la prod.
 - Tout se fait sur les **émulateurs** avec le projet `demo-quran-school`
   (le préfixe `demo-` garantit qu'aucun service réel n'est appelé).
-- Ne jamais pousser sur `main`, ne pas ouvrir de PR sans demande, ne pas modifier
-  les paramètres du dépôt, ne pas force-push sur une branche qu'on n'a pas créée.
+- `main` n'avance que sur demande explicite du propriétaire, et seulement en
+  avance rapide (`git push origin HEAD:main`, jamais de force-push) depuis une
+  branche à jour avec `main` dont la CI est verte. Ne pas ouvrir de PR sans
+  demande, ne pas modifier les paramètres du dépôt, ne pas force-push sur une
+  branche qu'on n'a pas créée.
 - Ne commiter **aucun secret** : mot de passe, compte de service,
   export de données (`*.json` d'export, `auth-users.json`, rapports de scripts).
 - Ne pas toucher au design (couleurs, mise en page) au-delà du strict nécessaire.
