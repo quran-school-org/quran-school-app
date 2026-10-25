@@ -178,6 +178,10 @@ export interface SystemSettings {
   openingYear?: number; // ouverture officielle : aucun paiement généré avant
   openingMonth?: string;
   studentAccountMinAge?: number; // âge minimal pour un compte élève (défaut 15)
+
+  // 5. Thème de couleur de l'école (D84) : identifiant de src/theme/palettes.ts
+  // (bleu-nuit, emeraude, sauge, foret, olive) ; absent ou inconnu = bleu-nuit.
+  theme?: string;
 }
 
 export type ModuleId =
