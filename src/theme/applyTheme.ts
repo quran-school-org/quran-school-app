@@ -10,7 +10,7 @@ import { getTheme, resolveThemeId, type ThemeId } from "./palettes";
 export const THEME_ATTRIBUTE = "data-theme";
 
 /**
- * Applique un thème (valeur inconnue ou absente : thème par défaut, D88). `remember` :
+ * Applique un thème (valeur inconnue ou absente : thème par défaut, D89). `remember` :
  * le retenir comme dernier thème de l'appareil (faux pour un simple aperçu).
  */
 export function applyTheme(value: unknown, { remember = true }: { remember?: boolean } = {}): ThemeId {

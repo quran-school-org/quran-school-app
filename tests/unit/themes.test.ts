@@ -37,16 +37,16 @@ const ROOT = join(__dirname, "../..");
 const indexCss = readFileSync(join(ROOT, "src/index.css"), "utf8");
 
 describe("identifiants et valeur par défaut", () => {
-  it("cinq thèmes, émeraude par défaut (D88)", () => {
+  it("cinq thèmes, bleu-nuit par défaut", () => {
     expect([...THEME_IDS]).toEqual(["bleu-nuit", "emeraude", "sauge", "foret", "olive"]);
-    expect(DEFAULT_THEME).toBe("emeraude");
+    expect(DEFAULT_THEME).toBe("bleu-nuit");
   });
 
-  it("valeur absente, vide ou inconnue : émeraude", () => {
-    for (const v of [undefined, null, "", "vert", "FORET", 3, {}]) expect(resolveThemeId(v)).toBe("emeraude");
+  it("valeur absente, vide ou inconnue : bleu-nuit", () => {
+    for (const v of [undefined, null, "", "vert", "FORET", 3, {}]) expect(resolveThemeId(v)).toBe("bleu-nuit");
     for (const id of THEME_IDS) expect(resolveThemeId(id)).toBe(id);
     expect(themeTokens("inconnu")).toEqual(themeTokens(undefined));
-    expect(themeTokens(undefined)).toEqual(themeTokens("emeraude"));
+    expect(themeTokens(undefined)).toEqual(themeTokens("bleu-nuit"));
   });
 });
 

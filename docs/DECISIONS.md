@@ -2151,3 +2151,14 @@ là-bas (R-06).
   - Le logo saisi dans Paramètres (`associationLogo`) reste prioritaire.
 - **Retour arrière** : `git revert` du commit ; ou, pour le thème seul,
   remettre `DEFAULT_THEME` à `bleu-nuit` et `theme-color` à `#102446`.
+
+### D89. Retour au bleu nuit par défaut, logo en bleu nuit et or
+- **Contexte** : l'école, à qui Mélik a montré les maquettes, préfère garder le
+  bleu (25/10/2026). D88 avait mis l'émeraude par défaut.
+- **Décision** : `DEFAULT_THEME` revient à `bleu-nuit` et `theme-color` à
+  `#102446`. Les cinq thèmes restent au choix dans Paramètres pour les écoles
+  qui veulent changer. Le logo de D88 garde sa forme (soleil levant sur un livre
+  ouvert) mais prend les couleurs de la charte : fond `#102446`, or `#D4A017`,
+  or pâle `#EEDCA4` (`public/`, icônes regénérées). L'`Emblem` de l'interface
+  suit toujours le thème actif ; les documents imprimés ne changent pas.
+- **Retour arrière** : `git revert` du commit (retour à l'émeraude de D88).
