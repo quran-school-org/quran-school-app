@@ -13,6 +13,8 @@ export { SegmentedControl, FilterChips } from "./SegmentedControl";
 export { Input, Textarea, FormField, CheckboxRow, SearchInput, fieldClass } from "./Form";
 export { Select, SEARCH_THRESHOLD } from "./Select";
 export type { SelectOption, SelectProps } from "./Select";
+export { Pagination, PAGE_SIZES } from "./Pagination";
+export { usePagination, pageCountOf, clampPage, pageWindow, pageRange, pageSlice, pageOfIndex, effectivePage } from "./pagination";
 export { useDirection } from "./useDirection";
 export { Modal } from "./Modal";
 export { TableWrap, Table, Th, Td, Tr } from "./DataTable";
