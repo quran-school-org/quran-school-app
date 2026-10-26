@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv, type Plugin} from 'vite';
 import {e2eCsp} from './scripts/dev/csp';
-import {frChunkProblems, productionBuildProblems} from './scripts/dev/buildGuards';
+import {committedProductionProjectId, frChunkProblems, productionBuildProblems, rolePreviewBuildProblems, rolePreviewBundleProblems} from './scripts/dev/buildGuards';
 
 /**
  * Tests de bout en bout (E2E_CSP=1, `npm run test:e2e`) : la CSP de production
@@ -39,14 +39,33 @@ function frChunkGuard(): Plugin {
   };
 }
 
+/**
+ * Aperçu par rôle du super-admin (D95) : sans VITE_ENABLE_ROLE_PREVIEW, le
+ * build échoue si un module de src/rolePreview se retrouve dans le bundle.
+ */
+function rolePreviewBundleGuard(enabled: boolean): Plugin {
+  return {
+    name: 'role-preview-bundle-guard',
+    apply: 'build',
+    generateBundle(_options, bundle) {
+      const ids = Object.values(bundle).flatMap((c) => (c.type === 'chunk' ? Object.keys(c.modules) : []));
+      const problems = rolePreviewBundleProblems(enabled, ids);
+      if (problems.length) this.error(problems.join('\n'));
+    },
+  };
+}
+
 export default defineConfig(({mode}) => {
   // Garde-fous du build de production (D70) : pas de jeton de débogage App Check
   // ni d'émulateurs venus de .env.local dans le bundle publié.
   const viteEnv = loadEnv(mode, process.cwd(), 'VITE_');
-  const problems = productionBuildProblems(mode, viteEnv, process.env);
+  const problems = [
+    ...productionBuildProblems(mode, viteEnv, process.env),
+    ...rolePreviewBuildProblems(mode, viteEnv, committedProductionProjectId(process.cwd())),
+  ];
   if (problems.length) throw new Error(`Build de production refusé :\n- ${problems.join('\n- ')}`);
   return {
-    plugins: [e2eCspMeta(), react(), tailwindcss(), frChunkGuard()],
+    plugins: [e2eCspMeta(), react(), tailwindcss(), frChunkGuard(), rolePreviewBundleGuard(viteEnv.VITE_ENABLE_ROLE_PREVIEW === 'true')],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

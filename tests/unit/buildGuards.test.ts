@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { loadEnv } from "vite";
 import { describe, expect, it } from "vitest";
 
-import { productionBuildProblems } from "../../scripts/dev/buildGuards";
+import { committedProductionProjectId, productionBuildProblems, rolePreviewBuildProblems, rolePreviewBundleProblems } from "../../scripts/dev/buildGuards";
 
 describe("productionBuildProblems", () => {
   it("rien à signaler en développement, ni pour un build de production propre", () => {
@@ -33,5 +33,39 @@ describe("productionBuildProblems", () => {
     const dir2 = mkdtempSync(join(tmpdir(), "kuttab-env-"));
     writeFileSync(join(dir2, ".env.development.local"), 'VITE_APPCHECK_DEBUG_TOKEN="x"\n');
     expect(productionBuildProblems("production", loadEnv("production", dir2, "VITE_"))).toEqual([]);
+  });
+});
+
+describe("aperçu par rôle (D95) : jamais pour la prod", () => {
+  const PROD = "projet-prod";
+  it("en production, drapeau vrai pour le projet de prod : refusé (quelle que soit la casse)", () => {
+    expect(rolePreviewBuildProblems("production", { VITE_ENABLE_ROLE_PREVIEW: "true", VITE_FIREBASE_PROJECT_ID: PROD }, PROD)).toHaveLength(1);
+    expect(rolePreviewBuildProblems("production", { VITE_ENABLE_ROLE_PREVIEW: " TRUE ", VITE_FIREBASE_PROJECT_ID: ` ${PROD} ` }, PROD)).toHaveLength(1);
+  });
+  it("en production, drapeau vrai sur le projet de dev (étape dev de deploy.yml) : accepté", () => {
+    expect(rolePreviewBuildProblems("production", { VITE_ENABLE_ROLE_PREVIEW: "true", VITE_FIREBASE_PROJECT_ID: "projet-dev" }, PROD)).toEqual([]);
+  });
+  it("en production, projet de prod introuvable : drapeau refusé par prudence", () => {
+    expect(rolePreviewBuildProblems("production", { VITE_ENABLE_ROLE_PREVIEW: "true", VITE_FIREBASE_PROJECT_ID: "projet-dev" }, undefined)).toHaveLength(1);
+  });
+  it("drapeau absent ou faux, ou mode développement : rien à signaler", () => {
+    expect(rolePreviewBuildProblems("production", { VITE_FIREBASE_PROJECT_ID: PROD }, PROD)).toEqual([]);
+    expect(rolePreviewBuildProblems("production", { VITE_ENABLE_ROLE_PREVIEW: "false", VITE_FIREBASE_PROJECT_ID: PROD }, PROD)).toEqual([]);
+    expect(rolePreviewBuildProblems("development", { VITE_ENABLE_ROLE_PREVIEW: "true", VITE_FIREBASE_PROJECT_ID: "demo-quran-school" }, PROD)).toEqual([]);
+  });
+  it("les fichiers réels : .env.production n'active pas le drapeau et .env.development l'active", () => {
+    const prodEnv = loadEnv("production", process.cwd(), "VITE_");
+    expect(prodEnv.VITE_ENABLE_ROLE_PREVIEW).toBeUndefined();
+    expect(rolePreviewBuildProblems("production", prodEnv, committedProductionProjectId(process.cwd()))).toEqual([]);
+    expect(committedProductionProjectId(process.cwd())).toBeTruthy();
+    expect(loadEnv("development", process.cwd(), "VITE_").VITE_ENABLE_ROLE_PREVIEW).toBe("true");
+    // Même avec le drapeau forcé, le projet de prod versionné est refusé.
+    expect(rolePreviewBuildProblems("production", { ...prodEnv, VITE_ENABLE_ROLE_PREVIEW: "true" }, committedProductionProjectId(process.cwd()))).toHaveLength(1);
+  });
+  it("bundle : sans drapeau, aucun module de src/rolePreview ; avec drapeau, libre", () => {
+    const ids = ["/x/src/App.tsx", "/x/src/rolePreview/RolePreviewControl.tsx"];
+    expect(rolePreviewBundleProblems(false, ids)).toHaveLength(1);
+    expect(rolePreviewBundleProblems(false, ["/x/src/App.tsx"])).toEqual([]);
+    expect(rolePreviewBundleProblems(true, ids)).toEqual([]);
   });
 });
