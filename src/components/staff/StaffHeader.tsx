@@ -11,7 +11,6 @@ export default function StaffHeader() {
   return (
     <PageHeader
       title="العاملون والمدرّسون"
-      description="سجل شامل لتسيير المحفظين، الأطر الإدارية، المشرفين والمؤطرين، عمال النظافة والصيانة، والمتطوعين مع بطاقات العمل."
       actions={
         <>
           <Button onClick={() => setShowDirectoryModal(true)} title="طباعة الدليل الكامل للعاملين" icon={<Printer className="w-[18px] h-[18px]" strokeWidth={1.75} />}>

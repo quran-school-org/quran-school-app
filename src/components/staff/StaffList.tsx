@@ -2,9 +2,11 @@
  * Module du personnel (enseignants, encadrants, administratifs, entretien, bénévoles).
  * Découpé mécaniquement depuis TeacherManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Edit2, Archive, Mail, Phone, Trash2, MessageCircle, AlertCircle, Printer, Sparkles, Clock, DollarSign } from "lucide-react";
+import { Edit2, Archive, ArchiveRestore, Mail, Phone, Trash2, MessageCircle, AlertCircle, Printer, Sparkles, Clock, DollarSign } from "lucide-react";
 import { STAFF_CATEGORIES_CONFIG } from "./shared";
 import { useStaff } from "./StaffContext";
+import { formatMoney } from "../../utils/format";
+import { ActionMenu, Button, type ActionMenuItem } from "../../ui";
 
 export default function StaffList() {
   const {
@@ -19,12 +21,30 @@ export default function StaffList() {
     handleStaffArchive,
   } = useStaff();
 
+  /** Actions d'une fiche : « تعديل » en action principale, le reste dans le menu « ⋯ » (UI-18). */
+  const menuItemsOf = (staff: (typeof filteredTeachers)[number]): ActionMenuItem[] => [
+    ...(canUpdate ? [{ label: "شارة العمل", icon: <Printer className="w-4 h-4" strokeWidth={1.75} />, action: "open-staff-badge", onClick: () => openBadgeModal(staff) }] : []),
+    ...(canUpdate ? [{ label: staff.isArchived ? "إلغاء الأرشفة" : "أرشفة", icon: staff.isArchived ? <ArchiveRestore className="w-4 h-4" strokeWidth={1.75} /> : <Archive className="w-4 h-4" strokeWidth={1.75} />, action: "toggle-staff-archive", onClick: () => handleStaffArchive(staff) }] : []),
+    ...(canDelete ? [{ label: "حذف نهائي", tone: "danger" as const, icon: <Trash2 className="w-4 h-4" strokeWidth={1.75} />, action: "delete-staff", onClick: () => handleStaffDelete(staff) }] : []),
+  ];
+  /** Sans droit de modification, la seule action utile (la carte de travail) reste visible. */
+  const primaryAction = (staff: (typeof filteredTeachers)[number]) =>
+    canUpdate ? (
+      <Button variant="primary" size="md" className="flex-1" data-action="edit-staff" onClick={() => handleOpenForm(staff)} icon={<Edit2 className="w-4 h-4" strokeWidth={1.75} />}>
+        تعديل
+      </Button>
+    ) : (
+      <Button className="flex-1" data-action="open-staff-badge" onClick={() => openBadgeModal(staff)} title="طباعة بطاقة العمل أو شارة الصدر" icon={<Printer className="w-4 h-4" strokeWidth={1.75} />}>
+        شارة العمل
+      </Button>
+    );
+
   return (
     <>
       {/* Staff Grid or Table View */}
       {filteredTeachers.length > 0 ? (
         viewMode === "grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {filteredTeachers.map((staff) => {
               const cat = staff.category || "أستاذ / محفظ";
               const catCfg = STAFF_CATEGORIES_CONFIG[cat] || STAFF_CATEGORIES_CONFIG["أستاذ / محفظ"];
@@ -37,7 +57,7 @@ export default function StaffList() {
                     staff.isArchived 
                       ? "border-gold-200 bg-gold-50/10" 
                       : "border-line hover:border-line-strong"
-                  } p-5 space-y-4 flex flex-col justify-between relative overflow-hidden transition-all duration-200`}
+                  } p-5 space-y-4 relative overflow-hidden transition-all duration-200`}
                 >
                   {/* Category Tag Header */}
                   <div className="flex items-center justify-between flex-wrap gap-1">
@@ -199,63 +219,16 @@ export default function StaffList() {
                           المكافأة / الراتب الشهري:
                         </span>
                         <span className="font-bold text-primary-800 font-mono">
-                          {staff.monthlySalary.toLocaleString()} د.م
+                          {formatMoney(staff.monthlySalary)}
                         </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Card footer actions */}
-                  <div className="border-t pt-3 mt-4 space-y-2">
-                    <div className="flex items-center gap-1.5">
-                      {/* Print Badge Button */}
-                      <button
-                        type="button"
-                        data-action="open-staff-badge"
-                        onClick={() => openBadgeModal(staff)}
-                        className="flex-1 py-1.5 bg-sand-100 hover:bg-sand-200 text-ink-2 text-[12.5px] font-bold rounded-lg transition flex items-center justify-center gap-1 border border-line"
-                        title="طباعة بطاقة العمل أو شارة الصدر"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-ink-2" />
-                        <span>شارة العمل</span>
-                      </button>
-
-                      {canUpdate && (
-                        <button
-                          onClick={() => handleOpenForm(staff)}
-                          className="flex-1 py-1.5 bg-primary-50 hover:bg-primary-100 text-primary-800 text-[12.5px] font-bold rounded-lg transition flex items-center justify-center gap-1 border border-primary-200"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          <span>تعديل</span>
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      {canUpdate && (
-                        <button
-                          onClick={() => handleStaffArchive(staff)}
-                          className={`flex-1 py-1 text-[11.5px] font-bold rounded-lg transition flex items-center justify-center gap-1 border ${
-                            staff.isArchived
-                              ? "bg-primary-50 hover:bg-primary-100 text-primary-800 border-primary-200"
-                              : "bg-gold-50 hover:bg-gold-100 text-gold-800 border-gold-200"
-                          }`}
-                        >
-                          <Archive className="w-3 h-3" />
-                          <span>{staff.isArchived ? "إلغاء الأرشفة" : "أرشفة"}</span>
-                        </button>
-                      )}
-
-                      {canDelete && (
-                        <button
-                          onClick={() => handleStaffDelete(staff)}
-                          className="p-1 hover:bg-danger-50 text-danger-600 rounded-lg transition border border-transparent hover:border-danger-200"
-                          title="حذف نهائي"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                  {/* Pied de carte : une action principale, le reste dans « ⋯ » */}
+                  <div className="border-t border-line-soft pt-3 flex items-center gap-2">
+                    {primaryAction(staff)}
+                    {menuItemsOf(staff).length > 0 && <ActionMenu label={`المزيد من الإجراءات: ${staff.fullName}`} items={menuItemsOf(staff)} />}
                   </div>
                 </div>
               );
@@ -333,7 +306,7 @@ export default function StaffList() {
                       </td>
 
                       <td className="p-3.5 font-bold text-primary-800 font-mono">
-                        {staff.monthlySalary ? `${staff.monthlySalary.toLocaleString()} د.م` : "-"}
+                        {staff.monthlySalary ? `${formatMoney(staff.monthlySalary)}` : "-"}
                       </td>
 
                       <td className="p-3.5">
@@ -357,35 +330,18 @@ export default function StaffList() {
                       </td>
 
                       <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            type="button"
-                            data-action="open-staff-badge"
-                            aria-label="شارة العمل"
-                            onClick={() => openBadgeModal(staff)}
-                            className="p-1.5 hover:bg-sand-100 text-ink-2 rounded-lg transition"
-                            title="شارة العمل"
-                          >
-                            <Printer className="w-4 h-4" />
-                          </button>
+                        <div className="flex items-center justify-center gap-2">
                           {canUpdate && (
-                            <button
-                              onClick={() => handleOpenForm(staff)}
-                              className="p-1.5 hover:bg-primary-50 text-primary-700 rounded-lg transition"
-                              title="تعديل"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                            <Button size="sm" variant="primary" data-action="edit-staff" onClick={() => handleOpenForm(staff)} icon={<Edit2 className="w-4 h-4" strokeWidth={1.75} />}>
+                              تعديل
+                            </Button>
                           )}
-                          {canDelete && (
-                            <button
-                              onClick={() => handleStaffDelete(staff)}
-                              className="p-1.5 hover:bg-danger-50 text-danger-600 rounded-lg transition"
-                              title="حذف"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          {!canUpdate && (
+                            <Button size="sm" data-action="open-staff-badge" onClick={() => openBadgeModal(staff)} icon={<Printer className="w-4 h-4" strokeWidth={1.75} />}>
+                              شارة العمل
+                            </Button>
                           )}
+                          {menuItemsOf(staff).length > 0 && <ActionMenu label={`المزيد من الإجراءات: ${staff.fullName}`} items={menuItemsOf(staff)} />}
                         </div>
                       </td>
                     </tr>
