@@ -5,7 +5,9 @@
  * bouclent) puis rendu à l'élément d'origine.
  * Les classes `fixed inset-0` sont conservées : la feuille d'impression s'en sert.
  * Options rétrocompatibles (D98) : `size="base"` (max-w-lg), `printHidden` (fenêtre
- * de saisie absente de l'impression), `footerAlign="between"`.
+ * de saisie absente de l'impression), `print` (aperçu d'un document : en-tête et pied
+ * masqués à l'impression, corps sans défilement), `flush` (corps sans marge),
+ * `footerAlign="between"`.
  */
 import React, { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
@@ -27,6 +29,10 @@ export interface ModalProps {
   tone?: "default" | "night";
   /** Fenêtre de saisie : masquée à l'impression de la page (les aperçus d'impression ne l'activent pas). */
   printHidden?: boolean;
+  /** Aperçu d'un document à imprimer : seul le corps est imprimé (en-tête et pied masqués, sans défilement ni marge). */
+  print?: boolean;
+  /** Corps sans marge intérieure (le contenu gère la sienne, ex. feuille d'un document). */
+  flush?: boolean;
   /** `between` : actions réparties aux deux bords (fermer / action principale). Par défaut, groupées en fin de ligne. */
   footerAlign?: "end" | "between";
   /** Si fourni, le corps et le pied forment un <form> (boutons type=submit dans le pied). */
@@ -39,7 +45,7 @@ const SIZES = { sm: "max-w-md", base: "max-w-lg", md: "max-w-2xl", lg: "max-w-4x
 const FOCUSABLE = "a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
 const focusablesOf = (root: HTMLElement) => Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.closest("[hidden]") && el.getClientRects().length > 0);
 
-export function Modal({ title, subtitle, icon, onClose, children, footer, size = "md", modalId, className, bodyClassName, headerExtra, tone = "default", onSubmit, printHidden, footerAlign = "end" }: ModalProps) {
+export function Modal({ title, subtitle, icon, onClose, children, footer, size = "md", modalId, className, bodyClassName, headerExtra, tone = "default", onSubmit, printHidden, print, flush, footerAlign = "end" }: ModalProps) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -90,7 +96,7 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
         tabIndex={-1}
         className={cx("w-full my-6 bg-surface border border-line rounded-3xl shadow-pop flex flex-col max-h-[calc(100dvh-3rem)] focus:outline-none", SIZES[size], className)}
       >
-        <div className={cx("flex items-start justify-between gap-4 px-5 sm:px-6 pt-5 pb-4 border-b shrink-0", tone === "night" ? "bg-night text-night-text border-night-line rounded-t-3xl" : "border-line-soft")}>
+        <div className={cx("flex items-start justify-between gap-4 px-5 sm:px-6 pt-5 pb-4 border-b shrink-0", print && "print:hidden", tone === "night" ? "bg-night text-night-text border-night-line rounded-t-3xl" : "border-line-soft")}>
           <div className="flex items-center gap-3 min-w-0">
             {icon && <span aria-hidden="true" className={cx("inline-flex shrink-0", tone === "night" ? "text-gold" : "text-gold-700")}>{icon}</span>}
             <div className="min-w-0">
@@ -116,13 +122,13 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
         </div>
         {onSubmit ? (
           <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
-            <div className={cx("px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0", bodyClassName)}>{children}</div>
-            {footer && <div className={cx("px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center gap-2.5 shrink-0", footerAlign === "between" ? "justify-between" : "justify-end")}>{footer}</div>}
+            <div className={cx("overflow-y-auto flex-1 min-h-0", flush ? "p-0" : "px-5 sm:px-6 py-5", print && "print:p-0 print:overflow-visible", bodyClassName)}>{children}</div>
+            {footer && <div className={cx("px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center gap-2.5 shrink-0", print && "print:hidden", footerAlign === "between" ? "justify-between" : "justify-end")}>{footer}</div>}
           </form>
         ) : (
           <>
-            <div className={cx("px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0", bodyClassName)}>{children}</div>
-            {footer && <div className={cx("px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center gap-2.5 shrink-0", footerAlign === "between" ? "justify-between" : "justify-end")}>{footer}</div>}
+            <div className={cx("overflow-y-auto flex-1 min-h-0", flush ? "p-0" : "px-5 sm:px-6 py-5", print && "print:p-0 print:overflow-visible", bodyClassName)}>{children}</div>
+            {footer && <div className={cx("px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center gap-2.5 shrink-0", print && "print:hidden", footerAlign === "between" ? "justify-between" : "justify-end")}>{footer}</div>}
           </>
         )}
       </div>
