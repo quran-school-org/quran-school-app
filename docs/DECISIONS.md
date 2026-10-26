@@ -2151,3 +2151,39 @@ là-bas (R-06).
   - Le logo saisi dans Paramètres (`associationLogo`) reste prioritaire.
 - **Retour arrière** : `git revert` du commit ; ou, pour le thème seul,
   remettre `DEFAULT_THEME` à `bleu-nuit` et `theme-color` à `#102446`.
+
+### D91. Coque mobile, typographie, aperçus aux couleurs du thème (audit UI-05, UI-13, UI-15, UI-23)
+- **Contexte** : l'audit UI/UX du 25/10/2026 (`docs/revues/AUDIT-UI-UX-2026-10-25.md`)
+  relève une barre du haut de 135 à 190 px sur téléphone (UI-05), la police
+  d'affichage sur tous les titres (UI-15), du bleu nuit en dur dans une interface
+  émeraude (UI-13) et un sélecteur de langue de test qui masque des boutons (UI-23).
+- **Décision** :
+  - **UI-05** : sous 1 024 px (`useMediaQuery`, là où le menu latéral devient
+    tiroir), la barre du haut fait une ligne de 56 px : menu, nom de l'école
+    tronqué (`data-active-school-mobile`), cloche, avatar (profil). Le sélecteur
+    d'école (`#school-switcher`) et « خروج » passent dans le tiroir
+    (`[data-drawer-account]`), rendus **à un seul endroit à la fois** (pas de
+    doublon d'identifiant). Le tiroir garde son comportement : Échap, bouton de
+    fermeture. À partir de 1 024 px, barre inchangée ; « خروج » perd le rouge
+    (contour neutre, rouge au survol seulement).
+  - **UI-15** : Reem Kufi réservée au `h1` de page, au nom de l'école et à la carte
+    du hifz ; titres de cartes (`CardHeader`) et de fenêtres (`Modal`) en IBM Plex
+    Sans Arabic 600. Une règle en fin de `index.css` applique la même police aux
+    `h2` / `h3` portant encore `font-display` dans des écrans non migrés
+    (exception : `#hifz-map-title`) ; elle disparaîtra quand ces écrans seront
+    nettoyés. `word-spacing: 0.1em` sur la police d'affichage.
+  - **UI-23** : le sélecteur FR de test devient un bouton rond de 44 px (code de la
+    langue active, translucide), qui ouvre un petit panneau AR / FR (Échap, clic
+    extérieur, fermeture après choix). Toujours monté par `main.tsx` uniquement hors
+    production (garde-fous D79 inchangés). Les tests e2e ouvrent d'abord le bouton.
+  - **UI-13** : l'aperçu à l'écran des cartes d'élève suit le thème actif (plus de
+    `data-theme="bleu-nuit"`, ombre et motif par variables). L'**impression** garde
+    la charte bleu nuit (D88) : `printDocument` pose `data-theme="bleu-nuit"` sur le
+    document imprimé, couvert par `tests/unit/printTemplates.test.ts`.
+    `sand-800` / `sand-900` sont remplacés par `night` / `night-2` (salaires, matrice
+    de droits, badge et annuaire du personnel, espace des activités) et interdits
+    par `tests/unit/themes.test.ts`, avec exceptions : aperçus d'impression
+    (`PrintReportModal`, `ActivityPrintModal`) et, **temporairement**,
+    `UsersSection.tsx` (autre lot).
+- **Retour arrière** : `git revert` des commits du lot. Pour la seule barre mobile,
+  passer `compact` à `false` dans `AppFrame.tsx` (l'ancienne barre complète revient).
