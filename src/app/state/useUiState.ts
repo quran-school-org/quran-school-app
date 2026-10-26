@@ -5,8 +5,10 @@ import React, { useState } from "react";
 import { Student, Payment, TajweedLevel } from "../../types";
 import { MONTHS_AR } from "../../school/businessRules";
 import { localIsoDate } from "../attendanceSessions";
+import { useToast } from "../../ui";
 
 export function useUiState() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -150,7 +152,7 @@ export function useUiState() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 15 * 1024 * 1024) {
-        alert("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 15 ميغابايت.");
+        toast.error("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 15 ميغابايت.");
         return;
       }
       const reader = new FileReader();
@@ -181,7 +183,7 @@ export function useUiState() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.size > 15 * 1024 * 1024) {
-        alert("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 15 ميغابايت.");
+        toast.error("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 15 ميغابايت.");
         return;
       }
       const reader = new FileReader();

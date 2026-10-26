@@ -3,7 +3,7 @@ import { Class, Teacher, Student } from "../types";
 import { Plus, Edit2, Archive, Calendar, Users, Search, AlertCircle, Trash2 } from "lucide-react";
 import { isEducatorRole, isFamilyRole } from "../security/access";
 import { navLabel } from "../shell/navModel";
-import { Button, Card, EmptyState, FilterChips, FormField, IconButton, InitialAvatar, Input, Ltr, Modal, PAGE_SIZES, PageHeader, Pill, ProgressBar, SearchInput, Select, cx } from "../ui";
+import { Button, Card, EmptyState, FilterChips, FormField, IconButton, InitialAvatar, Input, Ltr, Modal, PAGE_SIZES, PageHeader, Pill, ProgressBar, SearchInput, Select, cx, useToast } from "../ui";
 
 const parseScheduleString = (scheduleStr: string) => {
   const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
@@ -88,6 +88,7 @@ export default function ClassManagement({
   onSelectStudent,
   onSwitchTab
 }: ClassManagementProps) {
+  const toast = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [archiveFilter, setArchiveFilter] = useState<"all" | "active" | "archived">("active");
 
@@ -146,7 +147,7 @@ export default function ClassManagement({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName || !formSchedule) {
-      alert("الرجاء ملء اسم الحلقة والجدول الدراسي.");
+      toast.error("الرجاء ملء اسم الحلقة والجدول الدراسي.");
       return;
     }
 

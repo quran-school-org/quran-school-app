@@ -7,8 +7,10 @@ import { ActivityTrip, ActivityParticipant, ActivityExpense, ParticipantType } f
 import type { useActivitiesForms } from "./useActivitiesForms";
 import type { useActivitiesData } from "./useActivitiesData";
 import { formatMoney } from "../../utils/format";
+import { useToast } from "../../ui";
 
 export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> & ReturnType<typeof useActivitiesData>) {
+  const toast = useToast();
   const {
     students,
     teachers,
@@ -86,6 +88,7 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
     setEditingExpense,
     expTitle,
     setExpTitle,
+    setExpErrors,
     expCategory,
     setExpCategory,
     expAmount,
@@ -148,7 +151,7 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
   const handleSaveActivityForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim()) {
-      alert("يرجى إدخال عنوان أو اسم النشاط/الرحلة.");
+      toast.error("يرجى إدخال عنوان أو اسم النشاط/الرحلة.");
       return;
     }
 
@@ -274,7 +277,7 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
     }
 
     if (!finalName) {
-      alert("يرجى تحديد أو كتابة اسم المشارك.");
+      toast.error("يرجى تحديد أو كتابة اسم المشارك.");
       return;
     }
 
@@ -319,6 +322,7 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
   const handleOpenAddExpense = () => {
     if (!selectedActivityId) return;
     setEditingExpense(null);
+    setExpErrors({});
     setExpTitle("");
     setExpCategory("كراء حافلة وتنقل");
     setExpAmount(0);
@@ -333,6 +337,7 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
 
   const handleOpenEditExpense = (exp: ActivityExpense) => {
     setEditingExpense(exp);
+    setExpErrors({});
     setExpTitle(exp.title);
     setExpCategory(exp.category);
     setExpAmount(exp.amount);
@@ -348,12 +353,13 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
   const handleSaveExpenseForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedActivityId) return;
+    setExpErrors({});
     if (!expTitle.trim()) {
-      alert("يرجى إدخال وصف أو اسم المصروف.");
+      setExpErrors({ title: "يرجى إدخال وصف أو اسم المصروف." });
       return;
     }
     if (expAmount <= 0) {
-      alert("يرجى إدخال مبلغ المصروف بشكل صحيح.");
+      setExpErrors({ amount: "يرجى إدخال مبلغ المصروف بشكل صحيح." });
       return;
     }
 
@@ -382,7 +388,7 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
     const { totalCollected, totalSpent, netBalance } = currentFinances;
 
     onSyncToFinance(currentActivity, netBalance, totalCollected, totalSpent);
-    alert(`✅ الربط المالي التلقائي نشط ومباشر!\n\nتم التحقق من مزامنة نشاط "${currentActivity.title}" لحظياً مع قيود المحاسبة والمالية الجمعوية:\n• إجمالي المساهمات المحصلة: ${formatMoney(totalCollected)}\n• إجمالي المصاريف الفعلية: ${formatMoney(totalSpent)}\n• الصافي المقيد تلقائياً: ${netBalance > 0 ? `فائض +${formatMoney(netBalance)}` : netBalance < 0 ? `عجز ${formatMoney(netBalance)}` : "متوازن (0 د.م)"}`);
+    toast.success(`✅ الربط المالي التلقائي نشط ومباشر!\n\nتم التحقق من مزامنة نشاط "${currentActivity.title}" لحظياً مع قيود المحاسبة والمالية الجمعوية:\n• إجمالي المساهمات المحصلة: ${formatMoney(totalCollected)}\n• إجمالي المصاريف الفعلية: ${formatMoney(totalSpent)}\n• الصافي المقيد تلقائياً: ${netBalance > 0 ? `فائض +${formatMoney(netBalance)}` : netBalance < 0 ? `عجز ${formatMoney(netBalance)}` : "متوازن (0 د.م)"}`);
   };
 
   return {
