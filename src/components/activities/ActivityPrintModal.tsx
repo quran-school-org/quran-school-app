@@ -4,6 +4,8 @@
  */
 import { Compass, Users, Printer, X } from "lucide-react";
 import { useActivities } from "./ActivitiesContext";
+import { formatMoney, formatNumber } from "../../utils/format";
+import { Ltr } from "../../ui";
 
 export default function ActivityPrintModal() {
   const {
@@ -199,10 +201,10 @@ export default function ActivityPrintModal() {
                                 <td className="p-2 border border-sand-400 text-center font-bold text-ink">{getParticipantRole(p)}</td>
                                 <td className="p-2 border border-sand-400 text-center font-mono text-ink-2">{p.phone || "—"}</td>
                                 <td className="p-2 border border-sand-400 text-center font-mono text-ink font-bold">
-                                  {statusInfo.status === "معفى" && feeVal === 0 ? "معفى (0 د.م)" : `${feeVal.toLocaleString()} د.م`}
+                                  {statusInfo.status === "معفى" && feeVal === 0 ? "معفى (0 د.م)" : `${formatMoney(feeVal)}`}
                                 </td>
                                 <td className="p-2 border border-sand-400 text-center font-mono font-bold text-primary-800">
-                                  {paidVal.toLocaleString()} د.م
+                                  {formatMoney(paidVal)}
                                 </td>
                                 <td className="p-2 border border-sand-400 text-center font-bold">
                                   <span className={statusInfo.colorClass}>
@@ -223,10 +225,10 @@ export default function ActivityPrintModal() {
                               المجموع العام: {printableParticipants.length} مشارك ومؤطر
                             </td>
                             <td className="p-2.5 border border-sand-400 text-center font-mono font-bold text-ink">
-                              {printableParticipants.reduce((sum, p) => sum + resolveParticipantFee(p), 0).toLocaleString()} د.م
+                              {formatMoney(printableParticipants.reduce((sum, p) => sum + resolveParticipantFee(p), 0))}
                             </td>
                             <td className="p-2.5 border border-sand-400 text-center font-mono text-primary-900 font-bold">
-                              {printableParticipants.reduce((sum, p) => sum + resolveParticipantPaid(p), 0).toLocaleString()} د.م
+                              {formatMoney(printableParticipants.reduce((sum, p) => sum + resolveParticipantPaid(p), 0))}
                             </td>
                             <td colSpan={3} className="p-2.5 border border-sand-400 text-center text-[12.5px] text-ink-2 font-semibold">
                               {(() => {
@@ -261,7 +263,7 @@ export default function ActivityPrintModal() {
                     <div className="border border-primary-300 p-3.5 rounded-xl bg-primary-50/70">
                       <div className="text-[13px] font-bold text-primary-900">إجمالي المداخيل المحصلة</div>
                       <div className="text-xl font-bold text-primary-800 mt-1 font-mono">
-                        {currentFinances.totalCollected.toLocaleString()} د.م
+                        {formatMoney(currentFinances.totalCollected)}
                       </div>
                       <div className="text-[11.5px] text-primary-700 mt-0.5 font-medium">مساهمات المشاركين المسجلة</div>
                     </div>
@@ -269,7 +271,7 @@ export default function ActivityPrintModal() {
                     <div className="border border-danger-300 p-3.5 rounded-xl bg-danger-50/70">
                       <div className="text-[13px] font-bold text-danger-900">إجمالي المصاريف والنفقات</div>
                       <div className="text-xl font-bold text-danger-800 mt-1 font-mono">
-                        {currentFinances.totalSpent.toLocaleString()} د.م
+                        {formatMoney(currentFinances.totalSpent)}
                       </div>
                       <div className="text-[11.5px] text-danger-700 mt-0.5 font-medium">جميع فواتير وأوصال الصرف</div>
                     </div>
@@ -277,7 +279,7 @@ export default function ActivityPrintModal() {
                     <div className={`border p-3.5 rounded-xl ${currentFinances.netBalance >= 0 ? "border-primary-300 bg-primary-50/40" : "border-gold-300 bg-gold-50/40"}`}>
                       <div className="text-[13px] font-bold text-ink">الصافي المالي للنشاط</div>
                       <div className={`text-xl font-bold mt-1 font-mono ${currentFinances.netBalance >= 0 ? "text-primary-800" : "text-gold-800"}`}>
-                        {currentFinances.netBalance >= 0 ? `+${currentFinances.netBalance.toLocaleString()}` : currentFinances.netBalance.toLocaleString()} د.م
+                        <Ltr>{formatNumber(currentFinances.netBalance, { signed: true })}</Ltr> د.م
                       </div>
                       <div className="text-[11.5px] text-ink-2 mt-0.5 font-medium">
                         {currentFinances.netBalance >= 0 ? "فائض مالي يُرحّل للخزينة" : "عجز مالي مغطى من صندوق الجمعية"}
@@ -313,7 +315,7 @@ export default function ActivityPrintModal() {
                               <td className="p-2 border border-sand-400 text-center font-mono font-bold text-ink-2">{idx + 1}</td>
                               <td className="p-2 border border-sand-400 font-bold text-ink">{e.title}</td>
                               <td className="p-2 border border-sand-400 text-center font-medium text-ink-2">{e.category}</td>
-                              <td className="p-2 border border-sand-400 text-center font-mono font-bold text-danger-800">{e.amount.toLocaleString()} د.م</td>
+                              <td className="p-2 border border-sand-400 text-center font-mono font-bold text-danger-800">{formatMoney(e.amount)}</td>
                               <td className="p-2 border border-sand-400 text-center text-ink-2">{e.paymentMethod}</td>
                               <td className="p-2 border border-sand-400 text-center text-ink-2">{e.supplier || "—"}</td>
                               <td className="p-2 border border-sand-400 text-center font-mono text-ink-2">{e.receiptOrInvoiceNo || "—"}</td>
@@ -328,7 +330,7 @@ export default function ActivityPrintModal() {
                               مجموع النفقات والمصاريف:
                             </td>
                             <td className="p-2.5 border border-sand-400 text-center font-mono text-danger-900 font-bold">
-                              {currentFinances.totalSpent.toLocaleString()} د.م
+                              {formatMoney(currentFinances.totalSpent)}
                             </td>
                             <td colSpan={3} className="p-2.5 border border-sand-400 text-center text-[12.5px] text-ink-2">
                               عدد فواتير وأوصال المصاريف: {currentExpenses.length}
@@ -381,7 +383,7 @@ export default function ActivityPrintModal() {
                     </div>
                     <div>
                       <span className="text-ink-3 font-medium block">المساهمة المؤداة:</span>
-                      <span className="font-bold font-mono text-primary-800">{selectedParticipantForTicket.paidAmount} د.م</span>
+                      <span className="font-bold font-mono text-primary-800">{formatMoney(selectedParticipantForTicket.paidAmount)}</span>
                     </div>
                     <div>
                       <span className="text-ink-3 font-medium block">رقم الوصل:</span>

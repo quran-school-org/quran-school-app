@@ -5,7 +5,8 @@
 import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Printer, CheckCircle2, TrendingUp, Search, FileText, RefreshCw, CheckCircle, Info } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
-import { Select } from "../../ui";
+import { Ltr, Select } from "../../ui";
+import { formatMoney, formatNumber } from "../../utils/format";
 
 export default function ActivityWorkspace() {
   const {
@@ -99,7 +100,7 @@ export default function ActivityWorkspace() {
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign className="w-3.5 h-3.5 text-primary-400" />
-                      <span>واجب المساهمة: {currentActivity.contributionFee} د.م</span>
+                      <span>واجب المساهمة: {formatMoney(currentActivity.contributionFee)}</span>
                     </span>
                   </div>
                 </div>
@@ -385,11 +386,11 @@ export default function ActivityWorkspace() {
                                 if (statusInfo.status === "معفى" && feeVal === 0) {
                                   return <span className="text-primary-700 font-bold">معفى (0 د.م)</span>;
                                 }
-                                return <span>{feeVal.toLocaleString()} د.م</span>;
+                                return <span>{formatMoney(feeVal)}</span>;
                               })()}
                             </td>
                             <td className="p-3 font-bold text-primary-700">
-                              {resolveParticipantPaid(part).toLocaleString()} د.م
+                              {formatMoney(resolveParticipantPaid(part))}
                             </td>
                             <td className="p-3">
                               {(() => {
@@ -543,7 +544,7 @@ export default function ActivityWorkspace() {
                                 {exp.category}
                               </span>
                             </td>
-                            <td className="p-3 font-bold text-danger-700">{exp.amount.toLocaleString()} د.م</td>
+                            <td className="p-3 font-bold text-danger-700">{formatMoney(exp.amount)}</td>
                             <td className="p-3 text-ink-2 font-mono">{exp.date}</td>
                             <td className="p-3 text-ink-2">{exp.supplier || "—"}</td>
                             <td className="p-3 font-mono text-ink-3">{exp.receiptOrInvoiceNo || "—"}</td>
@@ -606,17 +607,17 @@ export default function ActivityWorkspace() {
                     <div className="bg-sand-800/80 rounded-xl p-4 border border-sand-700">
                       <div className="text-[13px] text-ink-3 font-medium">إجمالي المداخيل والمساهمات</div>
                       <div className="text-2xl font-bold text-primary-400 mt-1">
-                        +{currentFinances.totalCollected.toLocaleString()} <span className="text-[13px] font-normal text-ink-3">د.م</span>
+                        <Ltr>{formatNumber(currentFinances.totalCollected, { signed: true })}</Ltr> <span className="text-[13px] font-normal text-ink-3">د.م</span>
                       </div>
                       <div className="text-[12.5px] text-ink-3 mt-1">
-                        من أصل {currentFinances.totalExpected.toLocaleString()} د.م متوقعة
+                        من أصل {formatMoney(currentFinances.totalExpected)} متوقعة
                       </div>
                     </div>
 
                     <div className="bg-sand-800/80 rounded-xl p-4 border border-sand-700">
                       <div className="text-[13px] text-ink-3 font-medium">إجمالي المصاريف المؤداة</div>
                       <div className="text-2xl font-bold text-danger-400 mt-1">
-                        -{currentFinances.totalSpent.toLocaleString()} <span className="text-[13px] font-normal text-ink-3">د.م</span>
+                        <Ltr>{formatNumber(-currentFinances.totalSpent)}</Ltr> <span className="text-[13px] font-normal text-ink-3">د.م</span>
                       </div>
                       <div className="text-[12.5px] text-ink-3 mt-1">
                         موزعة على {currentExpenses.length} بنود مصاريف
@@ -626,7 +627,7 @@ export default function ActivityWorkspace() {
                     <div className="bg-sand-800/80 rounded-xl p-4 border border-sand-700">
                       <div className="text-[13px] text-ink-3 font-medium">النتيجة الصافية للنشاط</div>
                       <div className={`text-2xl font-bold mt-1 ${currentFinances.netBalance >= 0 ? "text-primary-400" : "text-danger-400"}`}>
-                        {currentFinances.netBalance >= 0 ? `+${currentFinances.netBalance.toLocaleString()}` : currentFinances.netBalance.toLocaleString()} <span className="text-[13px] font-normal text-ink-3">د.م</span>
+                        <Ltr>{formatNumber(currentFinances.netBalance, { signed: true })}</Ltr> <span className="text-[13px] font-normal text-ink-3">د.م</span>
                       </div>
                       <div className="text-[12.5px] text-ink-3 mt-1">
                         {currentFinances.netBalance > 0 ? "فائض مالي يُحول لمالية الجمعية" : currentFinances.netBalance < 0 ? "عجز مالي يغطى من الجمعية" : "ميزانية متوازنة تماماً"}
@@ -651,7 +652,7 @@ export default function ActivityWorkspace() {
                           </span>
                         </div>
                         <p className="text-[13px] text-primary-800 mt-1 leading-relaxed max-w-2xl">
-                          يتم احتساب وربط صافي هذا النشاط ({currentFinances.netBalance >= 0 ? `فائض +${currentFinances.netBalance.toLocaleString()} د.م` : `عجز ${currentFinances.netBalance.toLocaleString()} د.م`}) تلقائياً ومباشرة مع القيود المحاسبية ورصيد الصندوق للجمعية بدون الحاجة لأي تصدير يدوي.
+                          يتم احتساب وربط صافي هذا النشاط ({currentFinances.netBalance >= 0 ? `فائض ${formatMoney(currentFinances.netBalance)}` : `عجز ${formatMoney(Math.abs(currentFinances.netBalance))}`}) تلقائياً ومباشرة مع القيود المحاسبية ورصيد الصندوق للجمعية بدون الحاجة لأي تصدير يدوي.
                         </p>
                       </div>
                     </div>
@@ -683,15 +684,15 @@ export default function ActivityWorkspace() {
                       <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary-600 shrink-0" />
                       <span className="font-medium">
                         القيد المالي المباشر: {currentFinances.netBalance > 0 
-                          ? `مقيد آلياً كـ [فائض إيرادات أنشطة +${currentFinances.netBalance.toLocaleString()} د.م]`
+                          ? `مقيد آلياً كـ [فائض إيرادات أنشطة ${formatMoney(currentFinances.netBalance)}]`
                           : currentFinances.netBalance < 0 
-                          ? `مقيد آلياً كـ [تغطية عجز أنشطة ${Math.abs(currentFinances.netBalance).toLocaleString()} د.م]`
+                          ? `مقيد آلياً كـ [تغطية عجز أنشطة ${formatMoney(Math.abs(currentFinances.netBalance))}]`
                           : `ميزانية متوازنة ومضبوطة بالكامل (0 د.م)`
                         }
                       </span>
                     </div>
                     <div className="text-[12.5px] text-primary-700 font-mono">
-                      (مساهمات: +{currentFinances.totalCollected.toLocaleString()} د.م | مصاريف: -{currentFinances.totalSpent.toLocaleString()} د.م)
+                      (مساهمات: {formatMoney(currentFinances.totalCollected)} | مصاريف: {formatMoney(currentFinances.totalSpent)})
                     </div>
                   </div>
                 </div>

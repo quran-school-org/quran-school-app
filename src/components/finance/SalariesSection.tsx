@@ -4,6 +4,7 @@
  */
 import { Plus, Edit3, Trash2, CheckCircle, AlertTriangle, Briefcase, RefreshCw } from "lucide-react";
 import { useFinance } from "./FinanceContext";
+import { formatMoney, formatNumber } from "../../utils/format";
 
 export default function SalariesSection() {
   const {
@@ -38,7 +39,7 @@ export default function SalariesSection() {
               <div>
                 <span className="text-[13px] font-bold text-ink-3 block mb-1">إجمالي الرواتب المصروفة</span>
                 <div className="text-2xl font-bold text-primary-800">
-                  {totalPaidSalaries.toLocaleString()} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
+                  {formatNumber(totalPaidSalaries)} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
                 </div>
                 <span className="text-[12.5px] text-primary-600 mt-1 block">تم تحويلها وصرفها بنجاح</span>
               </div>
@@ -51,7 +52,7 @@ export default function SalariesSection() {
               <div>
                 <span className="text-[13px] font-bold text-ink-3 block mb-1">الرواتب المستحقة (قيد الانتظار)</span>
                 <div className="text-2xl font-bold text-gold-700">
-                  {totalPendingSalaries.toLocaleString()} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
+                  {formatNumber(totalPendingSalaries)} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
                 </div>
                 <span className="text-[12.5px] text-gold-600 mt-1 block">مستحقات واجبة الصرف</span>
               </div>
@@ -64,7 +65,7 @@ export default function SalariesSection() {
               <div>
                 <span className="text-[13px] font-medium text-sand-400 block mb-1">مجموع كتلة الأجور والرواتب</span>
                 <div className="text-3xl font-bold text-danger-300">
-                  {(totalPaidSalaries + totalPendingSalaries).toLocaleString()} <span className="text-[13px] font-normal">د.م</span>
+                  {formatNumber(totalPaidSalaries + totalPendingSalaries)} <span className="text-[13px] font-normal">د.م</span>
                 </div>
                 <span className="text-[12.5px] text-ink-3 mt-1 block">للأساتذة والأطر والخدمات</span>
               </div>
@@ -150,7 +151,7 @@ export default function SalariesSection() {
                           {s.month} {s.year}
                         </td>
                         <td className="p-3 font-bold text-ink text-sm">
-                          {s.amount.toLocaleString()} د.م
+                          {formatMoney(s.amount)}
                         </td>
                         <td className="p-3">
                           <span className={`px-2.5 py-1 rounded-full text-[11.5px] font-bold ${
