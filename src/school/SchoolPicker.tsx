@@ -69,7 +69,7 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <span aria-hidden="true" className="w-9 h-9 rounded-lg bg-night text-gold inline-flex items-center justify-center shrink-0"><Building className="w-4 h-4" strokeWidth={1.75} /></span>
-                    <span className="text-[15px] font-semibold text-ink truncate">{school.name || school.id}</span>
+                    <span className="text-[15px] font-semibold text-ink truncate" title={school.name || school.id}>{school.name || school.id}</span>
                   </span>
                   <span className="text-[12.5px] text-ink-3 shrink-0" dir="ltr">{isMember ? school.id : `${school.id} • لست عضواً`}</span>
                 </button>

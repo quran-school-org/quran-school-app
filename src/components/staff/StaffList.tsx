@@ -122,7 +122,7 @@ export default function StaffList() {
                         </span>
                         <a
                           href={`tel:${staff.phone}`}
-                          className="font-mono font-bold text-ink hover:text-primary-700 hover:underline"
+                          className="font-mono font-bold text-ink hover:text-primary-700 hover:underline py-3.5 -my-3.5"
                         >
                           {staff.phone}
                         </a>
@@ -138,7 +138,7 @@ export default function StaffList() {
                             href={`https://wa.me/${staff.whatsapp.replace(/[^0-9]/g, "")}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-mono font-bold text-primary-700 hover:underline flex items-center gap-1"
+                            className="font-mono font-bold text-primary-700 hover:underline flex items-center gap-1 py-3.5 -my-3.5"
                           >
                             <span>{staff.whatsapp}</span>
                           </a>
@@ -153,7 +153,7 @@ export default function StaffList() {
                           </span>
                           <a
                             href={`mailto:${staff.email}`}
-                            className="font-mono truncate max-w-[140px] text-ink-2 hover:underline"
+                            className="font-mono truncate max-w-[140px] text-ink-2 hover:underline py-3.5 -my-3.5"
                             title={staff.email}
                           >
                             {staff.email}

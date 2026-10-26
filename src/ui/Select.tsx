@@ -413,7 +413,7 @@ export function Select(props: SelectProps) {
         )}
       >
         <span className="grid flex-1 min-w-0">
-          <span className={cx("col-start-1 row-start-1 truncate", !selected && "text-ink-3")}>{display}</span>
+          <span className={cx("col-start-1 row-start-1 truncate", !selected && "text-ink-3")} title={selected ? selected.label : undefined}>{display}</span>
           {fit &&
             options.map((o) => (
               <span key={o.value} aria-hidden="true" className="col-start-1 row-start-1 invisible h-0 overflow-hidden whitespace-nowrap">

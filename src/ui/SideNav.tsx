@@ -34,7 +34,7 @@ export interface SideNavProps {
 
 export function SideNav({ brand, groups, active, onSelect, footer, navId, className, headerExtra }: SideNavProps) {
   return (
-    <nav data-nav={navId} aria-label="القائمة الرئيسية" className={cx("relative flex flex-col gap-[22px] [@media(max-height:900px)]:gap-3 bg-night text-night-text px-4 pt-6 [@media(max-height:900px)]:pt-4 pb-5 overflow-hidden", className)}>
+    <nav data-nav={navId} aria-label="القائمة الرئيسية" className={cx("relative flex flex-col gap-[22px] [@media(max-height:900px)]:gap-3 bg-night text-night-text px-4 pt-6 [@media(max-height:900px)]:pt-4 pb-5", className)}>
       <div className="absolute bottom-0 inset-x-0 h-80 pointer-events-none">
         <GeometricPattern size={56} opacity={0.13} fade="top" />
       </div>

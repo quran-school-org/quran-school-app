@@ -295,7 +295,7 @@ export default function GeneralSettingsSection() {
                   <span>الرسوم المرجعية والتفضيلات</span>
                 </h4>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label htmlFor="gs-subscriptionFee" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رسوم الاشتراك الشهري المرجعية</label>
                     <input
@@ -321,7 +321,7 @@ export default function GeneralSettingsSection() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label htmlFor="gs-openingYear" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">سنة الافتتاح الرسمي (بداية الفوترة)</label>
                     <input
@@ -349,36 +349,37 @@ export default function GeneralSettingsSection() {
 
                 <div className="space-y-1.5" role="group" aria-labelledby="gs-feeOverridesLabel">
                   <span id="gs-feeOverridesLabel" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تعريفات خاصة لبعض الأشهر (عروض وتخفيضات)</span>
+                  {/* Sous 640 px : année + mois sur une ligne, montant + suppression sur la suivante (le mois restait illisible à 390 px). */}
                   {feeOverrides.map((o, i) => (
-                    <div key={i} className="grid grid-cols-7 gap-2 items-center">
+                    <div key={i} className="grid grid-cols-6 sm:grid-cols-7 gap-2 items-center">
                       <input
                         type="number"
-                        aria-label="السنة"
                         value={o.year}
                         onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, year: Number(e.target.value) } : x)))}
-                        className="col-span-2 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
+                        aria-label="السنة"
+                        className="col-span-3 sm:col-span-2 min-h-11 sm:min-h-0 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
                       />
                       <Select
                         value={o.month}
                         onChange={(v) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, month: v } : x)))}
                         aria-label="الشهر"
                         size="sm"
-                        className="col-span-2"
+                        className="col-span-3 sm:col-span-2"
                       >
                         {MONTHS_AR.map((m) => <option key={m} value={m}>{m}</option>)}
                       </Select>
                       <input
                         type="number"
-                        aria-label="المبلغ (د.م)"
                         value={o.amount}
                         onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, amount: Number(e.target.value) } : x)))}
-                        className="col-span-2 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
+                        aria-label="المبلغ (د.م)"
+                        className="col-span-4 sm:col-span-2 min-h-11 sm:min-h-0 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
                       />
                       <button
                         type="button"
                         onClick={() => setFeeOverrides((prev) => prev.filter((_, j) => j !== i))}
-                        className="p-2 text-danger-600 hover:bg-danger-50 border border-danger-200/60 rounded-xl transition cursor-pointer flex items-center justify-center"
-                        title="حذف"
+                        className="col-span-2 sm:col-span-1 min-h-11 sm:min-h-0 p-2 text-danger-600 hover:bg-danger-50 border border-danger-200/60 rounded-xl transition cursor-pointer flex items-center justify-center"
+                        title="حذف التعريفة الخاصة" aria-label="حذف التعريفة الخاصة"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -483,6 +484,9 @@ export default function GeneralSettingsSection() {
                   <button
                     type="button"
                     onClick={() => setAllowSelfRegistration(!allowSelfRegistration)}
+                    role="switch"
+                    aria-checked={allowSelfRegistration}
+                    aria-label="السماح بالتسجيل الذاتي للطلاب الجدد"
                     className="text-primary-600 hover:text-primary-700 transition"
                   >
                     {allowSelfRegistration ? (
@@ -501,6 +505,9 @@ export default function GeneralSettingsSection() {
                   <button
                     type="button"
                     onClick={() => setShowStampOnReceipts(!showStampOnReceipts)}
+                    role="switch"
+                    aria-checked={showStampOnReceipts}
+                    aria-label="إظهار خاتم وتوقيع الإدارة على وصولات الدفع"
                     className="text-primary-600 hover:text-primary-700 transition"
                   >
                     {showStampOnReceipts ? (

@@ -429,7 +429,7 @@ export default function UsersSection() {
                             type="button"
                             onClick={() => handleResetPassword(user)}
                             className="text-ink-3 hover:text-primary-700 transition cursor-pointer p-0.5 rounded"
-                            title="إعادة تعيين كلمة المرور"
+                            title="إعادة تعيين كلمة المرور" aria-label="إعادة تعيين كلمة المرور"
                           >
                             <KeyRound className="w-3 h-3 text-primary-600" />
                           </button>
@@ -476,7 +476,7 @@ export default function UsersSection() {
                       <button
                         onClick={() => openUserModal(user)}
                         className="p-2 text-primary-600 hover:bg-primary-50 border border-primary-200/60 rounded-xl transition cursor-pointer"
-                        title="تعديل الحساب والصلاحيات"
+                        title="تعديل الحساب والصلاحيات" aria-label="تعديل الحساب والصلاحيات"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -489,7 +489,7 @@ export default function UsersSection() {
                           }
                         }}
                         className="p-2 text-danger-600 hover:bg-danger-50 border border-danger-200/60 rounded-xl transition cursor-pointer"
-                        title="حذف الحساب نهائياً"
+                        title="حذف الحساب نهائياً" aria-label="حذف الحساب نهائياً"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

@@ -236,8 +236,6 @@ test.describe.serial("fenêtres sur Modal et champs nommés (D98)", () => {
     await loginAs(page, ACCOUNTS.directeur);
     const problems: string[] = [];
     for (const tab of await desktopTabs(page)) {
-      // Cartes d'identité : écran du lot L1 (champs de sélection et curseur d'échelle), balayé quand L1 sera fusionné.
-      if (tab === "id-cards-lab") continue;
       await openTab(page, tab);
       await page.waitForTimeout(600);
       const main = page.locator("main");

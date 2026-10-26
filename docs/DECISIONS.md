@@ -2546,6 +2546,37 @@ là-bas (R-06).
   suit toujours le thème actif ; les documents imprimés ne changent pas.
 - **Retour arrière** : `git revert` du commit (retour à l'émeraude de D88).
 
+### D97. Lot L1 de l'audit UX/UI : tiroir mobile, cibles tactiles, contraste, noms accessibles
+- **Contexte** : l'audit UX/UI de l'interface arabe (26/10/2026, constats 1, 2, 6,
+  7, 8, 12 et 13) a relevé : tiroir mobile rogné (le `<nav>` en `overflow-hidden`
+  était écrasé à la hauteur de l'écran, « خروج » et la carte de statistiques
+  inatteignables sur petit téléphone), nom de l'école sous le bouton « × »
+  (`pt-16` écrasé par `pt-6`), listes déroulantes illisibles à 390 px, gris
+  secondaire à 4,0 à 4,4:1, cibles tactiles sous 24 px, boutons icône sans nom.
+- **Décision** :
+  - `SideNav` perd `overflow-hidden` : le tiroir (et le menu du bureau) défile ;
+    la largeur du bouton fermer (44 px, au lieu de 40) est réservée en fin de la
+    ligne de marque par une cale (`data-drawer-close-gap`), le `pt-16` disparaît.
+  - `--color-ink-3` passe de `#6B7080` à `#626777` (≥ 4,5:1 sur le fond de chaque
+    thème, sur `sunken`, `quiet`, `surface`, `surface-2` ; test dans
+    `themes.test.ts`). `sand-500` (même valeur, jamais utilisé en texte) et les
+    documents imprimés ne changent pas.
+  - `IconButton size="sm"` garde ses 36 px visibles ; un pseudo-élément
+    transparent porte la zone de toucher à 44 px. Étiquettes ou marges
+    négatives autour des cases des cartes d'identité et des liens du personnel
+    (zone de 44 px sans agrandir les lignes) ; curseur d'échelle de 24 px de haut.
+  - Carte du hifz : sous 640 px ou avec un pointeur tactile, la zone défilante
+    passe de 680 à 1480 px, soit des barres d'environ 24 px au lieu de 9 px. Le
+    bureau ne change pas.
+  - Paramètres : tarifications spéciales sur deux lignes sous 640 px, grilles à
+    2 colonnes à une colonne ; `title` sur le nom d'école tronqué (barre du haut,
+    choix d'école) et sur la valeur des `Select` ; `aria-label` sur les boutons
+    icône hors fenêtres modales (les fenêtres relèvent des lots L2 et L3).
+- **Retour arrière** : `git revert` des commits du lot, ou, séparément, remettre
+  `#6B7080` pour `--color-ink-3`, rétablir `overflow-hidden` sur le `<nav>` de
+  `SideNav` (le défilement du tiroir disparaît), retirer la classe `after:` de
+  `IconButton` et `min-w-[1480px]` de `HifzMap`.
+
 ### D98. Audit UX/UI, lots L2 et L3 : fenêtres sur `Modal`, champs nommés
 - **Contexte** : l'audit UX/UI du 26/10/2026 (constats 3, 4, 6, 9, 10) a relevé 12 fenêtres
   écrites à la main (`fixed inset-0 z-50`) au lieu de `src/ui/Modal.tsx` : pas d'Échap, pas de
