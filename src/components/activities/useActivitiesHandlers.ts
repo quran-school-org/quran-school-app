@@ -6,6 +6,7 @@ import React, {  } from "react";
 import { ActivityTrip, ActivityParticipant, ActivityExpense, ParticipantType } from "../../types";
 import type { useActivitiesForms } from "./useActivitiesForms";
 import type { useActivitiesData } from "./useActivitiesData";
+import { formatMoney } from "../../utils/format";
 
 export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> & ReturnType<typeof useActivitiesData>) {
   const {
@@ -381,7 +382,7 @@ export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> &
     const { totalCollected, totalSpent, netBalance } = currentFinances;
 
     onSyncToFinance(currentActivity, netBalance, totalCollected, totalSpent);
-    alert(`✅ الربط المالي التلقائي نشط ومباشر!\n\nتم التحقق من مزامنة نشاط "${currentActivity.title}" لحظياً مع قيود المحاسبة والمالية الجمعوية:\n• إجمالي المساهمات المحصلة: ${totalCollected.toLocaleString()} د.م\n• إجمالي المصاريف الفعلية: ${totalSpent.toLocaleString()} د.م\n• الصافي المقيد تلقائياً: ${netBalance > 0 ? `فائض +${netBalance.toLocaleString()} د.م` : netBalance < 0 ? `عجز ${netBalance.toLocaleString()} د.م` : "متوازن (0 د.م)"}`);
+    alert(`✅ الربط المالي التلقائي نشط ومباشر!\n\nتم التحقق من مزامنة نشاط "${currentActivity.title}" لحظياً مع قيود المحاسبة والمالية الجمعوية:\n• إجمالي المساهمات المحصلة: ${formatMoney(totalCollected)}\n• إجمالي المصاريف الفعلية: ${formatMoney(totalSpent)}\n• الصافي المقيد تلقائياً: ${netBalance > 0 ? `فائض +${formatMoney(netBalance)}` : netBalance < 0 ? `عجز ${formatMoney(netBalance)}` : "متوازن (0 د.م)"}`);
   };
 
   return {

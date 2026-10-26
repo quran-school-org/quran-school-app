@@ -4,6 +4,7 @@
  */
 import { Wallet, Building2, Plus, Edit3, Trash2, Receipt } from "lucide-react";
 import { useFinance } from "./FinanceContext";
+import { formatMoney, formatNumber } from "../../utils/format";
 
 export default function ExpensesSection() {
   const {
@@ -38,7 +39,7 @@ export default function ExpensesSection() {
               <div>
                 <span className="text-[13px] font-bold text-ink-3 block mb-1">مصاريف الصندوق النقدي</span>
                 <div className="text-2xl font-bold text-gold-700">
-                  {cashBoxExpenses.toLocaleString()} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
+                  {formatNumber(cashBoxExpenses)} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
                 </div>
                 <span className="text-[12.5px] text-ink-3 mt-1 block">نفقات المشتريات النقدية الصغرى</span>
               </div>
@@ -51,7 +52,7 @@ export default function ExpensesSection() {
               <div>
                 <span className="text-[13px] font-bold text-ink-3 block mb-1">مصاريف الحساب البنكي</span>
                 <div className="text-2xl font-bold text-primary-800">
-                  {bankAccountExpenses.toLocaleString()} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
+                  {formatNumber(bankAccountExpenses)} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
                 </div>
                 <span className="text-[12.5px] text-ink-3 mt-1 block">الفواتير والشيكات البنكية</span>
               </div>
@@ -64,7 +65,7 @@ export default function ExpensesSection() {
               <div>
                 <span className="text-[13px] font-medium text-danger-200 block mb-1">إجمالي نفقات التشغيل</span>
                 <div className="text-3xl font-bold text-danger-200">
-                  {totalExpensesAmount.toLocaleString()} <span className="text-[13px] font-normal">د.م</span>
+                  {formatNumber(totalExpensesAmount)} <span className="text-[13px] font-normal">د.م</span>
                 </div>
                 <span className="text-[12.5px] text-danger-200/70 mt-1 block">بدون احتساب كتلة الأجور</span>
               </div>
@@ -133,7 +134,7 @@ export default function ExpensesSection() {
                           </span>
                         </td>
                         <td className="p-3 font-bold text-danger-700 text-sm">
-                          {exp.amount.toLocaleString()} د.م
+                          {formatMoney(exp.amount)}
                         </td>
                         <td className="p-3">
                           <span className={`px-2.5 py-1 rounded-full text-[11.5px] font-bold ${

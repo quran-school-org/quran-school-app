@@ -3,6 +3,7 @@
  * paramètres de l'école (nom, logo, cachet). Toute donnée est échappée (C-01).
  */
 import { escapeHtml } from "../security/html";
+import { formatMoney } from "../utils/format";
 import type { Payment, Student, SystemSettings } from "../types";
 import { EMBLEM_SVG } from "./docStyles";
 
@@ -41,7 +42,7 @@ export function receiptHtml(p: Payment, stud: Student, systemSettings: SystemSet
           <div class="row"><span>الفترة المستحقة</span><span>شهر ${escapeHtml(p.month)} ${escapeHtml(p.year)}</span></div>
           <div class="row"><span>طريقة الأداء</span><span>${escapeHtml(p.paymentMethod || "نقداً")}</span></div>
           ${p.notes ? `<div class="note">ملاحظات: ${escapeHtml(p.notes)}</div>` : ""}
-          <div class="amount"><span>المبلغ المستلم</span><strong>${escapeHtml(p.amount)} ${escapeHtml(systemSettings?.currency || "درهم")}</strong></div>
+          <div class="amount"><span>المبلغ المستلم</span><strong>${escapeHtml(formatMoney(p.amount))}</strong></div>
         </section>
         <footer class="receipt-foot">
           <span>شكرًا لكم على ثقتكم والتزامكم • ${escapeHtml(schoolName)}</span>

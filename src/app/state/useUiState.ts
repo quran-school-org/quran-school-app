@@ -198,9 +198,13 @@ export function useUiState() {
   // Grade Form state
   const [gradeStudentId, setGradeStudentId] = useState("");
   const [gradePortion, setGradePortion] = useState("");
-  const [gradeMemorization, setGradeMemorization] = useState(18);
-  const [gradeTajweed, setGradeTajweed] = useState(18);
-  const [gradeOverall, setGradeOverall] = useState<"ممتاز" | "جيد جداً" | "جيد" | "مقبول">("ممتاز");
+  // Notes vides à l'ouverture (UI-11) : saisies au clavier, jamais pré-remplies.
+  const [gradeMemorization, setGradeMemorization] = useState("");
+  const [gradeTajweed, setGradeTajweed] = useState("");
+  // Mention vide tant qu'elle n'est ni proposée (d'après les notes) ni choisie.
+  const [gradeOverall, setGradeOverall] = useState<"ممتاز" | "جيد جداً" | "جيد" | "مقبول" | "">("");
+  // Vrai quand l'enseignant a choisi lui-même la mention : elle n'est plus recalculée.
+  const [gradeOverallManual, setGradeOverallManual] = useState(false);
   const [gradeNotes, setGradeNotes] = useState("");
 
   // Payment search and filter states
@@ -221,7 +225,7 @@ export function useUiState() {
   const [paymentFormYear, setPaymentFormYear] = useState<number>(new Date().getFullYear());
   const [paymentFormMonth, setPaymentFormMonth] = useState<string>(MONTHS_AR[new Date().getMonth()]);
   const [paymentFormAmount, setPaymentFormAmount] = useState<number>(70);
-  const [paymentFormStatus, setPaymentFormStatus] = useState<"مدفوع" | "غير مدفوع">("غير مدفوع");
+  const [paymentFormStatus, setPaymentFormStatus] = useState<"مدفوع" | "غير مدفوع">("مدفوع");
   const [paymentFormDate, setPaymentFormDate] = useState("");
   const [paymentFormMethod, setPaymentFormMethod] = useState<"نقداً" | "تحويل بنكي" | "شيك">("نقداً");
   const [paymentFormReceiptNo, setPaymentFormReceiptNo] = useState("");
@@ -370,6 +374,8 @@ export function useUiState() {
     setGradeTajweed,
     gradeOverall,
     setGradeOverall,
+    gradeOverallManual,
+    setGradeOverallManual,
     gradeNotes,
     setGradeNotes,
     paymentSearchQuery,

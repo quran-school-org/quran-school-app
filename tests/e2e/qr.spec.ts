@@ -36,7 +36,8 @@ test("codes QR générés localement, sans appel à qrserver", async ({ page }) 
 
   // Badge du personnel.
   await openTab(page, "teachers");
-  await page.locator('[data-action="open-staff-badge"]').first().click();
+  await page.getByRole("button", { name: /المزيد من الإجراءات/ }).first().click();
+  await page.locator('[role="menuitem"][data-action="open-staff-badge"]').click();
   await expect(page.locator('[data-modal="staff-badge"] svg[aria-label^="رمز QR"]')).toBeVisible();
   await page.locator('[data-modal="staff-badge"]').getByRole("button").first().click();
   await expect(page.locator('[data-modal="staff-badge"]')).toHaveCount(0);

@@ -4,6 +4,8 @@
  */
 import { Printer, FileText, X } from "lucide-react";
 import { useFinance } from "./FinanceContext";
+import { formatMoney, formatNumber } from "../../utils/format";
+import { Ltr } from "../../ui";
 
 export default function PrintReportModal() {
   const {
@@ -126,7 +128,7 @@ export default function PrintReportModal() {
                       <th className="border border-line-strong p-2">الباب / مصدر الدخل</th>
                       <th className="border border-line-strong p-2">نوع المداخيل</th>
                       <th className="border border-line-strong p-2">توضيحات إضافية</th>
-                      <th className="border border-line-strong p-2 text-left">المبلغ بالدرهم (MAD)</th>
+                      <th className="border border-line-strong p-2 text-left">المبلغ (د.م)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -135,7 +137,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">اشتراكات دراسية</td>
                       <td className="border border-line-strong p-2 text-ink-2">مجموع المقبوضات الشهرية من الأولياء</td>
                       <td className="border border-line-strong p-2 font-bold text-primary-900 text-left">
-                        {totalStudentFeesAmount.toLocaleString()} د.م
+                        {formatMoney(totalStudentFeesAmount)}
                       </td>
                     </tr>
                     <tr>
@@ -143,7 +145,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">تبرعات عينية ونقدية</td>
                       <td className="border border-line-strong p-2 text-ink-2">دعم المحسنين لتجهيز المدرسة والقرآنيات</td>
                       <td className="border border-line-strong p-2 font-bold text-primary-900 text-left">
-                        {filteredOtherIncomes.filter(i => i.category === "تبرعات").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                        {formatMoney(filteredOtherIncomes.filter(i => i.category === "تبرعات").reduce((s, x) => s + x.amount, 0))}
                       </td>
                     </tr>
                     <tr>
@@ -151,7 +153,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">دعم عمومي</td>
                       <td className="border border-line-strong p-2 text-ink-2">منح الجماعة والشركاء المؤسساتيين</td>
                       <td className="border border-line-strong p-2 font-bold text-primary-900 text-left">
-                        {filteredOtherIncomes.filter(i => i.category === "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                        {formatMoney(filteredOtherIncomes.filter(i => i.category === "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0))}
                       </td>
                     </tr>
                     <tr>
@@ -159,7 +161,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">أنشطة ورحلات</td>
                       <td className="border border-line-strong p-2 text-ink-2">مساهمات المشاركين المحصلة آلياً</td>
                       <td className="border border-line-strong p-2 font-bold text-primary-900 text-left">
-                        {totalActivityContributions.toLocaleString()} د.م
+                        {formatMoney(totalActivityContributions)}
                       </td>
                     </tr>
                     <tr>
@@ -167,7 +169,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">أنشطة ومسابقات</td>
                       <td className="border border-line-strong p-2 text-ink-2">مشاركات ومداخيل متنوعة</td>
                       <td className="border border-line-strong p-2 font-bold text-primary-900 text-left">
-                        {filteredOtherIncomes.filter(i => i.category !== "تبرعات" && i.category !== "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                        {formatMoney(filteredOtherIncomes.filter(i => i.category !== "تبرعات" && i.category !== "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0))}
                       </td>
                     </tr>
                     <tr className="bg-primary-50 font-bold text-primary-950">
@@ -175,7 +177,7 @@ export default function PrintReportModal() {
                         مجموع الإيرادات والمداخيل الكلية (أ)
                       </td>
                       <td className="border border-line-strong p-2 text-left text-sm">
-                        {grossTotalIncome.toLocaleString()} د.م
+                        {formatMoney(grossTotalIncome)}
                       </td>
                     </tr>
                   </tbody>
@@ -202,7 +204,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">كتلة الأجور</td>
                       <td className="border border-line-strong p-2 text-ink-2">تعويضات التأطير والتحفيظ لشيوخ المدرسة</td>
                       <td className="border border-line-strong p-2 font-bold text-danger-900 text-left">
-                        {filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType === "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                        {formatMoney(filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType === "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0))}
                       </td>
                     </tr>
                     <tr>
@@ -210,7 +212,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">كتلة الأجور</td>
                       <td className="border border-line-strong p-2 text-ink-2">التعويضات الإدارية ونظافة المقر</td>
                       <td className="border border-line-strong p-2 font-bold text-danger-900 text-left">
-                        {filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType !== "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                        {formatMoney(filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType !== "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0))}
                       </td>
                     </tr>
                     <tr>
@@ -218,7 +220,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">أنشطة ورحلات</td>
                       <td className="border border-line-strong p-2 text-ink-2">كراء حافلات، إطعام وتأطير الأنشطة</td>
                       <td className="border border-line-strong p-2 font-bold text-danger-900 text-left">
-                        {totalActivityExpenses.toLocaleString()} د.م
+                        {formatMoney(totalActivityExpenses)}
                       </td>
                     </tr>
                     <tr>
@@ -226,7 +228,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">فواتير وخدمات</td>
                       <td className="border border-line-strong p-2 text-ink-2">استهلاك المقر الإداري وقاعات التحفيظ</td>
                       <td className="border border-line-strong p-2 font-bold text-danger-900 text-left">
-                        {filteredExpenses.filter(e => e.category === "فواتير وخدمات").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                        {formatMoney(filteredExpenses.filter(e => e.category === "فواتير وخدمات").reduce((s, x) => s + x.amount, 0))}
                       </td>
                     </tr>
                     <tr>
@@ -234,7 +236,7 @@ export default function PrintReportModal() {
                       <td className="border border-line-strong p-2">تشغيل وتجهيز</td>
                       <td className="border border-line-strong p-2 text-ink-2">دروع التكريم، مستلزمات مكتبية وصيانة أجهزة</td>
                       <td className="border border-line-strong p-2 font-bold text-danger-900 text-left">
-                        {filteredExpenses.filter(e => e.category !== "فواتير وخدمات").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                        {formatMoney(filteredExpenses.filter(e => e.category !== "فواتير وخدمات").reduce((s, x) => s + x.amount, 0))}
                       </td>
                     </tr>
                     <tr className="bg-danger-50 font-bold text-danger-950">
@@ -242,7 +244,7 @@ export default function PrintReportModal() {
                         مجموع المصاريف والنفقات الكلية (ب)
                       </td>
                       <td className="border border-line-strong p-2 text-left text-sm">
-                        {grossTotalExpenses.toLocaleString()} د.م
+                        {formatMoney(grossTotalExpenses)}
                       </td>
                     </tr>
                   </tbody>
@@ -260,7 +262,7 @@ export default function PrintReportModal() {
                   </p>
                 </div>
                 <div className="text-2xl font-bold text-primary-900 dir-ltr">
-                  {netBalance >= 0 ? `+${netBalance.toLocaleString()}` : netBalance.toLocaleString()} د.م
+                  <Ltr>{formatNumber(netBalance, { signed: true })}</Ltr> د.م
                 </div>
               </div>
 
