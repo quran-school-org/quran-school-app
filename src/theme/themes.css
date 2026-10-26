@@ -37,6 +37,15 @@
   --color-gold-light: #FFE08A;
   --color-gold-glow: #FFF7DD;
   --color-gold-pale: #FFF2C7;
+  --color-ink: #1A1F2B;
+  --color-ink-2: #4A5060;
+  --color-ink-3: #626777;
+  --color-sand-500: #6B7080;
+  --color-sand-600: #4A5060;
+  --color-sand-700: #3A4050;
+  --color-sand-800: #2A3040;
+  --color-sand-900: #1A1F2B;
+  --color-sand-950: #12161F;
   --shadow-toast: 0 10px 30px rgba(16, 36, 70, 0.25);
   --shadow-pop: 0 12px 32px rgba(16, 36, 70, 0.16);
 }
@@ -76,6 +85,15 @@
   --color-gold-light: #F7E290;
   --color-gold-glow: #FCF8DF;
   --color-gold-pale: #FBF3CA;
+  --color-ink: #15221F;
+  --color-ink-2: #445450;
+  --color-ink-3: #5A6B67;
+  --color-sand-500: #647571;
+  --color-sand-600: #445450;
+  --color-sand-700: #344440;
+  --color-sand-800: #233430;
+  --color-sand-900: #15221F;
+  --color-sand-950: #0F1816;
   --shadow-toast: 0 10px 30px rgba(14, 59, 46, 0.25);
   --shadow-pop: 0 12px 32px rgba(14, 59, 46, 0.16);
 }
@@ -115,6 +133,15 @@
   --color-gold-light: #FFE08A;
   --color-gold-glow: #FFF7DD;
   --color-gold-pale: #FFF2C7;
+  --color-ink: #192120;
+  --color-ink-2: #485352;
+  --color-ink-3: #5F6A69;
+  --color-sand-500: #687372;
+  --color-sand-600: #485352;
+  --color-sand-700: #384342;
+  --color-sand-800: #283332;
+  --color-sand-900: #192120;
+  --color-sand-950: #111817;
   --shadow-toast: 0 10px 30px rgba(30, 58, 52, 0.25);
   --shadow-pop: 0 12px 32px rgba(30, 58, 52, 0.16);
 }
@@ -154,6 +181,15 @@
   --color-gold-light: #FFE99B;
   --color-gold-glow: #FFFAE2;
   --color-gold-pale: #FEF6CF;
+  --color-ink: #18221E;
+  --color-ink-2: #47544F;
+  --color-ink-3: #5D6A66;
+  --color-sand-500: #677470;
+  --color-sand-600: #47544F;
+  --color-sand-700: #37443F;
+  --color-sand-800: #27342F;
+  --color-sand-900: #18221E;
+  --color-sand-950: #111815;
   --shadow-toast: 0 10px 30px rgba(11, 42, 30, 0.25);
   --shadow-pop: 0 12px 32px rgba(11, 42, 30, 0.16);
 }
@@ -193,6 +229,15 @@
   --color-gold-light: #FEE5A4;
   --color-gold-glow: #FFF8E4;
   --color-gold-pale: #FEF4D3;
+  --color-ink: #1C2119;
+  --color-ink-2: #4C5349;
+  --color-ink-3: #626A60;
+  --color-sand-500: #6B7369;
+  --color-sand-600: #4C5349;
+  --color-sand-700: #3C4339;
+  --color-sand-800: #2C3329;
+  --color-sand-900: #1C2119;
+  --color-sand-950: #141811;
   --shadow-toast: 0 10px 30px rgba(46, 58, 31, 0.25);
   --shadow-pop: 0 12px 32px rgba(46, 58, 31, 0.16);
 }

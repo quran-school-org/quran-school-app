@@ -59,6 +59,7 @@ export default function ActivityPrintModal() {
       {/* Printable Document Sheet Container */}
       <div
         id="printable-activity-sheet"
+        data-theme="bleu-nuit"
         className="p-8 sm:p-12 space-y-6 bg-white text-ink font-sans print:p-0 print:m-0 print:space-y-4 text-right"
         dir="rtl"
       >

@@ -704,7 +704,7 @@ export default function ActivityWorkspace() {
         ) : (
           <div className="bg-surface rounded-2xl border border-line p-12 text-center">
             <Compass className="w-12 h-12 text-sand-400 mx-auto mb-3" />
-            <h3 className="font-bold text-primary-2 text-base">اختر نشاطاً أو رحلة من القائمة</h3>
+            <h3 className="font-bold text-primary-800 text-base">اختر نشاطاً أو رحلة من القائمة</h3>
             <p className="text-[13px] text-ink-3 mt-1 max-w-sm mx-auto">
               يمكنك الاطلاع على تفاصيل البرنامج، تسجيل المشاركين، تتبع المصاريف، وتصدير الصافي إلى المحاسبة
             </p>

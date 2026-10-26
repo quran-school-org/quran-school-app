@@ -115,7 +115,7 @@ export default function IdCardsScreen() {
 
             return (
               <div className="space-y-2">
-                <div className="flex items-center justify-between bg-sand-50 p-2.5 rounded-xl border border-sand-150 text-[13px]">
+                <div className="flex items-center justify-between bg-sand-50 p-2.5 rounded-xl border border-line-soft text-[13px]">
                   <label className="flex items-center gap-2 cursor-pointer font-bold text-ink-2 py-3 -my-3">
                     <input
                       type="checkbox"

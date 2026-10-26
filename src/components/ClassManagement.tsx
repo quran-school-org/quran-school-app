@@ -280,7 +280,7 @@ export default function ClassManagement({
                     </div>
                   )}
 
-                  <div className="flex items-start gap-2 rounded-xl bg-gold-100 text-[#5C4A1E] px-3 py-2.5 text-[13.5px]">
+                  <div className="flex items-start gap-2 rounded-xl bg-gold-100 text-gold-ink px-3 py-2.5 text-[13.5px]">
                     <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
                     <span><span className="sr-only">توقيت وجدول الحلقة: </span>{cls.schedule}</span>
                   </div>

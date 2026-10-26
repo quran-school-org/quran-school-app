@@ -3,6 +3,10 @@
  * en SVG en ligne : il s'affiche à l'écran et s'imprime tel quel (aperçus
  * recopiés dans les fenêtres d'impression). Constat O-05 : plus aucune donnée
  * d'élève ou de membre du personnel n'est envoyée à un service tiers.
+ *
+ * Couleurs en dur VOLONTAIRES (seule exception du garde-fou des hexadécimaux, D101) :
+ * un QR code doit rester sombre sur blanc quel que soit le thème, et il est recopié
+ * tel quel dans des fenêtres d'impression où les variables CSS n'existent pas.
  */
 import { useMemo } from "react";
 import QRCode from "qrcode";

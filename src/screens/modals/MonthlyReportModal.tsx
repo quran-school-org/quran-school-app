@@ -202,7 +202,7 @@ export default function MonthlyReportModal() {
                       </div>
                     </div>
 
-                    <p className="m-0 rounded-xl bg-gold-100 text-[#5C4A1E] p-3 text-[12.5px] leading-relaxed">
+                    <p className="m-0 rounded-xl bg-gold-100 text-gold-ink p-3 text-[12.5px] leading-relaxed">
                       <strong>تنويه نظام الجمعية الحسابي:</strong> تم رصد وإعداد هذا الكشف باستبعاد <strong>أيام الجمعة ({totalFridays} أيام في هذا الشهر)</strong> تماماً من حساب الإحصائيات الحالية ومجمل أيام الدراسة، عملاً بالنظام الداخلي الذي يعتبر يوم الجمعة عطلة رسمية بالجمعية.
                     </p>
 

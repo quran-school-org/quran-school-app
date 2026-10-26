@@ -46,7 +46,7 @@ export default function PrintReportModal() {
         ) : undefined
       }
     >
-      <div className="p-8 sm:p-12 space-y-8 bg-white text-ink font-serif" id="printable-financial-statement">
+      <div className="p-8 sm:p-12 space-y-8 bg-white text-ink font-serif" id="printable-financial-statement" data-theme="bleu-nuit">
         {/* Header */}
         <div className="flex items-center justify-between border-b-2 border-primary-900 pb-6">
           <div className="text-right space-y-1">

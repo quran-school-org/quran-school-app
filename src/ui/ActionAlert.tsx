@@ -6,7 +6,7 @@ export type AlertTone = "danger" | "warn" | "neutral" | "success" | "info";
 
 const T: Record<AlertTone, { box: string; icon: string; title: string; body: string }> = {
   danger: { box: "bg-danger-100", icon: "text-danger", title: "text-danger-800", body: "text-danger-900" },
-  warn: { box: "bg-gold-100", icon: "text-gold-700", title: "text-gold-800", body: "text-[#5C4A1E]" },
+  warn: { box: "bg-gold-100", icon: "text-gold-700", title: "text-gold-800", body: "text-gold-ink" },
   neutral: { box: "bg-quiet", icon: "text-ink-2", title: "text-ink", body: "text-ink-2" },
   success: { box: "bg-success-100", icon: "text-success-700", title: "text-success-700", body: "text-success-800" },
   info: { box: "bg-primary-100", icon: "text-primary", title: "text-primary", body: "text-ink-2" },

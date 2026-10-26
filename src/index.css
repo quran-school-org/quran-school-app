@@ -41,6 +41,10 @@
   --color-line-strong: #D0D3C6;
   --color-line-soft: #E1E3D8;
   --color-line-faint: #E8EAE1;
+  /* Filets spéciaux (états vides en pointillés, survol des boutons contour) et texte brun sur bandeau or */
+  --color-line-dashed: #CFD2C4;
+  --color-line-hover: #B9BDAF;
+  --color-gold-ink: #5C4A1E;
 
   /* Primaire (bleu nuit) */
   --color-primary: #1B3A6B;

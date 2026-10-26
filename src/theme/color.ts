@@ -94,6 +94,22 @@ export function transposeShade(shade: string, from: string, to: string): string 
 }
 
 /**
+ * Teinte un gris : même luminosité et même chroma que `shade` (donc même
+ * contraste), teinte déplacée comme celle de la couleur de base de `from` vers
+ * `to`. Sert aux gris du texte (`ink*`, `sand-500…950`), qui dérivent de la
+ * couleur de la barre latérale sans changer de valeur de gris (D101). Identité
+ * si `to` = `from`.
+ */
+export function tintGray(shade: string, from: string, to: string): string {
+  if (from.toUpperCase() === to.toUpperCase()) return shade.toUpperCase();
+  const s = hexToOklch(shade);
+  const f = hexToOklch(from);
+  const t = hexToOklch(to);
+  const c = f.c > 1e-4 ? s.c * Math.min(1.25, t.c / f.c) : s.c;
+  return oklchToHex({ l: s.l, c, h: (s.h + (t.h - f.h) + 360) % 360 });
+}
+
+/**
  * Éloigne `hex` de `background` (plus clair sur fond sombre, plus sombre sur
  * fond clair), à teinte et chroma constantes, jusqu'au contraste `min`.
  */
