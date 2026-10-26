@@ -2,19 +2,11 @@
  * Fenêtre d'inscription / de modification d'un élève (charte « لوحة الكتّاب »).
  * Mêmes champs, mêmes valeurs et même enregistrement qu'auparavant.
  */
-import { Check, ImagePlus, UserRound, X } from "lucide-react";
+import { ImagePlus, X } from "lucide-react";
 import type { TajweedLevel } from "../../types";
 import { useApp } from "../../app/AppContext";
-import { Button, CheckboxRow, FormField, Input, Modal, Select, Textarea, cx } from "../../ui";
-
-const PRESETS = [
-  { name: "طالب 1", url: "https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=150" },
-  { name: "طالب 2", url: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=150" },
-  { name: "طالب 3", url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150" },
-  { name: "طالبة 1", url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150" },
-  { name: "طالبة 2", url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" },
-  { name: "طالبة 3", url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150" },
-];
+import { StudentAvatar } from "../../utils/studentAvatar";
+import { Button, CheckboxRow, FormField, InitialAvatar, Input, Modal, Select, Textarea, cx } from "../../ui";
 
 export default function StudentFormModal() {
   const {
@@ -49,7 +41,11 @@ export default function StudentFormModal() {
           <legend className="px-1 text-[14px] font-semibold text-ink">صورة الطالب الشخصية</legend>
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <div className="relative w-[72px] h-[72px] rounded-full border-2 border-gold overflow-hidden shrink-0 bg-sunken flex items-center justify-center">
-              {formPhoto ? <img src={formPhoto} alt="معاينة صورة الطالب" className="w-full h-full object-cover" /> : <UserRound className="w-8 h-8 text-ink-3" strokeWidth={1.5} aria-hidden="true" />}
+              <StudentAvatar
+                student={{ photo: formPhoto, fullName: formFullName, gender: formGender }}
+                alt="معاينة صورة الطالب"
+                fallbackIcon={<InitialAvatar name={formFullName} size={68} />}
+              />
             </div>
             {formPhoto && (
               <Button size="xs" variant="danger" onClick={() => setFormPhoto("")} icon={<X className="w-3.5 h-3.5" />}>إزالة الصورة</Button>
@@ -60,7 +56,7 @@ export default function StudentFormModal() {
                 onDragOver={handleStudentDrag}
                 onDragLeave={handleStudentDrag}
                 onDrop={handleStudentDrop}
-                className={cx("border-[1.5px] border-dashed rounded-xl p-3 text-center transition-colors", studentDragActive ? "border-primary bg-primary-50" : "border-[#CFD2C4] bg-white hover:border-ink-4")}
+                className={cx("border-[1.5px] border-dashed rounded-xl p-3 text-center transition-colors", studentDragActive ? "border-primary bg-primary-50" : "border-line-strong bg-surface hover:border-ink-4")}
               >
                 <input type="file" id="student-photo-upload" accept="image/*" onChange={handleStudentPhotoUpload} className="sr-only" />
                 <label htmlFor="student-photo-upload" className="cursor-pointer flex flex-col items-center gap-1 min-h-11 justify-center">
@@ -68,29 +64,6 @@ export default function StudentFormModal() {
                   <span className="text-[12.5px] text-ink-3">JPG، PNG (الحد الأقصى 2 ميغابايت)</span>
                 </label>
               </div>
-              <Input type="url" dir="ltr" aria-label="رابط صورة مباشر" value={formPhoto} onChange={(e: any) => setFormPhoto(e.target.value)} placeholder="أو ألصق رابط صورة مباشر هنا (URL)..." className="text-[13px]" />
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[13px] text-ink-2">أو اختر من الرمزيات المسبقة للأطفال بالنادي</span>
-            <div className="flex flex-wrap gap-2">
-              {PRESETS.map((preset) => {
-                const on = formPhoto === preset.url;
-                return (
-                  <button
-                    type="button"
-                    key={preset.url}
-                    onClick={() => setFormPhoto(preset.url)}
-                    aria-pressed={on}
-                    title={preset.name}
-                    aria-label={preset.name}
-                    className={cx("w-11 h-11 rounded-full overflow-hidden border-2 relative cursor-pointer transition-transform hover:scale-105", on ? "border-gold" : "border-line")}
-                  >
-                    <img src={preset.url} alt="" className="w-full h-full object-cover" />
-                    {on && <span className="absolute inset-0 bg-night/45 flex items-center justify-center"><Check className="w-4 h-4 text-white" strokeWidth={2} aria-hidden="true" /></span>}
-                  </button>
-                );
-              })}
             </div>
           </div>
         </fieldset>

@@ -58,6 +58,7 @@ describe("en-têtes de sécurité et cache servis par Hosting (D49)", () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("https://fonts.googleapis.com");
     expect(csp).toContain("https://www.google.com/recaptcha/");
+    expect(csp).not.toContain("unsplash"); // avatars locaux seulement (UI-14, D92)
     expect(res.headers.get("x-content-type-options")).toBe("nosniff");
     expect(res.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
     expect(res.headers.get("permissions-policy")).toContain("camera=(self)");
