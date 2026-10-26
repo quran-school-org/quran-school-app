@@ -262,6 +262,16 @@ export const resetUserPasswordRemote = (schoolId: string, uid: string, newPasswo
 export const setMemberRoleRemote = (schoolId: string, uid: string, patch: MemberPatch, remove = false) =>
   call<{ schoolId: string; uid: string; patch: MemberPatch; remove: boolean }, { ok: boolean }>("setMemberRole", { schoolId, uid, patch, remove });
 
+/**
+ * Lecture unique d'une collection de l'école (aperçu par rôle, D95 : liste des
+ * élèves, du personnel et des classes pour choisir des liens au hasard). Les
+ * règles s'appliquent : il faut le droit de lecture de la collection.
+ */
+export async function fetchSchoolCollectionOnce<T extends { id: string }>(schoolId: string, collectionName: string): Promise<T[]> {
+  const snap = await getDocs(schoolCollection(schoolId, collectionName));
+  return snap.docs.map((d) => stripPassword({ id: d.id, ...d.data() } as unknown as T & Record<string, any>) as T);
+}
+
 /** Traduit une erreur Firebase (Auth, Functions) en message arabe lisible. */
 export function describeFirebaseError(error: any): string {
   const code: string = error?.code || "";

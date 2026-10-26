@@ -2356,6 +2356,91 @@ là-bas (R-06).
   rien à défaire côté Firestore. Pour la seule carte de l'élève : remettre
   `StudentCardPreview` (supprimé de `StudentDossier.tsx`) sous la fiche.
 
+### D95. Aperçu par rôle du super-admin : on change réellement l'appartenance (dev seulement, jamais sur alfajr)
+- **Contexte** : le propriétaire veut tester chaque vue (directeur, administratif,
+  enseignant, parent, élève…) avec son compte super-admin, dans une école de test
+  du dev (par exemple `test1234`), sans créer un compte par rôle.
+- **Décision : changer RÉELLEMENT l'appartenance du super-admin dans l'école
+  active, plutôt que de simuler un rôle côté client.** Un « mode simulation »
+  (un rôle fictif dans l'état de l'application) montrerait ce que l'interface
+  *croit* afficher, pas ce que les règles laissent *vraiment* lire : une
+  requête refusée à un parent passerait inaperçue, un lien oublié aussi. Ici le
+  super-admin appelle la Cloud Function existante `setMemberRole` sur **son
+  propre uid** (rôle, `linkedTeacherId`, `linkedStudentIds`), puis l'application
+  relit l'appartenance et recharge les données (`enterSchool`) : les règles
+  Firestore, les abonnements filtrés et les menus sont exactement ceux d'un vrai
+  utilisateur de ce rôle. **Les règles restent la vérité.** Aucune modification
+  des Functions ni des règles : `setMemberRoleCore` autorise déjà le super-admin
+  à changer son propre rôle et ses liens dans une école où il est membre.
+  - **Écart à connaître** : le claim `superAdmin` donne encore, dans les règles,
+    la lecture de `schools/{id}` et de ses membres, et l'écriture de
+    `settings/system` (`isSuper()`). Les données métier (élèves, paiements,
+    présences…) ne dépendent que du rôle de l'appartenance : un « parent » en
+    aperçu ne les lit que filtrées sur ses enfants.
+  - **Liens tirés au hasard** (`src/rolePreview/rolePreview.ts`, pur, testé) :
+    `ولي أمر` : deux élèves actifs frères et sœurs (même téléphone **ou** même nom
+    de parent, fusion transitive), sinon 1 ou 2 élèves actifs au hasard ;
+    `طالب` : un élève actif ; `مدرس` : une fiche « أستاذ / محفظ » non archivée,
+    de préférence avec une halaqa non archivée ; les autres rôles : sans lien.
+    Pour lire toute l'école, un compte en aperçu non directeur repasse d'abord par
+    `مدير` (deuxième appel), car les règles ne lui laissent plus lire la liste.
+    Si l'école n'a aucune donnée adaptée, un message s'affiche et rien ne change.
+- **Où** : le sélecteur « معاينة كدور » (les 9 rôles, valeurs en arabe inchangées)
+  est dans la **fenêtre du profil** (menu du compte, ouvert depuis l'avatar, pour
+  **tous** les rôles, comme le réglage de langue de D93) : un rôle sans menu
+  Paramètres y a donc toujours accès. Le bouton « العودة إلى مدير » (directeur
+  sans lien) y figure tant que le rôle n'est pas `مدير` ; il est répété dans le
+  **bandeau** « وضع المعاينة : ولي أمر (فاطمة …) », sous la barre du haut, qui
+  indique le vrai rôle et l'élève ou la fiche liés.
+- **Garde-fous** (jamais confiés au seul affichage : `switchTo` les revérifie) :
+  1. compte avec le claim `superAdmin` ;
+  2. super-admin membre de l'école active ;
+  3. **build non prod** : drapeau `VITE_ENABLE_ROLE_PREVIEW`, `true` seulement
+     dans `.env.development` et dans l'étape propre au dev de `deploy.yml`
+     (comme l'ancien `VITE_ENABLE_FR_TEST`, D79) ; refusé pour la prod par
+     `rolePreviewBuildProblems` (`scripts/dev/buildGuards.ts`, branché dans
+     `vite.config.ts`) : un build de production avec le drapeau vrai pour le
+     projet du `.env.production` versionné échoue, et aussi si ce projet est
+     introuvable. Les modules de `src/rolePreview/` ne sont chargés que par
+     import dynamique sous le drapeau (`src/shell/rolePreviewSlots.tsx`) : en
+     production ils sont **absents du bundle** (vérifié sur `npm run build`), et
+     `rolePreviewBundleProblems` fait échouer le build s'ils s'y retrouvent ;
+  4. **école active ≠ `alfajr`** (`ROLE_PREVIEW_BLOCKED_SCHOOLS`, refus explicite
+     et commenté dans le code) : `alfajr` contient sur le dev une copie des
+     données réelles (élèves mineurs, paiements, salaires) ; un rôle de test n'a
+     pas à s'y promener. Casse et espaces ignorés.
+  Une erreur de la Function s'affiche dans le sélecteur (`ActionAlert`, rôle
+  `alert`), sans fermer la fenêtre ; si l'appartenance a pourtant changé
+  (échec partiel), elle est relue.
+- **Tests** : `tests/unit/rolePreview.test.ts` (conditions, fratries, élèves
+  actifs, enseignant avec halaqa, bandeau), `tests/unit/buildGuards.test.ts`
+  (drapeau refusé pour la prod), `tests/e2e/apercu-roles.spec.ts` sur les
+  émulateurs avec un super-admin fictif `super_demo` (مدير d'annour, ajouté par
+  `seed-emulator.ts` seulement, `seedPreviewSuperAdmin`) : parent → accueil
+  « ملخص » des deux enfants liés → retour directeur ; enseignant, élève,
+  administratif ; erreur de la Function ; jamais pour un non super-admin ni sur
+  alfajr.
+- **Retour arrière** : `git revert` des commits de D95 (aucune donnée à défaire,
+  ni Function ni règle touchée). Désactiver sans rien retirer : ne plus écrire
+  `VITE_ENABLE_ROLE_PREVIEW` dans `.env.development` et dans `deploy.yml`. Un
+  super-admin resté en aperçu se remet directeur par « العودة إلى مدير » ou,
+  à défaut, par `setMemberRole` (directeur de l'école ou super-admin).
+- **Compléments du même lot** (demandes du propriétaire) :
+  - **D94, description des activités pour les familles** : `FamilyActivities`
+    montre aussi `description` (« الأهداف والوصف العام »), `programDetails`
+    (« البرنامج الزمني والتفصيلي ») et `meetingPoint` (« نقطة وساعة الانطلاق »,
+    avec les dates déjà affichées), champs du formulaire du personnel. Le
+    modèle n'a **pas** de champ « à apporter » : rien d'inventé. Texte replié
+    à 4 lignes (au-delà de 220 caractères ou 4 lignes) avec un vrai bouton
+    « عرض المزيد / عرض أقل » (`aria-expanded`, `aria-controls`). Toujours aucune
+    donnée financière interne (ni budget, ni solde, ni dépenses, ni capacité).
+  - **Carte « ملخص أبنائك » du menu** (parent, `src/shell/familySidebar.ts`) :
+    un enfant → « ملخص ابنك / ابنتك », son prénom et « الحزب الحالي : N »
+    (`hizbCount`) ; plusieurs → une ligne par enfant, au plus 3, puis « +N »
+    (lu « وابن آخر / وابنان آخران / و N أبناء آخرين » par les lecteurs d'écran).
+    Plus de « أبعد حزب بلغه طالب » pour la famille. Prénoms composés
+    (« عبد الرحمن ») gardés entiers. Personnel et élève : carte inchangée.
+
 ### D94. Activités et sorties : vue simplifiée pour les parents et les élèves (option B)
 - **Contexte** : l'écran « الأنشطة والرحلات » montrait aux familles l'interface du
   bureau (onglets dépenses et budget, liaison comptable, boutons d'ajout, de

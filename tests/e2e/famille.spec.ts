@@ -24,6 +24,13 @@ test.describe.serial("famille, présences en lecture seule, cartes", () => {
     await expect(home.locator("h1")).toHaveText("ملخص");
     await expect(home.locator("[data-child]")).toHaveCount(2);
     await expect(page.getByText("أيوب العلوي")).toHaveCount(0);
+    // Carte du bas du menu : une ligne par enfant (prénom et hizb actuel), sans « أبعد حزب بلغه طالب ».
+    const side = page.locator('[data-nav="desktop"] [data-family-sidebar="many"]');
+    await expect(side.locator("[data-family-sidebar-child]")).toHaveCount(2);
+    await expect(side.locator('[data-family-sidebar-child="S-101"]')).toContainText("ياسين");
+    await expect(side.locator('[data-family-sidebar-child="S-101"]')).toContainText(/الحزب الحالي : \d+/);
+    await expect(side.locator("[data-family-sidebar-extra]")).toHaveCount(0);
+    await expect(page.locator('[data-nav="desktop"]')).not.toContainText("أبعد حزب بلغه طالب");
     for (const card of await home.locator("article[data-child]").all()) {
       await expect(card.getByRole("img", { name: /من 60 حزباً/ })).toBeVisible();
       await expect(card.getByText("آخر امتحان")).toBeVisible();

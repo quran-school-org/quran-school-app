@@ -59,3 +59,11 @@ export const appCheckConfig = {
   siteKey: (env.VITE_APPCHECK_SITE_KEY || "").trim(),
   debugToken: (env.VITE_APPCHECK_DEBUG_TOKEN || "").trim(),
 };
+
+/**
+ * Aperçu par rôle du super-admin (D95) : « true » seulement dans
+ * .env.development et dans l'étape dev de deploy.yml ; jamais en production
+ * (refusé par scripts/dev/buildGuards.ts). Lu directement sur import.meta.env
+ * pour que le build de production le remplace par une constante.
+ */
+export const rolePreviewEnabled: boolean = import.meta.env.VITE_ENABLE_ROLE_PREVIEW === "true";

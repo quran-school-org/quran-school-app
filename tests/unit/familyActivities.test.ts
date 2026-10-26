@@ -38,3 +38,25 @@ describe("childActivityState", () => {
     expect(childActivityState([part({ fee: 0 })], "a1", "S-1")).toMatchObject({ payment: "exempt" });
   });
 });
+
+describe("textes de présentation pour la famille", () => {
+  it("repli : long ou sur plus de 4 lignes ; court ou vide non", async () => {
+    const { isLongText, FAMILY_TEXT_FOLD_CHARS } = await import("../../src/screens/family/familyActivities");
+    expect(isLongText("")).toBe(false);
+    expect(isLongText("   ")).toBe(false);
+    expect(isLongText(undefined)).toBe(false);
+    expect(isLongText("نص قصير")).toBe(false);
+    expect(isLongText("ا".repeat(FAMILY_TEXT_FOLD_CHARS))).toBe(false);
+    expect(isLongText("ا".repeat(FAMILY_TEXT_FOLD_CHARS + 1))).toBe(true);
+    expect(isLongText("1\n2\n3\n4")).toBe(false);
+    expect(isLongText("1\n2\n3\n4\n5")).toBe(true);
+    expect(isLongText("1\n\n\n2\n3\n4")).toBe(false); // lignes vides non comptées
+  });
+
+  it("ne reprend que description, programme et rendez-vous, aucune donnée financière", async () => {
+    const { familyActivityTexts } = await import("../../src/screens/family/familyActivities");
+    const t = familyActivityTexts(act("a", "2026-11-01", "مخطط له", { description: " وصف ", programDetails: "08:00 انطلاق", meetingPoint: " أمام المقر ", syncedNetBalance: 123, maxCapacity: 40 }));
+    expect(t).toEqual({ description: "وصف", program: "08:00 انطلاق", meetingPoint: "أمام المقر" });
+    expect(familyActivityTexts(act("b", "2026-11-01", "مخطط له"))).toEqual({ description: "", program: "", meetingPoint: "" });
+  });
+});

@@ -11,6 +11,8 @@ import { LogOut } from "lucide-react";
 import { AppShell, Emblem, NavBrand, SideNav, Topbar, useMediaQuery } from "../ui";
 import { buildNavGroups, visibleTabs } from "./navModel";
 import QuotaBanner from "./QuotaBanner";
+import { RolePreviewBannerSlot } from "./rolePreviewSlots";
+import { extraChildrenLabel, familySidebarModel } from "./familySidebar";
 
 export function formatToday(d = new Date()): string {
   try {
@@ -25,7 +27,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
     currentUser, currentRole, activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen,
     systemSettings, schoolName, syncStatus, userNotifications, accountOwnerName, handleOpenProfileModal,
     handleLogout, firestoreQuotaExceeded, isStaffOrAdmin, totalStudentsCount, teacherStudents,
-    parentStudentsCount, currentStudentObj, furthestHizb, teacherFurthestHizb, parentFurthestHizb,
+    parentStudents, parentStudentsCount, currentStudentObj, furthestHizb, teacherFurthestHizb, parentFurthestHizb,
     setSelectedStudent, authUid,
   } = useApp();
 
@@ -70,7 +72,10 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const statsLabel = isStaffOrAdmin ? "إحصائيات الإدارة" : currentRole === "مدرس" ? "إحصائيات الحلقة" : currentRole === "ولي أمر" ? "ملخص أبنائك" : "ملخص الحفظ الشخصي";
+  // Parent : carte propre à la famille (un enfant, ou une ligne par enfant) ; le personnel garde la carte chiffrée.
+  const isParent = currentRole === "ولي أمر" && !isStaffOrAdmin;
+  const family = useMemo(() => familySidebarModel(parentStudents), [parentStudents]);
+  const statsLabel = isStaffOrAdmin ? "إحصائيات الإدارة" : currentRole === "مدرس" ? "إحصائيات الحلقة" : currentRole === "ولي أمر" ? family.title : "ملخص الحفظ الشخصي";
   const statsValue = isStaffOrAdmin ? totalStudentsCount : currentRole === "مدرس" ? teacherStudents.length : currentRole === "ولي أمر" ? parentStudentsCount : currentStudentObj ? currentStudentObj.hizbCount : 0;
   const statsUnit = currentRole === "طالب" ? "حزب محفوظ" : currentRole === "ولي أمر" ? "أبناء" : "طلاب";
   const statsSecond = currentRole === "طالب"
@@ -102,16 +107,34 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
         className="text-start border border-night-line-2 rounded-[14px] p-3.5 flex flex-col gap-1.5 bg-night/85 hover:bg-white/[0.06] cursor-pointer transition-colors text-night-text"
       >
         <span className="text-[12.5px] text-night-soft">{statsLabel}</span>
-        <span className="flex items-end justify-between gap-3">
-          <span className="flex items-baseline gap-1.5">
-            <span className="text-[24px] font-bold tabular-nums text-white leading-none">{statsValue}</span>
-            <span className="text-[12.5px] text-night-muted">{statsUnit}</span>
+        {isParent ? (
+          <ul className="m-0 p-0 list-none flex flex-col gap-1.5" data-family-sidebar={family.kind}>
+            {family.lines.map((l) => (
+              <li key={l.id} className="flex items-baseline justify-between gap-3" data-family-sidebar-child={l.id}>
+                <span className={`font-semibold text-white min-w-0 truncate ${family.kind === "one" ? "text-[17px]" : "text-[14px]"}`}>{l.name}</span>
+                <span className="text-[12.5px] text-night-muted shrink-0">الحزب الحالي : <span className="font-semibold text-gold tabular-nums text-[14px]">{l.hizb}</span></span>
+              </li>
+            ))}
+            {family.kind === "none" && <li className="text-[12.5px] text-night-muted">لا يوجد أبناء مرتبطون بحسابك</li>}
+            {family.extra > 0 && (
+              <li className="text-[12.5px] text-night-muted" data-family-sidebar-extra>
+                <span aria-hidden="true" className="tabular-nums">+{family.extra}</span>
+                <span className="sr-only">{extraChildrenLabel(family.extra)}</span>
+              </li>
+            )}
+          </ul>
+        ) : (
+          <span className="flex items-end justify-between gap-3">
+            <span className="flex items-baseline gap-1.5">
+              <span className="text-[24px] font-bold tabular-nums text-white leading-none">{statsValue}</span>
+              <span className="text-[12.5px] text-night-muted">{statsUnit}</span>
+            </span>
+            <span className="flex flex-col items-end">
+              <span className="text-[14px] font-semibold text-gold tabular-nums">{statsSecond}</span>
+              <span className="text-[11.5px] text-night-muted">{statsSecondLabel}</span>
+            </span>
           </span>
-          <span className="flex flex-col items-end">
-            <span className="text-[14px] font-semibold text-gold tabular-nums">{statsSecond}</span>
-            <span className="text-[11.5px] text-night-muted">{statsSecondLabel}</span>
-          </span>
-        </span>
+        )}
       </button>
       {syncError && (
         <div className="flex items-center gap-2.5 px-1.5 text-[12.5px] text-night-soft" role="status" data-sync-error>
@@ -153,7 +176,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           }
         />
       }
-      banner={firestoreQuotaExceeded ? <QuotaBanner /> : null}
+      banner={<>{firestoreQuotaExceeded ? <QuotaBanner /> : null}<RolePreviewBannerSlot /></>}
       footer={
         <footer className="px-4 sm:px-8 pb-6 flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-ink-3 max-w-[1240px] print:hidden">
           <span>نظام إدارة حلقات تحفيظ القرآن الكريم • {schoolName}</span>

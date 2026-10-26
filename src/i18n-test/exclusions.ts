@@ -11,6 +11,12 @@ export const KEEP_ARABIC: Record<string, string> = {
 };
 
 export const NOT_DISPLAYED: Record<string, string> = {
+  "عبد": "préfixe de prénom composé, comparé au nom (jamais affiché seul)",
+  "أبو": "préfixe de prénom composé, comparé au nom (jamais affiché seul)",
+  "ابو": "préfixe de prénom composé, comparé au nom (jamais affiché seul)",
+  "أم": "préfixe de prénom composé, comparé au nom (jamais affiché seul)",
+  "ام": "préfixe de prénom composé, comparé au nom (jamais affiché seul)",
+  "ابن": "préfixe de prénom composé, comparé au nom (jamais affiché seul)",
   "السلام عليكم ورحمة الله وبركاته، ولي أمر الطالب(ة) *{0}* المحترم(ة). نحيطكم علماً بأن ابنكم/ابنتكم قد تغيب عن حصص التحفيظ بـ *{1} حصص متتالية*. نرجو منكم التواصل مع إدارة {2} لتبرير هذا الغياب والتعاون معنا لضمان التزام الطالب وتقدمه الدراسي. جزاكم الله خيراً.": "message WhatsApp envoyé au parent (non affiché)",
   "السلام عليكم ورحمة الله وبركاته، المحترم(ة) السيد(ة) *{0}*، نعلمكم بأنه تم استلام دفعة الاشتراك المدرسي الخاصة بالطالب *{1}*: - *الشهر المستهدف*: {2} {3} - *المبلغ*: {4} درهم - *حالة الدفع*: {5} - *تاريخ الأداء*: {6} - *رقم الإيصال*: {7} - *طريقة الدفع*: {8} {9} شاكرين لكم حسن تعاونكم الدائم مع {10}.": "message WhatsApp envoyé au parent (non affiché)",
   "- *ملاحظة*: {0}": "fragment du message WhatsApp (non affiché)",

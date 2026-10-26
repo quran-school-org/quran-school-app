@@ -43,3 +43,19 @@ export function childActivityState(participants: ActivityParticipant[], activity
   else payment = fee > 0 ? "unpaid" : "exempt";
   return { kind: "registered", payment, fee, paid, remaining };
 }
+
+/** Au-delà de ce seuil (caractères ou lignes), le texte est replié avec « عرض المزيد ». */
+export const FAMILY_TEXT_FOLD_CHARS = 220;
+export const FAMILY_TEXT_FOLD_LINES = 4;
+
+/** Texte à replier : long ou sur plusieurs lignes. Vide ou espaces seuls : pas de texte. */
+export function isLongText(text: string | undefined | null): boolean {
+  const t = (text || "").trim();
+  if (!t) return false;
+  return t.length > FAMILY_TEXT_FOLD_CHARS || t.split(/\r?\n/).filter((l) => l.trim()).length > FAMILY_TEXT_FOLD_LINES;
+}
+
+/** Textes de présentation montrés à la famille (description, programme, rendez-vous) : aucune donnée financière interne. */
+export function familyActivityTexts(a: ActivityTrip): { description: string; program: string; meetingPoint: string } {
+  return { description: (a.description || "").trim(), program: (a.programDetails || "").trim(), meetingPoint: (a.meetingPoint || "").trim() };
+}
