@@ -8,6 +8,8 @@ import { useMemo, useState } from "react";
 import { Award, FileBadge2, Plus, RotateCcw, Search, Trash2 } from "lucide-react";
 import { checkUserPermission } from "../types";
 import { useApp } from "../app/AppContext";
+import { isFamilyRole } from "../security/access";
+import { navLabel } from "../shell/navModel";
 import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, Ltr, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, usePagination } from "../ui";
 import { ALL, EMPTY_GRADE_FILTERS, OVERALL_GRADES, filterGrades, isFiltered, periodOptions, type GradeFilters } from "./grades/gradeFilters";
 
@@ -26,12 +28,20 @@ export default function GradesScreen() {
   const mem = avg(grades.map((g) => Number(g.memorizationGrade) || 0));
   const taj = avg(grades.map((g) => Number(g.tajweedGrade) || 0));
   const excellent = grades.filter((g) => g.overallGrade === "ممتاز").length;
+  const family = isFamilyRole(currentRole);
+  // UI-21 : sous 8 résultats, ni recherche ni filtres (sauf si un filtre est déjà actif).
+  const showFilters = grades.length >= PAGE_SIZES.students || isFiltered(filters);
+  const description = currentRole === "ولي أمر"
+    ? "نتائج أبنائك وشهاداتهم."
+    : currentRole === "طالب"
+      ? "نتائجك وشهاداتك."
+      : "نتائج امتحانات الحفظ والتجويد التي يشرف عليها معلمو الحلقات، وإصدار الشهادات التقديرية.";
 
   return (
     <div data-screen="grades" className="flex flex-col gap-6">
       <PageHeader
-        title="الامتحانات والشهادات"
-        description="نتائج امتحانات الحفظ والتجويد التي يشرف عليها معلمو الحلقات، وإصدار الشهادات التقديرية."
+        title={navLabel(currentRole, "grades")}
+        description={description}
         actions={
           can("create") && (
             <Button
@@ -56,14 +66,14 @@ export default function GradesScreen() {
         <KpiTile size="md" label="تقدير ممتاز" value={excellent} unit="طالب" />
       </KpiGrid>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <Card padded={false} className="lg:col-span-2 overflow-hidden" aria-labelledby="grades-title">
+      <div className={family ? "grid grid-cols-1 gap-6 items-start" : "grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"}>
+        <Card padded={false} className={family ? "overflow-hidden" : "lg:col-span-2 overflow-hidden"} aria-labelledby="grades-title">
           <div className="flex flex-col gap-3 px-5 py-4 border-b border-line-soft">
             <div className="flex flex-wrap justify-between items-center gap-2">
               <h2 id="grades-title" className="m-0 font-display font-semibold text-[20px] text-primary">قائمة شهادات الاختبار المعتمدة</h2>
               <span className="text-[13.5px] text-ink-2">النتائج: <strong className="text-ink tabular-nums">{visible.length}</strong></span>
             </div>
-            {grades.length > 0 && (
+            {grades.length > 0 && showFilters && (
               <div data-grade-filters="" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <SearchInput
                   icon={ic(Search)}
@@ -150,7 +160,7 @@ export default function GradesScreen() {
           )}
         </Card>
 
-        <aside aria-label="الشهادة التقديرية" className="relative overflow-hidden rounded-2xl bg-night text-night-text p-6 text-center flex flex-col gap-4">
+        {!family && <aside aria-label="الشهادة التقديرية" className="relative overflow-hidden rounded-2xl bg-night text-night-text p-6 text-center flex flex-col gap-4">
           <GeometricPattern opacity={0.18} />
           <div className="relative flex flex-col items-center gap-3 rounded-xl border border-gold/40 p-5">
             <span className="w-12 h-12 rounded-full bg-gold/15 text-gold flex items-center justify-center">{ic(Award, "w-6 h-6")}</span>
@@ -163,7 +173,7 @@ export default function GradesScreen() {
             <p className="m-0 text-[13.5px] text-night-muted leading-relaxed">يصدر النادي شهادات معتمدة مع طباعة أوتوماتيكية للطلاب المتميزين تشجيعاً لهم في مسيرتهم التعليمية مع كتاب الله.</p>
           </div>
           <p className="relative m-0 text-[12.5px] font-semibold text-gold">بإشراف {schoolName}</p>
-        </aside>
+        </aside>}
       </div>
     </div>
   );

@@ -18,11 +18,13 @@ export { usePagination, pageCountOf, clampPage, pageWindow, pageRange, pageSlice
 export { useDirection } from "./useDirection";
 export { useMediaQuery } from "./useMediaQuery";
 export { Modal } from "./Modal";
-export { TableWrap, Table, Th, Td, Tr } from "./DataTable";
+export { TableWrap, Table, Th, Td, Tr, DataTable } from "./DataTable";
+export type { DataColumn, DataTableProps } from "./DataTable";
 export { EmptyState } from "./EmptyState";
 export { InitialAvatar, initialOf } from "./InitialAvatar";
 export { GeometricPattern, Emblem } from "./GeometricPattern";
 export { HifzMap, hizbOf } from "./HifzMap";
+export { HifzBar } from "./HifzBar";
 export { Toast } from "./Toast";
 export { SideNav, NavBrand } from "./SideNav";
 export type { NavItem, NavGroup } from "./SideNav";

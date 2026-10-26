@@ -2287,3 +2287,69 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits du lot (un par constat). Pour la seule CSP,
   remettre `https://images.unsplash.com` dans `img-src` de `firebase.json` et adapter les deux
   tests ; pour les seuils des mentions, `MENTION_THRESHOLDS` dans `src/utils/gradeMention.ts`.
+
+### D89. Audit UI/UX d'octobre 2026, parcours famille, élèves et tableaux (UI-01, 02, 03, 06, 07, 17, 21)
+- **Contexte** : l'audit d'Elias (`docs/revues/AUDIT-UI-UX-2026-10-25.md`) montre que
+  le parent et l'élève arrivent sur un écran d'administration, que l'onglet des
+  présences est une impasse pour eux et pour l'administratif, que la famille lit
+  « لم يتم تعيين معلم » à tort, et que les tableaux débordent à 390 px. Ce lot
+  traite le parcours famille et les tableaux ; les autres constats sont portés
+  par d'autres branches. Aucune règle Firestore, aucune donnée, aucune valeur de
+  rôle ne change.
+- **Décision** :
+  - **UI-01, accueil « ملخص »** : nouvel onglet `home`, premier du menu pour
+    `ولي أمر` et `طالب` (`FamilyHomeScreen`). Une carte par enfant : halaqa,
+    محفظ (si lisible), hizb avec la frise `HifzBar` (extraite de `HifzProgress`,
+    même dessin), dernier examen, présences des 30 derniers jours (absences et
+    retards), cotisation du mois (parents seulement : les règles ne donnent pas
+    les paiements à l'élève). Calculs purs dans `screens/family/familySummary.ts`.
+    L'onglet « متابعة أبنائي / ملفي » ne montre plus pour la famille ni
+    recherche, ni compteur, ni colonne des papiers administratifs, ni aperçu de
+    carte : un choix de l'enfant puis sa fiche. La liste de contrôle des papiers
+    reste dans la fiche (le parent y voit ce qu'il doit apporter).
+  - **UI-02, présences en lecture seule** : vérifié dans `firestore.rules` :
+    `attendance` est lisible par `isEducator` (مدير, إداري, مؤطر, مدرس) et, pour
+    la famille, par `familyOwnsDoc` (lignes dont `studentId` est lié au compte) ;
+    l'abonnement de `useSchoolSync` filtre déjà par `studentId` pour la famille.
+    Aucune règle à changer. `AttendanceHistoryScreen` (par enfant, séances de la
+    plus récente à la plus ancienne, paginées par 12) remplace
+    `AttendanceUnavailable` pour la famille, `إداري` et `مؤطر` (choix de
+    l'élève par liste déroulante). `مدير` et `مدرس` gardent la saisie. Les rôles
+    que les règles n'autorisent pas à lire (`متطوع`, `عامل نظافة / صيانة`,
+    `أخرى`) n'ont plus l'entrée du menu (`canOpenAttendance` dans `navModel`),
+    au lieu d'une impasse.
+  - **UI-03, محفظ** : option « sans changement de règles » retenue : la famille
+    (et tout rôle qui ne lit pas `teachers`) ne voit plus la ligne du محفظ quand
+    sa fiche n'est pas lisible ; le repli « لم يتم تعيين معلم » reste pour la
+    pédagogie, qui lit les fiches. Raison : le nom dénormalisé dans la halaqa
+    aurait demandé de l'écrire à chaque création, changement de محفظ et
+    renommage, et de corriger les halaqas existantes de la prod (action
+    humaine) pour un gain faible. La famille ne voit que les halaqas de ses
+    enfants, sans archive, sans recherche, sans capacité ni nombre d'inscrits
+    (ces chiffres seraient faux : elle ne lit que ses enfants).
+  - **UI-06, tableaux en cartes** : `DataTable` (`src/ui/DataTable.tsx`) :
+    tableau à partir de `md`, cartes en dessous (une seule variante rendue, via
+    `useMediaQuery`, pour ne pas dupliquer le texte). Une colonne déclare son
+    rôle sur la carte : titre, champ (2 ou 3), ou propre au tableau ; les actions
+    passent en pied de carte ; une ligne cliquable devient un vrai bouton.
+    Appliqué aux élèves et aux comptes (`UsersSection`). Colonne d'actions : plus
+    étroite (`w-px`, sans retour à la ligne) et la fiche reste à côté de la liste
+    sans rogner la colonne à 1 440 px (vérifié à l'œil et par test).
+  - **UI-17, carte de l'élève** : l'aperçu recto verso quitte la page ; bouton
+    « بطاقة الطالب » dans la fiche, qui l'ouvre dans une `Modal`. La famille ne
+    l'a que si elle a le droit d'imprimer (`students.print`).
+  - **UI-21** : recherche des élèves et des halaqas, recherche et filtres des
+    examens masqués sous 8 éléments (seuil de la pagination, D83) ; le filtre
+    d'archivage du personnel reste (il donne accès aux archivés). Le bloc
+    décoratif de `GradesScreen` n'est plus montré à la famille.
+  - **UI-07 (écrans de ce lot)** : titre = libellé du menu du rôle (`navLabel`,
+    source unique du menu et des titres), description par rôle à la deuxième
+    personne pour les familles (élèves, halaqas, examens, présences, accueil).
+  - **UI-13 (`UsersSection` seulement)** : `bg-sand-900` / `border-sand-800`
+    remplacés par `night` / `night-2` (thémés). Le garde-fou de
+    `tests/unit/themes.test.ts` n'est pas étendu ici : quatre autres fichiers
+    portent encore ces jetons (autre branche).
+  - Traductions de test dans `src/i18n-test/fr.ts` (couverture 100 %).
+- **Retour arrière** : `git revert` des commits du lot. Aucune donnée écrite,
+  rien à défaire côté Firestore. Pour la seule carte de l'élève : remettre
+  `StudentCardPreview` (supprimé de `StudentDossier.tsx`) sous la fiche.

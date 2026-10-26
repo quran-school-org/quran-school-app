@@ -10,12 +10,12 @@ import { ACCOUNTS, desktopTabs, loginAs, logout, openTab } from "./helpers";
 // Ordre du menu de la charte : التعليم / المالية / الإدارة.
 const ALL_OFFICE = ["dashboard", "students", "classes", "grades", "attendance", "payments", "finance", "activities", "teachers", "id-cards-lab", "notifications"];
 
-/** emptyTabs : onglets sans écran de saisie pour ce rôle (état vide explicatif, constat F3). */
+/** screens : écran propre à ce rôle quand il diffère de l'onglet (présences en lecture seule, UI-02). */
 type RoleCase = {
   name: string;
   account: (typeof ACCOUNTS)[keyof typeof ACCOUNTS];
   tabs: string[];
-  emptyTabs?: string[];
+  screens?: Record<string, string>;
   checks?: (page: Page) => Promise<void>;
 };
 
@@ -47,7 +47,7 @@ const CASES: RoleCase[] = [
     name: "administratif",
     account: ACCOUNTS.administratif,
     tabs: ALL_OFFICE,
-    emptyTabs: ["attendance"],
+    screens: { attendance: "attendance-history" },
     checks: async (page) => {
       await openTab(page, "finance");
       await expect(page.locator('[data-screen="finance"]').getByText("تبرع", { exact: true }).first()).toBeVisible();
@@ -71,12 +71,12 @@ const CASES: RoleCase[] = [
   {
     name: "parent",
     account: ACCOUNTS.parent,
-    tabs: ["students", "classes", "grades", "attendance", "payments", "activities", "notifications"],
-    emptyTabs: ["attendance"],
+    tabs: ["home", "students", "classes", "grades", "attendance", "payments", "activities", "notifications"],
+    screens: { attendance: "attendance-history" },
     checks: async (page) => {
-      for (const tab of ["students", "grades", "payments"]) {
+      for (const tab of ["home", "students", "grades", "payments", "attendance"]) {
         await openTab(page, tab);
-        const screen = page.locator(`[data-screen="${tab}"]`);
+        const screen = page.locator(`[data-screen="${tab === "attendance" ? "attendance-history" : tab}"]`);
         await expect(screen.getByText("ياسين العلمي").first()).toBeVisible();
         await expect(screen.getByText("مريم العلمي").first()).toBeVisible();
         await expect(page.getByText("أيوب العلوي")).toHaveCount(0);
@@ -87,12 +87,12 @@ const CASES: RoleCase[] = [
   {
     name: "élève",
     account: ACCOUNTS.eleve,
-    tabs: ["students", "classes", "grades", "attendance", "activities", "notifications"],
-    emptyTabs: ["attendance"],
+    tabs: ["home", "students", "classes", "grades", "attendance", "activities", "notifications"],
+    screens: { attendance: "attendance-history" },
     checks: async (page) => {
-      for (const tab of ["students", "grades"]) {
+      for (const tab of ["home", "students", "grades", "attendance"]) {
         await openTab(page, tab);
-        await expect(page.locator(`[data-screen="${tab}"]`).getByText("علي الرباطي").first()).toBeVisible();
+        await expect(page.locator(`[data-screen="${tab === "attendance" ? "attendance-history" : tab}"]`).getByText("علي الرباطي").first()).toBeVisible();
         await expect(page.getByText("ياسين العلمي")).toHaveCount(0);
         await expect(page.getByText("زينب الناصري")).toHaveCount(0);
       }
@@ -102,7 +102,7 @@ const CASES: RoleCase[] = [
     name: "encadrant",
     account: ACCOUNTS.encadrant,
     tabs: ["dashboard", "students", "classes", "grades", "attendance", "activities", "id-cards-lab", "notifications"],
-    emptyTabs: ["attendance"],
+    screens: { attendance: "attendance-history" },
   },
 ];
 
@@ -116,11 +116,7 @@ test.describe.serial("écrans par rôle", () => {
       for (const tab of c.tabs) {
         await openTab(page, tab);
         await expect(page.locator(`[data-nav="desktop"] [data-tab="${tab}"]`)).toBeVisible();
-        if (c.emptyTabs?.includes(tab)) {
-          await expect(page.locator('[data-screen="attendance-unavailable"]')).toBeVisible();
-        } else {
-          await expectScreen(page, tab);
-        }
+        await expectScreen(page, c.screens?.[tab] ?? tab);
       }
       if (c.checks) await c.checks(page);
       await logout(page);

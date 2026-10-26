@@ -5,7 +5,11 @@
 import { Shield, UserPlus, Edit2, Trash2, Check, X, Search, Users, RefreshCw, LayoutGrid, List, CheckCircle2, XCircle, Clock, ShieldCheck, Filter, KeyRound } from "lucide-react";
 import { isPrimaryDirector } from "./shared";
 import { useSettings } from "./SettingsContext";
-import { Select } from "../../ui";
+import { DataTable, IconButton, Pill, Select, type PillTone } from "../../ui";
+import type { AppUser } from "../../types";
+
+const GOLD_ROLES = ["مدير", "مؤطر", "متطوع"];
+const roleTone = (role: string): PillTone => (role === "أخرى" ? "neutral" : GOLD_ROLES.includes(role) ? "warn" : "primary");
 
 export default function UsersSection() {
   const {
@@ -33,6 +37,22 @@ export default function UsersSection() {
     directorName,
     openUserModal,
   } = useSettings();
+
+  const accountName = (user: AppUser) => (isPrimaryDirector(user) && directorName ? directorName : user.fullName);
+  const nameBlock = (user: AppUser) => {
+    const isAutoSynced = user.id.startsWith("t_") || user.id.startsWith("p_") || user.id.startsWith("s_");
+    return (
+      <span className="font-bold text-ink text-[13px] flex items-center gap-1.5 flex-wrap min-w-0">
+        <span className={user.isArchived ? "line-through text-ink-3" : ""}>{accountName(user)}</span>
+        {isAutoSynced && (
+          <span className="text-[12.5px] bg-primary-50 text-primary-700 border border-primary-200 px-1.5 rounded-md font-normal" title="حساب مزامن تلقائياً">مزامنة</span>
+        )}
+        {user.isArchived && (
+          <span className="text-[12.5px] bg-danger-50 text-danger-700 border border-danger-200 px-1.5 rounded-md font-bold" title="شخص مؤرشف في المنظومة">مؤرشف</span>
+        )}
+      </span>
+    );
+  };
 
   return (
     <>
@@ -197,14 +217,14 @@ export default function UsersSection() {
               </Select>
 
               {/* View Switcher Toggle (matching dark styled switcher in screenshot) */}
-              <div className="flex items-center bg-sand-900 border border-sand-800 rounded-xl p-1 gap-1 shadow-inner">
+              <div className="flex items-center bg-night border border-night-2 rounded-xl p-1 gap-1 shadow-inner">
                 <button
                   type="button"
                   onClick={() => setUserViewMode("cards")}
                   className={`px-3 py-1.5 rounded-lg text-[13px] font-bold flex items-center gap-1.5 transition cursor-pointer ${
                     userViewMode === "cards"
                       ? "bg-primary-950 text-primary-300 border border-primary-500/80"
-                      : "text-ink-3 hover:text-sand-200 hover:bg-sand-800/60"
+                      : "text-night-muted hover:text-night-text hover:bg-night-2"
                   }`}
                   title="عرض البطاقات (كانبان)"
                 >
@@ -218,7 +238,7 @@ export default function UsersSection() {
                   className={`px-3 py-1.5 rounded-lg text-[13px] font-bold flex items-center gap-1.5 transition cursor-pointer ${
                     userViewMode === "table"
                       ? "bg-primary-950 text-primary-300 border border-primary-500/80"
-                      : "text-ink-3 hover:text-sand-200 hover:bg-sand-800/60"
+                      : "text-night-muted hover:text-night-text hover:bg-night-2"
                   }`}
                   title="عرض القائمة والجدول المنظم"
                 >
@@ -237,214 +257,116 @@ export default function UsersSection() {
               <p className="text-ink-3 mt-1">جرّب تغيير كلمات البحث أو إعادة ضبط التصفية.</p>
             </div>
           ) : userViewMode === "table" ? (
-            /* ==================== 1. ORGANIZED TABLE VIEW ==================== */
-            <div className="bg-surface border border-sand-200/90 rounded-2xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-right text-[13px]">
-                  <thead>
-                    <tr className="bg-sand-900 text-sand-200 uppercase font-bold text-[12.5px] tracking-wider border-b border-sand-800">
-                      <th className="py-3.5 px-4">الاسم الكامل</th>
-                      <th className="py-3.5 px-4">اسم المستخدم</th>
-                      <th className="py-3.5 px-4">الدور</th>
-                      <th className="py-3.5 px-4">آخر تسجيل دخول</th>
-                      <th className="py-3.5 px-4">الحالة</th>
-                      <th className="py-3.5 px-4">الصلاحيات والتراخيص</th>
-                      <th className="py-3.5 px-4 text-center">الإجراءات</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line-faint font-sans">
-                    {filteredUsers.map((user) => {
-                      const isAutoSynced = user.id.startsWith("t_") || user.id.startsWith("p_") || user.id.startsWith("s_");
-                      const displayFullName = isPrimaryDirector(user) && directorName ? directorName : user.fullName;
-                      return (
-                        <tr
-                          key={user.id}
-                          className={`transition hover:bg-sand-50/80 ${
-                            !user.isActive ? "bg-danger-50/30 text-ink-3" : ""
-                          }`}
-                        >
-                          {/* Full Name */}
-                          <td className="py-3.5 px-4 font-bold text-ink">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`w-8 h-8 rounded-full font-bold flex items-center justify-center text-[13px] shrink-0 ${
-                                user.role === "مدير"
-                                  ? "bg-gold-100 text-gold-800 border border-gold-200"
-                                  : user.role === "إداري"
-                                  ? "bg-primary-100 text-primary-800 border border-primary-200"
-                                  : user.role === "مؤطر"
-                                  ? "bg-gold-100 text-gold-800 border border-gold-200"
-                                  : user.role === "مدرس"
-                                  ? "bg-primary-100 text-primary-800 border border-primary-200"
-                                  : user.role === "متطوع"
-                                  ? "bg-gold-100 text-gold-800 border border-gold-200"
-                                  : user.role === "عامل نظافة / صيانة"
-                                  ? "bg-primary-100 text-primary-800 border border-primary-200"
-                                  : user.role === "ولي أمر"
-                                  ? "bg-primary-100 text-primary-800 border border-primary-200"
-                                  : user.role === "طالب"
-                                  ? "bg-primary-100 text-primary-800 border border-primary-200"
-                                  : "bg-sand-100 text-ink border border-line"
-                              }`}>
-                                {displayFullName.substring(0, 1)}
-                              </div>
-                              <div>
-                                <div className="font-bold text-ink text-[13px] flex items-center gap-1.5 flex-wrap">
-                                  <span className={user.isArchived ? "line-through text-ink-3" : ""}>{displayFullName}</span>
-                                  {isAutoSynced && (
-                                    <span className="text-[12.5px] bg-primary-50 text-primary-700 border border-primary-200 px-1.5 py-0.2 rounded-md font-normal" title="حساب مزامن تلقائياً">
-                                      مزامنة
-                                    </span>
-                                  )}
-                                  {user.isArchived && (
-                                    <span className="text-[12.5px] bg-danger-50 text-danger-700 border border-danger-200 px-1.5 py-0.2 rounded-md font-bold" title="شخص مؤرشف في المنظومة">
-                                      مؤرشف
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Username & Password */}
-                          <td className="py-3.5 px-4 font-mono text-ink-2 text-[12.5px] dir-ltr text-right">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-sand-100 px-2 py-0.5 rounded-lg border border-sand-200/80 font-semibold text-ink-2">
-                                @{user.username}
-                              </span>
-                              <div className="flex items-center gap-1 bg-sand-50 border border-line px-2 py-0.5 rounded-lg text-[11.5px]">
-                                <span className={`font-bold tracking-wider ${user.mustChangePassword ? "text-gold-700" : "text-ink-2"}`} title={user.mustChangePassword ? "يجب على المستخدم تغيير كلمة المرور عند الدخول" : "كلمة المرور محفوظة بشكل آمن ولا يمكن عرضها"}>
-                                  {user.mustChangePassword ? "تغيير إلزامي" : "••••••••"}
-                                </span>
-                                {canUpdateAccounts && onResetUserPassword && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResetPassword(user)}
-                                    className="text-ink-3 hover:text-primary-700 transition cursor-pointer p-0.5 rounded"
-                                    title="إعادة تعيين كلمة المرور"
-                                  >
-                                    <KeyRound className="w-3.5 h-3.5 text-primary-600" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Role */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex flex-col items-start gap-1">
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11.5px] font-bold border ${
-                                user.role === "مدير"
-                                  ? "bg-gold-50 text-gold-800 border-gold-200"
-                                  : user.role === "إداري"
-                                  ? "bg-primary-50 text-primary-800 border-primary-200"
-                                  : user.role === "مؤطر"
-                                  ? "bg-gold-50 text-gold-800 border-gold-200"
-                                  : user.role === "مدرس"
-                                  ? "bg-primary-50 text-primary-800 border-primary-200"
-                                  : user.role === "متطوع"
-                                  ? "bg-gold-50 text-gold-800 border-gold-200"
-                                  : user.role === "عامل نظافة / صيانة"
-                                  ? "bg-primary-50 text-primary-800 border-primary-200"
-                                  : user.role === "ولي أمر"
-                                  ? "bg-primary-50 text-primary-800 border-primary-200"
-                                  : user.role === "طالب"
-                                  ? "bg-primary-50 text-primary-800 border-primary-200"
-                                  : "bg-sand-50 text-ink border-line"
-                              }`}>
-                                <span>{user.role}</span>
-                              </span>
-                              {user.roleTitle && user.roleTitle !== user.role && (
-                                <span className="text-[11.5px] text-ink-3 font-medium" title="المسمى الوظيفي المسند في شؤون العاملين">
-                                  {user.roleTitle}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Last Login Date */}
-                          <td className="py-3.5 px-4 text-ink-2 text-[12.5px]">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-ink-3 shrink-0" />
-                              <span className={user.lastLogin ? "font-semibold text-ink-2" : "text-ink-3 italic"}>
-                                {formatLastLogin(user.lastLogin)}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Status */}
-                          <td className="py-3.5 px-4">
-                            {user.isActive ? (
-                              <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary-700 border border-primary-200 px-2.5 py-1 rounded-full text-[11.5px] font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"></span>
-                                <span>نشط</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1.5 bg-danger-50 text-danger-700 border border-danger-200 px-2.5 py-1 rounded-full text-[11.5px] font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-danger-500"></span>
-                                <span>{user.isArchived ? "موقوف (مؤرشف)" : "موقوف"}</span>
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Permissions summary */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex flex-wrap gap-1">
-                              {user.role === "مدير" ? (
-                                <span className="bg-gold-100/80 text-gold-900 border border-gold-300 px-2 py-0.5 rounded text-[11.5px] font-bold">
-                                  كامل الصلاحيات
-                                </span>
-                              ) : (
-                                <>
-                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditStudents ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
-                                    الطلاب
-                                  </span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditTeachers ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
-                                    العاملين
-                                  </span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditGrades ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
-                                    الدرجات
-                                  </span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[12px] border ${user.canEditPayments ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>
-                                    المالية
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-3.5 px-4 text-center">
-                            <div className="flex items-center justify-center gap-1.5">
-                              {canUpdateAccounts && (
-                                <button
-                                  onClick={() => openUserModal(user)}
-                                  className="p-1.5 text-primary-600 hover:bg-primary-50 border border-primary-200/60 rounded-xl transition cursor-pointer"
-                                  title="تعديل الحساب والصلاحيات"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                              {canDeleteAccounts && !isPrimaryDirector(user) && (
-                                <button
-                                  onClick={() => {
-                                    if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
-                                      onDeleteAppUser(user.id);
-                                    }
-                                  }}
-                                  className="p-1.5 text-danger-600 hover:bg-danger-50 border border-danger-200/60 rounded-xl transition cursor-pointer"
-                                  title="حذف الحساب نهائياً"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+            /* ==================== 1. TABLE (cartes sous md : DataTable) ==================== */
+            <div className="bg-surface border border-line rounded-2xl overflow-hidden">
+              <DataTable
+                label="قائمة الحسابات"
+                rows={filteredUsers}
+                rowKey={(user) => user.id}
+                rowClassName={(user) => (!user.isActive ? "bg-danger-50/30 text-ink-3" : undefined)}
+                columns={[
+                  {
+                    id: "name",
+                    header: "الاسم الكامل",
+                    card: "title",
+                    cell: (user) => (
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-8 h-8 rounded-full font-bold flex items-center justify-center text-[13px] shrink-0 bg-primary-100 text-primary-800 border border-primary-200" aria-hidden="true">
+                          {accountName(user).substring(0, 1)}
+                        </span>
+                        {nameBlock(user)}
+                      </div>
+                    ),
+                    cardCell: nameBlock,
+                  },
+                  {
+                    id: "username",
+                    header: "اسم المستخدم",
+                    card: "field",
+                    cell: (user) => (
+                      <span className="inline-flex items-center gap-2 font-mono text-[12.5px]">
+                        <bdi dir="ltr" className="bg-sunken px-2 py-0.5 rounded-lg border border-line font-semibold text-ink-2">@{user.username}</bdi>
+                        {user.mustChangePassword && (
+                          <span className="text-gold-700 font-bold font-sans text-[11.5px]" title="يجب على المستخدم تغيير كلمة المرور عند الدخول">تغيير إلزامي</span>
+                        )}
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "role",
+                    header: "الدور",
+                    card: "field",
+                    cell: (user) => (
+                      <div className="flex flex-col items-start gap-1">
+                        <Pill tone={roleTone(user.role)}>{user.role}</Pill>
+                        {user.roleTitle && user.roleTitle !== user.role && (
+                          <span className="text-[11.5px] text-ink-3 font-medium" title="المسمى الوظيفي المسند في شؤون العاملين">{user.roleTitle}</span>
+                        )}
+                      </div>
+                    ),
+                  },
+                  {
+                    id: "status",
+                    header: "الحالة",
+                    card: "field",
+                    cell: (user) => <Pill tone={user.isActive ? "success" : "danger"} dot>{user.isActive ? "نشط" : user.isArchived ? "موقوف (مؤرشف)" : "موقوف"}</Pill>,
+                  },
+                  {
+                    id: "lastLogin",
+                    header: "آخر تسجيل دخول",
+                    card: "field",
+                    cardLabel: "آخر دخول",
+                    cell: (user) => (
+                      <span className="inline-flex items-center gap-1.5 text-[12.5px]">
+                        <Clock className="w-3.5 h-3.5 text-ink-3 shrink-0" aria-hidden="true" />
+                        <span className={user.lastLogin ? "font-semibold text-ink-2" : "text-ink-3 italic"}>{formatLastLogin(user.lastLogin)}</span>
+                      </span>
+                    ),
+                  },
+                  {
+                    id: "perms",
+                    header: "الصلاحيات والتراخيص",
+                    cell: (user) => (
+                      <div className="flex flex-wrap gap-1">
+                        {user.role === "مدير" ? (
+                          <span className="bg-gold-100/80 text-gold-900 border border-gold-300 px-2 py-0.5 rounded text-[11.5px] font-bold">كامل الصلاحيات</span>
+                        ) : (
+                          [
+                            ["الطلاب", user.canEditStudents],
+                            ["العاملين", user.canEditTeachers],
+                            ["الدرجات", user.canEditGrades],
+                            ["المالية", user.canEditPayments],
+                          ].map(([label, on]) => (
+                            <span key={label as string} className={`px-1.5 py-0.5 rounded text-[12px] border ${on ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>{label as string}</span>
+                          ))
+                        )}
+                      </div>
+                    ),
+                  },
+                ]}
+                actions={(user) => (
+                  <>
+                    {canUpdateAccounts && onResetUserPassword && (
+                      <IconButton size="sm" label="إعادة تعيين كلمة المرور" onClick={() => handleResetPassword(user)}><KeyRound className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                    )}
+                    {canUpdateAccounts && (
+                      <IconButton size="sm" tone="primary" label="تعديل الحساب والصلاحيات" onClick={() => openUserModal(user)}><Edit2 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                    )}
+                    {canDeleteAccounts && !isPrimaryDirector(user) && (
+                      <IconButton
+                        size="sm"
+                        tone="danger"
+                        label="حذف الحساب نهائياً"
+                        onClick={() => {
+                          if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
+                            onDeleteAppUser(user.id);
+                          }
+                        }}
+                      ><Trash2 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                    )}
+                  </>
+                )}
+              />
             </div>
           ) : (
             /* ==================== 2. CARDS / KANBAN VIEW ==================== */
