@@ -2353,3 +2353,32 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits du lot. Aucune donnée écrite,
   rien à défaire côté Firestore. Pour la seule carte de l'élève : remettre
   `StudentCardPreview` (supprimé de `StudentDossier.tsx`) sous la fiche.
+
+### D94. Activités et sorties : vue simplifiée pour les parents et les élèves (option B)
+- **Contexte** : l'écran « الأنشطة والرحلات » montrait aux familles l'interface du
+  bureau (onglets dépenses et budget, liaison comptable, boutons d'ajout, de
+  modification et d'impression) avec des compteurs « 0 مشارك / 0 د.م » faux,
+  car les règles cachaient les participants et les dépenses aux familles.
+- **Décision** (propriétaire : option B) :
+  - **Règles** : `activityParticipants` devient lisible par la famille pour les
+    seules inscriptions de ses enfants, via `familyOwnsParticipant(s)` :
+    `isFamily(s) && participantType == 'طالب' && referenceId in linkedStudents(s)`.
+    Un participant du personnel (« أستاذ / محفظ »…) ou externe n'est jamais
+    lisible, même si son `referenceId` coïncidait avec un élève lié. Aucune
+    écriture pour la famille ; `activityExpenses` reste fermé. Le modèle
+    référence l'élève par `referenceId` (pas de `studentId`), d'où ce champ.
+  - **Client** : abonnement filtré (`subscribeToQueryIn` gagne un paramètre
+    `equals`) : `participantType == 'طالب'` et `referenceId in <élèves liés>`,
+    comme les présences de la famille. Une lecture non filtrée serait refusée.
+  - **Écran** (`src/screens/family/FamilyActivities.tsx`, logique pure dans
+    `familyActivities.ts`) : liste des activités (à venir d'abord, puis passées ;
+    recherche et filtre au-delà de 8) avec, pour chaque enfant du compte
+    (l'élève lui-même), « مسجّل / غير مسجّل » et, si inscrit, payé, payé
+    partiellement (payé et reste), non payé (reste) ou exonéré, d'après `fee`,
+    `paidAmount` et `paymentStatus` du participant. Ni dépenses, ni budget, ni
+    liaison comptable, ni autres participants, ni bouton, ni total financier.
+  - L'écran du personnel (`ActivitiesManagement`) est inchangé.
+- **Tests** : `tests/emulator/activites-famille.test.ts` (règles),
+  `tests/unit/familyActivities.test.ts`, `tests/e2e/activites-famille.spec.ts`.
+- **Retour arrière** : `git revert` ; retirer `familyOwnsParticipant` de
+  `firestore.rules` (à déployer par un humain, runbook). Aucune donnée touchée.
