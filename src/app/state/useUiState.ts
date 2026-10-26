@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { Student, Payment, TajweedLevel } from "../../types";
 import { MONTHS_AR } from "../../school/businessRules";
+import { localIsoDate } from "../attendanceSessions";
 
 export function useUiState() {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
@@ -17,7 +18,9 @@ export function useUiState() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [showGradeModal, setShowGradeModal] = useState<boolean>(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("all");
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [attendanceDate, setAttendanceDate] = useState<string>(() => localIsoDate(new Date()));
+  // Enseignant pour lequel la halaqa a déjà été présélectionnée (UI-04) : un choix ultérieur n'est plus écrasé.
+  const [attendanceClassPickedFor, setAttendanceClassPickedFor] = useState<string | null>(null);
   
   // Teacher Dashboard States
   const [showTeacherStudentFileModal, setShowTeacherStudentFileModal] = useState<boolean>(false);
@@ -250,6 +253,8 @@ export function useUiState() {
     setSelectedClassId,
     attendanceDate,
     setAttendanceDate,
+    attendanceClassPickedFor,
+    setAttendanceClassPickedFor,
     showTeacherStudentFileModal,
     setShowTeacherStudentFileModal,
     teacherSelectedStudent,

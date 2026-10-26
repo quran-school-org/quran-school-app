@@ -61,7 +61,7 @@ export default function SalariesSection() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-sand-900 to-sand-800 text-white p-5 rounded-2xl flex items-center justify-between">
+            <div className="bg-gradient-to-br from-night to-night-2 text-white p-5 rounded-2xl flex items-center justify-between">
               <div>
                 <span className="text-[13px] font-medium text-sand-400 block mb-1">مجموع كتلة الأجور والرواتب</span>
                 <div className="text-3xl font-bold text-danger-300">

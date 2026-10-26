@@ -15,6 +15,7 @@ import { ACCOUNTS, chooseOption, loginAs, logout, openTab } from "./helpers";
 const menu = (page: Page) => page.locator("[data-select-menu]");
 const option = (page: Page, value: string) => menu(page).locator(`[role="option"][data-value="${value}"]`);
 const setLang = async (page: Page, lang: "ar" | "fr") => {
+  await page.locator("#i18n-test-switch .i18n-test-toggle").click();
   await page.locator(`#i18n-test-switch button[data-lang="${lang}"]`).click();
   await expect(page.locator("html")).toHaveAttribute("lang", lang);
 };

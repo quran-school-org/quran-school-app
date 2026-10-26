@@ -61,7 +61,7 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
           <div className="flex items-center gap-3 min-w-0">
             {icon && <span aria-hidden="true" className={cx("inline-flex shrink-0", tone === "night" ? "text-gold" : "text-gold-700")}>{icon}</span>}
             <div className="min-w-0">
-              <h2 id={titleId} className={cx("m-0 font-display font-semibold text-[20px] sm:text-[22px] leading-snug", tone === "night" ? "text-gold-100" : "text-primary")}>{title}</h2>
+              <h2 id={titleId} className={cx("m-0 font-sans font-semibold text-[20px] sm:text-[22px] leading-snug", tone === "night" ? "text-gold-100" : "text-primary")}>{title}</h2>
               {subtitle && <p className={cx("m-0 mt-0.5 text-[13.5px]", tone === "night" ? "text-night-muted" : "text-ink-2")}>{subtitle}</p>}
             </div>
           </div>

@@ -16,6 +16,7 @@ export type { SelectOption, SelectProps } from "./Select";
 export { Pagination, PAGE_SIZES } from "./Pagination";
 export { usePagination, pageCountOf, clampPage, pageWindow, pageRange, pageSlice, pageOfIndex, effectivePage } from "./usePagination";
 export { useDirection } from "./useDirection";
+export { useMediaQuery } from "./useMediaQuery";
 export { Modal } from "./Modal";
 export { TableWrap, Table, Th, Td, Tr } from "./DataTable";
 export { EmptyState } from "./EmptyState";

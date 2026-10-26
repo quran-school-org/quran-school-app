@@ -354,7 +354,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
   return (
     <div className="space-y-4" dir="rtl">
       {/* Header & Quick Actions Toolbar */}
-      <div className="bg-sand-900 text-white p-5 rounded-2xl space-y-4">
+      <div className="bg-night text-white p-5 rounded-2xl space-y-4">
         {/* Title & Subtitle */}
         <div className="flex items-start gap-3">
           <ShieldCheck className="w-6 h-6 text-gold-400 shrink-0 mt-0.5" />
@@ -372,7 +372,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
         </div>
 
         {/* Quick Horizontal Control Bar */}
-        <div className="pt-3 border-t border-sand-800 flex items-center justify-between gap-2 flex-wrap">
+        <div className="pt-3 border-t border-night-2 flex items-center justify-between gap-2 flex-wrap">
           <span className="text-[13px] text-ink-3 font-semibold hidden sm:inline">
             أزرار التحكم السريع:
           </span>

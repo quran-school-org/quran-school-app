@@ -2,13 +2,16 @@
  * Présences du jour (charte « لوحة الكتّاب ») : filtres, lecteur QR / manuel,
  * alertes d'absences consécutives, liste de pointage. Même logique qu'auparavant.
  */
-import { AlertTriangle, Bell, Camera, CheckCircle2, Clock3, FileText, Info, Keyboard, QrCode, Search, Volume2, X, XCircle } from "lucide-react";
+import { useEffect } from "react";
+import { AlertTriangle, Bell, Camera, CheckCheck, CheckCircle2, Clock3, FileText, Info, Keyboard, QrCode, Search, Volume2, X, XCircle } from "lucide-react";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { useApp } from "../app/AppContext";
 import {
-  ActionAlert, Button, Card, CardHeader, EmptyState, FormField, IconButton, Input, KpiGrid, KpiTile, Ltr, PageHeader, Pill,
+  ActionAlert, Button, Card, CardHeader, EmptyState, FormField, IconButton, Ltr, PageHeader, Pill,
   SearchInput, SegmentedControl, Select, WhatsAppIcon, cx,
 } from "../ui";
+import { localIsoDate, pickTeacherClass, previousSessionDate, studentsToMarkPresent } from "../app/attendanceSessions";
+import AttendanceDateBar, { dateLabel } from "./attendance/AttendanceDateBar";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} aria-hidden="true" />;
 
@@ -25,7 +28,17 @@ export default function AttendanceScreen() {
     showScannerPanel, setShowScannerPanel, setSelectedStudentForReport, setShowMonthlyReportModal,
     attendanceSearchQuery, setAttendanceSearchQuery, getConsecutiveAbsences, handleSendAbsenceWarning,
     handleToggleAttendance, playBeep, handleScannedValue,
+    currentRole, activeTeacher, teacherClasses, attendanceClassPickedFor, setAttendanceClassPickedFor,
   } = useApp();
+
+  // UI-04 : pour le مدرس, on ouvre sa halaqa (celle de la séance du jour si elle existe), pas « الكل ».
+  useEffect(() => {
+    if (currentRole !== "مدرس" || !activeTeacher || classes.length === 0) return;
+    if (attendanceClassPickedFor === activeTeacher.id) return;
+    const pick = pickTeacherClass(teacherClasses, new Date());
+    if (pick) setSelectedClassId(pick.id);
+    setAttendanceClassPickedFor(activeTeacher.id);
+  }, [currentRole, activeTeacher, teacherClasses, classes.length, attendanceClassPickedFor]);
 
   const classStudents = selectedClassId === "all" ? students : students.filter((st) => st.classId === selectedClassId);
   const urgent = classStudents
@@ -41,6 +54,22 @@ export default function AttendanceScreen() {
   const counts = { "حاضر": 0, "متأخر": 0, "غائب": 0, "غير مرصود": 0 } as Record<string, number>;
   filtered.forEach((st) => { counts[statusOf(st.id)] = (counts[statusOf(st.id)] || 0) + 1; });
 
+  const today = localIsoDate(new Date());
+  const scopeClasses = selectedClassId === "all" ? classes : classes.filter((c) => c.id === selectedClassId);
+  const previousDate = previousSessionDate(attendanceDate, scopeClasses);
+  const toMark = studentsToMarkPresent(filtered.filter((st) => !st.isArchived), attendance, attendanceDate);
+  const markAllPresent = () => toMark.forEach((id) => handleToggleAttendance(id, "حاضر"));
+  const isTeacher = currentRole === "مدرس";
+  const description = isTeacher
+    ? "سجّل حضور طلاب حلقتك وغيابهم: اضغط «تسجيل الجميع حاضرين» ثم صحّح الغائبين والمتأخرين."
+    : "اختر الحلقة والتاريخ ثم سجّل حضور الطلاب وغيابهم.";
+  const SUMMARY = [
+    { key: "حاضر", dot: "bg-success-700" },
+    { key: "متأخر", dot: "bg-gold" },
+    { key: "غائب", dot: "bg-danger" },
+    { key: "غير مرصود", dot: "bg-line-strong" },
+  ] as const;
+
   const openReport = (st: any) => { setSelectedStudentForReport(st); setShowMonthlyReportModal(true); };
   const mode = !showScannerPanel ? "off" : isScanning ? "camera" : "manual";
   const setMode = (m: string) => {
@@ -49,34 +78,37 @@ export default function AttendanceScreen() {
   };
 
   return (
-    <div data-screen="attendance" className="flex flex-col gap-6">
-      <PageHeader title="الحضور والغياب" description="حصر الحضور والغياب اليومي لحلقات القرآن: اختر الحلقة والتاريخ ثم ارصد الحضور بنقرة واحدة." />
+    <div data-screen="attendance" className="flex flex-col gap-5">
+      <PageHeader
+        title="الحضور والغياب"
+        description={description}
+        actions={
+          <>
+            <Button variant={mode === "camera" ? "primary" : "outline"} data-action="open-scanner" aria-pressed={mode === "camera"} onClick={() => setMode("camera")} icon={ic(Camera, "w-5 h-5")}>المسح بالكاميرا</Button>
+            <Button className="max-sm:hidden" aria-pressed={mode === "manual"} onClick={() => setMode("manual")} icon={ic(Keyboard, "w-5 h-5")}>قارئ الباركود</Button>
+          </>
+        }
+      />
 
-      <div className="flex flex-wrap items-end gap-3">
-        <FormField label="بحث عن طالب (نشط أو مؤرشف)" className="flex-[1_1_240px] max-w-sm">
-          {(id) => <SearchInput id={id} icon={ic(Search)} value={attendanceSearchQuery} onChange={(e: any) => setAttendanceSearchQuery(e.target.value)} placeholder="بحث بالاسم أو الهاتف..." />}
-        </FormField>
-        <FormField label="حلقة التحفيظ">
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+        <FormField label="حلقة التحفيظ" className="w-full sm:w-auto">
           {(id) => (
-            <Select id={id} value={selectedClassId} onChange={(v) => setSelectedClassId(v)} className="w-auto">
+            <Select id={id} value={selectedClassId} onChange={(v) => setSelectedClassId(v)} className="w-full sm:w-auto">
               <option value="all">الكل (جميع الحلقات والطلاب)</option>
-              {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {classes.filter((c) => !c.isArchived).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
           )}
         </FormField>
-        <FormField label="تاريخ الحلقة">
-          {(id) => <Input id={id} type="date" value={attendanceDate} onChange={(e: any) => setAttendanceDate(e.target.value)} className="w-auto" />}
-        </FormField>
+        <AttendanceDateBar date={attendanceDate} today={today} previousDate={previousDate} onChange={setAttendanceDate} />
+        {classStudents.length > 8 && (
+          <FormField label="بحث عن طالب (نشط أو مؤرشف)" className="flex-[1_1_240px] max-w-sm">
+            {(id) => <SearchInput id={id} icon={ic(Search)} value={attendanceSearchQuery} onChange={(e: any) => setAttendanceSearchQuery(e.target.value)} placeholder="بحث بالاسم أو الهاتف..." />}
+          </FormField>
+        )}
       </div>
 
-      <KpiGrid label="ملخص رصد اليوم" min={170}>
-        <KpiTile size="md" label="حاضر" value={counts["حاضر"]} unit="طالب" />
-        <KpiTile size="md" label="متأخر" value={counts["متأخر"]} unit="طالب" />
-        <KpiTile size="md" label="غائب" value={counts["غائب"]} unit="طالب"/>
-        <KpiTile size="md" label="غير مرصود" value={counts["غير مرصود"]} unit="طالب" />
-      </KpiGrid>
-
-      <Card className="flex flex-col gap-4" aria-labelledby="scanner-title">
+      {showScannerPanel && (
+      <Card className="flex flex-col gap-4" aria-labelledby="scanner-title" data-panel="scanner">
         <style>{`@keyframes scan-line-movement { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }`}</style>
         <CardHeader
           id="scanner-title"
@@ -95,22 +127,14 @@ export default function AttendanceScreen() {
                   { value: "camera", label: "كاميرا الهاتف / الجهاز", icon: ic(Camera, "w-3.5 h-3.5") },
                 ]}
               />
-              {showScannerPanel && (
+              {(
                 <IconButton size="sm" tone="danger" label="إغلاق لوحة القارئ" onClick={() => { setIsScanning(false); setShowScannerPanel(false); setScanStatus(null); }}>{ic(X)}</IconButton>
               )}
             </div>
           }
         />
 
-        {!showScannerPanel ? (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-xl bg-surface-2 border border-line-soft p-4">
-            <p className="m-0 text-[14px] text-ink-2 leading-relaxed">هل تريد تتبع حضور طلابك بضغطة زر وبسرعة فائقة؟ قم بتفعيل ميزة المسح السريع لبطاقة الطالب.</p>
-            <div className="flex gap-2 w-full sm:w-auto shrink-0">
-              <Button className="flex-1 sm:flex-initial" onClick={() => setMode("manual")} icon={ic(Keyboard)}>تشغيل القارئ اليدوي</Button>
-              <Button variant="primary" className="flex-1 sm:flex-initial" onClick={() => setMode("camera")} icon={ic(Camera)}>المسح بالكاميرا</Button>
-            </div>
-          </div>
-        ) : (
+        {(
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             <div className="md:col-span-7 flex flex-col gap-3">
               {isScanning ? (
@@ -201,6 +225,97 @@ export default function AttendanceScreen() {
           </div>
         )}
       </Card>
+      )}
+
+      <div
+        role="status"
+        aria-label="ملخص رصد اليوم"
+        data-attendance-summary
+        className="sticky top-0 z-20 -mx-4 sm:mx-0 px-4 sm:px-4 py-2.5 sm:rounded-xl bg-surface border-y sm:border border-line flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-ink-2"
+      >
+        <span className="font-semibold text-ink">{dateLabel(attendanceDate)}</span>
+        {SUMMARY.map((x) => (
+          <span key={x.key} data-count={x.key} className="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" className={cx("w-2.5 h-2.5 rounded-full", x.dot)} />
+            <span className="tabular-nums font-semibold text-ink">{`${counts[x.key]} ${x.key}`}</span>
+          </span>
+        ))}
+      </div>
+
+      <Card padded={false} className="overflow-hidden" aria-labelledby="roll-title">
+        <div className="flex flex-wrap justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
+          <h2 id="roll-title" className="m-0 font-display font-semibold text-[20px] text-primary">
+            {selectedClassId === "all" ? "جميع طلاب حلقات التحفيظ" : `طلاب ${classes.find((c) => c.id === selectedClassId)?.name || ""}`}
+          </h2>
+          <Button variant="success" data-action="mark-all-present" disabled={toMark.length === 0} onClick={markAllPresent} icon={ic(CheckCheck, "w-5 h-5")}>تسجيل الجميع حاضرين</Button>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="p-5"><EmptyState title="لا طلاب">لا يوجد طلاب مسجلون في هذا الفصل حالياً.</EmptyState></div>
+        ) : (
+          <ul className="m-0 p-0 list-none divide-y divide-line-faint">
+            {filtered.map((st) => {
+              const record = attendance.find((a) => a.date === attendanceDate && a.studentId === st.id);
+              const status = record?.status || "غير مرصود";
+              const studentClass = classes.find((c) => c.id === st.classId);
+              const absences = getConsecutiveAbsences(st.id);
+              return (
+                <li key={st.id} data-student-row={st.id} className="px-4 sm:px-5 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-surface-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button type="button" tabIndex={-1} onClick={() => openReport(st)} title="عرض كشف حضور الطالب الشهري" className="w-10 h-10 rounded-full overflow-hidden bg-sunken shrink-0 border border-line cursor-pointer p-0 hover:ring-2 hover:ring-gold hover:ring-offset-2 transition">
+                      <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />
+                    </button>
+                    <div className="min-w-0 flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          data-action="open-monthly-report"
+                          onClick={() => openReport(st)}
+                          className={cx("bg-transparent border-0 p-0 cursor-pointer font-semibold text-[14.5px] text-start hover:text-primary hover:underline flex items-center gap-1 min-h-8", st.isArchived ? "text-ink-3 line-through" : "text-ink")}
+                          title="عرض كشف حضور الطالب الشهري"
+                        >
+                          <span>{st.fullName}</span>
+                          {ic(FileText, "w-3.5 h-3.5 text-ink-3")}
+                        </button>
+                        {st.isArchived && <Pill tone="neutral">مؤرشف</Pill>}
+                        {selectedClassId === "all" && studentClass && <Pill tone="primary">{studentClass.name}</Pill>}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-3">
+                        <span className={cx(status !== "غائب" && "hidden sm:inline")}>ولي الأمر: {st.parentName}{st.parentPhone ? <> (<Ltr>{st.parentPhone}</Ltr>)</> : null}</span>
+                        {absences >= 3 && <Pill tone="danger" dot>غائب لـ {absences} حصص متتالية</Pill>}
+                        {record?.notes && <Pill tone="warn">{record.notes}</Pill>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+                    {absences >= 3 && (
+                      <Button size="sm" variant="danger" id={`send-warning-btn-${st.id}`} title="إرسال إنذار غياب فوري عبر واتساب" onClick={() => handleSendAbsenceWarning(st)} icon={<WhatsAppIcon className="w-3.5 h-3.5" />}>
+                        إرسال إنذار غياب
+                      </Button>
+                    )}
+                    <div role="group" aria-label={`حالة حضور ${st.fullName}`} className="grid grid-cols-3 gap-1.5 w-full lg:w-auto lg:inline-flex">
+                      {STATUS_BUTTONS.map((b) => {
+                        const on = status === b.value;
+                        return (
+                          <button
+                            key={b.value}
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => handleToggleAttendance(st.id, b.value)}
+                            className={cx("inline-flex items-center justify-center gap-1.5 min-h-11 px-3 rounded-[10px] border text-[13.5px] font-semibold cursor-pointer transition-colors", on ? b.on : "bg-white border-line text-ink-2 hover:border-ink-4")}
+                          >
+                            {ic(b.icon, "w-4 h-4")}{b.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Card>
 
       {urgent.length > 0 && (
         <section id="urgent-attendance-alerts" aria-labelledby="urgent-title" className="rounded-2xl bg-danger-100 border border-danger-200 p-5 flex flex-col gap-3">
@@ -224,82 +339,6 @@ export default function AttendanceScreen() {
           </div>
         </section>
       )}
-
-      <Card padded={false} className="overflow-hidden" aria-labelledby="roll-title">
-        <div className="flex flex-wrap justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
-          <h2 id="roll-title" className="m-0 font-display font-semibold text-[20px] text-primary">
-            {selectedClassId === "all" ? "جميع طلاب حلقات التحفيظ" : `طلاب ${classes.find((c) => c.id === selectedClassId)?.name || ""}`}
-          </h2>
-          <span className="text-[13px] text-ink-2">تاريخ الرصد: <Ltr className="font-semibold text-ink">{attendanceDate}</Ltr></span>
-        </div>
-        {filtered.length === 0 ? (
-          <div className="p-5"><EmptyState title="لا طلاب">لا يوجد طلاب مسجلون في هذا الفصل حالياً.</EmptyState></div>
-        ) : (
-          <ul className="m-0 p-0 list-none divide-y divide-line-faint">
-            {filtered.map((st) => {
-              const record = attendance.find((a) => a.date === attendanceDate && a.studentId === st.id);
-              const status = record?.status || "غير مرصود";
-              const studentClass = classes.find((c) => c.id === st.classId);
-              const absences = getConsecutiveAbsences(st.id);
-              return (
-                <li key={st.id} className="px-5 py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-surface-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button type="button" tabIndex={-1} onClick={() => openReport(st)} title="عرض كشف حضور الطالب الشهري" className="w-10 h-10 rounded-full overflow-hidden bg-sunken shrink-0 border border-line cursor-pointer p-0 hover:ring-2 hover:ring-gold hover:ring-offset-2 transition">
-                      <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />
-                    </button>
-                    <div className="min-w-0 flex flex-col gap-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          data-action="open-monthly-report"
-                          onClick={() => openReport(st)}
-                          className={cx("bg-transparent border-0 p-0 cursor-pointer font-semibold text-[14.5px] text-start hover:text-primary hover:underline flex items-center gap-1 min-h-8", st.isArchived ? "text-ink-3 line-through" : "text-ink")}
-                          title="عرض كشف حضور الطالب الشهري"
-                        >
-                          <span>{st.fullName}</span>
-                          {ic(FileText, "w-3.5 h-3.5 text-ink-3")}
-                        </button>
-                        {st.isArchived && <Pill tone="neutral">مؤرشف</Pill>}
-                        {selectedClassId === "all" && studentClass && <Pill tone="primary">{studentClass.name}</Pill>}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-3">
-                        <span>ولي الأمر: {st.parentName}{st.parentPhone ? <> (<Ltr>{st.parentPhone}</Ltr>)</> : null}</span>
-                        {absences >= 3 && <Pill tone="danger" dot>غائب لـ {absences} حصص متتالية</Pill>}
-                        {record?.notes && <Pill tone="warn">{record.notes}</Pill>}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2">
-                    {absences >= 3 && (
-                      <Button size="sm" variant="danger" id={`send-warning-btn-${st.id}`} title="إرسال إنذار غياب فوري عبر واتساب" onClick={() => handleSendAbsenceWarning(st)} icon={<WhatsAppIcon className="w-3.5 h-3.5" />}>
-                        إرسال إنذار غياب
-                      </Button>
-                    )}
-                    <span className="text-[12.5px] text-ink-3">الحالة المرصودة:</span>
-                    <div role="group" aria-label={`حالة حضور ${st.fullName}`} className="inline-flex gap-1.5">
-                      {STATUS_BUTTONS.map((b) => {
-                        const on = status === b.value;
-                        return (
-                          <button
-                            key={b.value}
-                            type="button"
-                            aria-pressed={on}
-                            onClick={() => handleToggleAttendance(st.id, b.value)}
-                            className={cx("inline-flex items-center gap-1.5 min-h-11 px-3 rounded-[10px] border text-[13.5px] font-semibold cursor-pointer transition-colors", on ? b.on : "bg-white border-line text-ink-2 hover:border-ink-4")}
-                          >
-                            {ic(b.icon, "w-4 h-4")}{b.value}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
     </div>
   );
 }
