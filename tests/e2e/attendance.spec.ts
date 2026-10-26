@@ -85,7 +85,7 @@ test.describe("présence de la semaine sur téléphone (UI-20)", () => {
     await loginAs(page, ACCOUNTS.directeur);
     await page.setViewportSize({ width: 1440, height: 900 });
     await openTab(page, "dashboard");
-    await expect(page.locator('[data-weekly="columns"], p:has-text("لم تُسجَّل")').first()).toBeVisible();
+    await expect(page.locator('[data-weekly="columns"], [data-weekly="empty"]').first()).toBeVisible();
     await page.setViewportSize({ width: 390, height: 844 });
     const rows = page.locator('[data-weekly="rows"]');
     if (await rows.count()) {
