@@ -1,8 +1,11 @@
 /**
  * Fenêtre modale de la charte : voile bleu nuit, panneau surface rayon 22 px,
  * en-tête Reem Kufi, pied d'actions. Échap ferme (si `onClose`), le focus est
- * placé dans la fenêtre à l'ouverture puis rendu à l'élément d'origine.
+ * placé dans la fenêtre à l'ouverture, piégé dans la fenêtre (Tab / Maj+Tab
+ * bouclent) puis rendu à l'élément d'origine.
  * Les classes `fixed inset-0` sont conservées : la feuille d'impression s'en sert.
+ * Options rétrocompatibles (D98) : `size="base"` (max-w-lg), `printHidden` (fenêtre
+ * de saisie absente de l'impression), `footerAlign="between"`.
  */
 import React, { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
@@ -15,19 +18,28 @@ export interface ModalProps {
   onClose?: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "sm" | "md" | "lg" | "xl";
+  /** `base` : entre `sm` et `md` (max-w-lg). */
+  size?: "sm" | "base" | "md" | "lg" | "xl";
   modalId?: string;
   className?: string;
   bodyClassName?: string;
   headerExtra?: React.ReactNode;
   tone?: "default" | "night";
+  /** Fenêtre de saisie : masquée à l'impression de la page (les aperçus d'impression ne l'activent pas). */
+  printHidden?: boolean;
+  /** `between` : actions réparties aux deux bords (fermer / action principale). Par défaut, groupées en fin de ligne. */
+  footerAlign?: "end" | "between";
   /** Si fourni, le corps et le pied forment un <form> (boutons type=submit dans le pied). */
   onSubmit?: (e: any) => void;
 }
 
-const SIZES = { sm: "max-w-md", md: "max-w-2xl", lg: "max-w-4xl", xl: "max-w-6xl" };
+const SIZES = { sm: "max-w-md", base: "max-w-lg", md: "max-w-2xl", lg: "max-w-4xl", xl: "max-w-6xl" };
 
-export function Modal({ title, subtitle, icon, onClose, children, footer, size = "md", modalId, className, bodyClassName, headerExtra, tone = "default", onSubmit }: ModalProps) {
+/** Éléments atteignables au clavier dans la fenêtre (hors masqués et désactivés). */
+const FOCUSABLE = "a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])";
+const focusablesOf = (root: HTMLElement) => Array.from(root.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.closest("[hidden]") && el.getClientRects().length > 0);
+
+export function Modal({ title, subtitle, icon, onClose, children, footer, size = "md", modalId, className, bodyClassName, headerExtra, tone = "default", onSubmit, printHidden, footerAlign = "end" }: ModalProps) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -38,6 +50,27 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
       if (e.key === "Escape" && onClose) {
         e.stopPropagation();
         onClose();
+        return;
+      }
+      // Piège du focus : Tab sur le dernier élément revient au premier, Maj+Tab sur le premier va au dernier.
+      // Seulement quand le focus est dans cette fenêtre (une liste déroulante en portail gère son propre clavier).
+      const box = panel.current;
+      if (e.key !== "Tab" || !box || !box.contains(document.activeElement)) return;
+      const items = focusablesOf(box);
+      if (items.length === 0) {
+        e.preventDefault();
+        box.focus({ preventScroll: true });
+        return;
+      }
+      const firstEl = items[0];
+      const lastEl = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === firstEl || active === box)) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && active === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -48,7 +81,7 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return (
-    <div data-modal={modalId} className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-night/55 backdrop-blur-[2px] overflow-y-auto" dir="rtl">
+    <div data-modal={modalId} className={cx("fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-night/55 backdrop-blur-[2px] overflow-y-auto", printHidden && "print:hidden")} dir="rtl">
       <div
         ref={panel}
         role="dialog"
@@ -84,12 +117,12 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
         {onSubmit ? (
           <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
             <div className={cx("px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0", bodyClassName)}>{children}</div>
-            {footer && <div className="px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center justify-end gap-2.5 shrink-0">{footer}</div>}
+            {footer && <div className={cx("px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center gap-2.5 shrink-0", footerAlign === "between" ? "justify-between" : "justify-end")}>{footer}</div>}
           </form>
         ) : (
           <>
             <div className={cx("px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0", bodyClassName)}>{children}</div>
-            {footer && <div className="px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center justify-end gap-2.5 shrink-0">{footer}</div>}
+            {footer && <div className={cx("px-5 sm:px-6 py-4 border-t border-line-soft flex flex-wrap items-center gap-2.5 shrink-0", footerAlign === "between" ? "justify-between" : "justify-end")}>{footer}</div>}
           </>
         )}
       </div>
