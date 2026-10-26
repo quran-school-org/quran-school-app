@@ -438,7 +438,9 @@ export function subscribeToQueryIn<T extends { id: string }>(
   field: string,
   values: string[],
   onUpdate: (data: T[]) => void,
-  cacheName: string
+  cacheName: string,
+  /** Filtres d'égalité en plus du `in` (requis par certaines règles, ex. D94). */
+  equals: Record<string, string> = {}
 ) {
   if (values.length === 0) {
     writeCache(schoolId, cacheName, []);
@@ -449,7 +451,7 @@ export function subscribeToQueryIn<T extends { id: string }>(
   for (let i = 0; i < values.length; i += 30) chunks.push(values.slice(i, i + 30));
   const parts = new Map<number, T[]>();
   const unsubs = chunks.map((chunk, index) =>
-    onSnapshot(query(schoolCollection(schoolId, collectionName), where(field, "in", chunk)), (snapshot) => {
+    onSnapshot(query(schoolCollection(schoolId, collectionName), ...Object.entries(equals).map(([k, v]) => where(k, "==", v)), where(field, "in", chunk)), (snapshot) => {
       const items: T[] = [];
       snapshot.forEach((d) => items.push({ id: d.id, ...d.data() } as T));
       parts.set(index, items);
