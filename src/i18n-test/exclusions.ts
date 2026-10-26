@@ -4,6 +4,8 @@
  * l'application (messages WhatsApp envoyés aux parents, qui restent en arabe).
  */
 export const KEEP_ARABIC: Record<string, string> = {
+  "اللغة / Langue": "libellé bilingue du réglage de langue (D93), identique dans les deux langues",
+  "العربية": "nom de la langue dans sa propre langue (réglage de langue, D93)",
   "«الْمَاهِرُ بِالْقُرْآنِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ»": "hadith cité en arabe (texte consacré)",
   "«خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ»": "hadith cité en arabe (texte consacré)",
 };

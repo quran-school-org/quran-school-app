@@ -12,8 +12,6 @@ interface ImportMetaEnv {
   readonly VITE_EMULATOR_HOST?: string;
   readonly VITE_APPCHECK_SITE_KEY?: string;
   readonly VITE_APPCHECK_DEBUG_TOKEN?: string;
-  /** Traduction française de test (D79) : "true" en dev seulement. */
-  readonly VITE_ENABLE_FR_TEST?: string;
 }
 
 interface ImportMeta {

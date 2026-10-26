@@ -3,7 +3,7 @@
  * qu'auparavant ; sans fermeture possible tant qu'un changement de mot de passe est imposé.
  */
 import { AtSign, Check, Eye, EyeOff, Lock, ShieldAlert, User } from "lucide-react";
-import { ActionAlert, Button, FormField, InitialAvatar, Modal, SearchInput } from "../../ui";
+import { ActionAlert, Button, FormField, InitialAvatar, LanguageSetting, Modal, SearchInput } from "../../ui";
 import { useApp } from "../../app/AppContext";
 
 export default function ProfileModal() {
@@ -56,6 +56,7 @@ export default function ProfileModal() {
             {profileError}
           </ActionAlert>
         )}
+        <LanguageSetting />
         <FormField label="الاسم الكامل لصاحب الحساب">
           {(id) => <SearchInput id={id} type="text" icon={<User className="w-4 h-4" strokeWidth={1.75} />} value={profileFullName} onChange={(e: any) => setProfileFullName(e.target.value)} placeholder="أدخل الاسم الكامل" maxLength={120} required />}
         </FormField>

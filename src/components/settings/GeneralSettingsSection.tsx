@@ -5,7 +5,7 @@
 import { MONTHS_AR } from "../../school/businessRules";
 import { Building, Phone, Mail, MapPin, Trash2, DollarSign, ToggleLeft, ToggleRight, Save, Upload, Landmark, FileCheck, CreditCard, Award, Calendar, Tag, FileText, Plus } from "lucide-react";
 import { useSettings } from "./SettingsContext";
-import { Select } from "../../ui";
+import { LanguageSetting, Select } from "../../ui";
 import ThemePicker from "./ThemePicker";
 
 export default function GeneralSettingsSection() {
@@ -74,6 +74,9 @@ export default function GeneralSettingsSection() {
 
           {/* 0. Thème de couleur de l'école (D84) */}
           <ThemePicker />
+
+          {/* Langue de l'interface (D93) : préférence de l'appareil, pas un réglage de l'école. */}
+          <LanguageSetting />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 

@@ -11,6 +11,7 @@ export type { PillTone } from "./Pill";
 export { ActionAlert, TextAction } from "./ActionAlert";
 export { SegmentedControl, FilterChips } from "./SegmentedControl";
 export { Input, Textarea, FormField, CheckboxRow, SearchInput, fieldClass } from "./Form";
+export { LanguageSetting } from "./LanguageSetting";
 export { Select, SEARCH_THRESHOLD } from "./Select";
 export type { SelectOption, SelectProps } from "./Select";
 export { Pagination, PAGE_SIZES } from "./Pagination";

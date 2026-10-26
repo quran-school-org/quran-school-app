@@ -66,8 +66,8 @@ notifications, comptes et droits par rôle (9 rôles).
    (`docs/communication/`), puis bascule en prod (≈ 1 h,
    `docs/runbooks/OPERATIONS-CLAUDE.md` §5 et `MIGRATION-BASCULE.md`).
 4. Après la bascule : création de la 2ᵉ école (`docs/runbooks/NOUVELLE-ECOLE.md`),
-   suppression de la copie des données du dev, **retrait de la traduction FR**
-   (procédure dans D79).
+   suppression de la copie des données du dev. (La traduction FR n'est plus
+   à retirer : elle est devenue une option de langue, D93.)
 5. Correctif de sécurité `body-parser` à déployer sur les Functions de la prod
    (PR vers `release/lot0`).
 6. Recommandé : sauvegarde quotidienne (`BACKUP_ENABLED`), App Check en mode
@@ -172,7 +172,7 @@ depuis `main`, authentifiés sans clé (WIF limité à `main` et à ces workflow
 | `src/types.ts` | modèles, 9 rôles, matrice de permissions |
 | `src/security/` | modules purs (comptes ↔ Auth, groupes de rôles miroirs des règles) |
 | `src/print/` | gabarits d'impression (HTML échappé, sans script) |
-| `src/i18n-test/` | traduction FR **temporaire** (retrait : D79) |
+| `src/i18n-test/` | traduction FR (option de langue, D93 ; nom d'origine conservé, voir D79) |
 | `firestore.rules` | règles multi-écoles (racine fermée) |
 | `functions/` | `createSchool`, `createSchoolUser`, `resetUserPassword`, `setMemberRole`, `api` (`/api/health`), triggers d'archivage, export planifié |
 | `scripts/admin`, `scripts/migration`, `scripts/ops`, `scripts/dev` | scripts Admin SDK (simulation par défaut, `--project` obligatoire) et données fictives |

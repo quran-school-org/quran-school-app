@@ -238,8 +238,6 @@ jobs:
             echo "VITE_FIRESTORE_DATABASE_ID=\"${VITE_FIRESTORE_DATABASE_ID}\""
             echo "VITE_APPCHECK_SITE_KEY=\"${VITE_APPCHECK_SITE_KEY}\""
             echo 'VITE_USE_EMULATORS="false"'
-            # Traduction française de TEST (sélecteur AR / FR, D79) : dev seulement, jamais la prod.
-            echo 'VITE_ENABLE_FR_TEST="true"'
           } > .env.production.local
           # Paramètres non secrets des Functions pour ce projet, s'ils ne sont pas versionnés.
           ENV_FILE="functions/.env.${PROJECT_ID}"

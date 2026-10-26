@@ -10,15 +10,10 @@
  * - confirmation avant d'effacer toutes les notifications.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, chooseOption, loginAs, logout, openTab } from "./helpers";
+import { ACCOUNTS, chooseOption, loginAs, logout, openTab, setLang } from "./helpers";
 
 const menu = (page: Page) => page.locator("[data-select-menu]");
 const option = (page: Page, value: string) => menu(page).locator(`[role="option"][data-value="${value}"]`);
-const setLang = async (page: Page, lang: "ar" | "fr") => {
-  await page.locator("#i18n-test-switch .i18n-test-toggle").click();
-  await page.locator(`#i18n-test-switch button[data-lang="${lang}"]`).click();
-  await expect(page.locator("html")).toHaveAttribute("lang", lang);
-};
 
 test.describe.serial("listes déroulantes et pagination (D83)", () => {
   test("liste déroulante : clavier, Échap, clic extérieur, recherche", async ({ page }) => {

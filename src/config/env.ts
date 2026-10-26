@@ -59,13 +59,3 @@ export const appCheckConfig = {
   siteKey: (env.VITE_APPCHECK_SITE_KEY || "").trim(),
   debugToken: (env.VITE_APPCHECK_DEBUG_TOKEN || "").trim(),
 };
-
-/**
- * Traduction française de TEST (D79) : drapeau de build, vrai seulement dans
- * .env.development et le build du dev déployé (deploy.yml, preview.yml) ;
- * absent de .env.production. Lu par src/main.tsx, qui n'importe le module
- * src/i18n-test que s'il est vrai (import dynamique éliminé du bundle de prod).
- * Lecture directe de la variable (et non de l'objet `env`) : Vite la remplace
- * par une constante, ce qui permet l'élimination du code mort.
- */
-export const frTestEnabled: boolean = import.meta.env.VITE_ENABLE_FR_TEST === "true";
