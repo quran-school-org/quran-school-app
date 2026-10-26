@@ -4,6 +4,7 @@
  */
 import { useApp } from "../../app/AppContext";
 import { Button, FormField, Input, Modal, Select, Textarea } from "../../ui";
+import { formatMoney } from "../../utils/format";
 
 const MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "ماي", "يونيو", "يوليوز", "غشت", "شتمبر", "أكتوبر", "نونبر", "دجنبر"];
 const YEARS = Array.from({ length: 2099 - 2026 + 1 }, (_, i) => 2026 + i);
@@ -27,7 +28,7 @@ export default function PaymentFormModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">حفظ السجل</Button>
+          <Button type="submit" variant="primary">حفظ الدفعة</Button>
         </>
       }
     >
@@ -56,14 +57,14 @@ export default function PaymentFormModal() {
             )}
           </FormField>
         </div>
-        <FormField label="مبلغ الاشتراك (بالدرهم)" hint={`السعر الافتراضي لهذا الشهر: ${getSubscriptionAmount(paymentFormMonth, paymentFormYear)} درهم`}>
+        <FormField label="مبلغ الاشتراك (د.م)" hint={`السعر الافتراضي لهذا الشهر: ${formatMoney(getSubscriptionAmount(paymentFormMonth, paymentFormYear))}`}>
           {(id) => <Input id={id} type="number" required min={0} value={paymentFormAmount} onChange={(e: any) => setPaymentFormAmount(Number(e.target.value))} placeholder="100" className="tabular-nums" />}
         </FormField>
-        <FormField label="حالة الدفع">
+        <FormField label="حالة الدفع" hint={paymentFormStatus === "مدفوع" ? undefined : "يُسجَّل كمستحق معلّق بلا إيصال، ويمكن تسديده لاحقاً من قائمة الرسوم."}>
           {(id) => (
             <Select id={id} value={paymentFormStatus} onChange={(v) => setPaymentFormStatus(v as "مدفوع" | "غير مدفوع")}>
-              <option value="غير مدفوع">غير مدفوع</option>
               <option value="مدفوع">مدفوع</option>
+              <option value="غير مدفوع">غير مدفوع (مستحق لاحقاً)</option>
             </Select>
           )}
         </FormField>
