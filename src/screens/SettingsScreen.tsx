@@ -22,6 +22,8 @@ export default function SettingsScreen() {
     handleResetUserPassword,
     handleDeleteAppUser,
     handleHarmonizeUsersWithStaff,
+    handleBackupRealmDB,
+    handleRestoreRealmDB,
   } = useApp();
   // App.tsx n'affiche l'écran qu'une fois les paramètres chargés.
   if (!systemSettings) return null;
@@ -44,6 +46,8 @@ export default function SettingsScreen() {
       onSaveAppUser={handleSaveAppUser}
       onDeleteAppUser={handleDeleteAppUser}
       onHarmonizeUsers={handleHarmonizeUsersWithStaff}
+      onBackup={handleBackupRealmDB}
+      onRestore={handleRestoreRealmDB}
     />
   );
 }
