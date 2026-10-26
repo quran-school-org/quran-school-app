@@ -12,12 +12,6 @@ import { AppShell, Emblem, NavBrand, SideNav, Topbar, useMediaQuery } from "../u
 import { buildNavGroups, visibleTabs } from "./navModel";
 import QuotaBanner from "./QuotaBanner";
 
-const SYNC_TEXT = {
-  synced: { dot: "#7FC56B", text: "قاعدة البيانات متصلة، والبيانات متزامنة الآن" },
-  syncing: { dot: "var(--color-gold)", text: "جارٍ الاتصال بقاعدة البيانات ومزامنة البيانات…" },
-  error: { dot: "#E08A7E", text: "تعذّر الاتصال بقاعدة البيانات، العمل على النسخة المحلية" },
-} as const;
-
 export function formatToday(d = new Date()): string {
   try {
     return new Intl.DateTimeFormat("ar-MA-u-nu-latn", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(d);
@@ -83,7 +77,8 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
     ? (currentStudentObj ? (currentStudentObj.tajweedLevel || "متوسط") : "-")
     : isStaffOrAdmin ? `${furthestHizb} حزب` : currentRole === "مدرس" ? `${teacherFurthestHizb} حزب` : `${parentFurthestHizb} حزب`;
   const statsSecondLabel = currentRole === "طالب" ? "مستوى التجويد" : "أبعد حزب بلغه طالب";
-  const sync = SYNC_TEXT[syncStatus];
+  // D93 : plus d'état « connecté / synchronisé » affiché en permanence ; seul un problème est signalé.
+  const syncError = syncStatus === "error";
 
   const footer = (closeDrawer: boolean) => (
     <>
@@ -118,10 +113,12 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           </span>
         </span>
       </button>
-      <div className="flex items-center gap-2.5 px-1.5 text-[12.5px] text-night-soft" role="status">
-        <span aria-hidden="true" className="w-2 h-2 rounded-full shrink-0" style={{ background: sync.dot }} />
-        <span>{sync.text}</span>
-      </div>
+      {syncError && (
+        <div className="flex items-center gap-2.5 px-1.5 text-[12.5px] text-night-soft" role="status" data-sync-error>
+          <span aria-hidden="true" className="w-2 h-2 rounded-full shrink-0 bg-danger" />
+          <span>تعذّر الاتصال بقاعدة البيانات، العمل على النسخة المحلية</span>
+        </div>
+      )}
     </>
   );
 

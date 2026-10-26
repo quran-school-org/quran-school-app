@@ -1,17 +1,16 @@
 /**
- * Traduction française de TEST (D79) : sélecteur AR / FR, connexion et
- * navigation en FR, valeurs et saisies jamais traduites. Données FICTIVES,
- * émulateurs uniquement ; `npm run dev` lit .env.development (drapeau actif).
+ * Langue de l'interface (D79, D93) : réglage « اللغة / Langue » (menu du compte
+ * de tous les rôles, Paramètres du directeur), connexion et navigation en FR,
+ * valeurs et saisies jamais traduites. Données FICTIVES, émulateurs seulement.
  *
  * Options (désactivées par défaut) :
  *   CAPTURE_DIR=/chemin/absolu       captures FR (bureau 1440 px, mobile 390 px)
  *   I18N_MISSING_OUT=/chemin/fichier  parcours des écrans, chaînes sans traduction
- * Retrait de la traduction : supprimer ce fichier avec src/i18n-test (D79).
  */
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, desktopTabs, openTab, type DemoAccount, chooseOption } from "./helpers";
+import { ACCOUNTS, LANG_STORAGE_KEY, loginAs, desktopTabs, openTab, setLang, type DemoAccount, chooseOption } from "./helpers";
 
 const CAPTURE_DIR = process.env.CAPTURE_DIR || "";
 const MISSING_OUT = process.env.I18N_MISSING_OUT || "";
@@ -19,13 +18,6 @@ const DESKTOP = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
 
 const html = (page: Page) => page.locator("html");
-const switcher = (page: Page) => page.locator("#i18n-test-switch");
-
-async function setLang(page: Page, lang: "ar" | "fr") {
-  await switcher(page).locator(".i18n-test-toggle").click();
-  await switcher(page).locator(`button[data-lang="${lang}"]`).click();
-  await expect(html(page)).toHaveAttribute("lang", lang);
-}
 
 /** Connexion depuis l'interface en FR (messages attendus en français). */
 async function loginFr(page: Page, account: DemoAccount) {
@@ -59,14 +51,15 @@ async function logoutFr(page: Page) {
   await expect(page.locator('form button[type="submit"]')).toBeVisible();
 }
 
-test.describe.serial("traduction FR de test (D79)", () => {
-  test("bascule AR → FR → AR sur l'écran de connexion", async ({ page }) => {
+test.describe.serial("langue de l'interface AR / FR (D79, D93)", () => {
+  test("écran de connexion : arabe par défaut, aucun bouton flottant, dernière langue de l'appareil", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator('form button[type="submit"]')).toBeVisible();
     await expect(html(page)).toHaveAttribute("dir", "rtl");
-    await expect(switcher(page)).toBeVisible();
-    await expect(switcher(page)).toContainText("test");
     await expect(page.getByText("تسجيل الدخول الآمن")).toBeVisible();
+    // Plus de bouton flottant « TEST » (D93).
+    await expect(page.locator("#i18n-test-switch")).toHaveCount(0);
+    await expect(page.getByText(/^TEST$/i)).toHaveCount(0);
 
     await setLang(page, "fr");
     await expect(html(page)).toHaveAttribute("dir", "ltr");
@@ -79,13 +72,75 @@ test.describe.serial("traduction FR de test (D79)", () => {
     await expect(page.getByText("تسجيل الدخول الآمن")).toBeVisible();
     await expect(page.getByText("Connexion sécurisée")).toHaveCount(0);
     await expect(page.locator('[data-screen="login"]')).toHaveCSS("direction", "rtl");
+  });
 
-    // Le choix est mémorisé dans le navigateur.
-    await setLang(page, "fr");
-    await page.reload();
+  test("parent : change la langue depuis le menu du compte, elle persiste après rechargement", async ({ page }) => {
+    await loginAs(page, ACCOUNTS.parent);
+    const nav = page.locator('[data-nav="desktop"]');
+    await expect(html(page)).toHaveAttribute("lang", "ar");
+    await expect(nav.getByText("متابعة أبنائي")).toBeVisible();
+
+    // Menu du compte : le réglage est là pour un parent (qui n'a pas Paramètres).
+    await expect(nav.locator('[data-tab="settings"]')).toHaveCount(0);
+    await page.locator('[data-action="open-profile"]').click();
+    const setting = page.locator('[data-modal="profile"] [data-language-setting]');
+    await expect(setting).toContainText("اللغة / Langue");
+    const ar = setting.locator('button[data-lang="ar"]');
+    const fr = setting.locator('button[data-lang="fr"]');
+    await expect(ar).toHaveText("العربية");
+    await expect(fr).toHaveText("Français");
+    await expect(ar).toHaveAttribute("aria-pressed", "true");
+    await fr.click();
+    // Immédiat : sans rechargement, sens et textes passent en FR ; le réglage reste lisible.
+    await expect(html(page)).toHaveAttribute("lang", "fr");
     await expect(html(page)).toHaveAttribute("dir", "ltr");
+    await expect(fr).toHaveAttribute("aria-pressed", "true");
+    await expect(setting).toContainText("اللغة / Langue");
+    await expect(page.locator('[data-modal="profile"]')).toContainText("Profil et compte");
+    await page.keyboard.press("Escape");
+    await expect(nav.getByText("Suivi de mes enfants")).toBeVisible();
+    expect(await page.evaluate((k) => localStorage.getItem(k), LANG_STORAGE_KEY)).toBe("fr");
+
+    // Persiste après rechargement (préférence de l'appareil), session conservée.
+    await page.reload();
+    await expect(page.locator("[data-app-shell]")).toBeVisible();
+    await expect(html(page)).toHaveAttribute("lang", "fr");
+    await expect(nav.getByText("Suivi de mes enfants")).toBeVisible();
+
+    // Retour en arabe, toujours depuis le menu du compte.
+    await setLang(page, "ar");
+    await expect(html(page)).toHaveAttribute("dir", "rtl");
+    await expect(nav.getByText("متابعة أبنائي")).toBeVisible();
+    await page.reload();
+    await expect(html(page)).toHaveAttribute("lang", "ar");
+
+    // L'écran de connexion reprend la dernière langue choisie sur l'appareil.
+    await setLang(page, "fr");
+    await page.getByRole("button", { name: /Déconnexion/ }).first().click();
+    await expect(page.locator('form button[type="submit"]')).toBeVisible();
     await expect(page.getByText("Connexion sécurisée")).toBeVisible();
     await setLang(page, "ar");
+  });
+
+  test("directeur : réglage dans Paramètres, et plus d'état « synchronisé »", async ({ page }) => {
+    await loginAs(page, ACCOUNTS.directeur);
+    // Plus de message ni de pastille de synchronisation (D93), à aucune largeur.
+    for (const size of [DESKTOP, MOBILE]) {
+      await page.setViewportSize(size);
+      await expect(page.locator("[data-app-shell]")).toBeVisible();
+      await expect(page.getByText(/متزامن|متصلة، والبيانات/)).toHaveCount(0);
+    }
+    await page.setViewportSize(DESKTOP);
+    await openTab(page, "settings");
+    const setting = page.locator('[data-screen="settings"] [data-language-setting]');
+    await expect(setting).toBeVisible();
+    await setting.locator('button[data-lang="fr"]').click();
+    await expect(html(page)).toHaveAttribute("lang", "fr");
+    await expect(page.locator('[data-nav="desktop"]').getByText("Tableau de bord du kuttab")).toBeVisible();
+    await expect(page.getByText(/Synchronisé|synchronisées/)).toHaveCount(0);
+    await setting.locator('button[data-lang="ar"]').click();
+    await expect(html(page)).toHaveAttribute("lang", "ar");
+    await expect(page.locator('[data-nav="desktop"]').getByText("لوحة الكتّاب")).toBeVisible();
   });
 
   test("directeur : connexion et navigation en FR, valeurs et saisies intactes", async ({ page }) => {

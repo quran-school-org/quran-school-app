@@ -1,14 +1,12 @@
 /**
- * Traduction française de TEST (D79) : moteur, dictionnaire, couverture,
- * drapeau de build (dev seulement) et garde-fous du bundle de production.
- * Retrait de la traduction : supprimer ce fichier avec src/i18n-test.
+ * Traduction française (D79, disponible en production par D93) : moteur,
+ * dictionnaire, couverture, chargement dynamique et garde-fou du bundle.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { parse } from "dotenv";
 import { describe, expect, it } from "vitest";
 
-import { committedProductionProjectId, frTestBuildProblems, frTestBundleProblems } from "../../scripts/dev/buildGuards";
+import { frChunkProblems } from "../../scripts/dev/buildGuards";
 import { computeCoverage } from "../../src/i18n-test/coverage";
 import { KEEP_ARABIC, NOT_DISPLAYED } from "../../src/i18n-test/exclusions";
 import { FR } from "../../src/i18n-test/fr";
@@ -86,69 +84,46 @@ describe("couverture des chaînes de l'interface (src/, messages des Functions, 
   }, 60_000);
 });
 
-describe("drapeau VITE_ENABLE_FR_TEST : dev seulement", () => {
-  const envFile = (f: string) => parse(readFileSync(f));
-
-  it(".env.development l'active, .env.production ne le contient pas", () => {
-    expect(envFile(".env.development").VITE_ENABLE_FR_TEST).toBe("true");
-    expect(envFile(".env.production").VITE_ENABLE_FR_TEST).toBeUndefined();
-    expect(readFileSync(".env.production", "utf8")).not.toMatch(/VITE_ENABLE_FR_TEST/);
+describe("disponible dans tous les builds (D93), chargée à la demande", () => {
+  it("plus de drapeau de build : ni dans les env, ni dans le code, ni dans les workflows", () => {
+    for (const f of [".env.development", ".env.production", "src/config/env.ts", "src/vite-env.d.ts", "vite.config.ts", "scripts/dev/buildGuards.ts", ".github/workflows/deploy.yml", ".github/workflows/preview.yml"]) {
+      expect(readFileSync(f, "utf8"), f).not.toMatch(/VITE_ENABLE_FR_TEST|frTestEnabled/);
+    }
   });
 
-  it("le module n'est importé que dynamiquement, depuis main.tsx, sous le drapeau", () => {
-    const main = readFileSync("src/main.tsx", "utf8");
-    expect(main).toMatch(/if \(frTestEnabled\) \{\s*import\('\.\/i18n-test'\)/);
-    expect(main).not.toMatch(/from ['"]\.\/i18n-test/);
-    expect(readFileSync("src/config/env.ts", "utf8")).toContain('import.meta.env.VITE_ENABLE_FR_TEST === "true"');
+  it("le module n'est importé que dynamiquement, depuis src/i18n/language.ts", () => {
+    expect(readFileSync("src/i18n/language.ts", "utf8")).toMatch(/import\("\.\.\/i18n-test"\)/);
     const offenders: string[] = [];
     const walk = (dir: string) => {
       for (const name of readdirSync(dir)) {
         const full = join(dir, name);
         if (full === join("src", "i18n-test")) continue;
         if (statSync(full).isDirectory()) walk(full);
-        else if (full !== join("src", "main.tsx") && /(from\s*|import\s*\(\s*)['"][^'"]*i18n-test/.test(readFileSync(full, "utf8"))) offenders.push(full);
+        // Import statique (`from`) interdit ; `import type` ne génère aucun code.
+        else if (/from\s*['"][^'"]*i18n-test/.test(readFileSync(full, "utf8").replace(/import type[^;]*;/g, ""))) offenders.push(full);
       }
     };
     walk("src");
     expect(offenders).toEqual([]);
   });
 
-  it("garde-fou : jamais vrai pour un build visant le projet de production", () => {
-    const prod = committedProductionProjectId(process.cwd());
-    expect(prod).toBeTruthy();
-    expect(frTestBuildProblems("production", { VITE_ENABLE_FR_TEST: "true", VITE_FIREBASE_PROJECT_ID: prod }, prod)).toHaveLength(1);
-    expect(frTestBuildProblems("production", { VITE_ENABLE_FR_TEST: "true", VITE_FIREBASE_PROJECT_ID: "mon-projet-dev" }, prod)).toEqual([]);
-    expect(frTestBuildProblems("production", { VITE_FIREBASE_PROJECT_ID: prod }, prod)).toEqual([]);
-    expect(frTestBuildProblems("development", { VITE_ENABLE_FR_TEST: "true", VITE_FIREBASE_PROJECT_ID: prod }, prod)).toEqual([]);
+  it("langue : préférence de l'appareil, hors cache d'école, jamais dans Firestore", () => {
+    const lang = readFileSync("src/i18n/language.ts", "utf8");
+    expect(lang).toMatch(/LANG_KEY = "ui:lang"/);
+    expect(lang).not.toMatch(/from\s*"[^"]*(firebase|db)"/);
+    expect(lang).toMatch(/try \{[\s\S]*localStorage/);
   });
 
-  it("garde-fou du bundle : aucun module src/i18n-test sans le drapeau", () => {
-    const ids = ["/repo/src/main.tsx", "/repo/src/i18n-test/fr.ts"];
-    expect(frTestBundleProblems(false, ids)).toHaveLength(1);
-    expect(frTestBundleProblems(false, ["/repo/src/main.tsx"])).toEqual([]);
-    expect(frTestBundleProblems(true, ids)).toEqual([]);
-  });
-
-  it("workflows : le drapeau n'est écrit que pour le dev (deploy.yml, étape dev ; preview.yml)", () => {
-    const LINE = `echo 'VITE_ENABLE_FR_TEST="true"'`;
-    const dir = ".github/workflows";
-    const where = readdirSync(dir)
-      .filter((f) => /\.ya?ml$/.test(f))
-      .flatMap((f) => readFileSync(join(dir, f), "utf8").split("\n").map((l, i) => ({ f, i, l })))
-      .filter(({ l }) => l.includes("VITE_ENABLE_FR_TEST"));
-    expect(where.map(({ f, l }) => `${f}: ${l.trim()}`)).toEqual([`deploy.yml: ${LINE}`, `preview.yml: ${LINE}`]);
-
-    // deploy.yml : dans l'étape propre au dev, avant l'écriture de .env.production.local.
-    const deploy = readFileSync(join(dir, "deploy.yml"), "utf8").split("\n");
-    const at = where.find((w) => w.f === "deploy.yml")!.i;
-    const stepStart = deploy.slice(0, at).map((l, i) => ({ l, i })).filter(({ l }) => /^\s+- name:/.test(l)).pop()!;
-    const step = deploy.slice(stepStart.i, at + 3).join("\n");
-    expect(step).toMatch(/- name: Configuration web du projet de dev/);
-    expect(step).toMatch(/^\s+if: inputs\.environment == 'dev'$/m);
-    expect(deploy.slice(at, at + 2).join("\n")).toMatch(/\} > \.env\.production\.local/);
-
-    // preview.yml : le job de construction refuse la prod et les projets demo-*.
-    const preview = readFileSync(join(dir, "preview.yml"), "utf8");
-    expect(preview).toMatch(/demo-\*\|gen-lang-client-0481880143\) echo "::error::Projet interdit pour un aperçu/);
+  it("garde-fou du bundle : le dictionnaire est dans un chunk séparé du chunk d'entrée", () => {
+    const fr = "/repo/src/i18n-test/fr.ts";
+    const ok = [
+      { fileName: "index.js", isEntry: true, moduleIds: ["/repo/src/main.tsx", "/repo/src/i18n/language.ts"] },
+      { fileName: "fr-abc.js", isEntry: false, moduleIds: [fr] },
+    ];
+    expect(frChunkProblems(ok)).toEqual([]);
+    // Dictionnaire dans le chunk d'entrée : bundle principal alourdi.
+    expect(frChunkProblems([{ fileName: "index.js", isEntry: true, moduleIds: ["/repo/src/main.tsx", fr] }])).toHaveLength(2);
+    // Dictionnaire absent : l'option ne marcherait pas.
+    expect(frChunkProblems([ok[0]])).toHaveLength(1);
   });
 });

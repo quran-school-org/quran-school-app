@@ -1534,6 +1534,8 @@ là-bas (R-06).
   (l'ancien favicon et l'`Emblem` de la tuile de connexion reviennent).
 
 ### D79. Traduction française de TEST (sélecteur AR / FR), dev seulement
+> **Révisée par D93** : sur la disponibilité en production, le drapeau de build et le bouton flottant. Le moteur, le dictionnaire et le comportement RTL/LTR restent ceux décrits ici.
+
 - **Contexte** : le propriétaire, francophone, veut tester l'application
   multi-écoles en français. C'est **temporaire** : la traduction sera retirée
   de la version finale. Elle ne doit changer ni la logique ni les données
@@ -2382,3 +2384,68 @@ là-bas (R-06).
   `tests/unit/familyActivities.test.ts`, `tests/e2e/activites-famille.spec.ts`.
 - **Retour arrière** : `git revert` ; retirer `familyOwnsParticipant` de
   `firestore.rules` (à déployer par un humain, runbook). Aucune donnée touchée.
+
+### D93. Langue FR / AR : une vraie option, disponible en production (revient sur D79)
+- **Contexte** : D79 réservait la traduction française au dev (drapeau
+  `VITE_ENABLE_FR_TEST`, bouton flottant « TEST », garde-fous du build qui
+  l'interdisaient en prod). **À la demande du propriétaire**, elle devient une
+  option utilisable en production, par tous les rôles (parents et élèves
+  compris, qui n'ont pas Paramètres). D93 **revient donc sur D79 pour la
+  disponibilité en prod** ; le reste de D79 (moteur, dictionnaire, couverture
+  100 %, valeurs de `<option>` / `data-value` intactes, RTL → LTR) est inchangé.
+- **Décision** :
+  - **Plus de drapeau** : `VITE_ENABLE_FR_TEST` est supprimé (`.env.development`,
+    `src/config/env.ts`, `vite-env.d.ts`, `deploy.yml`, `preview.yml`,
+    `vite.config.ts`, `buildGuards.ts`) ; la couche est dans tous les builds.
+    Le module reste en **import dynamique** : `src/i18n/language.ts` (dans le
+    bundle principal, minuscule) ne charge `src/i18n-test` que si la langue
+    choisie est le français. Vérifié sur `npm run build` : le dictionnaire et
+    `fr.css` sont dans un chunk séparé (≈ 186 ko, 366 o de CSS), absents du
+    chunk d'entrée, qui ne grossit que de ce petit module.
+  - **Garde-fou du build** (remplace `frTestBuildProblems` et
+    `frTestBundleProblems`) : `frChunkProblems` fait échouer le build si un
+    module de `src/i18n-test/` se retrouve dans un chunk d'entrée, ou si le
+    dictionnaire est absent du bundle. Les autres garde-fous (D70 :
+    `VITE_APPCHECK_DEBUG_TOKEN`, émulateurs hors projet `demo-`) sont inchangés.
+  - **Bouton flottant supprimé** (`switcher.ts`, son CSS, la mention « test »).
+  - **Réglage** « اللغة / Langue », deux boutons segmentés « العربية » /
+    « Français » (`src/ui/LanguageSetting.tsx`, `SegmentedControl` de la
+    charte, `aria-pressed`, clavier) : dans la fenêtre du **profil** (menu du
+    compte, ouverte depuis l'avatar de la barre du haut, pour **tous** les
+    rôles) et dans **Paramètres > Général** (pour ceux qui y ont accès). Les
+    deux noms de langue et le libellé sont dans leur propre langue
+    (`KEEP_ARABIC`) : jamais traduits.
+  - **Choix personnel, sur l'appareil** : `localStorage`, clé `ui:lang` (hors
+    du cache cloisonné `kuttab:{schoolId}:…` et des préfixes vidés à la
+    déconnexion : il survit au changement d'école et à la déconnexion), accès
+    en try/catch. **Rien dans Firestore** (les comptes ne s'écrivent que par
+    les Cloud Functions). Appliqué immédiatement, sans rechargement ; l'écran
+    de connexion reprend la dernière langue de l'appareil (`initLanguage()` dans
+    `src/main.tsx`, avant le premier rendu). L'ancienne clé `i18n-test:lang`
+    n'est pas reprise (choix de test, sans valeur à conserver).
+  - Le dossier `src/i18n-test/` **garde son nom** pour limiter le diff ; ce n'est
+    plus un test (en-tête de `index.ts` mis à jour). Le sélecteur et l'état de
+    la langue vivent dans `src/i18n/` et `src/ui/`.
+- **Limites (à connaître)** :
+  - **Traduction par dictionnaire, posée sur le DOM** : une chaîne absente du
+    dictionnaire reste en arabe (la couverture de 100 % est vérifiée par test
+    sur les chaînes de `src/`, pas sur les données saisies par l'école : noms,
+    libellés d'activités, notes… restent tels que saisis). Toute nouvelle
+    chaîne d'écran doit être ajoutée à `fr.ts` (le test de couverture l'impose).
+  - **Les impressions restent en arabe** (`src/print/` : reçus, cartes, listes,
+    rapports) : elles sont hors du dictionnaire et hors de la couche DOM.
+    Idem pour les messages WhatsApp envoyés aux parents.
+  - Le texte français est plus long que l'arabe : mises en page vérifiées à
+    390 et 1 440 px, pas d'adaptation fine écran par écran.
+- **Retour arrière** : `git revert` des commits de D93 (la couche redevient
+  réservée au dev par D79) ; ou, pour retirer la fonction, supprimer
+  `src/i18n-test/`, `src/i18n/`, `LanguageSetting` et le démarrage dans
+  `main.tsx`. Aucune donnée à défaire : rien n'est écrit côté serveur.
+- **Statut de synchronisation retiré** (même lot, demande du propriétaire) : le
+  message « قاعدة البيانات متصلة، والبيانات متزامنة الآن » (bas du menu) et la
+  pastille « متزامن » (barre du haut) ne sont plus affichés, ni l'état
+  « مزامنة… » (transitoire). Seul l'état d'**erreur** reste, signal discret
+  déjà présent dans l'application : pastille « غير متصل » (barre du haut, à
+  partir de 1 024 px) et ligne d'erreur dans le menu (donc dans le tiroir
+  mobile). Aucun nouveau signal créé. Entrées du dictionnaire devenues
+  inutiles supprimées.
