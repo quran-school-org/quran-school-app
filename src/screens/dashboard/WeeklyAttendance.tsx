@@ -1,8 +1,9 @@
 /** « الحضور هذا الأسبوع » : taux quotidien comparé à la semaine précédente. */
 import { useState } from "react";
 import type { Attendance, Class, Student } from "../../types";
-import { Card, CardHeader, Select } from "../../ui";
+import { Card, CardHeader, Ltr, Select } from "../../ui";
 import { weeklyAttendance } from "./dashboardData";
+import { localIsoDate, scheduledWeekdays, sessionInfo, settledAttendance } from "../../app/attendanceSessions";
 
 const fmt = (d: string) => {
   if (!d) return "";
@@ -18,9 +19,30 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
   const [classId, setClassId] = useState("all");
   const live = classes.filter((c) => !c.isArchived);
   const ids = classId === "all" ? null : new Set(students.filter((s) => s.classId === classId).map((s) => s.id));
-  const w = weeklyAttendance(attendance, ids);
   const className = classId === "all" ? "جميع الحلقات" : live.find((c) => c.id === classId)?.name || "";
-  const empty = w.thisAvg === null;
+  const now = new Date();
+  // UI-20 : une séance n'est comptée qu'une fois terminée ; seuls les jours de séance sont affichés.
+  const w = weeklyAttendance(settledAttendance(attendance, students, live, now), ids, now);
+  const scope = classId === "all" ? live : live.filter((c) => c.id === classId);
+  const weekdays = scheduledWeekdays(scope);
+  const todayIso = localIsoDate(now);
+  const todayStates = scope.map((c) => sessionInfo(c, todayIso, now).state);
+  const running = todayStates.includes("ongoing");
+  const pending = running || todayStates.includes("upcoming");
+  // index 0 = samedi ; getDay() : 0 = dimanche.
+  const shown = w.thisWeek
+    .map((d, i) => ({ d, last: w.lastWeek[i], i }))
+    .filter(({ d, last, i }) => weekdays.has((i + 6) % 7) || d.records > 0 || last.records > 0);
+  const pendingDay = (date: string, rate: number | null) => date === todayIso && pending && rate === null;
+  const pendingLabel = running ? "الحصة جارية" : "لم تبدأ بعد";
+  const aria = (day: string, rate: number | null, lastRate: number | null, date: string) =>
+    pendingDay(date, rate) ? `${day}: ${pendingLabel}` : `${day}: ${rate === null ? "لا تسجيل" : rate + "%"}، الأسبوع الماضي ${lastRate === null ? "لا تسجيل" : lastRate + "%"}`;
+  const empty = w.thisAvg === null && w.lastAvg === null && !pending;
+  const emptyText = w.lastRecord
+    ? `لم تُسجَّل أي حصة في ${className} منذ ${fmt(w.lastRecord)}. تظهر المقارنة هنا بعد أول تسجيل للحضور.`
+    : `لم تُسجَّل أي حصة في ${className} بعد. تظهر المقارنة هنا بعد أول تسجيل للحضور.`;
+  const pct = (r: number | null) => (r === null ? "لا بيانات" : <Ltr>{r}%</Ltr>);
+
   return (
     <Card className="flex flex-col gap-[18px]" aria-labelledby="att-title">
       <CardHeader
@@ -38,8 +60,8 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
         }
       />
       <div className="flex flex-wrap gap-x-8 gap-y-2 text-[14px] text-ink-2">
-        <span>هذا الأسبوع <strong className="text-ink tabular-nums">{w.thisAvg === null ? "لا بيانات" : `${w.thisAvg}%`}</strong></span>
-        <span>الأسبوع الماضي <strong className="text-ink tabular-nums">{w.lastAvg === null ? "لا بيانات" : `${w.lastAvg}%`}</strong></span>
+        <span>هذا الأسبوع <strong className="text-ink tabular-nums">{pct(w.thisAvg)}</strong></span>
+        <span>الأسبوع الماضي <strong className="text-ink tabular-nums">{pct(w.lastAvg)}</strong></span>
         {!empty && (
           <span className="flex items-center gap-4 text-[13px]">
             <span className="flex items-center gap-1.5"><span aria-hidden="true" className="w-2.5 h-2.5 rounded-[2px] bg-primary" />هذا الأسبوع</span>
@@ -47,37 +69,50 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
           </span>
         )}
       </div>
-      <div className="relative overflow-x-auto">
-        <div className="grid grid-cols-7 gap-2 sm:gap-3 min-w-[420px]">
-          {w.thisWeek.map((d, i) => {
-            const last = w.lastWeek[i];
-            return (
-              <div key={d.date} className="flex flex-col items-center gap-2">
-                {empty ? (
-                  <div aria-hidden="true" className="w-full h-[130px] rounded-[10px] border-[1.5px] border-dashed border-[#CFD2C4] bg-surface-2" />
+
+      {empty || shown.length === 0 ? (
+        <p className="m-0 text-center text-[14.5px] leading-[1.7] text-ink-2 bg-surface-2 px-4.5 py-6 rounded-xl border-[1.5px] border-dashed border-line-strong">{emptyText}</p>
+      ) : (
+        <>
+          {/* Téléphone : une barre horizontale par jour de séance. */}
+          <ul data-weekly="rows" className="sm:hidden m-0 p-0 list-none flex flex-col gap-3">
+            {shown.map(({ d, last }) => (
+              <li key={d.date} role="img" aria-label={aria(d.day, d.rate, last.rate, d.date)} className="flex items-center gap-3">
+                <span className="w-[4.5rem] shrink-0 text-[13px] text-ink-3">{d.day}</span>
+                {pendingDay(d.date, d.rate) ? (
+                  <span className="flex-1 text-[13.5px] font-semibold text-ink-2">{pendingLabel}</span>
                 ) : (
-                  <div role="img" aria-label={`${d.day}: ${d.rate === null ? "لا تسجيل" : d.rate + "%"}، الأسبوع الماضي ${last.rate === null ? "لا تسجيل" : last.rate + "%"}`} className="w-full h-[130px] rounded-[10px] bg-surface-2 border border-line-soft flex items-end justify-center gap-1.5 px-2 pt-6 pb-1.5">
+                  <>
+                    <span aria-hidden="true" className="flex-1 flex flex-col gap-1">
+                      <span className="block h-3 rounded-full bg-primary" style={{ width: `${d.rate ?? 0}%`, minWidth: d.rate ? undefined : 0 }} />
+                      <span className="block h-2 rounded-full bg-primary-200" style={{ width: `${last.rate ?? 0}%` }} />
+                    </span>
+                    <span className="w-12 shrink-0 text-end text-[13px] font-bold text-ink tabular-nums">{d.rate === null ? "—" : <Ltr>{d.rate}%</Ltr>}</span>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          <div data-weekly="columns" className="hidden sm:grid gap-3" style={{ gridTemplateColumns: `repeat(${shown.length}, minmax(0, 1fr))` }}>
+            {shown.map(({ d, last }) => (
+              <div key={d.date} className="flex flex-col items-center gap-2">
+                {pendingDay(d.date, d.rate) ? (
+                  <div role="img" aria-label={aria(d.day, d.rate, last.rate, d.date)} className="w-full h-[130px] rounded-[10px] border-[1.5px] border-dashed border-line-strong bg-surface-2 flex items-center justify-center text-center px-2 text-[13.5px] font-semibold text-ink-2">{pendingLabel}</div>
+                ) : (
+                  <div role="img" aria-label={aria(d.day, d.rate, last.rate, d.date)} className="w-full h-[130px] rounded-[10px] bg-surface-2 border border-line-soft flex items-end justify-center gap-1.5 px-2 pt-6 pb-1.5">
                     <span className="w-1/3 rounded-t-[4px] bg-primary-200" style={{ height: `${last.rate ?? 0}%` }} />
                     <span className="w-1/3 rounded-t-[4px] bg-primary relative" style={{ height: `${d.rate ?? 0}%` }}>
-                      {d.rate !== null && <span className="absolute -top-5 inset-x-[-12px] text-center text-[11.5px] font-bold text-ink tabular-nums">{d.rate}%</span>}
+                      {d.rate !== null && <span className="absolute -top-5 inset-x-[-12px] text-center text-[11.5px] font-bold text-ink tabular-nums"><Ltr>{d.rate}%</Ltr></span>}
                     </span>
                   </div>
                 )}
                 <span className="text-[13px] text-ink-3">{d.day}</span>
               </div>
-            );
-          })}
-        </div>
-        {empty && (
-          <div className="absolute inset-x-0 top-0 bottom-7 flex items-center justify-center p-4">
-            <p className="m-0 max-w-[46ch] text-center text-[14.5px] leading-[1.7] text-ink-2 bg-surface px-4.5 py-3 rounded-xl border border-line-soft">
-              {w.lastRecord
-                ? `لم تُسجَّل أي حصة في ${className} منذ ${fmt(w.lastRecord)}. تظهر المقارنة هنا بعد أول تسجيل للحضور.`
-                : `لم تُسجَّل أي حصة في ${className} بعد. تظهر المقارنة هنا بعد أول تسجيل للحضور.`}
-            </p>
+            ))}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </Card>
   );
 }
