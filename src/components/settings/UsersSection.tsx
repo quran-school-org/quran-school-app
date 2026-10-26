@@ -5,13 +5,14 @@
 import { Shield, UserPlus, Edit2, Trash2, Check, X, Search, Users, RefreshCw, LayoutGrid, List, CheckCircle2, XCircle, Clock, ShieldCheck, Filter, KeyRound } from "lucide-react";
 import { isPrimaryDirector } from "./shared";
 import { useSettings } from "./SettingsContext";
-import { DataTable, IconButton, Pill, Select, type PillTone } from "../../ui";
+import { DataTable, IconButton, Pill, Select, useConfirm, type PillTone } from "../../ui";
 import type { AppUser } from "../../types";
 
 const GOLD_ROLES = ["مدير", "مؤطر", "متطوع"];
 const roleTone = (role: string): PillTone => (role === "أخرى" ? "neutral" : GOLD_ROLES.includes(role) ? "warn" : "primary");
 
 export default function UsersSection() {
+  const confirm = useConfirm();
   const {
     appUsers,
     onResetUserPassword,
@@ -361,8 +362,8 @@ export default function UsersSection() {
                         size="sm"
                         tone="danger"
                         label="حذف الحساب نهائياً"
-                        onClick={() => {
-                          if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
+                        onClick={async () => {
+                          if (await confirm({ message: `هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`, tone: "danger" })) {
                             onDeleteAppUser(user.id);
                           }
                         }}
@@ -483,8 +484,8 @@ export default function UsersSection() {
                     )}
                     {canDeleteAccounts && !isPrimaryDirector(user) && (
                       <button
-                        onClick={() => {
-                          if (confirm(`هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`)) {
+                        onClick={async () => {
+                          if (await confirm({ message: `هل أنت متأكد من حذف حساب المستخدم ${user.fullName}؟`, tone: "danger" })) {
                             onDeleteAppUser(user.id);
                           }
                         }}

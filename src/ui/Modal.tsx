@@ -50,10 +50,14 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    const first = panel.current?.querySelector<HTMLElement>("input:not([type=hidden]):not([disabled]):not([tabindex='-1']), select, textarea, button:not([data-modal-close])");
+    // `data-autofocus` : élément à focaliser en premier (ex. « إلغاء » d'une confirmation destructive).
+    const first = panel.current?.querySelector<HTMLElement>("[data-autofocus]:not([disabled])") || panel.current?.querySelector<HTMLElement>("input:not([type=hidden]):not([disabled]):not([tabindex='-1']), select, textarea, button:not([data-modal-close])");
     (first || panel.current)?.focus({ preventScroll: true });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && onClose) {
+        // Fenêtres empilées (ex. confirmation au-dessus d'un formulaire) : seule la plus haute répond.
+        const stack = document.querySelectorAll("[data-modal-panel]");
+        if (stack.length > 0 && stack[stack.length - 1] !== panel.current) return;
         e.stopPropagation();
         onClose();
         return;
@@ -90,6 +94,7 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
     <div data-modal={modalId} className={cx("fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-night/55 backdrop-blur-[2px] overflow-y-auto", printHidden && "print:hidden")} dir="rtl">
       <div
         ref={panel}
+        data-modal-panel
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

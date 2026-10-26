@@ -40,6 +40,17 @@ describe("interface : valeurs codées en dur retirées", () => {
     expect(hits).toEqual([]);
   });
 
+  it("aucun alert() ni confirm() natif dans src/ : Toast et ConfirmDialog de la charte (D99)", () => {
+    // `confirm` est aussi le nom de la fonction de useConfirm() : seuls l'appel nu (sans `await`) et window.confirm / window.alert sont natifs.
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const native = /(?<![\w.$])alert\(|(?<!await )(?<![\w.$])confirm\(|\bwindow\.(alert|confirm)\(|\bglobalThis\.(alert|confirm)\(/;
+    // Le garde-fou lui-même : détecte les appels natifs, laisse passer ceux de la charte, les commentaires et les noms voisins.
+    for (const bad of ["alert('x')", "if (confirm(`x`)) {}", "if (!confirm('x')) return;", "window.confirm('x')", "window.alert(msg)"]) expect(native.test(code(bad)), bad).toBe(true);
+    for (const ok of ["if (await confirm({ message: 'x' })) {}", "toast.error(msg)", "// alert('x')", "/* confirm('x') */", "const confirmRestore = 1;", "ActionAlert(", "swal.alert('x')"]) expect(native.test(code(ok)), ok).toBe(false);
+    const hits = all.filter(([, src]) => native.test(code(src))).map(([f]) => f);
+    expect(hits).toEqual([]);
+  });
+
   it("aucun toLocaleString() sans argument : montants par src/utils/format.ts, locale explicite sinon (UI-10)", () => {
     // WeeklyAttendance.tsx : modifié par une autre branche (UI-20), exception le temps de la fusion.
     const allowed = ["src/screens/dashboard/WeeklyAttendance.tsx"];

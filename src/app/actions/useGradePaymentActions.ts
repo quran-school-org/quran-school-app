@@ -9,8 +9,11 @@ import type { DerivedScope } from "../scope";
 import { csvCell } from "../../utils/csv";
 import { parseGrade } from "../../utils/gradeMention";
 import { formatMoney } from "../../utils/format";
+import { useConfirm, useToast } from "../../ui";
 
 export function useGradePaymentActions(s: DerivedScope) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const {
     addSysNotification,
     editingPayment,
@@ -75,7 +78,7 @@ export function useGradePaymentActions(s: DerivedScope) {
     const mem = parseGrade(gradeMemorization);
     const taj = parseGrade(gradeTajweed);
     if (mem === null || taj === null || !gradeOverall) {
-      alert("يرجى إدخال درجتي الحفظ والتجويد (من 0 إلى 20) واختيار التقدير.");
+      toast.error("يرجى إدخال درجتي الحفظ والتجويد (من 0 إلى 20) واختيار التقدير.");
       return;
     }
     const newGrade: Grade = {
@@ -96,8 +99,8 @@ export function useGradePaymentActions(s: DerivedScope) {
     setShowGradeModal(false);
   };
 
-  const handleDeleteGrade = (id: string) => {
-    if (confirm("هل أنت متأكد من حذف هذا التقييم؟")) {
+  const handleDeleteGrade = async (id: string) => {
+    if (await confirm({ message: "هل أنت متأكد من حذف هذا التقييم؟", tone: "danger" })) {
       RealmSimDB.deleteGrade(id);
       loadDatabase();
     }
@@ -170,7 +173,7 @@ export function useGradePaymentActions(s: DerivedScope) {
   const handleSavePayment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentFormStudentId) {
-      alert("يرجى اختيار الطالب.");
+      toast.error("يرجى اختيار الطالب.");
       return;
     }
     const newPayment: Payment = {
@@ -199,11 +202,11 @@ export function useGradePaymentActions(s: DerivedScope) {
     setShowPaymentModal(false);
   };
 
-  const handleDeletePayment = (paymentId: string) => {
+  const handleDeletePayment = async (paymentId: string) => {
     const pay = payments.find(p => p.id === paymentId);
     if (pay) {
       const studName = students.find(s => s.id === pay.studentId)?.fullName || "";
-      if (confirm(`هل أنت متأكد من حذف دفعة شهر ${pay.month} للطالب ${studName} نهائياً؟`)) {
+      if (await confirm({ message: `هل أنت متأكد من حذف دفعة شهر ${pay.month} للطالب ${studName} نهائياً؟`, tone: "danger" })) {
         RealmSimDB.deletePayment(paymentId);
         addSysNotification(
           "حذف دفعة مالية",
@@ -239,7 +242,7 @@ ${p.notes ? `- *ملاحظة*: ${p.notes}\n` : ""}
 
   const handleExportPaymentsToCSV = () => {
     if (filteredPayments.length === 0) {
-      alert("لا توجد بيانات سداد لتصديرها.");
+      toast.error("لا توجد بيانات سداد لتصديرها.");
       return;
     }
 

@@ -10,7 +10,7 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, LANG_STORAGE_KEY, loginAs, desktopTabs, openTab, setLang, type DemoAccount, chooseOption } from "./helpers";
+import { ACCOUNTS, LANG_STORAGE_KEY, loginAs, desktopTabs, openTab, setLang, type DemoAccount, chooseOption, watchNativeDialogs } from "./helpers";
 
 const CAPTURE_DIR = process.env.CAPTURE_DIR || "";
 const MISSING_OUT = process.env.I18N_MISSING_OUT || "";
@@ -21,7 +21,7 @@ const html = (page: Page) => page.locator("html");
 
 /** Connexion depuis l'interface en FR (messages attendus en français). */
 async function loginFr(page: Page, account: DemoAccount) {
-  page.on("dialog", (d) => d.accept().catch(() => undefined));
+  watchNativeDialogs(page);
   await page.goto("/");
   await expect(page.locator('form button[type="submit"]')).toBeVisible();
   if ((await html(page).getAttribute("lang")) !== "fr") await setLang(page, "fr");

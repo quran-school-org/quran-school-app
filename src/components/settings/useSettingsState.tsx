@@ -11,8 +11,10 @@ import { isPrimaryDirector } from "./shared";
 import type { SettingsManagementProps } from "../SettingsManagement";
 import { resolveThemeId, type ThemeId } from "../../theme/palettes";
 import { applyTheme } from "../../theme/applyTheme";
+import { useToast } from "../../ui";
 
 export function useSettingsState(props: SettingsManagementProps) {
+  const toast = useToast();
   const {
   settings,
   appUsers,
@@ -184,7 +186,7 @@ export function useSettingsState(props: SettingsManagementProps) {
   const processLogoFile = (file: File | undefined) => {
     if (file) {
       if (file.size > 2 * 1024 * 1024) { // 2MB Limit
-        alert("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 2 ميغابايت حفظاً على مساحة التخزين.");
+        toast.error("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 2 ميغابايت حفظاً على مساحة التخزين.");
         return;
       }
       const reader = new FileReader();
@@ -377,11 +379,11 @@ export function useSettingsState(props: SettingsManagementProps) {
   const handleUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formFullName) {
-      alert("الرجاء ملء الاسم الكامل.");
+      toast.error("الرجاء ملء الاسم الكامل.");
       return;
     }
     if (!editingUser && !formAttachExisting && formPassword.length < MIN_NEW_PASSWORD_LENGTH) {
-      alert(`يجب أن تتكون كلمة المرور من ${MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل.`);
+      toast.error(`يجب أن تتكون كلمة المرور من ${MIN_NEW_PASSWORD_LENGTH} أحرف على الأقل.`);
       return;
     }
 
@@ -396,7 +398,7 @@ export function useSettingsState(props: SettingsManagementProps) {
       finalUsername = editingUser.username;
     } else if (formAttachExisting) {
       if (!finalUsername) {
-        alert("يرجى إدخال اسم المستخدم للحساب الموجود.");
+        toast.error("يرجى إدخال اسم المستخدم للحساب الموجود.");
         return;
       }
     } else if (!finalUsername || existingUsernames.includes(finalUsername)) {

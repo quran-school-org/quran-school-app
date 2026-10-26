@@ -6,8 +6,10 @@ import { Teacher, Class, AppUser } from "../../types";
 import { isDirectorRole } from "../../security/access";
 import { linkedTeacherIdOf } from "../../security/accountAlignment";
 import type { DerivedScope } from "../scope";
+import { useConfirm } from "../../ui";
 
 export function useStaffActions(s: DerivedScope) {
+  const confirm = useConfirm();
   const {
     addSysNotification,
     appUsers,
@@ -80,10 +82,10 @@ export function useStaffActions(s: DerivedScope) {
     }
   };
 
-  const handleDeleteTeacher = (teacherId: string) => {
+  const handleDeleteTeacher = async (teacherId: string) => {
     const teach = teachers.find(t => t.id === teacherId);
     if (teach) {
-      if (confirm(`هل أنت متأكد من حذف المعلم ${teach.fullName} نهائياً؟`)) {
+      if (await confirm({ message: `هل أنت متأكد من حذف المعلم ${teach.fullName} نهائياً؟`, tone: "danger" })) {
         RealmSimDB.deleteTeacher(teacherId);
         
         // Remove teacherId from any assigned classes
@@ -130,10 +132,10 @@ export function useStaffActions(s: DerivedScope) {
     }
   };
 
-  const handleDeleteClass = (classId: string) => {
+  const handleDeleteClass = async (classId: string) => {
     const cls = classes.find(c => c.id === classId);
     if (cls) {
-      if (confirm(`هل أنت متأكد من حذف الحلقة ${cls.name} نهائياً؟`)) {
+      if (await confirm({ message: `هل أنت متأكد من حذف الحلقة ${cls.name} نهائياً؟`, tone: "danger" })) {
         RealmSimDB.deleteClass(classId);
         
         // Remove classId from students who belonged to this class

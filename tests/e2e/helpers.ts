@@ -28,6 +28,25 @@ export const ACCOUNTS = {
   directeurAnnour: { username: "dir_annour", initial: "demo-annour-2026", e2e: "demo-annour-2026" },
 } satisfies Record<string, DemoAccount>;
 
+/**
+ * Boîtes natives (alert, confirm) : plus aucune dans l'interface (D99, remplacées par
+ * `Toast` et `ConfirmDialog`). Si l'une réapparaît, elle est refusée (annulation) et
+ * consignée ; `logout` et `expectNoNativeDialogs` font échouer le test.
+ */
+const nativeDialogs = new WeakMap<Page, string[]>();
+export function watchNativeDialogs(page: Page) {
+  if (nativeDialogs.has(page)) return;
+  const seen: string[] = [];
+  nativeDialogs.set(page, seen);
+  page.on("dialog", (d) => {
+    seen.push(`${d.type()} : ${d.message()}`);
+    d.dismiss().catch(() => undefined);
+  });
+}
+export function expectNoNativeDialogs(page: Page) {
+  expect(nativeDialogs.get(page) ?? [], "boîtes natives (alert / confirm) apparues").toEqual([]);
+}
+
 const FORCED_TEXT = "لأسباب أمنية، يجب اختيار كلمة مرور جديدة";
 const BAD_CREDENTIALS = "اسم المستخدم أو كلمة المرور غير صحيحة";
 
@@ -42,7 +61,7 @@ async function submitLogin(page: Page, username: string, password: string) {
  * puis celui déjà choisi par un test précédent ; applique le changement imposé.
  */
 export async function loginAs(page: Page, account: DemoAccount) {
-  page.on("dialog", (d) => d.accept().catch(() => undefined));
+  watchNativeDialogs(page);
   await page.goto("/");
   await expect(page.locator('form button[type="submit"]')).toBeVisible();
   const forced = page.getByText(FORCED_TEXT);
@@ -67,6 +86,7 @@ export async function loginAs(page: Page, account: DemoAccount) {
 }
 
 export async function logout(page: Page) {
+  expectNoNativeDialogs(page);
   await page.getByRole("button", { name: /خروج/ }).first().click();
   await expect(page.locator('form button[type="submit"]')).toBeVisible();
   expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith("kuttab:") || k.startsWith("alfajr_")))).toEqual([]);
