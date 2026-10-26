@@ -125,10 +125,9 @@ test.describe.serial("hiérarchie (L5)", () => {
   test("dates lisibles à l'accueil du parent, sans format ISO", async ({ page }) => {
     await loginAs(page, ACCOUNTS.parent);
     const home = page.locator('[data-screen="home"]');
-    await expect(home).toBeVisible();
-    const text = await home.innerText();
-    expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/);
-    expect(text).toMatch(/\d{1,2} (يناير|فبراير|مارس|أبريل|ماي|يونيو|يوليوز|غشت|شتمبر|أكتوبر|نونبر|دجنبر) \d{4}/);
+    // Attendre les données (date lisible affichée) avant de lire tout le texte.
+    await expect(home).toContainText(/\d{1,2} (يناير|فبراير|مارس|أبريل|ماي|يونيو|يوليوز|غشت|شتمبر|أكتوبر|نونبر|دجنبر) \d{4}/);
+    expect(await home.innerText()).not.toMatch(/\d{4}-\d{2}-\d{2}/);
     await logout(page);
   });
 });
