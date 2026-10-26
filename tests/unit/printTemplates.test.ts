@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { escapeHtml } from "../../src/security/html";
+import { printDocument } from "../../src/print/printWindow";
 
 // Valeurs déjà sûres : HTML produit par React (innerHTML), lignes déjà échappées,
 // constantes du code.
@@ -97,5 +98,17 @@ describe("fenêtres d'impression sans script ni CDN (CSP stricte possible)", () 
   });
   it("aucun service QR externe (constat O-05)", () => {
     expect(all.filter(([, src]) => /qrserver/i.test(src)).map(([f]) => f)).toEqual([]);
+  });
+});
+
+describe("charte bleu nuit à l'impression (D88, UI-13)", () => {
+  it("le document imprimé porte data-theme=\"bleu-nuit\" quel que soit le thème de l'école", () => {
+    const doc = printDocument({ title: "Carte", body: "<p>x</p>", withAppStyles: false });
+    expect(doc).toContain('<html dir="rtl" lang="ar" data-theme="bleu-nuit">');
+  });
+  it("les cartes d'élève n'imposent plus de thème à l'écran (aperçu aux couleurs de l'école)", () => {
+    const cards = readFileSync("src/print/cards/StudentCards.tsx", "utf8");
+    expect(cards).not.toMatch(/data-theme="/);
+    expect(cards).not.toMatch(/#1B3A6B|rgba\(16, ?36, ?70/i);
   });
 });

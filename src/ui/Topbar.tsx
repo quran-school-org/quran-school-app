@@ -2,6 +2,10 @@
  * Barre du haut (maquette Topbar.dc.html) : date et saison, pastille de
  * synchronisation, cloche, utilisateur, déconnexion ; emplacement pour le
  * sélecteur d'école et le bouton du menu en mobile.
+ *
+ * Mode `compact` (sous 1 024 px, UI-05) : une seule ligne de 56 px (menu, nom
+ * de l'école tronqué, cloche, avatar). Le sélecteur d'école et la déconnexion
+ * sont alors dans le tiroir du menu (AppFrame).
  */
 import React from "react";
 import { Bell, LogOut, Menu } from "lucide-react";
@@ -40,12 +44,20 @@ export interface TopbarProps {
   onMenu?: () => void;
   menuOpen?: boolean;
   mobileBrand?: React.ReactNode;
+  /** Une seule ligne : sans sélecteur d'école ni déconnexion (déplacés dans le tiroir). */
+  compact?: boolean;
 }
 
-export function Topbar({ dateLabel, season, sync, unread, onBell, userName, userRole, onUser, onLogout, schoolSwitcher, onMenu, menuOpen, mobileBrand }: TopbarProps) {
+export function Topbar({ dateLabel, season, sync, unread, onBell, userName, userRole, onUser, onLogout, schoolSwitcher, onMenu, menuOpen, mobileBrand, compact }: TopbarProps) {
   return (
-    <header className="w-full min-h-[76px] px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 bg-surface border-b border-line">
-      <div className="flex items-center gap-3 min-w-0">
+    <header
+      data-topbar
+      className={cx(
+        "w-full px-4 sm:px-8 flex items-center justify-between bg-surface border-b border-line",
+        compact ? "h-14 flex-nowrap gap-2" : "min-h-[76px] py-3.5 flex-wrap gap-x-5 gap-y-3",
+      )}
+    >
+      <div className={cx("flex items-center gap-3 min-w-0", compact && "flex-1")}>
         {onMenu && (
           <button
             type="button"
@@ -57,15 +69,15 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
             <Menu className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
           </button>
         )}
-        {mobileBrand && <div className="lg:hidden min-w-0">{mobileBrand}</div>}
+        {mobileBrand && <div className="lg:hidden min-w-0 flex-1">{mobileBrand}</div>}
         <div className={cx("flex flex-col gap-0.5 min-w-0", Boolean(mobileBrand) && "hidden lg:flex")}>
           <span className="text-[13px] text-ink-3">{dateLabel}</span>
           {season && <span className="text-[15px] font-semibold">الموسم الدراسي {season}</span>}
         </div>
       </div>
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <span className="hidden sm:inline-flex"><SyncPill state={sync} /></span>
-        {schoolSwitcher}
+      <div className={cx("flex items-center gap-2.5 shrink-0", !compact && "flex-wrap")}>
+        {!compact && <span className="hidden sm:inline-flex"><SyncPill state={sync} /></span>}
+        {!compact && schoolSwitcher}
         <button
           type="button"
           onClick={onBell}
@@ -85,7 +97,8 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
           data-action="open-profile"
           onClick={onUser}
           title="تعديل بيانات ملفك الشخصي"
-          className="flex items-center gap-2.5 ps-1.5 pe-2 py-1 rounded-xl bg-transparent border border-transparent hover:border-line hover:bg-white cursor-pointer text-start"
+          aria-label={compact ? "تعديل بيانات ملفك الشخصي" : undefined}
+          className="flex items-center gap-2.5 ps-1.5 pe-2 py-1 min-h-11 rounded-xl bg-transparent border border-transparent hover:border-line hover:bg-white cursor-pointer text-start"
         >
           <InitialAvatar name={userName} tone="night" size={40} />
           <span className="hidden md:flex flex-col leading-[1.3] min-w-0">
@@ -93,15 +106,17 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
             <span className="text-[14.5px] font-semibold text-ink max-w-[16rem] truncate">{userName}</span>
           </span>
         </button>
-        <button
-          type="button"
-          onClick={onLogout}
-          aria-label="خروج"
-          className="inline-flex items-center gap-2 h-11 px-3 sm:px-3.5 rounded-xl border border-danger-200 bg-white text-danger text-[14px] font-semibold cursor-pointer hover:bg-danger-100 transition-colors"
-        >
-          <LogOut className="w-[18px] h-[18px] -scale-x-100" strokeWidth={1.75} aria-hidden="true" />
-          <span className="hidden sm:inline">خروج</span>
-        </button>
+        {!compact && (
+          <button
+            type="button"
+            onClick={onLogout}
+            aria-label="خروج"
+            className="inline-flex items-center gap-2 h-11 px-3 sm:px-3.5 rounded-xl border border-line bg-transparent text-ink-2 text-[14px] font-semibold cursor-pointer hover:bg-white hover:text-danger hover:border-danger-200 transition-colors"
+          >
+            <LogOut className="w-[18px] h-[18px] -scale-x-100" strokeWidth={1.75} aria-hidden="true" />
+            <span className="hidden sm:inline">خروج</span>
+          </button>
+        )}
       </div>
     </header>
   );

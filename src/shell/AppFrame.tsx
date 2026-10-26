@@ -7,7 +7,8 @@ import React, { useEffect, useMemo } from "react";
 import SchoolSwitcher from "../school/SchoolSwitcher";
 import { useApp } from "../app/AppContext";
 import { isNotificationRead } from "../types";
-import { AppShell, Emblem, NavBrand, SideNav, Topbar } from "../ui";
+import { LogOut } from "lucide-react";
+import { AppShell, Emblem, NavBrand, SideNav, Topbar, useMediaQuery } from "../ui";
 import { buildNavGroups, visibleTabs } from "./navModel";
 import QuotaBanner from "./QuotaBanner";
 
@@ -34,6 +35,8 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
     setSelectedStudent, authUid,
   } = useApp();
 
+  // Sous 1 024 px : barre du haut sur une ligne ; sélecteur d'école et déconnexion dans le tiroir (UI-05).
+  const compact = !useMediaQuery("(min-width: 1024px)");
   const unread = userNotifications.filter((n) => !isNotificationRead(n, authUid)).length;
   const groups = useMemo(() => buildNavGroups({ currentUser, currentRole, unread }), [currentUser, currentRole, unread]);
   const tabs = visibleTabs(groups);
@@ -84,6 +87,19 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
 
   const footer = (closeDrawer: boolean) => (
     <>
+      {closeDrawer && (
+        <div className="flex flex-col gap-2.5" data-drawer-account>
+          <SchoolSwitcher block />
+          <button
+            type="button"
+            onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
+            className="inline-flex items-center justify-center gap-2 h-11 px-3.5 rounded-xl border border-night-line-2 bg-transparent text-night-link text-[14px] font-semibold cursor-pointer hover:bg-white/[0.08] transition-colors"
+          >
+            <LogOut className="w-[18px] h-[18px] -scale-x-100" strokeWidth={1.75} aria-hidden="true" />
+            <span>خروج</span>
+          </button>
+        </div>
+      )}
       <button
         type="button"
         onClick={() => { statsTarget(); if (closeDrawer) setIsMobileMenuOpen(false); }}
@@ -115,7 +131,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
   return (
     <AppShell
       sidebar={<SideNav navId="desktop" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t)} footer={footer(false)} className="flex-1" />}
-      drawer={isMobileMenuOpen ? <SideNav navId="mobile" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t, true)} footer={footer(true)} className="flex-1 pt-16" /> : null}
+      drawer={isMobileMenuOpen && compact ? <SideNav navId="mobile" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t, true)} footer={footer(true)} className="flex-1 pt-16" /> : null}
       drawerOpen={isMobileMenuOpen}
       onCloseDrawer={() => setIsMobileMenuOpen(false)}
       topbar={
@@ -129,7 +145,8 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           userRole={currentRole}
           onUser={handleOpenProfileModal}
           onLogout={() => handleLogout()}
-          schoolSwitcher={<SchoolSwitcher />}
+          compact={compact}
+          schoolSwitcher={compact ? undefined : <SchoolSwitcher />}
           onMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           menuOpen={isMobileMenuOpen}
           mobileBrand={

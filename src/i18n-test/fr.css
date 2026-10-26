@@ -3,12 +3,43 @@
  * page limitées au mode FR (html[lang="fr"]). Le mode arabe n'est pas touché.
  */
 
-/* Sélecteur AR / FR « test » : petit, discret, hors de l'arbre React. */
+/*
+ * Sélecteur AR / FR « test » (UI-23) : bouton rond replié (44 px, translucide
+ * tant qu'on ne le survole pas), panneau AR / FR ouvert au clic. Hors de
+ * l'arbre React ; en bas, dans la marge basse de la zone principale.
+ */
 .i18n-test-switch {
   position: fixed;
   z-index: 70;
-  bottom: 12px;
-  left: 12px;
+  bottom: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  flex-direction: row-reverse;
+  gap: 6px;
+  font: 600 12px/1 "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+  color: var(--color-ink-2, #4a5060);
+}
+.i18n-test-toggle {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px dashed var(--color-gold, #d4a017);
+  background: var(--color-surface, #f8f8f3);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.14);
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.i18n-test-switch:hover .i18n-test-toggle,
+.i18n-test-switch:focus-within .i18n-test-toggle,
+.i18n-test-switch.is-open .i18n-test-toggle {
+  opacity: 1;
+}
+.i18n-test-panel {
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -16,14 +47,10 @@
   border-radius: 999px;
   border: 1px dashed var(--color-gold, #d4a017);
   background: var(--color-surface, #f8f8f3);
-  box-shadow: 0 1px 4px rgb(16 36 70 / 0.12);
-  font: 600 11.5px/1 "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
-  color: var(--color-ink-2, #4a5060);
-  opacity: 0.88;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.14);
 }
-.i18n-test-switch:hover,
-.i18n-test-switch:focus-within {
-  opacity: 1;
+.i18n-test-panel[hidden] {
+  display: none;
 }
 .i18n-test-badge {
   padding: 0 6px 0 5px;
@@ -32,10 +59,10 @@
   text-transform: uppercase;
   color: var(--color-gold-700, #8a6a10);
 }
-.i18n-test-switch button {
-  min-width: 30px;
-  height: 24px;
-  padding: 0 7px;
+.i18n-test-panel button {
+  min-width: 40px;
+  height: 36px;
+  padding: 0 9px;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -43,7 +70,7 @@
   font: inherit;
   cursor: pointer;
 }
-.i18n-test-switch button[aria-pressed="true"] {
+.i18n-test-panel button[aria-pressed="true"] {
   background: var(--color-primary, #1b3a6b);
   color: #fff;
 }
@@ -54,7 +81,8 @@
 /* Côté de la zone principale (le menu latéral passe à gauche en FR). */
 html[lang="fr"] .i18n-test-switch {
   left: auto;
-  right: 12px;
+  right: 8px;
+  flex-direction: row;
 }
 @media print {
   .i18n-test-switch {

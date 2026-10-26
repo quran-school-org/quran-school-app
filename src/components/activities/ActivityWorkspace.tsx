@@ -70,7 +70,7 @@ export default function ActivityWorkspace() {
         {currentActivity ? (
           <div className="bg-surface rounded-2xl border border-sand-200/80 overflow-hidden space-y-0">
             {/* Activity Detailed Header */}
-            <div className="p-5 bg-gradient-to-r from-sand-900 via-sand-800 to-primary-950 text-white">
+            <div className="p-5 bg-gradient-to-r from-night via-night-2 to-primary-950 text-white">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -582,8 +582,8 @@ export default function ActivityWorkspace() {
             {activeTab === "finance" && (
               <div className="p-5 space-y-6">
                 {/* Financial Balance Summary Card */}
-                <div className="bg-sand-900 text-white rounded-2xl p-6 border border-sand-800">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-sand-800 pb-4">
+                <div className="bg-night text-white rounded-2xl p-6 border border-night-2">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-night-2 pb-4">
                     <div>
                       <span className="text-[13px] font-semibold text-primary-400">كشف الميزانية المستقلة للنشاط</span>
                       <h3 className="text-lg font-bold mt-0.5">{currentActivity.title}</h3>
@@ -603,7 +603,7 @@ export default function ActivityWorkspace() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
-                    <div className="bg-sand-800/80 rounded-xl p-4 border border-sand-700">
+                    <div className="bg-night-2/80 rounded-xl p-4 border border-night-line">
                       <div className="text-[13px] text-ink-3 font-medium">إجمالي المداخيل والمساهمات</div>
                       <div className="text-2xl font-bold text-primary-400 mt-1">
                         +{currentFinances.totalCollected.toLocaleString()} <span className="text-[13px] font-normal text-ink-3">د.م</span>
@@ -613,7 +613,7 @@ export default function ActivityWorkspace() {
                       </div>
                     </div>
 
-                    <div className="bg-sand-800/80 rounded-xl p-4 border border-sand-700">
+                    <div className="bg-night-2/80 rounded-xl p-4 border border-night-line">
                       <div className="text-[13px] text-ink-3 font-medium">إجمالي المصاريف المؤداة</div>
                       <div className="text-2xl font-bold text-danger-400 mt-1">
                         -{currentFinances.totalSpent.toLocaleString()} <span className="text-[13px] font-normal text-ink-3">د.م</span>
@@ -623,7 +623,7 @@ export default function ActivityWorkspace() {
                       </div>
                     </div>
 
-                    <div className="bg-sand-800/80 rounded-xl p-4 border border-sand-700">
+                    <div className="bg-night-2/80 rounded-xl p-4 border border-night-line">
                       <div className="text-[13px] text-ink-3 font-medium">النتيجة الصافية للنشاط</div>
                       <div className={`text-2xl font-bold mt-1 ${currentFinances.netBalance >= 0 ? "text-primary-400" : "text-danger-400"}`}>
                         {currentFinances.netBalance >= 0 ? `+${currentFinances.netBalance.toLocaleString()}` : currentFinances.netBalance.toLocaleString()} <span className="text-[13px] font-normal text-ink-3">د.م</span>

@@ -2152,6 +2152,73 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` du commit ; ou, pour le thème seul,
   remettre `DEFAULT_THEME` à `bleu-nuit` et `theme-color` à `#102446`.
 
+### D90. Appel rapide, tableau de bord de l'enseignant, présence de la semaine (UI-04, UI-16, UI-20, UI-09 présences, UI-07)
+- **Contexte** : audit UI/UX du 25/10/2026. L'appel sur téléphone demandait ~1 100 px de
+  défilement, l'enseignant arrivait sur « الكل », rien ne menait à l'appel depuis son accueil,
+  et la présence de la semaine affichait sept jours (dont des jours sans séance) et un « 0 % »
+  alarmant tant que la séance du jour n'était pas finie.
+- **Décision** :
+  - Présences : pour le `مدرس`, la halaqa de la séance du jour (sinon sa première) est
+    présélectionnée une fois par enseignant (`attendanceClassPickedFor`, `useUiState`) ; la liste
+    est juste sous les filtres ; le lecteur QR s'ouvre par « المسح بالكاميرا » (panneau fermé par
+    défaut) ; un seul résumé collant remplace les quatre chiffres ; libellé « الحالة المرصودة »
+    retiré ; alertes d'absences consécutives sous la liste ; recherche seulement au-delà de 8 élèves.
+  - « تسجيل الجميع حاضرين » : marque présents les élèves sans saisie. Une saisie manuelle
+    (même « غائب ») est conservée ; une absence automatique (note « غياب تلقائي… ») n'est pas
+    une saisie et est remplacée. Passe par `handleToggleAttendance` : aucune écriture nouvelle.
+  - Date : boutons « اليوم » / « الحصة السابقة » et sélecteurs jour / mois (mois marocains) /
+    année de la charte ; plus de `<input type="date">` (la date de naissance garde le natif).
+    La date initiale est la date locale (et non UTC).
+  - Tableau de bord enseignant : carte « حصة اليوم » (halaqa, horaire, état de l'appel) avec
+    « تسجيل الحضور » qui ouvre l'appel avec la bonne halaqa ; ligne d'élève entièrement cliquable
+    (liste unique, plus de tableau ni de bouton répété) ; « التخصص الحالي » retiré.
+  - Présence de la semaine : jours de séance seulement (plus les jours qui ont des relevés) ;
+    une séance du jour n'est comptée qu'une fois terminée, sinon « الحصة جارية » / « لم تبدأ بعد » ;
+    barres horizontales sous 640 px ; pourcentages dans `bdi dir="ltr"`.
+  - UI-07 (ces deux écrans) : titre = libellé du menu (« الحضور والغياب », « لوحة المحفّظ »),
+    description d'appel par rôle, description de l'accueil enseignant supprimée.
+  - Logique pure dans `src/app/attendanceSessions.ts` (tests unitaires) ; `parseClassSchedule`
+    déplacé dans `src/app/classSchedule.ts` (réexporté par `helpers.ts`).
+- **Hors décision** : la liste des halaqas reste complète pour l'enseignant (seule la
+  présélection change) ; les règles et les données ne changent pas.
+- **Retour arrière** : `git revert` des commits de la branche `fix/audit-ui-enseignant`.
+
+### D91. Coque mobile, typographie, aperçus aux couleurs du thème (audit UI-05, UI-13, UI-15, UI-23)
+- **Contexte** : l'audit UI/UX du 25/10/2026 (`docs/revues/AUDIT-UI-UX-2026-10-25.md`)
+  relève une barre du haut de 135 à 190 px sur téléphone (UI-05), la police
+  d'affichage sur tous les titres (UI-15), du bleu nuit en dur dans une interface
+  émeraude (UI-13) et un sélecteur de langue de test qui masque des boutons (UI-23).
+- **Décision** :
+  - **UI-05** : sous 1 024 px (`useMediaQuery`, là où le menu latéral devient
+    tiroir), la barre du haut fait une ligne de 56 px : menu, nom de l'école
+    tronqué (`data-active-school-mobile`), cloche, avatar (profil). Le sélecteur
+    d'école (`#school-switcher`) et « خروج » passent dans le tiroir
+    (`[data-drawer-account]`), rendus **à un seul endroit à la fois** (pas de
+    doublon d'identifiant). Le tiroir garde son comportement : Échap, bouton de
+    fermeture. À partir de 1 024 px, barre inchangée ; « خروج » perd le rouge
+    (contour neutre, rouge au survol seulement).
+  - **UI-15** : Reem Kufi réservée au `h1` de page, au nom de l'école et à la carte
+    du hifz ; titres de cartes (`CardHeader`) et de fenêtres (`Modal`) en IBM Plex
+    Sans Arabic 600. Une règle en fin de `index.css` applique la même police aux
+    `h2` / `h3` portant encore `font-display` dans des écrans non migrés
+    (exception : `#hifz-map-title`) ; elle disparaîtra quand ces écrans seront
+    nettoyés. `word-spacing: 0.1em` sur la police d'affichage.
+  - **UI-23** : le sélecteur FR de test devient un bouton rond de 44 px (code de la
+    langue active, translucide), qui ouvre un petit panneau AR / FR (Échap, clic
+    extérieur, fermeture après choix). Toujours monté par `main.tsx` uniquement hors
+    production (garde-fous D79 inchangés). Les tests e2e ouvrent d'abord le bouton.
+  - **UI-13** : l'aperçu à l'écran des cartes d'élève suit le thème actif (plus de
+    `data-theme="bleu-nuit"`, ombre et motif par variables). L'**impression** garde
+    la charte bleu nuit (D88) : `printDocument` pose `data-theme="bleu-nuit"` sur le
+    document imprimé, couvert par `tests/unit/printTemplates.test.ts`.
+    `sand-800` / `sand-900` sont remplacés par `night` / `night-2` (salaires, matrice
+    de droits, badge et annuaire du personnel, espace des activités) et interdits
+    par `tests/unit/themes.test.ts`, avec exceptions : aperçus d'impression
+    (`PrintReportModal`, `ActivityPrintModal`) et, **temporairement**,
+    `UsersSection.tsx` (autre lot).
+- **Retour arrière** : `git revert` des commits du lot. Pour la seule barre mobile,
+  passer `compact` à `false` dans `AppFrame.tsx` (l'ancienne barre complète revient).
+
 ### D89. Audit UI/UX d'octobre 2026, parcours famille, élèves et tableaux (UI-01, 02, 03, 06, 07, 17, 21)
 - **Contexte** : l'audit d'Elias (`docs/revues/AUDIT-UI-UX-2026-10-25.md`) montre que
   le parent et l'élève arrivent sur un écran d'administration, que l'onglet des

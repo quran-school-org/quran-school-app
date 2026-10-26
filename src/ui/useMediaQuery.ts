@@ -1,17 +1,19 @@
-/** Requête média suivie en direct (rendu d'une seule variante, pas deux masquées en CSS). */
+/**
+ * Suit une media query (ex. « (min-width: 1024px) »). Valeur initiale lue
+ * tout de suite pour éviter un premier rendu faux ; repli « faux » sans matchMedia.
+ */
 import { useEffect, useState } from "react";
 
-const supported = () => typeof window !== "undefined" && typeof window.matchMedia === "function";
-
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(() => (supported() ? window.matchMedia(query).matches : true));
+  const read = () => (typeof window !== "undefined" && typeof window.matchMedia === "function" ? window.matchMedia(query).matches : false);
+  const [matches, setMatches] = useState(read);
   useEffect(() => {
-    if (!supported()) return;
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
     const mq = window.matchMedia(query);
-    const update = () => setMatches(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
+    const onChange = () => setMatches(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, [query]);
   return matches;
 }

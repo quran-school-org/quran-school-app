@@ -22,6 +22,7 @@ const html = (page: Page) => page.locator("html");
 const switcher = (page: Page) => page.locator("#i18n-test-switch");
 
 async function setLang(page: Page, lang: "ar" | "fr") {
+  await switcher(page).locator(".i18n-test-toggle").click();
   await switcher(page).locator(`button[data-lang="${lang}"]`).click();
   await expect(html(page)).toHaveAttribute("lang", lang);
 }
