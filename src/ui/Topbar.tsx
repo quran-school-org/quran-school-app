@@ -1,6 +1,6 @@
 /**
  * Barre du haut (maquette Topbar.dc.html) : date et saison, pastille de
- * synchronisation, cloche, utilisateur, déconnexion ; emplacement pour le
+ * problème de synchronisation (erreur seulement, D93), cloche, utilisateur, déconnexion ; emplacement pour le
  * sélecteur d'école et le bouton du menu en mobile.
  *
  * Mode `compact` (sous 1 024 px, UI-05) : une seule ligne de 56 px (menu, nom
@@ -14,18 +14,17 @@ import { InitialAvatar } from "./InitialAvatar";
 
 export type SyncState = "synced" | "syncing" | "error";
 
-const SYNC = {
-  synced: { box: "bg-success-100 text-success-700", dot: "bg-success", label: "متزامن", title: "البيانات متزامنة مع قاعدة البيانات في الوقت الفعلي" },
-  syncing: { box: "bg-gold-100 text-gold-800", dot: "bg-gold animate-pulse", label: "مزامنة…", title: "جاري الاتصال والمزامنة مع قاعدة البيانات…" },
-  error: { box: "bg-danger-100 text-danger-800", dot: "bg-danger", label: "غير متصل", title: "تعذّرت مزامنة البيانات؛ العمل جارٍ على النسخة المحلية" },
-};
-
+/**
+ * Pastille de problème de synchronisation (D93) : rien n'est affiché quand
+ * tout va bien (« متزامن » et « مزامنة… » retirés) ; seul l'état d'erreur
+ * (hors ligne, échec de synchronisation) produit un signal discret.
+ */
 export function SyncPill({ state }: { state: SyncState }) {
-  const s = SYNC[state];
+  if (state !== "error") return null;
   return (
-    <span role="status" title={s.title} className={cx("inline-flex items-center gap-2 h-10 px-3.5 rounded-full text-[13.5px] font-semibold whitespace-nowrap", s.box)}>
-      <span aria-hidden="true" className={cx("w-2 h-2 rounded-full", s.dot)} />
-      {s.label}
+    <span role="status" data-sync-error title="تعذّرت مزامنة البيانات؛ العمل جارٍ على النسخة المحلية" className="inline-flex items-center gap-2 h-10 px-3.5 rounded-full text-[13.5px] font-semibold whitespace-nowrap bg-danger-100 text-danger-800">
+      <span aria-hidden="true" className="w-2 h-2 rounded-full bg-danger" />
+      غير متصل
     </span>
   );
 }
@@ -76,7 +75,7 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
         </div>
       </div>
       <div className={cx("flex items-center gap-2.5 shrink-0", !compact && "flex-wrap")}>
-        {!compact && <span className="hidden sm:inline-flex"><SyncPill state={sync} /></span>}
+        {!compact && sync === "error" && <span className="hidden sm:inline-flex"><SyncPill state={sync} /></span>}
         {!compact && schoolSwitcher}
         <button
           type="button"

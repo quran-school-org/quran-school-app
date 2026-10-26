@@ -1987,8 +1987,6 @@ export const FR: Record<string, string> = {
   "اسم المستخدم أو كلمة المرور غير صحيحة": "Nom d'utilisateur ou mot de passe incorrect",
   "حدث خطأ أثناء تسجيل الدخول": "Une erreur est survenue lors de la connexion",
   // shell/AppFrame.tsx
-  "قاعدة البيانات متصلة، والبيانات متزامنة الآن": "Base de données connectée, données synchronisées",
-  "جارٍ الاتصال بقاعدة البيانات ومزامنة البيانات…": "Connexion à la base de données et synchronisation en cours…",
   "تعذّر الاتصال بقاعدة البيانات، العمل على النسخة المحلية": "Connexion à la base de données impossible, travail sur la copie locale",
   "إحصائيات الإدارة": "Statistiques de la direction",
   "إحصائيات الحلقة": "Statistiques de la halaqa",
@@ -2066,10 +2064,6 @@ export const FR: Record<string, string> = {
   "الحزب": "Hizb",
   "الحزب {0}": "Hizb {0}",
   // ui/Topbar.tsx
-  "متزامن": "Synchronisé",
-  "البيانات متزامنة مع قاعدة البيانات في الوقت الفعلي": "Données synchronisées en temps réel avec la base de données",
-  "مزامنة…": "Synchronisation…",
-  "جاري الاتصال والمزامنة مع قاعدة البيانات…": "Connexion et synchronisation avec la base de données…",
   "غير متصل": "Hors ligne",
   "تعذّرت مزامنة البيانات؛ العمل جارٍ على النسخة المحلية": "Synchronisation impossible ; travail sur la copie locale",
   "الموسم الدراسي": "Année scolaire",
