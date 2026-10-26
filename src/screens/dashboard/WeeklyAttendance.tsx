@@ -3,17 +3,8 @@ import { useState } from "react";
 import type { Attendance, Class, Student } from "../../types";
 import { Card, CardHeader, Ltr, Select } from "../../ui";
 import { weeklyAttendance } from "./dashboardData";
+import { formatDateAr } from "../../format/date";
 import { localIsoDate, scheduledWeekdays, sessionInfo, settledAttendance } from "../../app/attendanceSessions";
-
-const fmt = (d: string) => {
-  if (!d) return "";
-  const [y, m, day] = d.split("-").map(Number);
-  try {
-    return new Intl.DateTimeFormat("ar-MA-u-nu-latn", { day: "numeric", month: "long" }).format(new Date(y, m - 1, day));
-  } catch {
-    return d;
-  }
-};
 
 export default function WeeklyAttendance({ attendance, classes, students }: { attendance: Attendance[]; classes: Class[]; students: Student[] }) {
   const [classId, setClassId] = useState("all");
@@ -37,10 +28,14 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
   const pendingLabel = running ? "الحصة جارية" : "لم تبدأ بعد";
   const aria = (day: string, rate: number | null, lastRate: number | null, date: string) =>
     pendingDay(date, rate) ? `${day}: ${pendingLabel}` : `${day}: ${rate === null ? "لا تسجيل" : rate + "%"}، الأسبوع الماضي ${lastRate === null ? "لا تسجيل" : lastRate + "%"}`;
-  const empty = w.thisAvg === null && w.lastAvg === null && !pending;
-  const emptyText = w.lastRecord
-    ? `لم تُسجَّل أي حصة في ${className} منذ ${fmt(w.lastRecord)}. تظهر المقارنة هنا بعد أول تسجيل للحضور.`
-    : `لم تُسجَّل أي حصة في ${className} بعد. تظهر المقارنة هنا بعد أول تسجيل للحضور.`;
+  // Aucun relevé cette semaine (constat 20) : message explicite au lieu de cases vides.
+  const empty = w.thisAvg === null;
+  // Une phrase par élément : chacune se traduit séparément en mode français.
+  const emptyLines = [
+    classId === "all" ? "لم يُسجَّل حضور هذا الأسبوع بعد." : `لم يُسجَّل حضور هذا الأسبوع بعد في ${className}.`,
+    w.lastRecord ? `آخر حصة مسجّلة: ${formatDateAr(w.lastRecord)}.` : "",
+    running ? "الحصة جارية الآن، وتُحتسب نسبتها عند انتهائها." : pending ? "لم تبدأ حصة اليوم بعد." : "تظهر المقارنة هنا بعد أول تسجيل للحضور.",
+  ].filter(Boolean);
   const pct = (r: number | null) => (r === null ? "لا بيانات" : <Ltr>{r}%</Ltr>);
 
   return (
@@ -71,7 +66,7 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
       </div>
 
       {empty || shown.length === 0 ? (
-        <p className="m-0 text-center text-[14.5px] leading-[1.7] text-ink-2 bg-surface-2 px-4.5 py-6 rounded-xl border-[1.5px] border-dashed border-line-strong">{emptyText}</p>
+        <p data-weekly="empty" className="m-0 text-center text-[14.5px] leading-[1.7] text-ink-2 bg-surface-2 px-4.5 py-6 rounded-xl border-[1.5px] border-dashed border-line-strong">{emptyLines.map((line, i) => <span key={i}>{i > 0 && " "}{line}</span>)}</p>
       ) : (
         <>
           {/* Téléphone : une barre horizontale par jour de séance. */}

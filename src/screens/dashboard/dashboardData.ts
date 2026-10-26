@@ -2,7 +2,7 @@
  * Calculs du tableau de bord (fonctions pures, testées dans
  * tests/unit/dashboardData.test.ts) à partir des vraies données de l'école.
  */
-import type { Attendance, Class, Grade, Student, Teacher } from "../../types";
+import type { Attendance, Class, Grade, Payment, Student, Teacher } from "../../types";
 
 /** Accord du nom « طالب » avec un nombre (1, 2, 3-10, 11+). */
 export function studentsLabel(n: number): string {
@@ -45,6 +45,21 @@ export function missingDocuments(students: Student[]): Student[] {
 export function classesWithoutTeacher(classes: Class[], teachers: Teacher[]): Class[] {
   const live = new Set(teachers.filter((t) => !t.isArchived).map((t) => t.id));
   return classes.filter((c) => !c.isArchived && (!c.teacherId || !live.has(c.teacherId)));
+}
+
+/**
+ * Alertes qui demandent une action (documents manquants, halaqa sans muḥaffiẓ ou
+ * élèves sans halaqa, cotisations impayées). Le rappel « aucun présence cette
+ * semaine » est un simple indice : il ne compte pas. Sert à remonter le bloc
+ * « تحتاج إجراءً » sous les chiffres clés (D100).
+ */
+export function actionAlertCount(students: Student[], classes: Class[], teachers: Teacher[], payments: Payment[]): number {
+  const { unplaced } = classPlacement(students, classes);
+  return (
+    (missingDocuments(students).length > 0 ? 1 : 0) +
+    (classesWithoutTeacher(classes, teachers).length > 0 || unplaced > 0 ? 1 : 0) +
+    (payments.some((p) => p.status === "غير مدفوع") ? 1 : 0)
+  );
 }
 
 // ---------------------------------------------------------------- semaine

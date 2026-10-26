@@ -3,15 +3,14 @@
  * les données réelles de l'école active.
  */
 import { useMemo, useState } from "react";
-import { Download, RefreshCw } from "lucide-react";
 import { useApp } from "../app/AppContext";
 import { buildNavGroups, visibleTabs } from "../shell/navModel";
-import { Button, HifzMap, KpiGrid, KpiTile, Legend, PageHeader, StackedBar, TextAction } from "../ui";
+import { HifzMap, KpiGrid, KpiTile, Legend, PageHeader, StackedBar, TextAction } from "../ui";
 import ActionNeeded from "./dashboard/ActionNeeded";
 import HifzProgress from "./dashboard/HifzProgress";
 import TeacherPerformance from "./dashboard/TeacherPerformance";
 import WeeklyAttendance from "./dashboard/WeeklyAttendance";
-import { busiestHizb, classPlacement, classesLabel } from "./dashboard/dashboardData";
+import { actionAlertCount, busiestHizb, classPlacement, classesLabel } from "./dashboard/dashboardData";
 
 const TAJWEED = [
   { key: "ممتاز", color: "var(--color-primary)" },
@@ -24,7 +23,6 @@ export default function DashboardScreen() {
     students, teachers, classes, attendance, grades, payments, systemSettings, currentUser, currentRole,
     setActiveTab, setSelectedStudent, totalStudentsCount, advancedStudentsCount,
     excellentTajweedCount, averageTajweedCount, weakTajweedCount, totalPaymentsCollected, totalUnpaidCount,
-    handleBackupRealmDB, handleRestoreRealmDB,
   } = useApp();
 
   const tabs = useMemo(() => visibleTabs(buildNavGroups({ currentUser, currentRole, unread: 0 })), [currentUser, currentRole]);
@@ -36,26 +34,21 @@ export default function DashboardScreen() {
   const placement = classPlacement(students, classes);
   const currencyShort = /درهم/.test(systemSettings?.currency || "درهم") ? "د.م" : systemSettings?.currency || "";
   const canSeeFees = canGo("payments") || canGo("finance");
+  // « تحتاج إجراءً » remonte sous les chiffres clés (avant la carte du ḥifẓ) dès qu'il y a une alerte (D100).
+  const urgent = actionAlertCount(students, classes, teachers, canSeeFees ? payments : []) > 0;
+  const actionBlock = (wide: boolean) => (
+    <ActionNeeded students={students} classes={classes} teachers={teachers} attendance={attendance} payments={canSeeFees ? payments : []} canGo={canGo} go={go} wide={wide} />
+  );
+  const hifzMap = <HifzMap students={active.map((s) => ({ id: s.id, name: s.fullName, hizb: s.hizbCount }))} selected={selected} onSelect={setSel} />;
 
   return (
     <div data-screen="dashboard" className="flex flex-col gap-6">
       <PageHeader
         title="لوحة الكتّاب"
         description="حال الحلقات والطلاب والمالية في نظرة واحدة."
-        actions={
-          <>
-            <Button id="manual-db-backup-btn" onClick={handleBackupRealmDB} title="تحميل نسخة احتياطية كاملة من قاعدة البيانات كملف JSON" icon={<Download className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
-              تنزيل نسخة احتياطية
-            </Button>
-            <input type="file" id="restore-backup-file-input" aria-label="استرجاع قاعدة البيانات كاملة من ملف JSON احتياطي" accept=".json" onChange={handleRestoreRealmDB} className="hidden" />
-            <Button id="manual-db-restore-btn" onClick={() => document.getElementById("restore-backup-file-input")?.click()} title="استرجاع قاعدة البيانات كاملة من ملف JSON احتياطي" icon={<RefreshCw className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
-              استرجاع نسخة
-            </Button>
-          </>
-        }
       />
 
-      <HifzMap students={active.map((s) => ({ id: s.id, name: s.fullName, hizb: s.hizbCount }))} selected={selected} onSelect={setSel} />
+      {!urgent && hifzMap}
 
       <KpiGrid label="مؤشرات رئيسية">
         <KpiTile
@@ -99,9 +92,12 @@ export default function DashboardScreen() {
         </KpiTile>
       </KpiGrid>
 
+      {urgent && actionBlock(true)}
+      {urgent && hifzMap}
+
       <div className="flex flex-wrap gap-6 items-stretch">
         <TeacherPerformance teachers={teachers} classes={classes} students={students} grades={grades} onAssign={canGo("classes") ? () => go("classes") : undefined} />
-        <ActionNeeded students={students} classes={classes} teachers={teachers} attendance={attendance} payments={canSeeFees ? payments : []} canGo={canGo} go={go} />
+        {!urgent && actionBlock(false)}
       </div>
 
       <WeeklyAttendance attendance={attendance} classes={classes} students={students} />
