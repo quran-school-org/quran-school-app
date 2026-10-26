@@ -5,6 +5,7 @@
 import { Plus, Edit3, Trash2, CheckCircle, AlertTriangle, Briefcase, RefreshCw } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { formatMoney, formatNumber } from "../../utils/format";
+import { formatDateAr } from "../../format/date";
 
 export default function SalariesSection() {
   const {
@@ -166,7 +167,7 @@ export default function SalariesSection() {
                           {s.paymentMethod}
                         </td>
                         <td className="p-3 text-ink-3">
-                          {s.paymentDate}
+                          {formatDateAr(s.paymentDate)}
                         </td>
                         <td className="p-3">
                           {s.status === "تم الصرف" ? (

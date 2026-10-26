@@ -9,7 +9,8 @@ import { AlertTriangle, Bell, CheckCheck, CheckCircle2, Coins, Inbox, Trash2 } f
 import { RealmSimDB } from "../db";
 import { useApp } from "../app/AppContext";
 import { isNotificationRead } from "../types";
-import { ActionAlert, Button, Card, EmptyState, Ltr, Modal, PageHeader, Pill, cx } from "../ui";
+import { ActionAlert, Button, Card, EmptyState, Modal, PageHeader, Pill, cx } from "../ui";
+import { formatDateAr } from "../format/date";
 
 const TYPE_ICON: Record<string, { icon: any; cls: string }> = {
   "نجاح": { icon: CheckCircle2, cls: "bg-success-100 text-success-700" },
@@ -94,7 +95,7 @@ export default function NotificationsScreen() {
                     <span className="flex-1 min-w-0 flex flex-col gap-1">
                       <span className="flex flex-wrap justify-between items-center gap-2">
                         <span className={cx("text-[15px] text-ink", !read ? "font-bold" : "font-semibold")}>{n.title}</span>
-                        <Ltr className="text-[12.5px] text-ink-3">{n.date}</Ltr>
+                        <span className="text-[12.5px] text-ink-3">{formatDateAr(n.date)}</span>
                       </span>
                       <span className="text-[14px] text-ink-2 leading-relaxed">{n.message}</span>
                       {!read && (

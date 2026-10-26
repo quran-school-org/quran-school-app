@@ -7,6 +7,7 @@ import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
 import { Select } from "../../ui";
 import { formatMoney } from "../../utils/format";
+import { formatDateAr } from "../../format/date";
 
 export default function RevenuesSection() {
   const {
@@ -174,7 +175,7 @@ export default function RevenuesSection() {
                           </span>
                         </td>
                         <td className="p-3 text-ink-3">
-                          {inc.date}
+                          {formatDateAr(inc.date)}
                         </td>
                         <td className="p-3 text-ink-3 font-mono text-[12.5px]">
                           {inc.receiptNo || "—"}
@@ -284,7 +285,7 @@ export default function RevenuesSection() {
                               <Compass className="w-3.5 h-3.5 text-primary-600 shrink-0" />
                               <span>{act ? act.title : `نشاط #${p.activityId}`}</span>
                             </span>
-                            {act?.startDate && <p className="text-[11.5px] text-ink-3 font-normal">{act.startDate}</p>}
+                            {act?.startDate && <p className="text-[11.5px] text-ink-3 font-normal">{formatDateAr(act.startDate)}</p>}
                           </td>
                           <td className="p-3 font-bold text-ink">
                             {participantName}
@@ -313,7 +314,7 @@ export default function RevenuesSection() {
                             </span>
                           </td>
                           <td className="p-3 text-ink-3 font-mono text-[12.5px]">
-                            {p.paymentDate || "—"}
+                            {formatDateAr(p.paymentDate)}
                           </td>
                           <td className="p-3 text-center">
                             {p.paymentStatus === "معفى" ? (
@@ -417,7 +418,7 @@ export default function RevenuesSection() {
                             {p.receiptNo || "—"}
                           </td>
                           <td className="p-3 text-ink-3">
-                            {p.paymentDate}
+                            {formatDateAr(p.paymentDate)}
                           </td>
                           <td className="p-3">
                             <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-[11.5px] px-2.5 py-1 rounded-full">

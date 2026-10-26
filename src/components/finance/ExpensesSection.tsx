@@ -5,6 +5,7 @@
 import { Wallet, Building2, Plus, Edit3, Trash2, Receipt } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { formatMoney, formatNumber } from "../../utils/format";
+import { formatDateAr } from "../../format/date";
 
 export default function ExpensesSection() {
   const {
@@ -152,7 +153,7 @@ export default function ExpensesSection() {
                           {exp.invoiceNo || "—"}
                         </td>
                         <td className="p-3 text-ink-3">
-                          {exp.date}
+                          {formatDateAr(exp.date)}
                         </td>
                         <td className="p-3">
                           <div className="flex items-center justify-center gap-1">

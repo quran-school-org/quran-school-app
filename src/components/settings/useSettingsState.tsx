@@ -11,6 +11,7 @@ import { isPrimaryDirector } from "./shared";
 import type { SettingsManagementProps } from "../SettingsManagement";
 import { resolveThemeId, type ThemeId } from "../../theme/palettes";
 import { applyTheme } from "../../theme/applyTheme";
+import { formatDateTimeAr, formatTimeAr } from "../../format/date";
 
 export function useSettingsState(props: SettingsManagementProps) {
   const {
@@ -90,9 +91,9 @@ export function useSettingsState(props: SettingsManagementProps) {
       if (diffMins < 1) return "الآن (نشط)";
       if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
       if (diffHours < 24 && date.getDate() === now.getDate()) {
-        return `اليوم ${date.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}`;
+        return `اليوم ${formatTimeAr(lastLoginStr)}`;
       }
-      return `${date.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" })} ${date.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}`;
+      return formatDateTimeAr(lastLoginStr, lastLoginStr);
     } catch {
       return lastLoginStr;
     }

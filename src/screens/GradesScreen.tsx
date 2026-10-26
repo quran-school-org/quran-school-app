@@ -10,8 +10,9 @@ import { checkUserPermission } from "../types";
 import { useApp } from "../app/AppContext";
 import { isFamilyRole } from "../security/access";
 import { navLabel } from "../shell/navModel";
-import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, Ltr, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, usePagination } from "../ui";
+import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, usePagination } from "../ui";
 import { ALL, EMPTY_GRADE_FILTERS, OVERALL_GRADES, filterGrades, isFiltered, periodOptions, type GradeFilters } from "./grades/gradeFilters";
+import { formatDateAr } from "../format/date";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} aria-hidden="true" />;
 const OVERALL_TONE: Record<string, any> = { "ممتاز": "gold", "جيد جداً": "success", "جيد": "primary", "مقبول": "neutral" };
@@ -118,7 +119,7 @@ export default function GradesScreen() {
                       </div>
                       <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-ink-3">
                         <span>الامتحان: <strong className="font-semibold text-ink-2">{gr.testedPortion}</strong></span>
-                        <span>تاريخ الاختبار: <Ltr className="text-ink-2">{gr.examDate}</Ltr></span>
+                        <span>تاريخ الاختبار: <span className="text-ink-2">{formatDateAr(gr.examDate)}</span></span>
                         {teacher && <span>الممتحن: <span className="text-ink-2">{teacher.fullName}</span></span>}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">

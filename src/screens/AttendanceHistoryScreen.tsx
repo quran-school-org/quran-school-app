@@ -9,8 +9,9 @@ import { UserCheck } from "lucide-react";
 import { useApp } from "../app/AppContext";
 import { isFamilyRole } from "../security/access";
 import { navLabel } from "../shell/navModel";
-import { Card, CardHeader, EmptyState, FilterChips, FormField, Ltr, PageHeader, Pagination, Pill, Select, usePagination, type PillTone } from "../ui";
+import { Card, CardHeader, EmptyState, FilterChips, FormField, PageHeader, Pagination, Pill, Select, usePagination, type PillTone } from "../ui";
 import { countStatuses, sessionsOf } from "./family/familySummary";
+import { formatDateAr } from "../format/date";
 
 /** Séances par page (les tailles de D83 ne concernent que les élèves et les attestations). */
 const SESSIONS_PER_PAGE = 12;
@@ -81,7 +82,7 @@ export default function AttendanceHistoryScreen() {
                   <li key={a.id} data-session={a.date} className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
                     <span className="flex flex-col min-w-0">
                       <span className="text-[14.5px] font-semibold text-ink">{weekday(a.date)}</span>
-                      <Ltr className="text-[13px] text-ink-2">{a.date}</Ltr>
+                      <span className="text-[13px] text-ink-2">{formatDateAr(a.date)}</span>
                     </span>
                     <span className="flex flex-wrap items-center gap-2 justify-end">
                       {a.notes && <span className="text-[13px] text-ink-3 max-w-[40ch]">{a.notes}</span>}

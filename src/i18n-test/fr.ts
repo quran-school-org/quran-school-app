@@ -364,6 +364,7 @@ export const FR: Record<string, string> = {
   "الوجهة أو المكان:": "Destination ou lieu :",
   "تاريخ الانطلاق:": "Date de départ :",
   "إلى {0}": "au {0}",
+  "{0} إلى {1}": "{0} au {1}",
   "المؤطرون والمشرفون المعتمدون:": "Encadrants et accompagnateurs désignés :",
   "الإدارة التربوية": "Direction pédagogique",
   "الاسم الكامل للمشارك": "Nom complet du participant",

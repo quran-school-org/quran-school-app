@@ -7,6 +7,7 @@ import { ACTIVITY_TYPES, ACTIVITY_STATUSES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
 import { Button, Card, CountBadge, EmptyState, IconButton, Ltr, Pill, SearchInput, Select, cx } from "../../ui";
 import { formatMoney, formatNumber } from "../../utils/format";
+import { formatDateAr } from "../../format/date";
 
 export default function ActivitiesList() {
   const {
@@ -101,7 +102,7 @@ export default function ActivitiesList() {
                   <span className="font-semibold text-[15px] text-ink line-clamp-1 w-full">{act.title}</span>
                   <span className="flex flex-wrap items-center gap-3 text-[13px] text-ink-3">
                     <span className="flex items-center gap-1 min-w-0"><MapPin className="w-3.5 h-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" /><span className="line-clamp-1">{act.location}</span></span>
-                    <span className="flex items-center gap-1 shrink-0"><Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" /><Ltr>{act.startDate}</Ltr></span>
+                    <span className="flex items-center gap-1 shrink-0"><Calendar className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />{formatDateAr(act.startDate)}</span>
                   </span>
                   <span className="grid grid-cols-3 gap-1 w-full rounded-lg bg-surface-2 border border-line-soft p-1.5 text-center text-[12.5px] [&>span]:min-w-0 [&>span]:break-words">
                     <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">المشاركون</span><strong className="text-ink-2 tabular-nums">{actParts.length} {act.maxCapacity ? `/${act.maxCapacity}` : ""}</strong></span>

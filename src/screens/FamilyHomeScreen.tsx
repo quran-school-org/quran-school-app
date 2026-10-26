@@ -11,8 +11,9 @@ import { Award, BookOpen, CalendarCheck, CreditCard, GraduationCap, UserRound } 
 import { useApp } from "../app/AppContext";
 import { navLabel } from "../shell/navModel";
 import { StudentAvatar } from "../utils/studentAvatar";
-import { Button, Card, EmptyState, HifzBar, Ltr, PageHeader, Pill, hizbOf, type PillTone } from "../ui";
+import { Button, Card, EmptyState, HifzBar, PageHeader, Pill, hizbOf, type PillTone } from "../ui";
 import { ABSENCE_WINDOW_DAYS, countStatuses, feeOfMonth, lastGradeOf, monthLabel, recentSessions, sessionsOf } from "./family/familySummary";
+import { formatDateAr } from "../format/date";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} aria-hidden="true" />;
 const OVERALL_TONE: Record<string, PillTone> = { "ممتاز": "gold", "جيد جداً": "success", "جيد": "primary", "مقبول": "neutral" };
@@ -92,7 +93,7 @@ export default function FamilyHomeScreen() {
                           <span className="text-[13.5px] text-ink-2">{exam.testedPortion}</span>
                         </span>
                         <span className="text-[13.5px] text-ink-2">
-                          الحفظ <strong className="text-ink tabular-nums">{exam.memorizationGrade}/20</strong> · التجويد <strong className="text-ink tabular-nums">{exam.tajweedGrade}/20</strong> · <Ltr>{exam.examDate}</Ltr>
+                          الحفظ <strong className="text-ink tabular-nums">{exam.memorizationGrade}/20</strong> · التجويد <strong className="text-ink tabular-nums">{exam.tajweedGrade}/20</strong> · {formatDateAr(exam.examDate)}
                         </span>
                       </div>
                     ) : (
