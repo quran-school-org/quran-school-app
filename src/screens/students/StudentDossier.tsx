@@ -1,14 +1,17 @@
 /** Fiche de l'élève sélectionné : informations, documents, carte. */
-import { Check, UserRound, X } from "lucide-react";
+import { useState } from "react";
+import { Check, IdCard, UserRound, X } from "lucide-react";
 import { checkUserPermission, type Class } from "../../types";
 import StudentCard from "../../components/StudentCard";
 import { StudentAvatar } from "../../utils/studentAvatar";
 import { useApp } from "../../app/AppContext";
 import { isFamilyRole } from "../../security/access";
-import { ActionAlert, Button, Card, CardHeader, EmptyState, InfoRow, Ltr, Pill, WhatsAppIcon } from "../../ui";
+import { ActionAlert, Button, Card, CardHeader, EmptyState, InfoRow, Ltr, Modal, Pill, WhatsAppIcon } from "../../ui";
 
 export default function StudentDossier({ classes }: { classes: Class[] }) {
-  const { selectedStudent, schoolName, currentRole } = useApp();
+  const { selectedStudent, schoolName, currentRole, currentUser } = useApp();
+  // Aperçu recto verso de la carte : dans une fenêtre, à la demande (UI-17).
+  const [showCard, setShowCard] = useState(false);
 
   if (!selectedStudent) {
     return (
@@ -57,6 +60,12 @@ export default function StudentDossier({ classes }: { classes: Class[] }) {
           <InfoRow label="السورة الحالية">{st.currentSurah}</InfoRow>
           <InfoRow label="مستوى التجويد">{st.tajweedLevel}</InfoRow>
         </dl>
+        {/* La famille n'a la carte que si elle a le droit d'imprimer. */}
+        {(!isFamilyRole(currentRole) || checkUserPermission(currentUser, currentRole, "students", "print")) && (
+          <Button data-action="open-student-card" block onClick={() => setShowCard(true)} icon={<IdCard className="w-4 h-4" strokeWidth={1.75} />}>
+            بطاقة الطالب
+          </Button>
+        )}
         {/* Le parent ne s'écrit pas à lui-même (U-04). */}
         {!isFamilyRole(currentRole) && (
           <Button id="whatsapp-contact-parent-btn" block onClick={openWhatsApp} icon={<WhatsAppIcon className="w-4 h-4 text-success-700" />}>
@@ -77,23 +86,11 @@ export default function StudentDossier({ classes }: { classes: Class[] }) {
         </div>
         {st.notes && <ActionAlert tone="warn" title="ملاحظات المعلم">{st.notes}</ActionAlert>}
       </Card>
-    </div>
-  );
-}
-
-/** Aperçu de la carte officielle de l'élève sélectionné (pleine largeur). */
-export function StudentCardPreview({ classes }: { classes: Class[] }) {
-  const { selectedStudent: st, currentUser, currentRole } = useApp();
-  if (!st) return null;
-  return (
-    <Card padded={false} className="overflow-hidden">
-        <div className="flex justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
-          <h3 className="m-0 font-display font-semibold text-[18px] text-primary">معاينة بطاقة الطالب للاستخدام والتصدير</h3>
-          <span className="text-[12.5px] font-semibold text-gold-700">بشعار الجمعية</span>
-        </div>
-        <div className="p-4 sm:p-6 bg-surface-2 flex justify-center overflow-x-auto">
+      {showCard && (
+        <Modal modalId="student-card" size="lg" title="بطاقة الطالب" subtitle={`${st.fullName} — معاينة الوجهين قبل الطباعة`} onClose={() => setShowCard(false)} footer={<Button onClick={() => setShowCard(false)}>إغلاق</Button>}>
           <StudentCard student={st} studentClass={classes.find((c) => c.id === st.classId)} canPrint={checkUserPermission(currentUser, currentRole, "students", "print")} />
-        </div>
-    </Card>
+        </Modal>
+      )}
+    </div>
   );
 }

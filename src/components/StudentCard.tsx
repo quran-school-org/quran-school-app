@@ -1,6 +1,6 @@
 /**
- * Aperçu imprimable de la carte officielle de l'élève (recto et verso), dans la
- * fiche de l'élève. Impression via la fenêtre d'impression de la charte.
+ * Aperçu imprimable de la carte officielle de l'élève (recto et verso), dans une
+ * fenêtre ouverte depuis la fiche de l'élève (UI-17). Impression via la fenêtre d'impression de la charte.
  */
 import { useRef } from "react";
 import { Printer } from "lucide-react";
@@ -45,7 +45,7 @@ export default function StudentCard({ student, canPrint = true }: StudentCardPro
           طباعة وتصدير بطاقة الطالب
         </Button>
       )}
-      <div ref={cardRef} className="flex flex-col 2xl:flex-row gap-6 justify-center items-center" style={{ direction: "rtl" }}>
+      <div ref={cardRef} className="flex flex-wrap gap-6 justify-center items-center" style={{ direction: "rtl" }}>
         <OfficialCardFront student={student} ctx={ctx} />
         <OfficialCardBack student={student} payments={payments} ctx={ctx} />
       </div>
