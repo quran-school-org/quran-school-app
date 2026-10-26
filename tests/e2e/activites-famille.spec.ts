@@ -30,6 +30,21 @@ test.describe.serial("activités : vue famille", () => {
     await expect(card).toContainText("واجب المساهمة");
     await expect(card).toContainText("50 د.م");
     await expect(card).toContainText("قيد التسجيل");
+    // Description, programme (long : replié) et rendez-vous ; rien de financier interne (400 = bus).
+    await expect(card.locator('[data-activity-text="description"]')).toContainText("رحلة ترفيهية وتربوية إلى الغابة");
+    await expect(card.locator("[data-activity-meeting]")).toContainText("أمام مقر الجمعية، الساعة 08:00");
+    const program = card.locator('[data-activity-text="program"]');
+    await expect(program).toContainText("08:00 الانطلاق من مقر الجمعية");
+    await expect(card.locator('[data-activity-text="description"]').getByRole("button")).toHaveCount(0); // court : pas de repli
+    const more = program.getByRole("button", { name: "عرض المزيد" });
+    await expect(more).toHaveAttribute("aria-expanded", "false");
+    await more.click();
+    const less = program.getByRole("button", { name: "عرض أقل" });
+    await expect(less).toHaveAttribute("aria-expanded", "true");
+    await expect(program).toContainText("17:00 العودة إلى مقر الجمعية");
+    await less.click();
+    await expect(program.getByRole("button", { name: "عرض المزيد" })).toHaveAttribute("aria-expanded", "false");
+    await expect(card).not.toContainText("400");
     // Deux enfants : l'un inscrit et payé, l'autre non inscrit.
     await expect(card.locator("[data-child-state]")).toHaveCount(2);
     const inscrit = card.locator('[data-child-state="S-101"]');
@@ -44,7 +59,7 @@ test.describe.serial("activités : vue famille", () => {
     for (const text of ["مصاريف النشاط", "الميزانية والربط المالي", "مرتبط بمالية الجمعية", "تم الربط المالي", "إضافة نفقة", "تسجيل مشارك جديد", "طباعة لائحة المشاركين", "الصافي", "المشاركون"]) {
       await expect(view.getByText(text)).toHaveCount(0);
     }
-    await expect(view.getByRole("button")).toHaveCount(0);
+    await expect(view.getByRole("button")).toHaveCount(1); // seul bouton : « عرض المزيد » du programme replié
     await expect(view.getByRole("tab")).toHaveCount(0);
     await expect(view.getByRole("searchbox")).toHaveCount(0); // 8 activités ou moins : ni recherche ni filtre
     await shot(page, "activites-parent");
@@ -60,7 +75,7 @@ test.describe.serial("activités : vue famille", () => {
     await expect(card.locator("[data-child-state]")).toHaveCount(1);
     await expect(card.locator('[data-child-state="S-109"]')).toContainText("غير مسجّل");
     await expect(page.getByText("ياسين العلمي")).toHaveCount(0);
-    await expect(view.getByRole("button")).toHaveCount(0);
+    await expect(view.getByRole("button")).toHaveCount(1); // seul bouton : « عرض المزيد » du programme replié
     await logout(page);
   });
 

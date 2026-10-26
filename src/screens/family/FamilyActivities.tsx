@@ -4,13 +4,13 @@
  * de chaque enfant du compte (inscrit ou non, payé ou non). Aucune dépense,
  * aucun budget, aucun total financier, aucune liste d'autres participants.
  */
-import { useMemo, useState } from "react";
-import { Calendar, Compass, MapPin, Search, Wallet } from "lucide-react";
+import { useId, useMemo, useState } from "react";
+import { Calendar, ChevronDown, Clock, Compass, MapPin, Search, Wallet } from "lucide-react";
 import type { ActivityParticipant, ActivityTrip, Student } from "../../types";
 import { Card, EmptyState, Ltr, PageHeader, Pill, SearchInput, Select, type PillTone } from "../../ui";
 import { foldForSearch } from "../../ui/textSearch";
 import { formatMoney } from "../../utils/format";
-import { FAMILY_ACTIVITIES_SEARCH_MIN, childActivityState, sortFamilyActivities } from "./familyActivities";
+import { FAMILY_ACTIVITIES_SEARCH_MIN, childActivityState, familyActivityTexts, isLongText, sortFamilyActivities } from "./familyActivities";
 
 const STATUS_TONE: Record<string, PillTone> = { "مكتمل": "neutral", "قيد التسجيل": "primary", "قيد التنفيذ": "success", "ملغى": "danger", "مخطط له": "warn" };
 const STATUSES = ["مخطط له", "قيد التسجيل", "قيد التنفيذ", "مكتمل", "ملغى"];
@@ -23,6 +23,31 @@ export interface FamilyActivitiesProps {
   children: Student[];
   isParent: boolean;
   today: string;
+}
+
+/** Texte libre de l'activité : replié (4 lignes) s'il est long, avec un vrai bouton « عرض المزيد / عرض أقل ». */
+function FoldableText({ title, text, attr }: { title: string; text: string; attr: string }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const long = isLongText(text);
+  return (
+    <section data-activity-text={attr} aria-labelledby={`${id}-t`} className="flex flex-col gap-1">
+      <h3 id={`${id}-t`} className="m-0 text-[13px] font-semibold text-ink-2">{title}</h3>
+      <p id={`${id}-p`} className={`m-0 text-[14px] leading-relaxed text-ink whitespace-pre-line break-words ${long && !open ? "line-clamp-4" : ""}`}>{text}</p>
+      {long && (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={`${id}-p`}
+          onClick={() => setOpen((v) => !v)}
+          className="self-start inline-flex items-center gap-1 min-h-11 -my-2 px-1 bg-transparent border-0 text-primary text-[13.5px] font-semibold cursor-pointer hover:underline focus-visible:outline-2 focus-visible:outline-primary rounded-md"
+        >
+          <span>{open ? "عرض أقل" : "عرض المزيد"}</span>
+          <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      )}
+    </section>
+  );
 }
 
 function ChildState({ participants, activityId, child }: { participants: ActivityParticipant[]; activityId: string; child: Student }) {
@@ -85,7 +110,9 @@ export default function FamilyActivities({ activities, participants, children, i
         </EmptyState>
       ) : (
         <ul className="m-0 p-0 list-none grid grid-cols-1 xl:grid-cols-2 gap-5 items-start" aria-label="قائمة الأنشطة">
-          {shown.map((a) => (
+          {shown.map((a) => {
+            const t = familyActivityTexts(a);
+            return (
             <li key={a.id} className="min-w-0">
               <Card as="article" data-activity={a.id} aria-labelledby={`act-${a.id}`} className="flex flex-col gap-3.5">
                 <header className="flex flex-col gap-2">
@@ -108,12 +135,20 @@ export default function FamilyActivities({ activities, participants, children, i
                       <dd className="m-0">{a.location}</dd>
                     </div>
                   )}
+                  {t.meetingPoint && (
+                    <div className="flex items-center gap-1.5 min-w-0" data-activity-meeting>
+                      <dt className="sr-only">نقطة وساعة الانطلاق</dt>
+                      {ic(Clock)}
+                      <dd className="m-0">{t.meetingPoint}</dd>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5">
                     <dt className="text-ink-2 flex items-center gap-1.5">{ic(Wallet)}واجب المساهمة</dt>
                     <dd className="m-0"><strong className="text-primary tabular-nums">{formatMoney(a.contributionFee)}</strong></dd>
                   </div>
                 </dl>
-                {a.meetingPoint && <p className="m-0 text-[13.5px] text-ink-2">{a.meetingPoint}</p>}
+                {t.description && <FoldableText attr="description" title="الأهداف والوصف العام" text={t.description} />}
+                {t.program && <FoldableText attr="program" title="البرنامج الزمني والتفصيلي" text={t.program} />}
                 {children.length > 0 && (
                   <section aria-label={isParent ? "وضع تسجيل الأبناء" : "وضع تسجيلك"} className="rounded-xl bg-surface-2 border border-line-soft px-3.5 py-1">
                     <ul className="m-0 p-0 list-none">
@@ -123,7 +158,8 @@ export default function FamilyActivities({ activities, participants, children, i
                 )}
               </Card>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
