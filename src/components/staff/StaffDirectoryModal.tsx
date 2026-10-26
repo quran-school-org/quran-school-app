@@ -19,7 +19,7 @@ export default function StaffDirectoryModal() {
       {showDirectoryModal && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]">
           <div className="bg-surface w-full max-w-4xl overflow-hidden my-6 flex flex-col rounded-3xl border border-line shadow-pop" dir="rtl">
-            <div className="p-4 bg-sand-900 text-white flex justify-between items-center">
+            <div className="p-4 bg-night text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary-400" />
                 <span className="font-bold text-sm">لائحة الطاقم الإداري والتربوي والعاملين بالجمعية</span>

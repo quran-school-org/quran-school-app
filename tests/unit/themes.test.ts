@@ -139,6 +139,33 @@ describe("couleurs de la charte codées en dur", () => {
   });
 });
 
+describe("jetons sombres non thématisés (UI-13)", () => {
+  // `sand-800` / `sand-900` (#2A3040, #1A1F2B) ne suivent pas le thème : fonds sombres
+  // à écrire avec `night` / `night-2`. Exceptions : aperçus d'impression, dont la charte
+  // est fixe (D88), et UsersSection, corrigée par un autre lot (retirer cette ligne ensuite).
+  const FORBIDDEN = /\bsand-(800|900)\b/;
+  const EXCEPTIONS = [
+    "src/components/settings/UsersSection.tsx", // TEMPORAIRE : lot comptes (UI-13, UI-06)
+    "src/components/finance/PrintReportModal.tsx",
+    "src/components/activities/ActivityPrintModal.tsx",
+  ];
+  const walk = (dir: string): string[] =>
+    readdirSync(join(ROOT, dir)).flatMap((f) => {
+      const rel = `${dir}/${f}`;
+      if (statSync(join(ROOT, rel)).isDirectory()) return walk(rel);
+      return /\.tsx?$/.test(f) ? [rel] : [];
+    });
+
+  it("les écrans utilisent night / night-2, pas sand-800 / sand-900", () => {
+    const offenders = walk("src")
+      .filter((f) => !EXCEPTIONS.includes(f) && !f.startsWith("src/print/") && !f.startsWith("src/theme/"))
+      .flatMap((f) => readFileSync(join(ROOT, f), "utf8").split("\n").map((line, i) => [f, i + 1, line] as const))
+      .filter(([, , line]) => FORBIDDEN.test(line))
+      .map(([f, n]) => `${f}:${n}`);
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe("dernier thème de l'appareil", () => {
   it("clé hors du préfixe purgé à la déconnexion (kuttab:)", () => {
     const store = new Map<string, string>();

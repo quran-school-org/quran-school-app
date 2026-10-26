@@ -10,12 +10,12 @@ import { Select } from "../ui";
 
 const PICKER_VALUE = "__picker__";
 
-export default function SchoolSwitcher() {
+export default function SchoolSwitcher({ block }: { block?: boolean } = {}) {
   const { schoolId, schools, memberSchoolIds, isSuperAdmin, switchSchool, openSchoolPicker } = useSchool();
   const options = schools.filter((s) => memberSchoolIds.includes(s.id));
   if (options.length <= 1 && !isSuperAdmin) return null;
   return (
-    <label className="relative inline-flex items-center gap-2 h-11 ps-3 pe-1 rounded-xl border border-line bg-white text-primary hover:border-primary focus-within:border-gold transition-colors" title="تغيير المدرسة">
+    <label className={`relative ${block ? "flex w-full" : "inline-flex"} items-center gap-2 h-11 ps-3 pe-1 rounded-xl border border-line bg-white text-primary hover:border-primary focus-within:border-gold transition-colors`} title="تغيير المدرسة">
       <Building2 className="w-[18px] h-[18px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
       <span className="sr-only">تغيير المدرسة</span>
       <Select
@@ -27,7 +27,7 @@ export default function SchoolSwitcher() {
           else if (v && v !== schoolId) switchSchool(v);
         }}
         variant="bare"
-        className="w-auto max-w-[13rem]"
+        className={block ? "flex-1 min-w-0" : "w-auto max-w-[13rem]"}
         triggerClassName="h-10 pe-2"
         data-school-switcher=""
       >

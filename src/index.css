@@ -146,8 +146,14 @@
     font-variant-numeric: tabular-nums;
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, .font-display {
+  /* UI-15 : Reem Kufi réservée au h1 de page, au nom de l'école et à la carte du hifz ;
+     les titres de cartes et de sections sont en IBM Plex Sans Arabic (voir la fin du fichier). */
+  h1, .font-display {
     font-family: var(--font-display);
+    word-spacing: 0.1em;
+  }
+  h2, h3 {
+    font-family: var(--font-sans);
   }
   :focus-visible {
     outline: 2px solid var(--color-gold);
@@ -354,4 +360,14 @@ html, body {
   }
 }
 
-
+/*
+ * UI-15 : même sur les titres h2 / h3 qui portent encore `font-display` (écrans
+ * pas encore migrés), police de lecture IBM Plex Sans Arabic, graisse 600 posée
+ * par `font-semibold`. Hors couche pour l'emporter sur l'utilitaire. Exception :
+ * titre de la carte du hifz.
+ */
+h2.font-display:not(#hifz-map-title),
+h3.font-display {
+  font-family: var(--font-sans);
+  word-spacing: normal;
+}

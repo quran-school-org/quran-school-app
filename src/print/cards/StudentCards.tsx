@@ -44,9 +44,9 @@ export function isMonthPaid(paid: Payment[], monthName: string): boolean {
 const seasonOf = (s: SystemSettings | null) => (s?.activeAcademicSeason || "").trim().replace("/", "–");
 
 /**
- * Les cartes d'élève gardent la charte bleu nuit quel que soit le thème de
- * l'école (D84) : chaque carte porte `data-theme="bleu-nuit"`, qui rétablit les
- * variables de couleur de référence pour tout son contenu (aperçu et impression).
+ * Aperçu à l'écran : les cartes suivent le thème actif de l'école (UI-13, D84).
+ * Impression : le document imprimé n'a pas de thème appliqué, donc la charte
+ * bleu nuit de référence (D88, `printDocument` pose le thème bleu-nuit sur le document).
  */
 function Logo({ settings, size, dark }: { settings: SystemSettings | null; size: number; dark?: boolean }) {
   if (settings?.associationLogo) {
@@ -66,11 +66,10 @@ export function OfficialCardFront({ student, ctx }: { student: Student; ctx: Car
   return (
     <div
       id={`official-card-front-${student.id}`}
-      data-theme="bleu-nuit"
-      className="w-[390px] h-[550px] bg-white text-ink relative border-[10px] border-primary rounded-[34px] p-5 select-none flex flex-col justify-between overflow-hidden shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.18)]"
+      className="w-[390px] h-[550px] bg-white text-ink relative border-[10px] border-primary rounded-[34px] p-5 select-none flex flex-col justify-between overflow-hidden shrink-0 shadow-[0_12px_32px_color-mix(in_srgb,var(--color-night)_18%,transparent)]"
       style={{ boxSizing: "border-box", direction: "rtl" }}
     >
-      <GeometricPattern size={48} opacity={0.06} color="#1B3A6B" />
+      <GeometricPattern size={48} opacity={0.06} color="var(--color-primary)" />
       <div className="relative flex flex-col items-center w-full flex-grow">
         <div className="w-full flex items-center justify-between gap-2 border-b border-line-soft pb-3 mb-3">
           <div className="flex items-center gap-2 min-w-0">
@@ -123,11 +122,10 @@ export function OfficialCardBack({ student, payments, ctx }: { student: Student;
   return (
     <div
       id={`official-card-back-${student.id}`}
-      data-theme="bleu-nuit"
-      className="w-[390px] h-[550px] bg-white text-ink relative border-[10px] border-primary rounded-[34px] p-4 select-none flex flex-col justify-between overflow-hidden shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.18)]"
+      className="w-[390px] h-[550px] bg-white text-ink relative border-[10px] border-primary rounded-[34px] p-4 select-none flex flex-col justify-between overflow-hidden shrink-0 shadow-[0_12px_32px_color-mix(in_srgb,var(--color-night)_18%,transparent)]"
       style={{ boxSizing: "border-box", direction: "rtl" }}
     >
-      <GeometricPattern size={48} opacity={0.05} color="#1B3A6B" />
+      <GeometricPattern size={48} opacity={0.05} color="var(--color-primary)" />
       <div className="relative w-full flex items-center justify-between border-b border-line-soft pb-2 mb-2.5">
         <div>
           <p className="m-0 font-display font-bold text-[14px] text-primary leading-tight">بطاقة الانخراط الشهري</p>
@@ -188,8 +186,7 @@ export function DigitalCardFront({ student, studentClassName, ctx }: { student: 
   return (
     <div
       id={`student-card-front-${student.id}`}
-      data-theme="bleu-nuit"
-      className="w-[330px] h-[500px] rounded-[26px] bg-night text-night-text relative overflow-hidden border border-night-line select-none flex flex-col justify-between shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.25)]"
+      className="w-[330px] h-[500px] rounded-[26px] bg-night text-night-text relative overflow-hidden border border-night-line select-none flex flex-col justify-between shrink-0 shadow-[0_12px_32px_color-mix(in_srgb,var(--color-night)_25%,transparent)]"
       style={{ direction: "rtl" }}
     >
       <GeometricPattern size={56} opacity={0.12} />
@@ -234,8 +231,7 @@ export function DigitalCardBack({ student, ctx }: { student: Student; ctx: CardC
   return (
     <div
       id={`student-card-back-${student.id}`}
-      data-theme="bleu-nuit"
-      className="w-[330px] h-[500px] rounded-[26px] bg-night-2 text-night-text relative overflow-hidden border border-night-line select-none flex flex-col justify-between shrink-0 shadow-[0_12px_32px_rgba(16,36,70,0.25)]"
+      className="w-[330px] h-[500px] rounded-[26px] bg-night-2 text-night-text relative overflow-hidden border border-night-line select-none flex flex-col justify-between shrink-0 shadow-[0_12px_32px_color-mix(in_srgb,var(--color-night)_25%,transparent)]"
       style={{ direction: "rtl" }}
     >
       <GeometricPattern size={56} opacity={0.07} />
