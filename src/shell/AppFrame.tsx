@@ -11,6 +11,7 @@ import { LogOut } from "lucide-react";
 import { AppShell, Emblem, NavBrand, SideNav, Topbar, useMediaQuery } from "../ui";
 import { buildNavGroups, visibleTabs } from "./navModel";
 import QuotaBanner from "./QuotaBanner";
+import { RolePreviewBannerSlot } from "./rolePreviewSlots";
 import { extraChildrenLabel, familySidebarModel } from "./familySidebar";
 
 export function formatToday(d = new Date()): string {
@@ -175,7 +176,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           }
         />
       }
-      banner={firestoreQuotaExceeded ? <QuotaBanner /> : null}
+      banner={<>{firestoreQuotaExceeded ? <QuotaBanner /> : null}<RolePreviewBannerSlot /></>}
       footer={
         <footer className="px-4 sm:px-8 pb-6 flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-ink-3 max-w-[1240px] print:hidden">
           <span>نظام إدارة حلقات تحفيظ القرآن الكريم • {schoolName}</span>

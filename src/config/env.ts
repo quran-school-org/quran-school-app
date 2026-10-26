@@ -66,4 +66,4 @@ export const appCheckConfig = {
  * (refusé par scripts/dev/buildGuards.ts). Lu directement sur import.meta.env
  * pour que le build de production le remplace par une constante.
  */
-export const rolePreviewEnabled: boolean = String(import.meta.env.VITE_ENABLE_ROLE_PREVIEW || "").trim().toLowerCase() === "true";
+export const rolePreviewEnabled: boolean = import.meta.env.VITE_ENABLE_ROLE_PREVIEW === "true";
