@@ -406,7 +406,7 @@ export default function ActivityWorkspace() {
                             <td className="p-3 text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <button
-                                  title="طباعة بطاقة المشارك"
+                                  title="طباعة بطاقة المشارك" aria-label="طباعة بطاقة المشارك"
                                   onClick={() => {
                                      setSelectedParticipantForTicket(part);
                                      setPrintType("participant-ticket");
@@ -417,7 +417,7 @@ export default function ActivityWorkspace() {
                                 </button>
 
                                 <button
-                                  title="تعديل بيانات المشارك والدفع"
+                                  title="تعديل بيانات المشارك والدفع" aria-label="تعديل بيانات المشارك والدفع"
                                   onClick={() => handleOpenEditParticipant(part)}
                                   className="p-1 text-ink-3 hover:text-primary-700 hover:bg-primary-50 rounded"
                                 >
@@ -425,7 +425,7 @@ export default function ActivityWorkspace() {
                                 </button>
 
                                 <button
-                                  title="حذف المشارك"
+                                  title="حذف المشارك" aria-label="حذف المشارك"
                                   onClick={() => {
                                     if (confirm(`هل أنت متأكد من حذف المشارك "${part.fullName}"؟`)) {
                                       onDeleteParticipant(part.id);
@@ -551,14 +551,14 @@ export default function ActivityWorkspace() {
                             <td className="p-3 text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <button
-                                  title="تعديل المصروف"
+                                  title="تعديل المصروف" aria-label="تعديل المصروف"
                                   onClick={() => handleOpenEditExpense(exp)}
                                   className="p-1 text-ink-3 hover:text-primary-700 hover:bg-primary-50 rounded"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
                                 </button>
                                 <button
-                                  title="حذف المصروف"
+                                  title="حذف المصروف" aria-label="حذف المصروف"
                                   onClick={() => {
                                     if (confirm(`هل أنت متأكد من حذف المصروف "${exp.title}"؟`)) {
                                       onDeleteActivityExpense(exp.id);

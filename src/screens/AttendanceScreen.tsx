@@ -261,7 +261,7 @@ export default function AttendanceScreen() {
               return (
                 <li key={st.id} data-student-row={st.id} className="px-4 sm:px-5 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3 hover:bg-surface-2">
                   <div className="flex items-center gap-3 min-w-0">
-                    <button type="button" tabIndex={-1} onClick={() => openReport(st)} title="عرض كشف حضور الطالب الشهري" className="w-10 h-10 rounded-full overflow-hidden bg-sunken shrink-0 border border-line cursor-pointer p-0 hover:ring-2 hover:ring-gold hover:ring-offset-2 transition">
+                    <button type="button" tabIndex={-1} onClick={() => openReport(st)} title="عرض كشف حضور الطالب الشهري" aria-label="عرض كشف حضور الطالب الشهري" className="w-10 h-10 rounded-full overflow-hidden bg-sunken shrink-0 border border-line cursor-pointer p-0 hover:ring-2 hover:ring-gold hover:ring-offset-2 transition">
                       <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />
                     </button>
                     <div className="min-w-0 flex flex-col gap-1">

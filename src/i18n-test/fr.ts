@@ -2223,4 +2223,9 @@ export const FR: Record<string, string> = {
   "واجب المساهمة": "Contribution due",
   "وضع تسجيل الأبناء": "Situation d'inscription des enfants",
   "وضع تسجيلك": "Votre situation d'inscription",
+  // Audit UX/UI, lot L1 (D97) : noms accessibles des boutons icône
+  "حذف التعريفة الخاصة": "Supprimer le tarif spécial",
+  "مسح البحث": "Effacer la recherche",
+  "تحديد {0}": "Sélectionner {0}",
+  "نسبة تكبير / تصغير البطاقة للطباعة": "Échelle d'agrandissement / réduction de la carte à l'impression",
 };

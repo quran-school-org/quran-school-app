@@ -186,7 +186,7 @@ export default function RevenuesSection() {
                                 <button
                                   onClick={() => openIncomeModal(inc)}
                                   className="p-1.5 text-ink-2 hover:text-primary-800 hover:bg-sand-100 rounded-lg transition"
-                                  title="تعديل"
+                                  title="تعديل" aria-label="تعديل"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
                                 </button>
@@ -199,7 +199,7 @@ export default function RevenuesSection() {
                                     }
                                   }}
                                   className="p-1.5 text-ink-3 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition"
-                                  title="حذف"
+                                  title="حذف" aria-label="حذف"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>

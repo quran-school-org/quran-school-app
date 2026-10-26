@@ -68,7 +68,7 @@ const ICON_TONES = {
   "on-dark": "bg-white/5 text-night-text border-night-line hover:bg-white/10",
 };
 
-/** Bouton icône carré (44 px par défaut), toujours étiqueté pour les lecteurs d'écran. */
+/** Bouton icône carré (44 px par défaut ; « sm » : 36 px visibles, 44 px au toucher), toujours étiqueté pour les lecteurs d'écran. */
 export function IconButton({ label, tone = "default", size = "md", className, children, type = "button", ...rest }: IconButtonProps) {
   return (
     <button
@@ -77,7 +77,10 @@ export function IconButton({ label, tone = "default", size = "md", className, ch
       title={label}
       className={cx(
         "relative inline-flex items-center justify-center border cursor-pointer transition-colors duration-150 shrink-0 disabled:opacity-55 disabled:cursor-not-allowed",
-        size === "md" ? "w-11 h-11 rounded-xl" : "w-9 h-9 rounded-[10px]",
+        size === "md"
+          ? "w-11 h-11 rounded-xl"
+          // 36 px visibles ; la zone de toucher atteint 44 px (pseudo-élément transparent, sans changer la mise en page).
+          : "w-9 h-9 rounded-[10px] after:content-[''] after:absolute after:-inset-[5px]",
         ICON_TONES[tone],
         className,
       )}

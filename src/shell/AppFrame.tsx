@@ -111,7 +111,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           <ul className="m-0 p-0 list-none flex flex-col gap-1.5" data-family-sidebar={family.kind}>
             {family.lines.map((l) => (
               <li key={l.id} className="flex items-baseline justify-between gap-3" data-family-sidebar-child={l.id}>
-                <span className={`font-semibold text-white min-w-0 truncate ${family.kind === "one" ? "text-[17px]" : "text-[14px]"}`}>{l.name}</span>
+                <span className={`font-semibold text-white min-w-0 truncate ${family.kind === "one" ? "text-[17px]" : "text-[14px]"}`} title={l.name}>{l.name}</span>
                 <span className="text-[12.5px] text-night-muted shrink-0">الحزب الحالي : <span className="font-semibold text-gold tabular-nums text-[14px]">{l.hizb}</span></span>
               </li>
             ))}
@@ -151,7 +151,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
   return (
     <AppShell
       sidebar={<SideNav navId="desktop" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t)} footer={footer(false)} className="flex-1" />}
-      drawer={isMobileMenuOpen && compact ? <SideNav navId="mobile" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t, true)} footer={footer(true)} className="flex-1 pt-16" /> : null}
+      drawer={isMobileMenuOpen && compact ? <SideNav navId="mobile" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t, true)} footer={footer(true)} className="flex-1" headerExtra={<span aria-hidden="true" data-drawer-close-gap className="w-11 shrink-0" />} /> : null}
       drawerOpen={isMobileMenuOpen}
       onCloseDrawer={() => setIsMobileMenuOpen(false)}
       topbar={
@@ -171,7 +171,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           menuOpen={isMobileMenuOpen}
           mobileBrand={
             <span className="flex items-center gap-2 min-w-0">
-              <span className="font-display font-bold text-[17px] text-primary truncate" data-active-school-mobile>{schoolName}</span>
+              <span className="font-display font-bold text-[17px] text-primary truncate" data-active-school-mobile title={schoolName}>{schoolName}</span>
             </span>
           }
         />

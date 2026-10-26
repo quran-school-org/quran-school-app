@@ -66,7 +66,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
 
       <div className="relative mt-6 overflow-x-auto pb-1" tabIndex={0} role="region" aria-label="الأحزاب الستون، مرّر أفقياً">
         {/* px-2 : les numéros des bords (1, 60) débordaient d'un pixel et faisaient apparaître la barre de défilement. */}
-        <div className="min-w-[680px] px-2">
+        <div className="min-w-[680px] max-sm:min-w-[1480px] pointer-coarse:min-w-[1480px] px-2">
           <div role="group" aria-label="الأحزاب الستون" className="grid gap-0.5 h-[236px] items-stretch" style={{ gridTemplateColumns: "repeat(60, minmax(0, 1fr))" }}>
             {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
               const here = byHizb.get(n) || [];

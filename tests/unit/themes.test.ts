@@ -115,6 +115,19 @@ describe("contrastes WCAG (texte ≥ 4,5:1)", () => {
   }
 });
 
+describe("gris secondaire ink-3 (texte ≥ 4,5:1 sur les fonds sable)", () => {
+  const css = readFileSync(join(ROOT, "src/index.css"), "utf8");
+  const ink3 = css.match(/--color-ink-3:\s*(#[0-9A-Fa-f]{6});/)![1];
+  // Fonds sur lesquels le gris secondaire est posé : fond de l'application de chaque thème, surfaces, creux, calme.
+  const backgrounds: [string, string][] = [
+    ...THEMES.map((def): [string, string] => [`fond ${def.id}`, themeTokens(def.id).app]),
+    ...["surface", "surface-2", "sunken", "quiet"].map((n): [string, string] => [n, css.match(new RegExp(`--color-${n}:\\s*(#[0-9A-Fa-f]{6});`))![1]]),
+  ];
+  for (const [label, bg] of backgrounds) {
+    it(`${label} (${bg})`, () => expect(ratio(ink3, bg), `${ink3} / ${bg}`).toBeGreaterThanOrEqual(4.5));
+  }
+});
+
 describe("couleurs de la charte codées en dur", () => {
   const CHARTE_HEX = /#(102446|1B3A6B|D4A017|ECEDE6|1B2F55|2E4A78|2B4470|EEF1F7|B8C4D8|8FA0BD|C9D3E3|A9B6CC|7586A3|3A5785|FFF7DD|FFF2C7|FFE08A|5B7FB0)\b|rgba\((16, ?36, ?70|212, ?160, ?23)/i;
   // Exceptions : jetons eux-mêmes (theme/, index.css), impressions et cartes

@@ -115,7 +115,7 @@ export default function IdCardsScreen() {
             return (
               <div className="space-y-2">
                 <div className="flex items-center justify-between bg-sand-50 p-2.5 rounded-xl border border-sand-150 text-[13px]">
-                  <label className="flex items-center gap-2 cursor-pointer font-bold text-ink-2">
+                  <label className="flex items-center gap-2 cursor-pointer font-bold text-ink-2 py-3 -my-3">
                     <input
                       type="checkbox"
                       checked={allFilteredSelected}
@@ -193,18 +193,22 @@ export default function IdCardsScreen() {
                       : "bg-white hover:bg-sand-50 border-transparent text-ink-2"
                   }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isBulkChecked}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setBulkSelectedIds([...bulkSelectedIds, st.id]);
-                      } else {
-                        setBulkSelectedIds(bulkSelectedIds.filter(id => id !== st.id));
-                      }
-                    }}
-                    className="w-4 h-4 accent-primary-600 rounded border-line-strong cursor-pointer"
-                  />
+                  {/* Étiquette de 44 px autour de la case de 16 px (marges négatives : la ligne ne grandit pas). */}
+                  <label className="inline-flex shrink-0 cursor-pointer p-3.5 -m-3.5">
+                    <input
+                      type="checkbox"
+                      checked={isBulkChecked}
+                      aria-label={`تحديد ${st.fullName}`}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setBulkSelectedIds([...bulkSelectedIds, st.id]);
+                        } else {
+                          setBulkSelectedIds(bulkSelectedIds.filter(id => id !== st.id));
+                        }
+                      }}
+                      className="w-4 h-4 accent-primary-600 rounded border-line-strong cursor-pointer"
+                    />
+                  </label>
 
                   <button
                     onClick={() => {
@@ -313,7 +317,8 @@ export default function IdCardsScreen() {
                       step="0.05"
                       value={labScale}
                       onChange={(e) => setLabScale(parseFloat(e.target.value))}
-                      className="w-full accent-primary-600 h-1.5 bg-sand-200 rounded-lg cursor-pointer"
+                      aria-label="نسبة تكبير / تصغير البطاقة للطباعة"
+                      className="w-full accent-primary-600 h-6 py-[9px] bg-clip-content bg-sand-200 rounded-lg cursor-pointer"
                     />
 
                     {/* Scale presets */}
