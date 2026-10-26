@@ -105,3 +105,27 @@ export function readLastTheme(): string | null {
     return null;
   }
 }
+
+/**
+ * Dernier thème connu de CHAQUE école sur l'appareil : le cache cloisonné est
+ * purgé à la déconnexion, et les paramètres par défaut (sans thème) chargés à
+ * la connexion appliquaient le vert le temps que Firestore réponde (flash).
+ * Même nature que la clé ci-dessus : un identifiant de palette, rien d'autre.
+ */
+const schoolThemeKey = (schoolId: string) => `${CACHE_PREFIX}-device:theme:${schoolId}`;
+
+export function rememberSchoolTheme(schoolId: string, themeId: string): void {
+  try {
+    localStorage.setItem(schoolThemeKey(schoolId), themeId);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function readSchoolTheme(schoolId: string): string | null {
+  try {
+    return localStorage.getItem(schoolThemeKey(schoolId));
+  } catch {
+    return null;
+  }
+}

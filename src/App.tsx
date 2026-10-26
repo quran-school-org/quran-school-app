@@ -70,7 +70,7 @@ export default function App() {
   } = s;
 
   // Thème de couleur de l'école active (D84) ; sans école, le thème courant reste.
-  useSchoolTheme(currentUser && activeSchoolId ? systemSettings : null);
+  useSchoolTheme(currentUser ? activeSchoolId : null, systemSettings);
 
   if (!currentUser && authUid && showSchoolPicker) {
     return (
