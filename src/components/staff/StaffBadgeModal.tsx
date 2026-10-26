@@ -21,7 +21,7 @@ export default function StaffBadgeModal() {
       {showBadgeModal && badgeStaff && (
         <div data-modal="staff-badge" className="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-y-auto bg-night/55 backdrop-blur-[2px]">
           <div className="bg-surface w-full max-w-md overflow-hidden my-6 flex flex-col rounded-3xl border border-line shadow-pop" dir="rtl">
-            <div className="p-4 bg-sand-900 text-white flex justify-between items-center">
+            <div className="p-4 bg-night text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <Printer className="w-4 h-4 text-gold-400" />
                 <span className="font-bold text-sm">معاينة بطاقة العمل والشارة المهنية</span>
@@ -101,7 +101,7 @@ export default function StaffBadgeModal() {
                 </div>
 
                 {/* Badge Bottom Stripe */}
-                <div className="bg-sand-900 text-white text-[11.5px] py-1 text-center font-mono">
+                <div className="bg-night text-white text-[11.5px] py-1 text-center font-mono">
                   ID: {badgeStaff.id} • {systemSettings?.associationPhone || "—"}
                 </div>
               </div>
