@@ -2194,4 +2194,18 @@ export const FR: Record<string, string> = {
   "({0})": "({0})",
   "{0} ({1})": "{0} ({1})",
   "{0} : {1}": "{0} : {1}",
+  // screens/family/FamilyActivities.tsx (D94)
+  "غير مسجّل": "Non inscrit",
+  "المدفوع:": "Payé :",
+  "المتبقي:": "Reste à payer :",
+  "الأنشطة والرحلات التي تنظمها المدرسة، ووضع تسجيل أبنائك ومساهماتهم في كل منها.": "Les activités et sorties organisées par l'école, et la situation de vos enfants (inscription et contribution) pour chacune.",
+  "الأنشطة والرحلات التي تنظمها المدرسة، ووضع تسجيلك ومساهمتك في كل منها.": "Les activités et sorties organisées par l'école, et votre situation (inscription et contribution) pour chacune.",
+  "من": "sur",
+  "لا توجد أنشطة حالياً": "Aucune activité pour le moment",
+  "ستظهر هنا الأنشطة والرحلات بمجرد أن تعلن عنها المدرسة.": "Les activités et sorties apparaîtront ici dès que l'école les annoncera.",
+  "قائمة الأنشطة": "Liste des activités",
+  "المكان": "Lieu",
+  "واجب المساهمة": "Contribution due",
+  "وضع تسجيل الأبناء": "Situation d'inscription des enfants",
+  "وضع تسجيلك": "Votre situation d'inscription",
 };

@@ -162,7 +162,12 @@ export function useSchoolSync(s: SessionScope) {
       sub<SalaryPayment>("salaryPayments", "salary_payments", setSalaryPayments);
       sub<Expense>("expenses", "expenses", setExpenses);
       sub<ActivityTrip>("activities", "activities", setActivities);
-      sub<ActivityParticipant>("activityParticipants", "activity_participants", setActivityParticipants);
+      if (readable.has("activityParticipants")) {
+        sub<ActivityParticipant>("activityParticipants", "activity_participants", setActivityParticipants);
+      } else if (isFamilyRole(role)) {
+        // Familles : inscriptions de leurs enfants seulement (D94), requête filtrée comme l'exigent les règles.
+        unsubscribes.push(subscribeToQueryIn<ActivityParticipant>(schoolId, "activityParticipants", "referenceId", linkedIds, (items) => { if (active) setActivityParticipants(items); }, "activity_participants", { participantType: "طالب" }));
+      }
       sub<ActivityExpense>("activityExpenses", "activity_expenses", setActivityExpenses);
 
       if (readable.has("attendance")) {
