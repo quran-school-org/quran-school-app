@@ -34,7 +34,7 @@ export function AppShell({ sidebar, drawer, drawerOpen, onCloseDrawer, topbar, b
         <div className="fixed inset-0 z-50 lg:hidden flex print:hidden" role="dialog" aria-modal="true" aria-label="القائمة الرئيسية">
           <button type="button" aria-label="إغلاق القائمة" className="absolute inset-0 bg-night/60 border-0 cursor-default" onClick={onCloseDrawer} />
           <aside className="relative w-[300px] max-w-[85vw] h-full bg-night overflow-y-auto shadow-pop flex flex-col">
-            <button type="button" onClick={onCloseDrawer} aria-label="إغلاق القائمة" className="absolute top-4 end-4 z-10 w-10 h-10 inline-flex items-center justify-center rounded-xl border border-night-line text-night-text bg-night hover:bg-white/10 cursor-pointer">
+            <button type="button" onClick={onCloseDrawer} aria-label="إغلاق القائمة" className="absolute top-4 end-4 z-10 w-11 h-11 inline-flex items-center justify-center rounded-xl border border-night-line text-night-text bg-night hover:bg-white/10 cursor-pointer">
               <X className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
             </button>
             {drawer}
