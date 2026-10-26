@@ -2559,8 +2559,8 @@ là-bas (R-06).
     imprimable (personnel) ; compte utilisateur (paramètres). Repères `data-modal` : `income-form`,
     `salary-form`, `expense-form`, `finance-print-report`, `activity-form`, `participant-form`,
     `activity-expense-form`, `activity-print`, `staff-form`, `staff-directory`, `staff-badge`
-    (inchangé), `user-form`. Les identifiants `app-user-form-modal` (jamais lu) disparaît ;
-    `btn-confirm-save-user` est conservé. `AppShell` (tiroir du menu) garde son `fixed inset-0`.
+    (inchangé), `user-form`. L'identifiant `app-user-form-modal` (jamais lu) disparaît ;
+    `btn-confirm-save-user` est conservé ; les aperçus d'impression (rapport, activité) ont leur bouton d'impression dans le pied. `AppShell` (tiroir du menu) garde son `fixed inset-0`.
   - `Modal` est étendu **sans rien changer pour ses 9 usages existants** : focus piégé (Tab et
     Maj+Tab bouclent dans la fenêtre), `size="base"` (max-w-lg), `printHidden` (fenêtre de
     saisie absente de l'impression), `print` (aperçu d'un document : en-tête et pied masqués à

@@ -40,10 +40,10 @@ export default function PrintReportModal() {
       icon={<FileText className="w-5 h-5" strokeWidth={1.75} />}
       title="معاينة التقرير المالي والختامي المعتمد"
       onClose={close}
-      headerExtra={
+      footer={
         canPrint ? (
           <Button variant="primary" onClick={handlePrint} icon={<Printer className="w-4 h-4" />}>طباعة فورية / حفظ PDF</Button>
-        ) : null
+        ) : undefined
       }
     >
       <div className="p-8 sm:p-12 space-y-8 bg-white text-ink font-serif" id="printable-financial-statement">

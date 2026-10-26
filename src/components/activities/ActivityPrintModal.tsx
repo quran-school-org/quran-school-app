@@ -43,7 +43,6 @@ export default function ActivityPrintModal() {
       icon={<Printer className="w-5 h-5" />}
       title={title}
       onClose={close}
-      headerExtra={<Button variant="primary" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>طباعة الوثيقة الآن</Button>}
       footerAlign="between"
       footer={
         <>
