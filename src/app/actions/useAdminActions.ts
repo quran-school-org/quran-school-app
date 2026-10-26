@@ -9,8 +9,10 @@ import { validateNewPassword } from "../../security/accounts";
 import { computeAccountAlignment } from "../../security/accountAlignment";
 import { isPrimaryDirector } from "../helpers";
 import type { DerivedScope } from "../scope";
+import { useToast } from "../../ui";
 
 export function useAdminActions(s: DerivedScope) {
+  const toast = useToast();
   const {
     activeSchoolId,
     addSysNotification,
@@ -43,7 +45,7 @@ export function useAdminActions(s: DerivedScope) {
       "تم تحديث معلومات الجمعية والإعدادات العامة والرسوم المالية بنجاح.",
       "إداري"
     );
-    alert("تم حفظ الإعدادات وتحديث معلومات المؤسسة بنجاح!");
+    toast.success("تم حفظ الإعدادات وتحديث معلومات المؤسسة بنجاح!");
   };
 
   /** Modification d'un compte existant (directeur uniquement : compte + lien d'autorisation). */
@@ -52,7 +54,7 @@ export function useAdminActions(s: DerivedScope) {
       await RealmSimDB.saveAppUser(user);
     } catch (err) {
       console.error("Save app user failed:", err);
-      alert(describeFirebaseError(err));
+      toast.error(describeFirebaseError(err));
       return;
     }
 
@@ -71,7 +73,7 @@ export function useAdminActions(s: DerivedScope) {
       `تم حفظ تعديلات حساب المستخدم (${user.fullName}) بنجاح.`,
       "إداري"
     );
-    alert("تم حفظ حساب المستخدم والصلاحيات بنجاح!");
+    toast.success("تم حفظ حساب المستخدم والصلاحيات بنجاح!");
   };
 
   /**
@@ -85,7 +87,7 @@ export function useAdminActions(s: DerivedScope) {
     const attachExisting = password === "";
     const pwError = attachExisting ? null : validateNewPassword(password);
     if (pwError) {
-      alert(pwError);
+      toast.error(pwError);
       return false;
     }
     const flags: Record<string, boolean> = {};
@@ -122,13 +124,13 @@ export function useAdminActions(s: DerivedScope) {
         `تم إنشاء حساب المستخدم (${user.fullName}) باسم الدخول ${user.username} بنجاح.`,
         "إداري"
       );
-      alert(attachExisting
+      toast.success(attachExisting
         ? "تمت إضافة الحساب الموجود إلى هذه المدرسة بنجاح."
         : "تم إنشاء الحساب بنجاح. سيُطلب من المستخدم تغيير كلمة المرور عند أول دخول.");
       return true;
     } catch (err) {
       console.error("Create user account failed:", err);
-      alert(describeFirebaseError(err));
+      toast.error(describeFirebaseError(err));
       return false;
     }
   };
@@ -137,7 +139,7 @@ export function useAdminActions(s: DerivedScope) {
   const handleResetUserPassword = async (user: AppUser, newPassword: string): Promise<boolean> => {
     const pwError = validateNewPassword(newPassword);
     if (pwError) {
-      alert(pwError);
+      toast.error(pwError);
       return false;
     }
     try {
@@ -148,11 +150,11 @@ export function useAdminActions(s: DerivedScope) {
         `تمت إعادة تعيين كلمة مرور حساب (${user.fullName}). سيُطلب تغييرها عند الدخول القادم.`,
         "إداري"
       );
-      alert("تمت إعادة تعيين كلمة المرور بنجاح.");
+      toast.success("تمت إعادة تعيين كلمة المرور بنجاح.");
       return true;
     } catch (err) {
       console.error("Reset password failed:", err);
-      alert(describeFirebaseError(err));
+      toast.error(describeFirebaseError(err));
       return false;
     }
   };
@@ -162,7 +164,7 @@ export function useAdminActions(s: DerivedScope) {
       await RealmSimDB.deleteAppUser(userId);
     } catch (err) {
       console.error("Delete app user failed:", err);
-      alert(describeFirebaseError(err));
+      toast.error(describeFirebaseError(err));
       return;
     }
     setAppUsers(RealmSimDB.getAppUsers());
@@ -171,7 +173,7 @@ export function useAdminActions(s: DerivedScope) {
       "تم حذف حساب المستخدم وتجريده من صلاحيات الوصول إلى النظام بنجاح.",
       "تنبيه"
     );
-    alert("تم حذف المستخدم بنجاح!");
+    toast.success("تم حذف المستخدم بنجاح!");
   };
 
   /**
@@ -181,7 +183,7 @@ export function useAdminActions(s: DerivedScope) {
    */
   const handleHarmonizeUsersWithStaff = async () => {
     if (!isDirectorRole(currentRole)) {
-      alert("هذه العملية مخصصة للمدير.");
+      toast.error("هذه العملية مخصصة للمدير.");
       return;
     }
     const freshStaff = RealmSimDB.getTeachers();
@@ -193,7 +195,7 @@ export function useAdminActions(s: DerivedScope) {
       }
     } catch (err) {
       console.error("Harmonize users failed:", err);
-      alert(describeFirebaseError(err));
+      toast.error(describeFirebaseError(err));
     }
     setAppUsers(RealmSimDB.getAppUsers());
     setTeachers(freshStaff);

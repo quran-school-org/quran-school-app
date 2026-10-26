@@ -7,8 +7,10 @@ import { Student, AppUser, DailyProgress } from "../../types";
 import { isDirectorRole } from "../../security/access";
 import { linkedStudentIdsOf } from "../../security/accountAlignment";
 import type { DerivedScope } from "../scope";
+import { useConfirm } from "../../ui";
 
 export function useStudentActions(s: DerivedScope) {
+  const confirm = useConfirm();
   const {
     activeTeacher,
     addSysNotification,
@@ -241,8 +243,8 @@ export function useStudentActions(s: DerivedScope) {
     setSelectedStudent(newStudent);
   };
 
-  const handleDeleteStudent = (id: string, name: string) => {
-    if (confirm(`هل أنت متأكد من حذف الطالب ${name} نهائياً؟`)) {
+  const handleDeleteStudent = async (id: string, name: string) => {
+    if (await confirm({ message: `هل أنت متأكد من حذف الطالب ${name} نهائياً؟`, tone: "danger" })) {
       RealmSimDB.deleteStudent(id);
       addSysNotification("حذف طالب", `تم إزالة ملف الطالب ${name} من قاعدة البيانات.`, "تنبيه");
       loadDatabase();

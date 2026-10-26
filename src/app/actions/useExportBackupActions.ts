@@ -5,8 +5,14 @@ import React  from "react";
 import { RealmSimDB } from "../../db";
 import type { DerivedScope } from "../scope";
 import { csvCell } from "../../utils/csv";
+import { useConfirm, useToast } from "../../ui";
+
+/** Délai avant le rechargement qui suit un rétablissement de sauvegarde (le temps de lire le message). */
+const RESTORE_RELOAD_DELAY_MS = 2500;
 
 export function useExportBackupActions(s: DerivedScope) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const {
     loadDatabase,
     students,
@@ -14,7 +20,7 @@ export function useExportBackupActions(s: DerivedScope) {
 
   const handleExportStudentsCSV = () => {
     if (students.length === 0) {
-      alert("لا توجد بيانات طلاب لتصديرها.");
+      toast.error("لا توجد بيانات طلاب لتصديرها.");
       return;
     }
 
@@ -63,7 +69,7 @@ export function useExportBackupActions(s: DerivedScope) {
 
   const handleExportStudentsJSON = () => {
     if (students.length === 0) {
-      alert("لا توجد بيانات طلاب لتصديرها.");
+      toast.error("لا توجد بيانات طلاب لتصديرها.");
       return;
     }
 
@@ -104,7 +110,7 @@ export function useExportBackupActions(s: DerivedScope) {
       document.body.removeChild(link);
     } catch (error) {
       console.error(error);
-      alert("حدث خطأ أثناء محاولة نسخ البيانات احتياطياً.");
+      toast.error("حدث خطأ أثناء محاولة نسخ البيانات احتياطياً.");
     }
   };
 
@@ -113,7 +119,7 @@ export function useExportBackupActions(s: DerivedScope) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const jsonContent = e.target?.result as string;
         const backupData = JSON.parse(jsonContent);
@@ -124,22 +130,26 @@ export function useExportBackupActions(s: DerivedScope) {
         const isStructuredBackup = backupData && (backupData.students || backupData.teachers || backupData.classes);
 
         if (!backupData || (!isLegacyArray && !isLocalStorageDump && !isStructuredBackup)) {
-          alert("الملف المختار ليس ملف نسخة احتياطية صالحاً أو لا يحتوي على الجداول الأساسية.");
+          toast.error("الملف المختار ليس ملف نسخة احتياطية صالحاً أو لا يحتوي على الجداول الأساسية.");
           return;
         }
 
-        const confirmRestore = window.confirm(
-          "تنبيه هام! استرجاع النسخة الاحتياطية سيقوم باستبدال جميع البيانات الحالية بالكامل ببيانات ملف النسخ الاحتياطي. هل أنت متأكد من الاستمرار؟"
-        );
+        const confirmRestore = await confirm({
+          title: "تأكيد الاسترجاع",
+          message: "تنبيه هام! استرجاع النسخة الاحتياطية سيقوم باستبدال جميع البيانات الحالية بالكامل ببيانات ملف النسخ الاحتياطي. هل أنت متأكد من الاستمرار؟",
+          confirmLabel: "استرجاع",
+          tone: "danger",
+        });
         if (!confirmRestore) return;
 
         RealmSimDB.restoreBackup(backupData);
         loadDatabase();
-        alert("تم استرجاع النسخة الاحتياطية وتحديث النظام بنجاح! سيتم الآن إعادة تحميل الصفحة لتطبيق التغييرات بشكل كامل.");
-        window.location.reload();
+        toast.success("تم استرجاع النسخة الاحتياطية وتحديث النظام بنجاح! سيتم الآن إعادة تحميل الصفحة لتطبيق التغييرات بشكل كامل.");
+        // L'alerte bloquait jusqu'au clic : le message reste lisible un instant avant le rechargement.
+        window.setTimeout(() => window.location.reload(), RESTORE_RELOAD_DELAY_MS);
       } catch (err) {
         console.error(err);
-        alert("حدث خطأ أثناء قراءة ملف النسخة الاحتياطية. يرجى التحقق من صحة الملف بصيغة JSON.");
+        toast.error("حدث خطأ أثناء قراءة ملف النسخة الاحتياطية. يرجى التحقق من صحة الملف بصيغة JSON.");
       }
     };
     reader.readAsText(file);

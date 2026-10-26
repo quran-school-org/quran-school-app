@@ -151,6 +151,8 @@ export function useActivitiesForms(props: ActivitiesManagementProps) {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<ActivityExpense | null>(null);
   const [expTitle, setExpTitle] = useState("");
+  /** Erreurs de validation du formulaire de dépense, affichées sous le champ fautif (FormField `error`). */
+  const [expErrors, setExpErrors] = useState<{ title?: string; amount?: string }>({});
   const [expCategory, setExpCategory] = useState<ActivityExpenseCategory>("كراء حافلة وتنقل");
   const [expAmount, setExpAmount] = useState<number>(0);
   const [expDate, setExpDate] = useState(new Date().toISOString().split("T")[0]);
@@ -289,6 +291,8 @@ export function useActivitiesForms(props: ActivitiesManagementProps) {
     setEditingExpense,
     expTitle,
     setExpTitle,
+    expErrors,
+    setExpErrors,
     expCategory,
     setExpCategory,
     expAmount,

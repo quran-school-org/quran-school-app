@@ -8,8 +8,10 @@ import { SystemSettings, AppUser } from "../../types";
 import { validateNewPassword } from "../../security/accounts";
 import { isPrimaryDirector } from "../helpers";
 import type { DerivedScope } from "../scope";
+import { useToast } from "../../ui";
 
 export function useProfileActions(s: DerivedScope) {
+  const toast = useToast();
   const {
     accountOwnerName,
     activeSchoolId,
@@ -102,7 +104,7 @@ export function useProfileActions(s: DerivedScope) {
     }
     setProfilePassword("");
     setProfileCurrentPassword("");
-    alert(newPassword ? "تم تغيير كلمة المرور وتحديث الملف الشخصي بنجاح!" : "تم تحديث بيانات الملف الشخصي بنجاح!");
+    toast.success(newPassword ? "تم تغيير كلمة المرور وتحديث الملف الشخصي بنجاح!" : "تم تحديث بيانات الملف الشخصي بنجاح!");
     setShowProfileEditModal(false);
   };
 

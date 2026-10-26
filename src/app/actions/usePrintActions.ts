@@ -15,8 +15,10 @@ import { Payment } from "../../types";
 import { getYearAndMonthFromDate } from "../helpers";
 import { formatMoney } from "../../utils/format";
 import type { DerivedScope } from "../scope";
+import { useToast } from "../../ui";
 
 export function usePrintActions(s: DerivedScope) {
+  const toast = useToast();
   const {
     bulkSelectedIds,
     filteredPayments,
@@ -58,7 +60,7 @@ export function usePrintActions(s: DerivedScope) {
 
   const handlePrintFinancialReport = () => {
     if (filteredPayments.length === 0) {
-      alert("لا توجد بيانات لتصديرها.");
+      toast.error("لا توجد بيانات لتصديرها.");
       return;
     }
 
@@ -92,7 +94,7 @@ export function usePrintActions(s: DerivedScope) {
   };
   const handlePrintStudentsReport = () => {
     if (filteredStudents.length === 0) {
-      alert("لا توجد بيانات طلاب لتصديرها.");
+      toast.error("لا توجد بيانات طلاب لتصديرها.");
       return;
     }
 
@@ -144,7 +146,7 @@ export function usePrintActions(s: DerivedScope) {
 
     if (labPrintMode === "single") {
       if (!selectedLabStudentId) {
-        alert("الرجاء اختيار طالب أولاً.");
+        toast.error("الرجاء اختيار طالب أولاً.");
         return;
       }
       const labStudent = students.find(s => s.id === selectedLabStudentId);
@@ -152,7 +154,7 @@ export function usePrintActions(s: DerivedScope) {
 
       const printContent = document.getElementById("lab-printable-area");
       if (!printContent) {
-        alert("تعذر العثور على منطقة معاينة الكارت.");
+        toast.error("تعذر العثور على منطقة معاينة الكارت.");
         return;
       }
 
@@ -167,13 +169,13 @@ export function usePrintActions(s: DerivedScope) {
       if (!w) return;
     } else {
       if (bulkSelectedIds.length === 0) {
-        alert("الرجاء تحديد طالب واحد على الأقل من القائمة الجانبية للطباعة الجماعية.");
+        toast.error("الرجاء تحديد طالب واحد على الأقل من القائمة الجانبية للطباعة الجماعية.");
         return;
       }
 
       const printContent = document.getElementById("lab-printable-area");
       if (!printContent) {
-        alert("تعذر العثور على منطقة معاينة الكروت.");
+        toast.error("تعذر العثور على منطقة معاينة الكروت.");
         return;
       }
 

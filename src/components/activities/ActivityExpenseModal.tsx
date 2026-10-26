@@ -8,6 +8,7 @@ import { ActivityExpenseCategory } from "../../types";
 import { DollarSign } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
+import { useEffect } from "react";
 import { Button, FormField, Input, Modal, Select } from "../../ui";
 
 export default function ActivityExpenseModal() {
@@ -17,6 +18,8 @@ export default function ActivityExpenseModal() {
     editingExpense,
     expTitle,
     setExpTitle,
+    expErrors,
+    setExpErrors,
     expCategory,
     setExpCategory,
     expAmount,
@@ -34,6 +37,11 @@ export default function ActivityExpenseModal() {
     currentActivity,
     handleSaveExpenseForm,
   } = useActivities();
+
+  // Erreur de saisie : le focus va au champ fautif (le message est lu par le lecteur d'écran).
+  useEffect(() => {
+    if (expErrors.title || expErrors.amount) document.querySelector<HTMLElement>('[data-modal="activity-expense-form"] [aria-invalid="true"]')?.focus();
+  }, [expErrors]);
 
   if (!showExpenseModal || !currentActivity) return null;
   const close = () => setShowExpenseModal(false);
@@ -55,9 +63,9 @@ export default function ActivityExpenseModal() {
         </>
       }
     >
-      <FormField label="بيان / عنوان المصروف *">
+      <FormField label="بيان / عنوان المصروف *" error={expErrors.title}>
         {(id) => (
-          <Input id={id} type="text" required value={expTitle} onChange={(e) => setExpTitle(e.target.value)} placeholder="مثال: كراء حافلة نقل ممتازة سعة 48 مقعداً" />
+          <Input id={id} type="text" required aria-invalid={expErrors.title ? true : undefined} value={expTitle} onChange={(e) => { setExpTitle(e.target.value); if (expErrors.title) setExpErrors({ ...expErrors, title: undefined }); }} placeholder="مثال: كراء حافلة نقل ممتازة سعة 48 مقعداً" />
         )}
       </FormField>
 
@@ -72,9 +80,9 @@ export default function ActivityExpenseModal() {
           )}
         </FormField>
 
-        <FormField label="المبلغ (د.م) *">
+        <FormField label="المبلغ (د.م) *" error={expErrors.amount}>
           {(id) => (
-            <Input id={id} type="number" min="1" required value={expAmount || ""} onChange={(e) => setExpAmount(Number(e.target.value))} placeholder="0.00" />
+            <Input id={id} type="number" min="1" required aria-invalid={expErrors.amount ? true : undefined} value={expAmount || ""} onChange={(e) => { setExpAmount(Number(e.target.value)); if (expErrors.amount) setExpErrors({ ...expErrors, amount: undefined }); }} placeholder="0.00" />
           )}
         </FormField>
       </div>

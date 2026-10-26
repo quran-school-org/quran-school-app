@@ -7,8 +7,10 @@ import { Teacher, StaffCategory, ContractType, UserRole } from "../../types";
 import type { TeacherManagementProps } from "../TeacherManagement";
 import { canReadStaffPrivate } from "../../security/access";
 import { stripStaffPrivate } from "../../security/staffPrivate";
+import { useToast } from "../../ui";
 
 export function useStaffState(props: TeacherManagementProps) {
+  const toast = useToast();
   const {
   teachers,
   classes,
@@ -181,7 +183,7 @@ export function useStaffState(props: TeacherManagementProps) {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 2 ميغابايت.");
+        toast.error("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 2 ميغابايت.");
         return;
       }
       const reader = new FileReader();
@@ -209,7 +211,7 @@ export function useStaffState(props: TeacherManagementProps) {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.size > 2 * 1024 * 1024) {
-        alert("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 2 ميغابايت.");
+        toast.error("حجم الصورة كبير جداً. يرجى اختيار صورة أقل من 2 ميغابايت.");
         return;
       }
       const reader = new FileReader();
@@ -308,7 +310,7 @@ export function useStaffState(props: TeacherManagementProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formFullName || !formPhone) {
-      alert("الرجاء ملء الاسم الكامل ورقم الهاتف على الأقل.");
+      toast.error("الرجاء ملء الاسم الكامل ورقم الهاتف على الأقل.");
       return;
     }
 
@@ -393,7 +395,7 @@ export function useStaffState(props: TeacherManagementProps) {
 
   const handleStaffDelete = (staff: Teacher) => {
     if (staff.isFromSettings) {
-      alert(`⚠️ لا يمكن حذف (${staff.roleTitle || staff.fullName}) من هنا مباشرة لأنه مربوط ديناميكياً بوثيقة الإعدادات العامة (المشرف العام / المدير التنفيذي).\n\nلتعديل اسمه أو إزالته، يرجى التوجه إلى صفحة "إعدادات الجمعية والمدرسة".`);
+      toast.error(`⚠️ لا يمكن حذف (${staff.roleTitle || staff.fullName}) من هنا مباشرة لأنه مربوط ديناميكياً بوثيقة الإعدادات العامة (المشرف العام / المدير التنفيذي).\n\nلتعديل اسمه أو إزالته، يرجى التوجه إلى صفحة "إعدادات الجمعية والمدرسة".`);
       return;
     }
     onDeleteTeacher(staff.id);
@@ -401,7 +403,7 @@ export function useStaffState(props: TeacherManagementProps) {
 
   const handleStaffArchive = (staff: Teacher) => {
     if (staff.isFromSettings) {
-      alert(`⚠️ هذا الحساب (${staff.roleTitle || staff.fullName}) منصب قيادي مربوط بالإعدادات العامة للجمعية.`);
+      toast.error(`⚠️ هذا الحساب (${staff.roleTitle || staff.fullName}) منصب قيادي مربوط بالإعدادات العامة للجمعية.`);
       return;
     }
     onArchiveToggle(staff.id);

@@ -5,9 +5,12 @@
 import { Wallet, Building2, Edit3, Trash2, Receipt } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { formatMoney, formatNumber } from "../../utils/format";
+import { useConfirm } from "../../ui";
+
 import { formatDateAr } from "../../format/date";
 
 export default function ExpensesSection() {
+  const confirm = useConfirm();
   const {
     onDeleteExpense,
     canUpdate,
@@ -156,8 +159,8 @@ export default function ExpensesSection() {
                             )}
                             {canDelete && (
                               <button
-                                onClick={() => {
-                                  if (confirm("هل أنت متأكد من حذف هذه النفقة؟")) {
+                                onClick={async () => {
+                                  if (await confirm({ message: "هل أنت متأكد من حذف هذه النفقة؟", tone: "danger" })) {
                                     onDeleteExpense(exp.id);
                                   }
                                 }}

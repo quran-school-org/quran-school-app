@@ -6,7 +6,7 @@ import React, { useId } from "react";
 import { cx } from "./cx";
 
 export const fieldClass =
-  "min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] font-sans placeholder:text-ink-3 transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:bg-surface-2 disabled:text-ink-3 disabled:cursor-not-allowed";
+  "min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] font-sans placeholder:text-ink-3 transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/20 disabled:bg-surface-2 disabled:text-ink-3 disabled:cursor-not-allowed";
 
 /** Largeur pleine par défaut, sauf si la classe fournie fixe déjà une largeur. */
 const widthOf = (className?: string) => (/(^|\s)(w-|flex-)/.test(className || "") ? "" : "w-full");

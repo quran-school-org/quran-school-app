@@ -10,7 +10,7 @@ import { checkUserPermission } from "../types";
 import { useApp } from "../app/AppContext";
 import { isFamilyRole } from "../security/access";
 import { navLabel } from "../shell/navModel";
-import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, usePagination } from "../ui";
+import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, usePagination, useToast } from "../ui";
 import { ALL, EMPTY_GRADE_FILTERS, OVERALL_GRADES, filterGrades, isFiltered, periodOptions, type GradeFilters } from "./grades/gradeFilters";
 import { formatDateAr } from "../format/date";
 
@@ -19,6 +19,7 @@ const OVERALL_TONE: Record<string, any> = { "ممتاز": "gold", "جيد جدا
 const avg = (xs: number[]) => (xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : 0);
 
 export default function GradesScreen() {
+  const toast = useToast();
   const { students, teachers, classes, grades, currentUser, currentRole, schoolName, handleOpenGradeForm, handleDeleteGrade, handlePrintCertificate } = useApp();
   const [filters, setFilters] = useState<GradeFilters>(EMPTY_GRADE_FILTERS);
   const set = (patch: Partial<GradeFilters>) => setFilters((f) => ({ ...f, ...patch }));
@@ -51,7 +52,7 @@ export default function GradesScreen() {
               icon={ic(Plus, "w-[18px] h-[18px]")}
               onClick={() => {
                 if (students.length > 0) handleOpenGradeForm(students[0].id);
-                else alert("يرجى تسجيل طلاب أولاً.");
+                else toast.error("يرجى تسجيل طلاب أولاً.");
               }}
             >
               رصد نتيجة اختبار جديدة

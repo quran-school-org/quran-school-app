@@ -9,6 +9,7 @@
  * doit être déjà sûr (HTML produit par React, ou valeurs passées par escapeHtml).
  */
 import { escapeHtml } from "../security/html";
+import { emitToast } from "../ui/toastBus";
 
 export const PRINT_FONTS =
   '<link rel="preconnect" href="https://fonts.googleapis.com" /><link href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet" />';
@@ -70,7 +71,7 @@ export function printDocument({ title, body, css = "", withAppStyles }: Pick<Pri
 export function openPrintWindow(opts: PrintOptions): Window | null {
   const w = window.open("", "_blank");
   if (!w) {
-    alert(opts.blockedMessage);
+    emitToast("error", opts.blockedMessage);
     return null;
   }
   // Aucun script dans le document imprimé (CSP stricte possible) : c'est la

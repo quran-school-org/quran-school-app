@@ -13,7 +13,7 @@
  * uniquement (projet demo-, Admin SDK branché sur les émulateurs).
  */
 import { expect, test } from "@playwright/test";
-import { ACCOUNTS } from "./helpers";
+import { ACCOUNTS, watchNativeDialogs } from "./helpers";
 
 const PROJECT_ID = "demo-quran-school";
 const SCHOOL_ID = "alfajr";
@@ -66,7 +66,7 @@ test("F1 : le profil du directeur enregistré avant l'arrivée des paramètres n
       await route.continue();
     });
 
-    page.on("dialog", (d) => d.accept().catch(() => undefined));
+    watchNativeDialogs(page);
     await page.goto("/");
     const forced = page.getByText(FORCED_TEXT);
     const bad = page.getByText("اسم المستخدم أو كلمة المرور غير صحيحة");

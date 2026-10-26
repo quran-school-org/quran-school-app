@@ -5,11 +5,12 @@
 import { Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, ExternalLink } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
-import { Select } from "../../ui";
+import { Select, useConfirm } from "../../ui";
 import { formatMoney } from "../../utils/format";
 import { formatDateAr } from "../../format/date";
 
 export default function RevenuesSection() {
+  const confirm = useConfirm();
   const {
     students,
     onDeleteOtherIncome,
@@ -182,8 +183,8 @@ export default function RevenuesSection() {
                               )}
                               {canDelete && (
                                 <button
-                                  onClick={() => {
-                                    if (confirm("هل أنت متأكد من حذف هذا السجل المالي؟")) {
+                                  onClick={async () => {
+                                    if (await confirm({ message: "هل أنت متأكد من حذف هذا السجل المالي؟", tone: "danger" })) {
                                       onDeleteOtherIncome(inc.id);
                                     }
                                   }}

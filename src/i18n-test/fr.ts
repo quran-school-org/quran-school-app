@@ -2227,6 +2227,13 @@ export const FR: Record<string, string> = {
   "حذف التعريفة الخاصة": "Supprimer le tarif spécial",
   "تحديد {0}": "Sélectionner {0}",
   "نسبة تكبير / تصغير البطاقة للطباعة": "Échelle d'agrandissement / réduction de la carte à l'impression",
+  // Audit UX/UI, lot L4 (D99) : Toast et ConfirmDialog
+  "تأكيد": "Confirmer",
+  "تأكيد الحذف": "Confirmer la suppression",
+  "تأكيد الاسترجاع": "Confirmer la restauration",
+  "استرجاع": "Restaurer",
+  "إغلاق الإشعار": "Fermer le message",
+
   // L5 (D100) : hiérarchie
   "تصفية السجلات المالية": "Filtrer les écritures financières",
   "النسخ الاحتياطي": "Sauvegarde",

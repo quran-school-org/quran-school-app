@@ -5,9 +5,12 @@
 import { Edit3, Trash2, CheckCircle, AlertTriangle, Briefcase, RefreshCw } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { formatMoney, formatNumber } from "../../utils/format";
+import { useConfirm } from "../../ui";
+
 import { formatDateAr } from "../../format/date";
 
 export default function SalariesSection() {
+  const confirm = useConfirm();
   const {
     onDeleteSalaryPayment,
     canCreate,
@@ -184,8 +187,8 @@ export default function SalariesSection() {
                             )}
                             {canDelete && (
                               <button
-                                onClick={() => {
-                                  if (confirm("هل أنت متأكد من حذف هذا السجل؟")) {
+                                onClick={async () => {
+                                  if (await confirm({ message: "هل أنت متأكد من حذف هذا السجل؟", tone: "danger" })) {
                                     onDeleteSalaryPayment(s.id);
                                   }
                                 }}
