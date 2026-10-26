@@ -24,6 +24,7 @@ export const ACCOUNTS = {
   eleve: { username: "ali_rebati", initial: "123", e2e: "e2e-eleve-2026" },
   encadrant: { username: "omar_idrissi", initial: "123", e2e: "e2e-encadrant-2026" },
   entretien: { username: "said_morabit", initial: "123", e2e: "e2e-entretien-2026" },
+  superAdminAnnour: { username: "super_demo", initial: "demo-super-2026", e2e: "demo-super-2026" },
   directeurAnnour: { username: "dir_annour", initial: "demo-annour-2026", e2e: "demo-annour-2026" },
 } satisfies Record<string, DemoAccount>;
 
