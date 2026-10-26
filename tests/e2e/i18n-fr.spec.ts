@@ -212,7 +212,7 @@ test.describe.serial("traduction FR de test (D79)", () => {
     await shot("connexion");
     const tabsFor: Record<string, string[]> = {
       directeur: ["dashboard", "students", "classes", "grades", "attendance", "payments", "finance", "activities", "teachers", "id-cards-lab", "notifications", "settings"],
-      parent: ["students", "grades", "payments", "attendance", "notifications"],
+      parent: ["home", "students", "grades", "payments", "attendance", "notifications"],
     };
     for (const [name, account] of [["directeur", ACCOUNTS.directeur], ["parent", ACCOUNTS.parent]] as const) {
       await loginFr(page, account);

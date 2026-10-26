@@ -390,3 +390,16 @@ Légende de l'effort : **S** = moins d'une demi-journée, **M** = une à deux jo
   dans le bon ordre), états vides rédigés avec une phrase d'explication.
 - **Choix d'école** (`directeur/choix-ecole-superadmin-mobile.png`) et **sélecteur de thème**
   (`directeur/settings-bureau.png`) : clairs, vignettes parlantes, état choisi évident.
+
+## 4. Suivi
+
+### Lot « parcours famille, élèves et tableaux » (D89, branche `fix/audit-ui-famille`)
+
+- **UI-01** : corrigé (D89). Onglet « ملخص » pour `ولي أمر` et `طالب`, une carte par enfant ; recherche, compteur, papiers et aperçu de carte retirés de l'écran famille.
+- **UI-02** : corrigé (D89). Présences en lecture seule pour la famille, `إداري` et `مؤطر` ; entrée du menu retirée pour les rôles qui ne peuvent pas lire les présences. Règles inchangées.
+- **UI-03** : corrigé (D89), option « masquer la ligne » (pas de nom dénormalisé, règles inchangées) ; la famille ne voit que les halaqas de ses enfants.
+- **UI-06** : corrigé (D89) pour les élèves et les comptes ; `DataTable` a une variante cartes sous `md` pour les autres tableaux (à brancher par leurs propriétaires : comptabilité, paiements, personnel). Colonne d'actions de 1 440 px corrigée.
+- **UI-07** : corrigé (D89) pour élèves, halaqas, examens côté famille, présences familles et accueil famille ; paiements et examens du bureau reportés (autres lots) ; `navLabel` (`src/shell/navModel.tsx`) donne le libellé du menu pour tous les onglets.
+- **UI-13** : corrigé (D89) pour `UsersSection.tsx` seulement ; reporté : `SalariesSection.tsx`, `PermissionMatrixEditor.tsx`, `StaffBadgeModal.tsx`, `StaffDirectoryModal.tsx`, `StudentCards.tsx` et l'ajout de `sand-800/900` au garde-fou de `themes.test.ts` (autre lot).
+- **UI-17** : corrigé (D89). Bouton « بطاقة الطالب » dans la fiche, aperçu dans une fenêtre.
+- **UI-21** : corrigé (D89) pour les élèves, les halaqas et les examens ; bloc décoratif retiré pour la famille.
