@@ -2151,3 +2151,34 @@ là-bas (R-06).
   - Le logo saisi dans Paramètres (`associationLogo`) reste prioritaire.
 - **Retour arrière** : `git revert` du commit ; ou, pour le thème seul,
   remettre `DEFAULT_THEME` à `bleu-nuit` et `theme-color` à `#102446`.
+
+### D90. Appel rapide, tableau de bord de l'enseignant, présence de la semaine (UI-04, UI-16, UI-20, UI-09 présences, UI-07)
+- **Contexte** : audit UI/UX du 25/10/2026. L'appel sur téléphone demandait ~1 100 px de
+  défilement, l'enseignant arrivait sur « الكل », rien ne menait à l'appel depuis son accueil,
+  et la présence de la semaine affichait sept jours (dont des jours sans séance) et un « 0 % »
+  alarmant tant que la séance du jour n'était pas finie.
+- **Décision** :
+  - Présences : pour le `مدرس`, la halaqa de la séance du jour (sinon sa première) est
+    présélectionnée une fois par enseignant (`attendanceClassPickedFor`, `useUiState`) ; la liste
+    est juste sous les filtres ; le lecteur QR s'ouvre par « المسح بالكاميرا » (panneau fermé par
+    défaut) ; un seul résumé collant remplace les quatre chiffres ; libellé « الحالة المرصودة »
+    retiré ; alertes d'absences consécutives sous la liste ; recherche seulement au-delà de 8 élèves.
+  - « تسجيل الجميع حاضرين » : marque présents les élèves sans saisie. Une saisie manuelle
+    (même « غائب ») est conservée ; une absence automatique (note « غياب تلقائي… ») n'est pas
+    une saisie et est remplacée. Passe par `handleToggleAttendance` : aucune écriture nouvelle.
+  - Date : boutons « اليوم » / « الحصة السابقة » et sélecteurs jour / mois (mois marocains) /
+    année de la charte ; plus de `<input type="date">` (la date de naissance garde le natif).
+    La date initiale est la date locale (et non UTC).
+  - Tableau de bord enseignant : carte « حصة اليوم » (halaqa, horaire, état de l'appel) avec
+    « تسجيل الحضور » qui ouvre l'appel avec la bonne halaqa ; ligne d'élève entièrement cliquable
+    (liste unique, plus de tableau ni de bouton répété) ; « التخصص الحالي » retiré.
+  - Présence de la semaine : jours de séance seulement (plus les jours qui ont des relevés) ;
+    une séance du jour n'est comptée qu'une fois terminée, sinon « الحصة جارية » / « لم تبدأ بعد » ;
+    barres horizontales sous 640 px ; pourcentages dans `bdi dir="ltr"`.
+  - UI-07 (ces deux écrans) : titre = libellé du menu (« الحضور والغياب », « لوحة المحفّظ »),
+    description d'appel par rôle, description de l'accueil enseignant supprimée.
+  - Logique pure dans `src/app/attendanceSessions.ts` (tests unitaires) ; `parseClassSchedule`
+    déplacé dans `src/app/classSchedule.ts` (réexporté par `helpers.ts`).
+- **Hors décision** : la liste des halaqas reste complète pour l'enseignant (seule la
+  présélection change) ; les règles et les données ne changent pas.
+- **Retour arrière** : `git revert` des commits de la branche `fix/audit-ui-enseignant`.
