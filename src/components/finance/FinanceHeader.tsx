@@ -2,7 +2,7 @@
  * Comptabilité : en-tête et indicateurs globaux (charte « لوحة الكتّاب »).
  * Mêmes chiffres et même action d'impression qu'auparavant.
  */
-import { Printer } from "lucide-react";
+import { Plus, Printer } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { Button, KpiGrid, KpiTile, PageHeader } from "../../ui";
 import { formatNumber } from "../../utils/format";
@@ -10,7 +10,7 @@ import { formatNumber } from "../../utils/format";
 const fmt = (n: number) => formatNumber(n);
 
 export default function FinanceHeader() {
-  const { canPrint, selectedYear, setShowPrintReportModal, grossTotalIncome, grossTotalExpenses, netBalance, cashBoxNetBalance, bankAccountNetBalance } = useFinance();
+  const { canPrint, canCreate, activeSubTab, openIncomeModal, openSalaryModal, openExpenseModal, selectedYear, setShowPrintReportModal, grossTotalIncome, grossTotalExpenses, netBalance, cashBoxNetBalance, bankAccountNetBalance } = useFinance();
 
   return (
     <>
@@ -18,11 +18,29 @@ export default function FinanceHeader() {
         title="المحاسبة"
         eyebrow={`السنة المالية: ${selectedYear === "all" ? "جميع السنوات" : selectedYear}`}
         actions={
-          canPrint && (
-            <Button variant="primary" onClick={() => setShowPrintReportModal(true)} icon={<Printer className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
-              طباعة التقرير المالي الختامي
-            </Button>
-          )
+          <>
+            {/* Action principale : ajouter ce que le sous-onglet actif liste (constat 21, D100). */}
+            {canCreate && activeSubTab === "revenues" && (
+              <Button variant="primary" data-action="open-income-form" onClick={() => openIncomeModal()} icon={<Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
+                إضافة دخل / تبرع جديد
+              </Button>
+            )}
+            {canCreate && activeSubTab === "salaries" && (
+              <Button variant="primary" data-action="open-salary-form" onClick={() => openSalaryModal()} icon={<Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
+                صرف / تسجيل أجر جديد
+              </Button>
+            )}
+            {canCreate && activeSubTab === "expenses" && (
+              <Button variant="primary" data-action="open-expense-form" onClick={() => openExpenseModal()} icon={<Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
+                تسجيل فاتورة / نفقة جديدة
+              </Button>
+            )}
+            {canPrint && (
+              <Button variant="outline" data-action="print-final-report" onClick={() => setShowPrintReportModal(true)} icon={<Printer className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
+                طباعة التقرير المالي الختامي
+              </Button>
+            )}
+          </>
         }
       />
       <KpiGrid label="الوضعية المالية" min={160}>

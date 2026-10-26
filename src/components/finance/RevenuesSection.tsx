@@ -2,7 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Plus, Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, ExternalLink } from "lucide-react";
+import { Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, ExternalLink } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
 import { Select } from "../../ui";
@@ -14,7 +14,6 @@ export default function RevenuesSection() {
     students,
     onDeleteOtherIncome,
     onNavigateToActivities,
-    canCreate,
     canUpdate,
     canDelete,
     activeSubTab,
@@ -112,17 +111,6 @@ export default function RevenuesSection() {
                     <option value="أخرى">أخرى</option>
                   </Select>
                 </div>
-
-                {canCreate && (
-                  <button
-                    data-action="open-income-form"
-                    onClick={() => openIncomeModal()}
-                    className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>إضافة دخل / تبرع جديد</span>
-                  </button>
-                )}
               </div>
             </div>
 

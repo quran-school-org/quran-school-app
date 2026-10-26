@@ -2,7 +2,7 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Plus, Edit3, Trash2, CheckCircle, AlertTriangle, Briefcase, RefreshCw } from "lucide-react";
+import { Edit3, Trash2, CheckCircle, AlertTriangle, Briefcase, RefreshCw } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { formatMoney, formatNumber } from "../../utils/format";
 import { formatDateAr } from "../../format/date";
@@ -91,25 +91,14 @@ export default function SalariesSection() {
 
               <div className="flex flex-wrap items-center gap-2">
                 {canCreate && (
-                  <>
-                    <button
-                      onClick={handleAutoGenerateTeacherSalaries}
-                      className="bg-gold-100 hover:bg-gold-200 text-gold-900 font-bold px-3.5 py-2 rounded-xl text-[13px] transition flex items-center gap-1.5 border border-gold-300"
-                      title="توليد مستحقات جميع الأساتذة لشهر محدد تلقائياً"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>توليد مستحقات الأساتذة تلقائياً</span>
-                    </button>
-
-                    <button
-                      data-action="open-salary-form"
-                      onClick={() => openSalaryModal()}
-                      className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>صرف / تسجيل أجر جديد</span>
-                    </button>
-                  </>
+                  <button
+                    onClick={handleAutoGenerateTeacherSalaries}
+                    className="bg-gold-100 hover:bg-gold-200 text-gold-900 font-bold px-3.5 py-2 rounded-xl text-[13px] transition flex items-center gap-1.5 border border-gold-300"
+                    title="توليد مستحقات جميع الأساتذة لشهر محدد تلقائياً"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>توليد مستحقات الأساتذة تلقائياً</span>
+                  </button>
                 )}
               </div>
             </div>
