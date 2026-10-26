@@ -1,27 +1,26 @@
 /**
- * Traduction française TEMPORAIRE, pour les tests du propriétaire (D79).
+ * Couche de traduction française (D79, rendue disponible en production par D93).
  *
- * Chargé uniquement si VITE_ENABLE_FR_TEST=true (import dynamique depuis
- * src/main.tsx) : absent du bundle de production. Couche purement
- * d'affichage, posée sur le DOM rendu par React : aucune donnée, aucune
- * valeur de rôle ni de <select> n'est modifiée.
- *
- * Retrait (procédure complète dans docs/DECISIONS.md, D79) : supprimer ce
- * dossier, l'import dans src/main.tsx et le drapeau VITE_ENABLE_FR_TEST.
+ * Ce dossier garde son nom d'origine (`i18n-test`) pour limiter le diff ; il
+ * ne s'agit plus d'un test. Chargé UNIQUEMENT par import dynamique depuis
+ * src/i18n/language.ts, quand l'utilisateur choisit le français : un chunk
+ * séparé, absent du bundle principal. Couche purement d'affichage, posée sur
+ * le DOM rendu par React : aucune donnée, aucune valeur de rôle ni de
+ * <select> n'est modifiée. La langue choisie et le sélecteur vivent dans
+ * src/i18n/language.ts et src/ui/LanguageSetting.tsx.
  */
 import "./fr.css";
 import { createDomTranslator } from "./dom";
 import { KEEP_ARABIC } from "./exclusions";
 import { FR } from "./fr";
-import { readLang, writeLang, type Lang } from "./storage";
-import { mountSwitcher } from "./switcher";
+import type { Lang } from "../i18n/language";
 import { createTranslator } from "./translate";
 
 const translator = createTranslator(FR, Object.keys(KEEP_ARABIC));
 
 const missingLog = (s: string) => {
   // Développement seulement (npm run dev) : liste des chaînes sans traduction, une fois chacune.
-  if (import.meta.env.DEV) console.debug("[i18n-test] sans traduction :", s);
+  if (import.meta.env.DEV) console.debug("[i18n] sans traduction :", s);
 };
 
 const dom = createDomTranslator(translator, () => [document.body], missingLog);
@@ -40,10 +39,7 @@ function patchDialogs(on: boolean) {
   }
 }
 
-let current: Lang = "ar";
-
 export function applyLang(lang: Lang) {
-  current = lang;
   const html = document.documentElement;
   if (lang === "fr") {
     html.setAttribute("lang", "fr");
@@ -58,12 +54,5 @@ export function applyLang(lang: Lang) {
   }
 }
 
-export function installFrTest() {
-  applyLang(readLang());
-  mountSwitcher(() => current, (lang) => {
-    writeLang(lang);
-    applyLang(lang);
-  });
-  // Diagnostic (tests e2e, console) : chaînes rencontrées sans traduction.
-  (window as unknown as { __frTestMissing?: Set<string> }).__frTestMissing = dom.missing;
-}
+// Diagnostic (tests e2e, console) : chaînes rencontrées sans traduction.
+(window as unknown as { __frTestMissing?: Set<string> }).__frTestMissing = dom.missing;

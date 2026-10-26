@@ -9,11 +9,14 @@ import SchoolPicker from "./school/SchoolPicker";
 import SessionCheckingScreen from "./screens/SessionCheckingScreen";
 import LoginScreen from "./screens/LoginScreen";
 import AppFrame from "./shell/AppFrame";
-import AttendanceUnavailable from "./screens/AttendanceUnavailable";
+import { canOpenAttendance } from "./shell/navModel";
+import { isFamilyRole } from "./security/access";
 import TeacherDashboardScreen from "./screens/TeacherDashboardScreen";
 import DashboardScreen from "./screens/DashboardScreen";
 import StudentsScreen from "./screens/StudentsScreen";
 import AttendanceScreen from "./screens/AttendanceScreen";
+import AttendanceHistoryScreen from "./screens/AttendanceHistoryScreen";
+import FamilyHomeScreen from "./screens/FamilyHomeScreen";
 import GradesScreen from "./screens/GradesScreen";
 import PaymentsScreen from "./screens/PaymentsScreen";
 import FinanceScreen from "./screens/FinanceScreen";
@@ -67,7 +70,7 @@ export default function App() {
   } = s;
 
   // Thème de couleur de l'école active (D84) ; sans école, le thème courant reste.
-  useSchoolTheme(currentUser && activeSchoolId ? systemSettings : null);
+  useSchoolTheme(currentUser ? activeSchoolId : null, systemSettings);
 
   if (!currentUser && authUid && showSchoolPicker) {
     return (
@@ -132,8 +135,9 @@ export default function App() {
     <AppFrame>
       {activeTab === "teacher-dashboard" && currentRole === "مدرس" && <TeacherDashboardScreen />}
       {activeTab === "dashboard" && checkUserPermission(currentUser, currentRole, "dashboard", "read") && <DashboardScreen />}
+      {activeTab === "home" && isFamilyRole(currentRole) && <FamilyHomeScreen />}
       {activeTab === "students" && <StudentsScreen />}
-      {activeTab === "attendance" && ((currentRole === "مدير" || currentRole === "مدرس") ? <AttendanceScreen /> : <AttendanceUnavailable />)}
+      {activeTab === "attendance" && ((currentRole === "مدير" || currentRole === "مدرس") ? <AttendanceScreen /> : canOpenAttendance(currentRole) ? <AttendanceHistoryScreen /> : null)}
       {activeTab === "grades" && <GradesScreen />}
       {activeTab === "payments" && <PaymentsScreen />}
       {activeTab === "finance" && <FinanceScreen />}

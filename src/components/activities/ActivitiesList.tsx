@@ -6,6 +6,7 @@ import { Compass, MapPin, Calendar, CheckCircle2, Search, ArrowUpDown, ArrowUp, 
 import { ACTIVITY_TYPES, ACTIVITY_STATUSES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
 import { Button, Card, CountBadge, EmptyState, IconButton, Ltr, Pill, SearchInput, Select, cx } from "../../ui";
+import { formatMoney, formatNumber } from "../../utils/format";
 
 export default function ActivitiesList() {
   const {
@@ -104,8 +105,8 @@ export default function ActivitiesList() {
                   </span>
                   <span className="grid grid-cols-3 gap-1 w-full rounded-lg bg-surface-2 border border-line-soft p-1.5 text-center text-[12.5px] [&>span]:min-w-0 [&>span]:break-words">
                     <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">المشاركون</span><strong className="text-ink-2 tabular-nums">{actParts.length} {act.maxCapacity ? `/${act.maxCapacity}` : ""}</strong></span>
-                    <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">المساهمة</span><strong className="text-primary tabular-nums">{act.contributionFee} د.م</strong></span>
-                    <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">الصافي</span><strong className={cx("tabular-nums", net >= 0 ? "text-success-700" : "text-danger")}><bdi>{net > 0 ? `+${net}` : net}</bdi> د.م</strong></span>
+                    <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">المساهمة</span><strong className="text-primary tabular-nums">{formatMoney(act.contributionFee)}</strong></span>
+                    <span className="flex flex-col"><span className="text-ink-3 text-[11.5px]">الصافي</span><strong className={cx("tabular-nums", net >= 0 ? "text-success-700" : "text-danger")}><Ltr>{formatNumber(net, { signed: true })}</Ltr> د.م</strong></span>
                   </span>
                   {act.syncedToFinance && (
                     <span className="flex items-center gap-1 text-[12px] text-success-700 font-semibold pt-1.5 border-t border-line-soft w-full">

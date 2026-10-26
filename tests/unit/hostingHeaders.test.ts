@@ -32,6 +32,10 @@ describe("en-têtes de sécurité Hosting", () => {
     // impressions sans CDN Tailwind.
     expect(csp).not.toContain("cdn.tailwindcss.com");
     expect(csp).not.toContain("qrserver");
+    // Plus de photos d'avatar tierces (UI-14, D92) : images locales, data: et blob: seulement.
+    expect(csp).not.toContain("unsplash");
+    expect(directives["img-src"]).toEqual(expect.arrayContaining(["'self'", "data:", "blob:"]));
+    expect(directives["img-src"].some((v) => v.includes("unsplash"))).toBe(false);
   });
 
   it("nosniff, Referrer-Policy, Permissions-Policy (caméra autorisée pour le scan QR), cadres interdits", () => {

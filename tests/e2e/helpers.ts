@@ -24,6 +24,7 @@ export const ACCOUNTS = {
   eleve: { username: "ali_rebati", initial: "123", e2e: "e2e-eleve-2026" },
   encadrant: { username: "omar_idrissi", initial: "123", e2e: "e2e-encadrant-2026" },
   entretien: { username: "said_morabit", initial: "123", e2e: "e2e-entretien-2026" },
+  superAdminAnnour: { username: "super_demo", initial: "demo-super-2026", e2e: "demo-super-2026" },
   directeurAnnour: { username: "dir_annour", initial: "demo-annour-2026", e2e: "demo-annour-2026" },
 } satisfies Record<string, DemoAccount>;
 
@@ -93,4 +94,29 @@ export async function chooseOption(page: Page, trigger: Locator, value: string) 
   await expect(option).toBeVisible();
   await option.click();
   await expect(page.locator("[data-select-menu]")).toHaveCount(0);
+}
+
+/** Clé de la langue de l'interface sur l'appareil (D93, src/i18n/language.ts). */
+export const LANG_STORAGE_KEY = "ui:lang";
+
+/**
+ * Change la langue de l'interface. Connecté : depuis le menu du compte (fenêtre
+ * du profil, réglage « اللغة / Langue »), comme le ferait un parent ou un élève.
+ * Sur l'écran de connexion (aucun réglage visible) : écrit le choix de l'appareil
+ * puis recharge, ce que lit l'écran de connexion au démarrage.
+ */
+export async function setLang(page: Page, lang: "ar" | "fr") {
+  const profile = page.locator('[data-action="open-profile"]');
+  if (await profile.isVisible()) {
+    await profile.click();
+    const modal = page.locator('[data-modal="profile"]');
+    await modal.locator(`[data-language-setting] button[data-lang="${lang}"]`).click();
+    await expect(page.locator("html")).toHaveAttribute("lang", lang);
+    await page.keyboard.press("Escape");
+    await expect(modal).toHaveCount(0);
+  } else {
+    await page.evaluate(([k, v]) => localStorage.setItem(k, v), [LANG_STORAGE_KEY, lang]);
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", lang);
+  }
 }

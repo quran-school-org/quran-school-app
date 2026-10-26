@@ -61,11 +61,9 @@ export const appCheckConfig = {
 };
 
 /**
- * Traduction française de TEST (D79) : drapeau de build, vrai seulement dans
- * .env.development et le build du dev déployé (deploy.yml, preview.yml) ;
- * absent de .env.production. Lu par src/main.tsx, qui n'importe le module
- * src/i18n-test que s'il est vrai (import dynamique éliminé du bundle de prod).
- * Lecture directe de la variable (et non de l'objet `env`) : Vite la remplace
- * par une constante, ce qui permet l'élimination du code mort.
+ * Aperçu par rôle du super-admin (D95) : « true » seulement dans
+ * .env.development et dans l'étape dev de deploy.yml ; jamais en production
+ * (refusé par scripts/dev/buildGuards.ts). Lu directement sur import.meta.env
+ * pour que le build de production le remplace par une constante.
  */
-export const frTestEnabled: boolean = import.meta.env.VITE_ENABLE_FR_TEST === "true";
+export const rolePreviewEnabled: boolean = import.meta.env.VITE_ENABLE_ROLE_PREVIEW === "true";

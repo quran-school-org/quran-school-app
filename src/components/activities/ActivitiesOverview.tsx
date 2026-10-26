@@ -4,7 +4,8 @@
  */
 import { Landmark, Plus } from "lucide-react";
 import { useActivities } from "./ActivitiesContext";
-import { Button, KpiGrid, KpiTile, PageHeader } from "../../ui";
+import { Button, KpiGrid, KpiTile, Ltr, PageHeader } from "../../ui";
+import { formatNumber } from "../../utils/format";
 
 export default function ActivitiesOverview() {
   const { canCreateActivity, onNavigateToFinance, globalStats, handleOpenAddActivity } = useActivities();
@@ -33,11 +34,11 @@ export default function ActivitiesOverview() {
       <KpiGrid label="ملخص الأنشطة" min={160}>
         <KpiTile size="md" label="إجمالي الأنشطة والرحلات" value={globalStats.totalActs} hint={`${globalStats.activeOrUpcoming} جارية/قادمة`} />
         <KpiTile size="md" label="المشاركون المسجلون" value={globalStats.totalParts} unit="مشارك ومستفيد" />
-        <KpiTile size="md" label="المساهمات المحصلة" value={globalStats.totalIncome.toLocaleString("en-US")} unit="د.م" />
+        <KpiTile size="md" label="المساهمات المحصلة" value={formatNumber(globalStats.totalIncome)} unit="د.م" />
         <KpiTile
           size="md"
           label="الصافي المالي العام للأنشطة"
-          value={<span className={net >= 0 ? "text-success-700" : "text-danger"}><bdi>{net >= 0 ? `+${net.toLocaleString("en-US")}` : net.toLocaleString("en-US")}</bdi></span>}
+          value={<span className={net >= 0 ? "text-success-700" : "text-danger"}><Ltr>{formatNumber(net, { signed: true })}</Ltr></span>}
           unit="د.م"
           hint={net >= 0 ? "فائض" : "عجز"}
           hintTone={net >= 0 ? "success" : "danger"}

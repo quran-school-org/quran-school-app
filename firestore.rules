@@ -121,6 +121,16 @@ service cloud.firestore {
       return isFamily(s) && resource.data.studentId in linkedStudents(s);
     }
 
+    // Inscription d'un de SES enfants à une activité (D94) : participant de type
+    // « طالب » dont `referenceId` est un élève lié au compte. Un participant du
+    // personnel ou externe n'est jamais lisible par une famille. Lecture filtrée :
+    // where participantType == 'طالب' et where referenceId in <élèves liés>.
+    function familyOwnsParticipant(s) {
+      return isFamily(s)
+        && resource.data.get('participantType', '') == 'طالب'
+        && resource.data.get('referenceId', '') in linkedStudents(s);
+    }
+
     // --------------------------------------------- profil global users/{uid}
     match /users/{uid} {
       allow get: if (signedIn() && request.auth.uid == uid) || isSuper();
@@ -256,7 +266,7 @@ service cloud.firestore {
       }
 
       match /activityParticipants/{participantId} {
-        allow read: if hasRole(s, ['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع']);
+        allow read: if hasRole(s, ['مدير', 'إداري', 'مؤطر', 'مدرس', 'متطوع']) || familyOwnsParticipant(s);
         allow create, update: if isEducator(s) && validWrite(s, participantId);
         allow delete: if isEducator(s);
       }

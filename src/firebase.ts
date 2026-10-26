@@ -262,6 +262,16 @@ export const resetUserPasswordRemote = (schoolId: string, uid: string, newPasswo
 export const setMemberRoleRemote = (schoolId: string, uid: string, patch: MemberPatch, remove = false) =>
   call<{ schoolId: string; uid: string; patch: MemberPatch; remove: boolean }, { ok: boolean }>("setMemberRole", { schoolId, uid, patch, remove });
 
+/**
+ * Lecture unique d'une collection de l'école (aperçu par rôle, D95 : liste des
+ * élèves, du personnel et des classes pour choisir des liens au hasard). Les
+ * règles s'appliquent : il faut le droit de lecture de la collection.
+ */
+export async function fetchSchoolCollectionOnce<T extends { id: string }>(schoolId: string, collectionName: string): Promise<T[]> {
+  const snap = await getDocs(schoolCollection(schoolId, collectionName));
+  return snap.docs.map((d) => stripPassword({ id: d.id, ...d.data() } as unknown as T & Record<string, any>) as T);
+}
+
 /** Traduit une erreur Firebase (Auth, Functions) en message arabe lisible. */
 export function describeFirebaseError(error: any): string {
   const code: string = error?.code || "";
@@ -438,7 +448,9 @@ export function subscribeToQueryIn<T extends { id: string }>(
   field: string,
   values: string[],
   onUpdate: (data: T[]) => void,
-  cacheName: string
+  cacheName: string,
+  /** Filtres d'égalité en plus du `in` (requis par certaines règles, ex. D94). */
+  equals: Record<string, string> = {}
 ) {
   if (values.length === 0) {
     writeCache(schoolId, cacheName, []);
@@ -449,7 +461,7 @@ export function subscribeToQueryIn<T extends { id: string }>(
   for (let i = 0; i < values.length; i += 30) chunks.push(values.slice(i, i + 30));
   const parts = new Map<number, T[]>();
   const unsubs = chunks.map((chunk, index) =>
-    onSnapshot(query(schoolCollection(schoolId, collectionName), where(field, "in", chunk)), (snapshot) => {
+    onSnapshot(query(schoolCollection(schoolId, collectionName), ...Object.entries(equals).map(([k, v]) => where(k, "==", v)), where(field, "in", chunk)), (snapshot) => {
       const items: T[] = [];
       snapshot.forEach((d) => items.push({ id: d.id, ...d.data() } as T));
       parts.set(index, items);

@@ -12,7 +12,7 @@ import { contrast, ensureContrast, rgbTriplet, transposeShade } from "./color";
 
 export const THEME_IDS = ["bleu-nuit", "emeraude", "sauge", "foret", "olive"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
-/** Thème des écoles qui n'en ont pas choisi : bleu nuit, la charte (D89). */
+/** Thème des écoles qui n'en ont pas choisi : bleu nuit, la charte (D96). */
 export const DEFAULT_THEME: ThemeId = "bleu-nuit";
 
 /** Couleurs de base d'un thème (charte « لوحة الكتّاب »). */

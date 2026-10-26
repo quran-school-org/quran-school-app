@@ -1534,6 +1534,8 @@ là-bas (R-06).
   (l'ancien favicon et l'`Emblem` de la tuile de connexion reviennent).
 
 ### D79. Traduction française de TEST (sélecteur AR / FR), dev seulement
+> **Révisée par D93** : sur la disponibilité en production, le drapeau de build et le bouton flottant. Le moteur, le dictionnaire et le comportement RTL/LTR restent ceux décrits ici.
+
 - **Contexte** : le propriétaire, francophone, veut tester l'application
   multi-écoles en français. C'est **temporaire** : la traduction sera retirée
   de la version finale. Elle ne doit changer ni la logique ni les données
@@ -2152,7 +2154,388 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` du commit ; ou, pour le thème seul,
   remettre `DEFAULT_THEME` à `bleu-nuit` et `theme-color` à `#102446`.
 
-### D89. Retour au bleu nuit par défaut, logo en bleu nuit et or
+### D90. Appel rapide, tableau de bord de l'enseignant, présence de la semaine (UI-04, UI-16, UI-20, UI-09 présences, UI-07)
+- **Contexte** : audit UI/UX du 25/10/2026. L'appel sur téléphone demandait ~1 100 px de
+  défilement, l'enseignant arrivait sur « الكل », rien ne menait à l'appel depuis son accueil,
+  et la présence de la semaine affichait sept jours (dont des jours sans séance) et un « 0 % »
+  alarmant tant que la séance du jour n'était pas finie.
+- **Décision** :
+  - Présences : pour le `مدرس`, la halaqa de la séance du jour (sinon sa première) est
+    présélectionnée une fois par enseignant (`attendanceClassPickedFor`, `useUiState`) ; la liste
+    est juste sous les filtres ; le lecteur QR s'ouvre par « المسح بالكاميرا » (panneau fermé par
+    défaut) ; un seul résumé collant remplace les quatre chiffres ; libellé « الحالة المرصودة »
+    retiré ; alertes d'absences consécutives sous la liste ; recherche seulement au-delà de 8 élèves.
+  - « تسجيل الجميع حاضرين » : marque présents les élèves sans saisie. Une saisie manuelle
+    (même « غائب ») est conservée ; une absence automatique (note « غياب تلقائي… ») n'est pas
+    une saisie et est remplacée. Passe par `handleToggleAttendance` : aucune écriture nouvelle.
+  - Date : boutons « اليوم » / « الحصة السابقة » et sélecteurs jour / mois (mois marocains) /
+    année de la charte ; plus de `<input type="date">` (la date de naissance garde le natif).
+    La date initiale est la date locale (et non UTC).
+  - Tableau de bord enseignant : carte « حصة اليوم » (halaqa, horaire, état de l'appel) avec
+    « تسجيل الحضور » qui ouvre l'appel avec la bonne halaqa ; ligne d'élève entièrement cliquable
+    (liste unique, plus de tableau ni de bouton répété) ; « التخصص الحالي » retiré.
+  - Présence de la semaine : jours de séance seulement (plus les jours qui ont des relevés) ;
+    une séance du jour n'est comptée qu'une fois terminée, sinon « الحصة جارية » / « لم تبدأ بعد » ;
+    barres horizontales sous 640 px ; pourcentages dans `bdi dir="ltr"`.
+  - UI-07 (ces deux écrans) : titre = libellé du menu (« الحضور والغياب », « لوحة المحفّظ »),
+    description d'appel par rôle, description de l'accueil enseignant supprimée.
+  - Logique pure dans `src/app/attendanceSessions.ts` (tests unitaires) ; `parseClassSchedule`
+    déplacé dans `src/app/classSchedule.ts` (réexporté par `helpers.ts`).
+- **Hors décision** : la liste des halaqas reste complète pour l'enseignant (seule la
+  présélection change) ; les règles et les données ne changent pas.
+- **Retour arrière** : `git revert` des commits de la branche `fix/audit-ui-enseignant`.
+
+### D91. Coque mobile, typographie, aperçus aux couleurs du thème (audit UI-05, UI-13, UI-15, UI-23)
+- **Contexte** : l'audit UI/UX du 25/10/2026 (`docs/revues/AUDIT-UI-UX-2026-10-25.md`)
+  relève une barre du haut de 135 à 190 px sur téléphone (UI-05), la police
+  d'affichage sur tous les titres (UI-15), du bleu nuit en dur dans une interface
+  émeraude (UI-13) et un sélecteur de langue de test qui masque des boutons (UI-23).
+- **Décision** :
+  - **UI-05** : sous 1 024 px (`useMediaQuery`, là où le menu latéral devient
+    tiroir), la barre du haut fait une ligne de 56 px : menu, nom de l'école
+    tronqué (`data-active-school-mobile`), cloche, avatar (profil). Le sélecteur
+    d'école (`#school-switcher`) et « خروج » passent dans le tiroir
+    (`[data-drawer-account]`), rendus **à un seul endroit à la fois** (pas de
+    doublon d'identifiant). Le tiroir garde son comportement : Échap, bouton de
+    fermeture. À partir de 1 024 px, barre inchangée ; « خروج » perd le rouge
+    (contour neutre, rouge au survol seulement).
+  - **UI-15** : Reem Kufi réservée au `h1` de page, au nom de l'école et à la carte
+    du hifz ; titres de cartes (`CardHeader`) et de fenêtres (`Modal`) en IBM Plex
+    Sans Arabic 600. Une règle en fin de `index.css` applique la même police aux
+    `h2` / `h3` portant encore `font-display` dans des écrans non migrés
+    (exception : `#hifz-map-title`) ; elle disparaîtra quand ces écrans seront
+    nettoyés. `word-spacing: 0.1em` sur la police d'affichage.
+  - **UI-23** : le sélecteur FR de test devient un bouton rond de 44 px (code de la
+    langue active, translucide), qui ouvre un petit panneau AR / FR (Échap, clic
+    extérieur, fermeture après choix). Toujours monté par `main.tsx` uniquement hors
+    production (garde-fous D79 inchangés). Les tests e2e ouvrent d'abord le bouton.
+  - **UI-13** : l'aperçu à l'écran des cartes d'élève suit le thème actif (plus de
+    `data-theme="bleu-nuit"`, ombre et motif par variables). L'**impression** garde
+    la charte bleu nuit (D88) : `printDocument` pose `data-theme="bleu-nuit"` sur le
+    document imprimé, couvert par `tests/unit/printTemplates.test.ts`.
+    `sand-800` / `sand-900` sont remplacés par `night` / `night-2` (salaires, matrice
+    de droits, badge et annuaire du personnel, espace des activités) et interdits
+    par `tests/unit/themes.test.ts`, avec exceptions : aperçus d'impression
+    (`PrintReportModal`, `ActivityPrintModal`) et, **temporairement**,
+    `UsersSection.tsx` (autre lot).
+- **Retour arrière** : `git revert` des commits du lot. Pour la seule barre mobile,
+  passer `compact` à `false` dans `AppFrame.tsx` (l'ancienne barre complète revient).
+
+### D92. Audit UI/UX du 25/10/2026 : saisies, paiements, finances, personnel, notifications
+- **Contexte** : l'audit d'Elias (`docs/revues/AUDIT-UI-UX-2026-10-25.md`) relève des
+  pièges de saisie (examen pré-rempli à 18/20 et « ممتاز », paiement qui s'ouvre sur
+  « غير مدفوع »), des listes vides trompeuses, des montants écrits de quatre façons et
+  des écrans de gestion trop chargés. Ce lot traite UI-07 (titres par rôle, pour ces écrans
+  seulement), UI-08, UI-09 (partie paiements), UI-10, UI-11, UI-12, UI-14, UI-18, UI-19 et
+  UI-22. Données, valeurs de rôles et `firestore.rules` sont inchangées.
+- **Décision** :
+  - **Examen (UI-11)** : les deux notes sont vides et obligatoires à l'ouverture (saisie 0-20,
+    pas de 0,25). La mention est proposée d'après la **moyenne des deux notes**, avec les
+    seuils déjà utilisés par les données de démonstration (`school-fixtures.ts`) :
+    `>= 17` « ممتاز », `>= 15` « جيد جداً », `>= 12` « جيد », sinon « مقبول » (module pur
+    `src/utils/gradeMention.ts`). Elle reste modifiable ; dès que l'enseignant la choisit, elle
+    n'est plus recalculée. Le bouton dit « تسجيل وإصدار الشهادة ». `handleSaveGrade` refuse une
+    note hors 0-20 ou une mention vide.
+  - **Paiement (UI-12)** : « مدفوع » par défaut à l'ouverture depuis « إضافة » (le cas courant
+    au guichet) ; bouton « حفظ الدفعة ». « غير مدفوع » a un usage réel (échéance, relances,
+    bouton « تسديد » de la liste, total des sommes dues) : il reste choisissable dans la
+    fenêtre (« غير مدفوع (مستحق لاحقاً) », avec une aide qui dit qu'aucun reçu n'est émis).
+    Pas de deuxième action « إضافة مستحق » : un seul bouton et un seul formulaire.
+  - **Liste des paiements (UI-08, UI-09)** : le parent et l'élève n'ont pas de filtre de mois
+    (`useDerived` l'ignore pour ces rôles) et voient leurs paiements du plus récent au plus
+    ancien (ordre par défaut pour tous : période, date de paiement, identifiant). Le bureau garde
+    le mois courant par défaut ; s'il est vide, l'état vide propose « عرض كل الأشهر » et
+    « إضافة دفعة ». Le champ `type="month"` est remplacé par deux `Select` (mois en arabe
+    marocain, année) ; l'état `paymentFilterDate` garde son format « AAAA-MM » (impressions et
+    export inchangés). La date de naissance (fiche élève) et la date de paiement restent
+    natives ; la date des présences relève d'une autre branche.
+  - **Formats (UI-10)** : `src/utils/format.ts` (`formatNumber`, `formatMoney`,
+    `formatPercent`) : chiffres latins, **espace fine insécable (U+202F)** pour les milliers,
+    point décimal, devise « د.م » précédée d'une espace insécable, pourcentage sans espace
+    (`92%`) à rendre dans un `<Ltr>` (`bdi dir="ltr"`). Appliqués aux paiements (liste, fenêtre,
+    reçu, rapport, WhatsApp), à la comptabilité, aux activités et au personnel. Les montants
+    signés se rendent `<Ltr>{formatNumber(n, { signed: true })}</Ltr> د.م`. Les valeurs stockées
+    et les CSV (nombres bruts) ne changent pas. Garde-fou dans `uiGuards.test.ts` : plus de
+    `toLocaleString()` sans argument (exception provisoire : `WeeklyAttendance.tsx`, modifié
+    par une autre branche) ni de « درهم » dans ces écrans.
+  - **Avatars et CSP (UI-14)** : les six photos Unsplash de la fiche élève et le champ « URL »
+    disparaissent ; l'aperçu utilise `InitialAvatar` (dépôt de fichier et appareil photo
+    conservés). Les presets de `studentAvatar.tsx` (jamais utilisés ailleurs) sont supprimés.
+    `https://images.unsplash.com` était dans `img-src` pour ce seul usage : retiré de la CSP
+    (`firebase.json`), `tests/hosting` et `hostingHeaders.test.ts` le vérifient. Une fiche déjà
+    enregistrée avec une URL Unsplash ne charge plus l'image : `StudentAvatar` retombe sur la
+    silhouette (`onError`).
+  - **Comptabilité (UI-19)** : le total des recettes n'est affiché qu'une fois (l'en-tête de la
+    page) ; les trois cartes deviennent une ligne de répartition (`data-block="income-breakdown"`),
+    la carte sombre en double disparaît. Les onglets salaires et dépenses ne sont pas touchés
+    (leurs totaux ne doublent pas l'en-tête ; `SalariesSection` est repris par la branche des
+    jetons de couleur).
+  - **Personnel (UI-18)** : rangée de sept chiffres supprimée (les puces portent les nombres),
+    cartes à hauteur naturelle, « تعديل » en action principale, le reste (شارة العمل, أرشفة,
+    حذف) dans un menu « ⋯ » : nouveau composant `src/ui/ActionMenu.tsx` (rôle `menu`, clavier,
+    cible de 44 px, portail pour ne pas être rogné). Sans droit de modification, « شارة العمل »
+    reste l'action principale.
+  - **Notifications (UI-22)** : « تعليم الكل كمقروء » est l'action principale, réservée au
+    personnel (les familles ne lisent pas les notifications, R-07) : elle n'écrit que
+    `readBy` avec l'uid de l'utilisateur, ce que les règles autorisent hors bureau (D65, U-03) ;
+    « مسح الكل » (directeur) devient discret, avec la confirmation existante ; la ligne entière
+    est cliquable, la pastille dit « جديد ».
+  - **Titres (UI-07)** : titre = libellé du menu du rôle (paiements : « سجل الرسوم » pour le
+    parent) ; descriptions supprimées sur paiements, comptabilité, personnel et notifications ;
+    description du parent aux paiements, à la deuxième personne.
+- **Reporté** : `StaffDirectoryModal` affiche encore « {n} د.م » brut (fichier repris par
+  la branche des couleurs) ; `ActionNeeded.tsx` (tableau de bord) écrit encore « درهم » ;
+  `DashboardScreen` formate ses montants avec `toLocaleString("en-US")`.
+- **Retour arrière** : `git revert` des commits du lot (un par constat). Pour la seule CSP,
+  remettre `https://images.unsplash.com` dans `img-src` de `firebase.json` et adapter les deux
+  tests ; pour les seuils des mentions, `MENTION_THRESHOLDS` dans `src/utils/gradeMention.ts`.
+
+### D89. Audit UI/UX d'octobre 2026, parcours famille, élèves et tableaux (UI-01, 02, 03, 06, 07, 17, 21)
+- **Contexte** : l'audit d'Elias (`docs/revues/AUDIT-UI-UX-2026-10-25.md`) montre que
+  le parent et l'élève arrivent sur un écran d'administration, que l'onglet des
+  présences est une impasse pour eux et pour l'administratif, que la famille lit
+  « لم يتم تعيين معلم » à tort, et que les tableaux débordent à 390 px. Ce lot
+  traite le parcours famille et les tableaux ; les autres constats sont portés
+  par d'autres branches. Aucune règle Firestore, aucune donnée, aucune valeur de
+  rôle ne change.
+- **Décision** :
+  - **UI-01, accueil « ملخص »** : nouvel onglet `home`, premier du menu pour
+    `ولي أمر` et `طالب` (`FamilyHomeScreen`). Une carte par enfant : halaqa,
+    محفظ (si lisible), hizb avec la frise `HifzBar` (extraite de `HifzProgress`,
+    même dessin), dernier examen, présences des 30 derniers jours (absences et
+    retards), cotisation du mois (parents seulement : les règles ne donnent pas
+    les paiements à l'élève). Calculs purs dans `screens/family/familySummary.ts`.
+    L'onglet « متابعة أبنائي / ملفي » ne montre plus pour la famille ni
+    recherche, ni compteur, ni colonne des papiers administratifs, ni aperçu de
+    carte : un choix de l'enfant puis sa fiche. La liste de contrôle des papiers
+    reste dans la fiche (le parent y voit ce qu'il doit apporter).
+  - **UI-02, présences en lecture seule** : vérifié dans `firestore.rules` :
+    `attendance` est lisible par `isEducator` (مدير, إداري, مؤطر, مدرس) et, pour
+    la famille, par `familyOwnsDoc` (lignes dont `studentId` est lié au compte) ;
+    l'abonnement de `useSchoolSync` filtre déjà par `studentId` pour la famille.
+    Aucune règle à changer. `AttendanceHistoryScreen` (par enfant, séances de la
+    plus récente à la plus ancienne, paginées par 12) remplace
+    `AttendanceUnavailable` pour la famille, `إداري` et `مؤطر` (choix de
+    l'élève par liste déroulante). `مدير` et `مدرس` gardent la saisie. Les rôles
+    que les règles n'autorisent pas à lire (`متطوع`, `عامل نظافة / صيانة`,
+    `أخرى`) n'ont plus l'entrée du menu (`canOpenAttendance` dans `navModel`),
+    au lieu d'une impasse.
+  - **UI-03, محفظ** : option « sans changement de règles » retenue : la famille
+    (et tout rôle qui ne lit pas `teachers`) ne voit plus la ligne du محفظ quand
+    sa fiche n'est pas lisible ; le repli « لم يتم تعيين معلم » reste pour la
+    pédagogie, qui lit les fiches. Raison : le nom dénormalisé dans la halaqa
+    aurait demandé de l'écrire à chaque création, changement de محفظ et
+    renommage, et de corriger les halaqas existantes de la prod (action
+    humaine) pour un gain faible. La famille ne voit que les halaqas de ses
+    enfants, sans archive, sans recherche, sans capacité ni nombre d'inscrits
+    (ces chiffres seraient faux : elle ne lit que ses enfants).
+  - **UI-06, tableaux en cartes** : `DataTable` (`src/ui/DataTable.tsx`) :
+    tableau à partir de `md`, cartes en dessous (une seule variante rendue, via
+    `useMediaQuery`, pour ne pas dupliquer le texte). Une colonne déclare son
+    rôle sur la carte : titre, champ (2 ou 3), ou propre au tableau ; les actions
+    passent en pied de carte ; une ligne cliquable devient un vrai bouton.
+    Appliqué aux élèves et aux comptes (`UsersSection`). Colonne d'actions : plus
+    étroite (`w-px`, sans retour à la ligne) et la fiche reste à côté de la liste
+    sans rogner la colonne à 1 440 px (vérifié à l'œil et par test).
+  - **UI-17, carte de l'élève** : l'aperçu recto verso quitte la page ; bouton
+    « بطاقة الطالب » dans la fiche, qui l'ouvre dans une `Modal`. La famille ne
+    l'a que si elle a le droit d'imprimer (`students.print`).
+  - **UI-21** : recherche des élèves et des halaqas, recherche et filtres des
+    examens masqués sous 8 éléments (seuil de la pagination, D83) ; le filtre
+    d'archivage du personnel reste (il donne accès aux archivés). Le bloc
+    décoratif de `GradesScreen` n'est plus montré à la famille.
+  - **UI-07 (écrans de ce lot)** : titre = libellé du menu du rôle (`navLabel`,
+    source unique du menu et des titres), description par rôle à la deuxième
+    personne pour les familles (élèves, halaqas, examens, présences, accueil).
+  - **UI-13 (`UsersSection` seulement)** : `bg-sand-900` / `border-sand-800`
+    remplacés par `night` / `night-2` (thémés). Le garde-fou de
+    `tests/unit/themes.test.ts` n'est pas étendu ici : quatre autres fichiers
+    portent encore ces jetons (autre branche).
+  - Traductions de test dans `src/i18n-test/fr.ts` (couverture 100 %).
+- **Retour arrière** : `git revert` des commits du lot. Aucune donnée écrite,
+  rien à défaire côté Firestore. Pour la seule carte de l'élève : remettre
+  `StudentCardPreview` (supprimé de `StudentDossier.tsx`) sous la fiche.
+
+### D95. Aperçu par rôle du super-admin : on change réellement l'appartenance (dev seulement, jamais sur alfajr)
+- **Contexte** : le propriétaire veut tester chaque vue (directeur, administratif,
+  enseignant, parent, élève…) avec son compte super-admin, dans une école de test
+  du dev (par exemple `test1234`), sans créer un compte par rôle.
+- **Décision : changer RÉELLEMENT l'appartenance du super-admin dans l'école
+  active, plutôt que de simuler un rôle côté client.** Un « mode simulation »
+  (un rôle fictif dans l'état de l'application) montrerait ce que l'interface
+  *croit* afficher, pas ce que les règles laissent *vraiment* lire : une
+  requête refusée à un parent passerait inaperçue, un lien oublié aussi. Ici le
+  super-admin appelle la Cloud Function existante `setMemberRole` sur **son
+  propre uid** (rôle, `linkedTeacherId`, `linkedStudentIds`), puis l'application
+  relit l'appartenance et recharge les données (`enterSchool`) : les règles
+  Firestore, les abonnements filtrés et les menus sont exactement ceux d'un vrai
+  utilisateur de ce rôle. **Les règles restent la vérité.** Aucune modification
+  des Functions ni des règles : `setMemberRoleCore` autorise déjà le super-admin
+  à changer son propre rôle et ses liens dans une école où il est membre.
+  - **Écart à connaître** : le claim `superAdmin` donne encore, dans les règles,
+    la lecture de `schools/{id}` et de ses membres, et l'écriture de
+    `settings/system` (`isSuper()`). Les données métier (élèves, paiements,
+    présences…) ne dépendent que du rôle de l'appartenance : un « parent » en
+    aperçu ne les lit que filtrées sur ses enfants.
+  - **Liens tirés au hasard** (`src/rolePreview/rolePreview.ts`, pur, testé) :
+    `ولي أمر` : deux élèves actifs frères et sœurs (même téléphone **ou** même nom
+    de parent, fusion transitive), sinon 1 ou 2 élèves actifs au hasard ;
+    `طالب` : un élève actif ; `مدرس` : une fiche « أستاذ / محفظ » non archivée,
+    de préférence avec une halaqa non archivée ; les autres rôles : sans lien.
+    Pour lire toute l'école, un compte en aperçu non directeur repasse d'abord par
+    `مدير` (deuxième appel), car les règles ne lui laissent plus lire la liste.
+    Si l'école n'a aucune donnée adaptée, un message s'affiche et rien ne change.
+- **Où** : le sélecteur « معاينة كدور » (les 9 rôles, valeurs en arabe inchangées)
+  est dans la **fenêtre du profil** (menu du compte, ouvert depuis l'avatar, pour
+  **tous** les rôles, comme le réglage de langue de D93) : un rôle sans menu
+  Paramètres y a donc toujours accès. Le bouton « العودة إلى مدير » (directeur
+  sans lien) y figure tant que le rôle n'est pas `مدير` ; il est répété dans le
+  **bandeau** « وضع المعاينة : ولي أمر (فاطمة …) », sous la barre du haut, qui
+  indique le vrai rôle et l'élève ou la fiche liés.
+- **Garde-fous** (jamais confiés au seul affichage : `switchTo` les revérifie) :
+  1. compte avec le claim `superAdmin` ;
+  2. super-admin membre de l'école active ;
+  3. **build non prod** : drapeau `VITE_ENABLE_ROLE_PREVIEW`, `true` seulement
+     dans `.env.development` et dans l'étape propre au dev de `deploy.yml`
+     (comme l'ancien `VITE_ENABLE_FR_TEST`, D79) ; refusé pour la prod par
+     `rolePreviewBuildProblems` (`scripts/dev/buildGuards.ts`, branché dans
+     `vite.config.ts`) : un build de production avec le drapeau vrai pour le
+     projet du `.env.production` versionné échoue, et aussi si ce projet est
+     introuvable. Les modules de `src/rolePreview/` ne sont chargés que par
+     import dynamique sous le drapeau (`src/shell/rolePreviewSlots.tsx`) : en
+     production ils sont **absents du bundle** (vérifié sur `npm run build`), et
+     `rolePreviewBundleProblems` fait échouer le build s'ils s'y retrouvent ;
+  4. **école active ≠ `alfajr`** (`ROLE_PREVIEW_BLOCKED_SCHOOLS`, refus explicite
+     et commenté dans le code) : `alfajr` contient sur le dev une copie des
+     données réelles (élèves mineurs, paiements, salaires) ; un rôle de test n'a
+     pas à s'y promener. Casse et espaces ignorés.
+  Une erreur de la Function s'affiche dans le sélecteur (`ActionAlert`, rôle
+  `alert`), sans fermer la fenêtre ; si l'appartenance a pourtant changé
+  (échec partiel), elle est relue.
+- **Tests** : `tests/unit/rolePreview.test.ts` (conditions, fratries, élèves
+  actifs, enseignant avec halaqa, bandeau), `tests/unit/buildGuards.test.ts`
+  (drapeau refusé pour la prod), `tests/e2e/apercu-roles.spec.ts` sur les
+  émulateurs avec un super-admin fictif `super_demo` (مدير d'annour, ajouté par
+  `seed-emulator.ts` seulement, `seedPreviewSuperAdmin`) : parent → accueil
+  « ملخص » des deux enfants liés → retour directeur ; enseignant, élève,
+  administratif ; erreur de la Function ; jamais pour un non super-admin ni sur
+  alfajr.
+- **Retour arrière** : `git revert` des commits de D95 (aucune donnée à défaire,
+  ni Function ni règle touchée). Désactiver sans rien retirer : ne plus écrire
+  `VITE_ENABLE_ROLE_PREVIEW` dans `.env.development` et dans `deploy.yml`. Un
+  super-admin resté en aperçu se remet directeur par « العودة إلى مدير » ou,
+  à défaut, par `setMemberRole` (directeur de l'école ou super-admin).
+- **Compléments du même lot** (demandes du propriétaire) :
+  - **D94, description des activités pour les familles** : `FamilyActivities`
+    montre aussi `description` (« الأهداف والوصف العام »), `programDetails`
+    (« البرنامج الزمني والتفصيلي ») et `meetingPoint` (« نقطة وساعة الانطلاق »,
+    avec les dates déjà affichées), champs du formulaire du personnel. Le
+    modèle n'a **pas** de champ « à apporter » : rien d'inventé. Texte replié
+    à 4 lignes (au-delà de 220 caractères ou 4 lignes) avec un vrai bouton
+    « عرض المزيد / عرض أقل » (`aria-expanded`, `aria-controls`). Toujours aucune
+    donnée financière interne (ni budget, ni solde, ni dépenses, ni capacité).
+  - **Carte « ملخص أبنائك » du menu** (parent, `src/shell/familySidebar.ts`) :
+    un enfant → « ملخص ابنك / ابنتك », son prénom et « الحزب الحالي : N »
+    (`hizbCount`) ; plusieurs → une ligne par enfant, au plus 3, puis « +N »
+    (lu « وابن آخر / وابنان آخران / و N أبناء آخرين » par les lecteurs d'écran).
+    Plus de « أبعد حزب بلغه طالب » pour la famille. Prénoms composés
+    (« عبد الرحمن ») gardés entiers. Personnel et élève : carte inchangée.
+
+### D94. Activités et sorties : vue simplifiée pour les parents et les élèves (option B)
+- **Contexte** : l'écran « الأنشطة والرحلات » montrait aux familles l'interface du
+  bureau (onglets dépenses et budget, liaison comptable, boutons d'ajout, de
+  modification et d'impression) avec des compteurs « 0 مشارك / 0 د.م » faux,
+  car les règles cachaient les participants et les dépenses aux familles.
+- **Décision** (propriétaire : option B) :
+  - **Règles** : `activityParticipants` devient lisible par la famille pour les
+    seules inscriptions de ses enfants, via `familyOwnsParticipant(s)` :
+    `isFamily(s) && participantType == 'طالب' && referenceId in linkedStudents(s)`.
+    Un participant du personnel (« أستاذ / محفظ »…) ou externe n'est jamais
+    lisible, même si son `referenceId` coïncidait avec un élève lié. Aucune
+    écriture pour la famille ; `activityExpenses` reste fermé. Le modèle
+    référence l'élève par `referenceId` (pas de `studentId`), d'où ce champ.
+  - **Client** : abonnement filtré (`subscribeToQueryIn` gagne un paramètre
+    `equals`) : `participantType == 'طالب'` et `referenceId in <élèves liés>`,
+    comme les présences de la famille. Une lecture non filtrée serait refusée.
+  - **Écran** (`src/screens/family/FamilyActivities.tsx`, logique pure dans
+    `familyActivities.ts`) : liste des activités (à venir d'abord, puis passées ;
+    recherche et filtre au-delà de 8) avec, pour chaque enfant du compte
+    (l'élève lui-même), « مسجّل / غير مسجّل » et, si inscrit, payé, payé
+    partiellement (payé et reste), non payé (reste) ou exonéré, d'après `fee`,
+    `paidAmount` et `paymentStatus` du participant. Ni dépenses, ni budget, ni
+    liaison comptable, ni autres participants, ni bouton, ni total financier.
+  - L'écran du personnel (`ActivitiesManagement`) est inchangé.
+- **Tests** : `tests/emulator/activites-famille.test.ts` (règles),
+  `tests/unit/familyActivities.test.ts`, `tests/e2e/activites-famille.spec.ts`.
+- **Retour arrière** : `git revert` ; retirer `familyOwnsParticipant` de
+  `firestore.rules` (à déployer par un humain, runbook). Aucune donnée touchée.
+
+### D93. Langue FR / AR : une vraie option, disponible en production (revient sur D79)
+- **Contexte** : D79 réservait la traduction française au dev (drapeau
+  `VITE_ENABLE_FR_TEST`, bouton flottant « TEST », garde-fous du build qui
+  l'interdisaient en prod). **À la demande du propriétaire**, elle devient une
+  option utilisable en production, par tous les rôles (parents et élèves
+  compris, qui n'ont pas Paramètres). D93 **revient donc sur D79 pour la
+  disponibilité en prod** ; le reste de D79 (moteur, dictionnaire, couverture
+  100 %, valeurs de `<option>` / `data-value` intactes, RTL → LTR) est inchangé.
+- **Décision** :
+  - **Plus de drapeau** : `VITE_ENABLE_FR_TEST` est supprimé (`.env.development`,
+    `src/config/env.ts`, `vite-env.d.ts`, `deploy.yml`, `preview.yml`,
+    `vite.config.ts`, `buildGuards.ts`) ; la couche est dans tous les builds.
+    Le module reste en **import dynamique** : `src/i18n/language.ts` (dans le
+    bundle principal, minuscule) ne charge `src/i18n-test` que si la langue
+    choisie est le français. Vérifié sur `npm run build` : le dictionnaire et
+    `fr.css` sont dans un chunk séparé (≈ 186 ko, 366 o de CSS), absents du
+    chunk d'entrée, qui ne grossit que de ce petit module.
+  - **Garde-fou du build** (remplace `frTestBuildProblems` et
+    `frTestBundleProblems`) : `frChunkProblems` fait échouer le build si un
+    module de `src/i18n-test/` se retrouve dans un chunk d'entrée, ou si le
+    dictionnaire est absent du bundle. Les autres garde-fous (D70 :
+    `VITE_APPCHECK_DEBUG_TOKEN`, émulateurs hors projet `demo-`) sont inchangés.
+  - **Bouton flottant supprimé** (`switcher.ts`, son CSS, la mention « test »).
+  - **Réglage** « اللغة / Langue », deux boutons segmentés « العربية » /
+    « Français » (`src/ui/LanguageSetting.tsx`, `SegmentedControl` de la
+    charte, `aria-pressed`, clavier) : dans la fenêtre du **profil** (menu du
+    compte, ouverte depuis l'avatar de la barre du haut, pour **tous** les
+    rôles) et dans **Paramètres > Général** (pour ceux qui y ont accès). Les
+    deux noms de langue et le libellé sont dans leur propre langue
+    (`KEEP_ARABIC`) : jamais traduits.
+  - **Choix personnel, sur l'appareil** : `localStorage`, clé `ui:lang` (hors
+    du cache cloisonné `kuttab:{schoolId}:…` et des préfixes vidés à la
+    déconnexion : il survit au changement d'école et à la déconnexion), accès
+    en try/catch. **Rien dans Firestore** (les comptes ne s'écrivent que par
+    les Cloud Functions). Appliqué immédiatement, sans rechargement ; l'écran
+    de connexion reprend la dernière langue de l'appareil (`initLanguage()` dans
+    `src/main.tsx`, avant le premier rendu). L'ancienne clé `i18n-test:lang`
+    n'est pas reprise (choix de test, sans valeur à conserver).
+  - Le dossier `src/i18n-test/` **garde son nom** pour limiter le diff ; ce n'est
+    plus un test (en-tête de `index.ts` mis à jour). Le sélecteur et l'état de
+    la langue vivent dans `src/i18n/` et `src/ui/`.
+- **Limites (à connaître)** :
+  - **Traduction par dictionnaire, posée sur le DOM** : une chaîne absente du
+    dictionnaire reste en arabe (la couverture de 100 % est vérifiée par test
+    sur les chaînes de `src/`, pas sur les données saisies par l'école : noms,
+    libellés d'activités, notes… restent tels que saisis). Toute nouvelle
+    chaîne d'écran doit être ajoutée à `fr.ts` (le test de couverture l'impose).
+  - **Les impressions restent en arabe** (`src/print/` : reçus, cartes, listes,
+    rapports) : elles sont hors du dictionnaire et hors de la couche DOM.
+    Idem pour les messages WhatsApp envoyés aux parents.
+  - Le texte français est plus long que l'arabe : mises en page vérifiées à
+    390 et 1 440 px, pas d'adaptation fine écran par écran.
+- **Retour arrière** : `git revert` des commits de D93 (la couche redevient
+  réservée au dev par D79) ; ou, pour retirer la fonction, supprimer
+  `src/i18n-test/`, `src/i18n/`, `LanguageSetting` et le démarrage dans
+  `main.tsx`. Aucune donnée à défaire : rien n'est écrit côté serveur.
+- **Statut de synchronisation retiré** (même lot, demande du propriétaire) : le
+  message « قاعدة البيانات متصلة، والبيانات متزامنة الآن » (bas du menu) et la
+  pastille « متزامن » (barre du haut) ne sont plus affichés, ni l'état
+  « مزامنة… » (transitoire). Seul l'état d'**erreur** reste, signal discret
+  déjà présent dans l'application : pastille « غير متصل » (barre du haut, à
+  partir de 1 024 px) et ligne d'erreur dans le menu (donc dans le tiroir
+  mobile). Aucun nouveau signal créé. Entrées du dictionnaire devenues
+  inutiles supprimées.
+
+### D96. Retour au bleu nuit par défaut, logo en bleu nuit et or
 - **Contexte** : l'école, à qui Mélik a montré les maquettes, préfère garder le
   bleu (25/10/2026). D88 avait mis l'émeraude par défaut.
 - **Décision** : `DEFAULT_THEME` revient à `bleu-nuit` et `theme-color` à

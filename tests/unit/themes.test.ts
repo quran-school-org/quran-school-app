@@ -12,7 +12,8 @@ import {
   DEFAULT_THEME, REFERENCE_TOKENS, THEMES, THEME_IDS, THEME_TOKEN_NAMES, getTheme, resolveThemeId, themeTokens, themesStylesheet,
 } from "../../src/theme/palettes";
 import { transposeShade } from "../../src/theme/color";
-import { readLastTheme, rememberLastTheme } from "../../src/cache/localCache";
+import { readLastTheme, readSchoolTheme, rememberLastTheme, rememberSchoolTheme } from "../../src/cache/localCache";
+import { schoolThemeToApply } from "../../src/theme/applyTheme";
 
 // Contraste WCAG 2.x, écrit ici indépendamment de src/theme/color.ts.
 function lum(hex: string): number {
@@ -139,6 +140,33 @@ describe("couleurs de la charte codées en dur", () => {
   });
 });
 
+describe("jetons sombres non thématisés (UI-13)", () => {
+  // `sand-800` / `sand-900` (#2A3040, #1A1F2B) ne suivent pas le thème : fonds sombres
+  // à écrire avec `night` / `night-2`. Exceptions : aperçus d'impression, dont la charte
+  // est fixe (D88), et UsersSection, corrigée par un autre lot (retirer cette ligne ensuite).
+  const FORBIDDEN = /\bsand-(800|900)\b/;
+  const EXCEPTIONS = [
+    "src/components/settings/UsersSection.tsx", // TEMPORAIRE : lot comptes (UI-13, UI-06)
+    "src/components/finance/PrintReportModal.tsx",
+    "src/components/activities/ActivityPrintModal.tsx",
+  ];
+  const walk = (dir: string): string[] =>
+    readdirSync(join(ROOT, dir)).flatMap((f) => {
+      const rel = `${dir}/${f}`;
+      if (statSync(join(ROOT, rel)).isDirectory()) return walk(rel);
+      return /\.tsx?$/.test(f) ? [rel] : [];
+    });
+
+  it("les écrans utilisent night / night-2, pas sand-800 / sand-900", () => {
+    const offenders = walk("src")
+      .filter((f) => !EXCEPTIONS.includes(f) && !f.startsWith("src/print/") && !f.startsWith("src/theme/"))
+      .flatMap((f) => readFileSync(join(ROOT, f), "utf8").split("\n").map((line, i) => [f, i + 1, line] as const))
+      .filter(([, , line]) => FORBIDDEN.test(line))
+      .map(([f, n]) => `${f}:${n}`);
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe("dernier thème de l'appareil", () => {
   it("clé hors du préfixe purgé à la déconnexion (kuttab:)", () => {
     const store = new Map<string, string>();
@@ -152,6 +180,44 @@ describe("dernier thème de l'appareil", () => {
     try {
       rememberLastTheme("foret");
       expect(readLastTheme()).toBe("foret");
+      expect([...store.keys()].every((k) => !k.startsWith("kuttab:"))).toBe(true);
+    } finally {
+      g.localStorage = previous;
+    }
+  });
+});
+
+describe("thème de l'école à la connexion (pas de flash vert)", () => {
+  it("paramètres sans thème : dernier thème connu de l'école, sinon le défaut", () => {
+    expect(schoolThemeToApply("ecole-a", {}, "bleu-nuit")).toBe("bleu-nuit");
+    expect(schoolThemeToApply("ecole-a", {}, null)).toBe(DEFAULT_THEME);
+    expect(schoolThemeToApply("ecole-a", {}, "inconnu")).toBe(DEFAULT_THEME);
+  });
+
+  it("thème explicite de l'école : il l'emporte sur le souvenir de l'appareil", () => {
+    expect(schoolThemeToApply("ecole-a", { theme: "sauge" }, "bleu-nuit")).toBe("sauge");
+  });
+
+  it("sans école ou sans paramètres : rien à appliquer", () => {
+    expect(schoolThemeToApply(null, { theme: "sauge" }, null)).toBeNull();
+    expect(schoolThemeToApply("ecole-a", null, "bleu-nuit")).toBeNull();
+  });
+
+  it("souvenir par école, hors du préfixe purgé à la déconnexion", () => {
+    const store = new Map<string, string>();
+    const g = globalThis as unknown as { localStorage?: unknown };
+    const previous = g.localStorage;
+    g.localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    };
+    try {
+      rememberSchoolTheme("ecole-a", "bleu-nuit");
+      rememberSchoolTheme("ecole-b", "olive");
+      expect(readSchoolTheme("ecole-a")).toBe("bleu-nuit");
+      expect(readSchoolTheme("ecole-b")).toBe("olive");
+      expect(readSchoolTheme("ecole-c")).toBeNull();
       expect([...store.keys()].every((k) => !k.startsWith("kuttab:"))).toBe(true);
     } finally {
       g.localStorage = previous;

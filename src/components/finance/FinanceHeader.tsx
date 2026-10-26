@@ -5,8 +5,9 @@
 import { Printer } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { Button, KpiGrid, KpiTile, PageHeader } from "../../ui";
+import { formatNumber } from "../../utils/format";
 
-const fmt = (n: number) => n.toLocaleString("en-US");
+const fmt = (n: number) => formatNumber(n);
 
 export default function FinanceHeader() {
   const { canPrint, selectedYear, setShowPrintReportModal, grossTotalIncome, grossTotalExpenses, netBalance, cashBoxNetBalance, bankAccountNetBalance } = useFinance();
@@ -15,7 +16,6 @@ export default function FinanceHeader() {
     <>
       <PageHeader
         title="المحاسبة"
-        description="تتبع شامل وإلكتروني لمستحقات التلاميذ، الأجور والرواتب، المصاريف والنفقات، وإعداد التقرير المالي والختامي المعتمد للجمعية."
         eyebrow={`السنة المالية: ${selectedYear === "all" ? "جميع السنوات" : selectedYear}`}
         actions={
           canPrint && (

@@ -56,7 +56,7 @@ export interface PrintOptions {
  */
 export function printDocument({ title, body, css = "", withAppStyles }: Pick<PrintOptions, "title" | "body" | "css" | "withAppStyles">): string {
   return [
-    '<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8" />',
+    '<!doctype html><html dir="rtl" lang="ar" data-theme="bleu-nuit"><head><meta charset="utf-8" />',
     "<title>" + escapeHtml(title) + "</title>",
     PRINT_FONTS,
     withAppStyles ? appStylesHtml() : "",

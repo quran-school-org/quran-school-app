@@ -8,6 +8,7 @@
  * Échappatoire volontaire (CI de test sur un projet de dev seulement) :
  * `ALLOW_APPCHECK_DEBUG_IN_BUILD=true` dans l'environnement du processus.
  */
+
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parse } from "dotenv";
@@ -30,18 +31,47 @@ export function productionBuildProblems(mode: string, env: Record<string, string
 }
 
 /**
- * Traduction française de TEST (D79) : le drapeau VITE_ENABLE_FR_TEST ne doit
- * jamais être vrai pour un build visant le projet de PRODUCTION. Le projet de
- * prod est celui du fichier versionné `.env.production` (aucune valeur codée
- * en dur) ; le dev déployé le surcharge par `.env.production.local`.
+ * Traduction française (D79, disponible en production par D93) : le
+ * dictionnaire et la couche DOM (src/i18n-test) ne se chargent que si
+ * l'utilisateur choisit le français. Ils doivent donc être dans un chunk
+ * séparé, chargé par import dynamique, jamais dans un chunk d'entrée (le
+ * bundle principal en arabe ne doit pas grossir).
  */
-export function frTestBuildProblems(mode: string, env: Record<string, string | undefined>, committedProdProjectId: string | undefined): string[] {
-  if (mode !== "production") return [];
-  const enabled = String(env.VITE_ENABLE_FR_TEST || "").trim().toLowerCase() === "true";
-  const project = (env.VITE_FIREBASE_PROJECT_ID || "").trim();
-  if (enabled && committedProdProjectId && project === committedProdProjectId.trim()) {
-    return [`VITE_ENABLE_FR_TEST=true pour le projet de production (${project}) : la traduction de test est réservée au dev (D79).`];
+export interface BundleChunk {
+  fileName: string;
+  isEntry: boolean;
+  moduleIds: string[];
+}
+
+const inFrLayer = (id: string) => id.replace(/\\/g, "/").includes("/src/i18n-test/");
+
+export function frChunkProblems(chunks: BundleChunk[]): string[] {
+  const problems: string[] = [];
+  for (const c of chunks) {
+    const leaked = c.moduleIds.filter(inFrLayer);
+    if (c.isEntry && leaked.length) problems.push(`Traduction FR dans le chunk d'entrée ${c.fileName} (import dynamique requis) : ${leaked.join(", ")}`);
   }
+  if (!chunks.some((c) => !c.isEntry && c.moduleIds.some((id) => inFrLayer(id) && id.endsWith("/fr.ts")))) {
+    problems.push("Le dictionnaire FR (src/i18n-test/fr.ts) est absent du bundle : l'option « Français » ne fonctionnerait pas.");
+  }
+  return problems;
+}
+
+/**
+ * Aperçu par rôle du super-admin (D95) : le drapeau VITE_ENABLE_ROLE_PREVIEW ne
+ * doit jamais être vrai pour un build visant le projet de PRODUCTION. Le projet
+ * de prod est celui du fichier versionné `.env.production` (aucune valeur codée
+ * en dur) ; le dev déployé le surcharge par `.env.production.local`. Si le
+ * projet de prod est introuvable, le drapeau est refusé en production (prudence).
+ */
+export function rolePreviewBuildProblems(mode: string, env: Record<string, string | undefined>, committedProdProjectId: string | undefined): string[] {
+  if (mode !== "production") return [];
+  const enabled = String(env.VITE_ENABLE_ROLE_PREVIEW || "").trim().toLowerCase() === "true";
+  if (!enabled) return [];
+  const project = (env.VITE_FIREBASE_PROJECT_ID || "").trim();
+  const prod = (committedProdProjectId || "").trim();
+  if (!prod) return ["VITE_ENABLE_ROLE_PREVIEW=true dans un build de production dont le projet de prod (.env.production) est introuvable : refusé par prudence (D95)."];
+  if (project === prod) return [`VITE_ENABLE_ROLE_PREVIEW=true pour le projet de production (${project}) : l'aperçu par rôle est réservé au dev (D95).`];
   return [];
 }
 
@@ -55,11 +85,11 @@ export function committedProductionProjectId(root: string): string | undefined {
 }
 
 /**
- * Bundle : sans le drapeau, aucun module de src/i18n-test ne doit y figurer
- * (dictionnaire, sélecteur). Contrôlé à la génération du bundle (vite.config.ts).
+ * Bundle : sans le drapeau, aucun module de src/rolePreview ne doit y figurer
+ * (contrôle, bandeau, sélection au hasard). Contrôlé à la génération du bundle.
  */
-export function frTestBundleProblems(enabled: boolean, moduleIds: Iterable<string>): string[] {
+export function rolePreviewBundleProblems(enabled: boolean, moduleIds: Iterable<string>): string[] {
   if (enabled) return [];
-  const leaked = [...moduleIds].filter((id) => id.replace(/\\/g, "/").includes("/src/i18n-test/"));
-  return leaked.length ? [`Modules de traduction de test présents dans le bundle sans VITE_ENABLE_FR_TEST : ${leaked.join(", ")}`] : [];
+  const leaked = [...moduleIds].filter((id) => id.replace(/\\/g, "/").includes("/src/rolePreview/"));
+  return leaked.length ? [`Modules de l'aperçu par rôle présents dans le bundle sans VITE_ENABLE_ROLE_PREVIEW : ${leaked.join(", ")}`] : [];
 }

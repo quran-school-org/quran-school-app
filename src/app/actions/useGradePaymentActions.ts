@@ -7,6 +7,8 @@ import { Grade, Payment } from "../../types";
 import { getYearAndMonthFromDate } from "../helpers";
 import type { DerivedScope } from "../scope";
 import { csvCell } from "../../utils/csv";
+import { parseGrade } from "../../utils/gradeMention";
+import { formatMoney } from "../../utils/format";
 
 export function useGradePaymentActions(s: DerivedScope) {
   const {
@@ -37,6 +39,7 @@ export function useGradePaymentActions(s: DerivedScope) {
     setGradeMemorization,
     setGradeNotes,
     setGradeOverall,
+    setGradeOverallManual,
     setGradePortion,
     setGradeStudentId,
     setGradeTajweed,
@@ -58,22 +61,30 @@ export function useGradePaymentActions(s: DerivedScope) {
   const handleOpenGradeForm = (studentId: string) => {
     setGradeStudentId(studentId);
     setGradePortion("");
-    setGradeMemorization(18);
-    setGradeTajweed(18);
-    setGradeOverall("ممتاز");
+    setGradeMemorization("");
+    setGradeTajweed("");
+    setGradeOverall("");
+    setGradeOverallManual(false);
     setGradeNotes("");
     setShowGradeModal(true);
   };
 
   const handleSaveGrade = (e: React.FormEvent) => {
     e.preventDefault();
+    // Garde-fou : notes et mention saisies (les champs requis du formulaire le garantissent déjà).
+    const mem = parseGrade(gradeMemorization);
+    const taj = parseGrade(gradeTajweed);
+    if (mem === null || taj === null || !gradeOverall) {
+      alert("يرجى إدخال درجتي الحفظ والتجويد (من 0 إلى 20) واختيار التقدير.");
+      return;
+    }
     const newGrade: Grade = {
       id: "g_" + Date.now(),
       studentId: gradeStudentId,
       examDate: new Date().toISOString().split("T")[0],
       testedPortion: gradePortion || "جزء عمّ",
-      memorizationGrade: Number(gradeMemorization),
-      tajweedGrade: Number(gradeTajweed),
+      memorizationGrade: mem,
+      tajweedGrade: taj,
       overallGrade: gradeOverall,
       notes: gradeNotes,
       examinerId: "t1"
@@ -136,7 +147,8 @@ export function useGradePaymentActions(s: DerivedScope) {
       const currentMonthIndex = new Date().getMonth();
       setPaymentFormMonth(months_ar[currentMonthIndex] || "يوليوز");
       setPaymentFormAmount(getSubscriptionAmount(months_ar[currentMonthIndex] || "يوليوز", new Date().getFullYear()));
-      setPaymentFormStatus("غير مدفوع");
+      // Cas courant au guichet : le parent vient de payer (UI-12). « غير مدفوع » reste choisissable (échéance).
+      setPaymentFormStatus("مدفوع");
       setPaymentFormDate(new Date().toISOString().split("T")[0]);
       setPaymentFormMethod("نقداً");
       setPaymentFormReceiptNo("REC-" + Math.floor(Math.random() * 9000 + 1000));
@@ -179,7 +191,7 @@ export function useGradePaymentActions(s: DerivedScope) {
 
     addSysNotification(
       editingPayment ? "تعديل دفعة مالية" : "إضافة دفعة مالية جديدة",
-      `تم ${editingPayment ? "تعديل" : "إضافة"} دفعة شهر ${paymentFormMonth} ${paymentFormYear} للطالب ${studName} بقيمة ${paymentFormAmount} درهم.`,
+      `تم ${editingPayment ? "تعديل" : "إضافة"} دفعة شهر ${paymentFormMonth} ${paymentFormYear} للطالب ${studName} بقيمة ${formatMoney(paymentFormAmount)}.`,
       "مالي"
     );
 
@@ -209,7 +221,7 @@ export function useGradePaymentActions(s: DerivedScope) {
 المحترم(ة) السيد(ة) *${stud.parentName}*،
 نعلمكم بأنه تم استلام دفعة الاشتراك المدرسي الخاصة بالطالب *${stud.fullName}*:
 - *الشهر المستهدف*: ${p.month} ${p.year}
-- *المبلغ*: ${p.amount} درهم
+- *المبلغ*: ${formatMoney(p.amount)}
 - *حالة الدفع*: ${p.status}
 - *تاريخ الأداء*: ${p.paymentDate || "—"}
 - *رقم الإيصال*: ${p.receiptNo || "—"}

@@ -4,14 +4,25 @@
  */
 import { useApp } from "../../app/AppContext";
 import { Button, FormField, Input, Modal, Select, Textarea } from "../../ui";
+import { MENTIONS, suggestMention, type Mention } from "../../utils/gradeMention";
 
 export default function GradeFormModal() {
   const {
     students, setShowGradeModal, gradeStudentId, setGradeStudentId, gradePortion, setGradePortion,
     gradeMemorization, setGradeMemorization, gradeTajweed, setGradeTajweed, gradeOverall, setGradeOverall,
-    gradeNotes, setGradeNotes, handleSaveGrade,
+    gradeNotes, setGradeNotes, handleSaveGrade, gradeOverallManual, setGradeOverallManual,
   } = useApp();
   const close = () => setShowGradeModal(false);
+  const suggestion = suggestMention(gradeMemorization, gradeTajweed);
+
+  /** Saisie d'une note : la mention est (re)proposée tant que l'enseignant ne l'a pas choisie lui-même. */
+  const changeGrade = (which: "mem" | "taj", raw: string) => {
+    const mem = which === "mem" ? raw : gradeMemorization;
+    const taj = which === "taj" ? raw : gradeTajweed;
+    if (which === "mem") setGradeMemorization(raw);
+    else setGradeTajweed(raw);
+    if (!gradeOverallManual) setGradeOverall(suggestMention(mem, taj) ?? "");
+  };
 
   return (
     <Modal
@@ -23,7 +34,7 @@ export default function GradeFormModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">تسجيل واصدار الشهادة</Button>
+          <Button type="submit" variant="primary">تسجيل وإصدار الشهادة</Button>
         </>
       }
     >
@@ -40,19 +51,25 @@ export default function GradeFormModal() {
         </FormField>
         <div className="grid grid-cols-2 gap-3">
           <FormField label="درجة جودة الحفظ (من 20)">
-            {(id) => <Input id={id} type="number" step="0.25" min="0" max="20" required value={gradeMemorization} onChange={(e: any) => setGradeMemorization(Number(e.target.value))} className="tabular-nums" />}
+            {(id) => <Input id={id} type="number" inputMode="decimal" step="0.25" min="0" max="20" required value={gradeMemorization} onChange={(e: any) => changeGrade("mem", e.target.value)} placeholder="0 – 20" className="tabular-nums" />}
           </FormField>
           <FormField label="درجة جودة التجويد (من 20)">
-            {(id) => <Input id={id} type="number" step="0.25" min="0" max="20" required value={gradeTajweed} onChange={(e: any) => setGradeTajweed(Number(e.target.value))} className="tabular-nums" />}
+            {(id) => <Input id={id} type="number" inputMode="decimal" step="0.25" min="0" max="20" required value={gradeTajweed} onChange={(e: any) => changeGrade("taj", e.target.value)} placeholder="0 – 20" className="tabular-nums" />}
           </FormField>
         </div>
-        <FormField label="التقدير الإجمالي والتحفيزي">
+        <FormField
+          label="التقدير الإجمالي والتحفيزي"
+          hint={suggestion ? (gradeOverallManual && gradeOverall !== suggestion ? `التقدير المقترح من الدرجتين: ${suggestion}` : "مقترح تلقائياً من الدرجتين، ويمكنك تغييره.") : "يُقترح التقدير بعد إدخال الدرجتين."}
+        >
           {(id) => (
-            <Select id={id} value={gradeOverall} onChange={(v) => setGradeOverall(v as any)}>
-              <option value="ممتاز">ممتاز</option>
-              <option value="جيد جداً">جيد جداً</option>
-              <option value="جيد">جيد</option>
-              <option value="مقبول">مقبول</option>
+            <Select
+              id={id}
+              required
+              value={gradeOverall}
+              placeholder="-- اختر التقدير --"
+              onChange={(v) => { setGradeOverall(v as Mention); setGradeOverallManual(true); }}
+            >
+              {MENTIONS.map((m) => <option key={m} value={m}>{m}</option>)}
             </Select>
           )}
         </FormField>

@@ -80,7 +80,7 @@ export default function ActivityExpenseModal() {
                 </div>
 
                 <div>
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ بالدرهم *</label>
+                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ (د.م) *</label>
                   <input
                     type="number"
                     min="1"

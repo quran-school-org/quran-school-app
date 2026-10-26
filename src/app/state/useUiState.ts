@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { Student, Payment, TajweedLevel } from "../../types";
 import { MONTHS_AR } from "../../school/businessRules";
+import { localIsoDate } from "../attendanceSessions";
 
 export function useUiState() {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
@@ -17,7 +18,9 @@ export function useUiState() {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [showGradeModal, setShowGradeModal] = useState<boolean>(false);
   const [selectedClassId, setSelectedClassId] = useState<string>("all");
-  const [attendanceDate, setAttendanceDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [attendanceDate, setAttendanceDate] = useState<string>(() => localIsoDate(new Date()));
+  // Enseignant pour lequel la halaqa a déjà été présélectionnée (UI-04) : un choix ultérieur n'est plus écrasé.
+  const [attendanceClassPickedFor, setAttendanceClassPickedFor] = useState<string | null>(null);
   
   // Teacher Dashboard States
   const [showTeacherStudentFileModal, setShowTeacherStudentFileModal] = useState<boolean>(false);
@@ -195,9 +198,13 @@ export function useUiState() {
   // Grade Form state
   const [gradeStudentId, setGradeStudentId] = useState("");
   const [gradePortion, setGradePortion] = useState("");
-  const [gradeMemorization, setGradeMemorization] = useState(18);
-  const [gradeTajweed, setGradeTajweed] = useState(18);
-  const [gradeOverall, setGradeOverall] = useState<"ممتاز" | "جيد جداً" | "جيد" | "مقبول">("ممتاز");
+  // Notes vides à l'ouverture (UI-11) : saisies au clavier, jamais pré-remplies.
+  const [gradeMemorization, setGradeMemorization] = useState("");
+  const [gradeTajweed, setGradeTajweed] = useState("");
+  // Mention vide tant qu'elle n'est ni proposée (d'après les notes) ni choisie.
+  const [gradeOverall, setGradeOverall] = useState<"ممتاز" | "جيد جداً" | "جيد" | "مقبول" | "">("");
+  // Vrai quand l'enseignant a choisi lui-même la mention : elle n'est plus recalculée.
+  const [gradeOverallManual, setGradeOverallManual] = useState(false);
   const [gradeNotes, setGradeNotes] = useState("");
 
   // Payment search and filter states
@@ -218,7 +225,7 @@ export function useUiState() {
   const [paymentFormYear, setPaymentFormYear] = useState<number>(new Date().getFullYear());
   const [paymentFormMonth, setPaymentFormMonth] = useState<string>(MONTHS_AR[new Date().getMonth()]);
   const [paymentFormAmount, setPaymentFormAmount] = useState<number>(70);
-  const [paymentFormStatus, setPaymentFormStatus] = useState<"مدفوع" | "غير مدفوع">("غير مدفوع");
+  const [paymentFormStatus, setPaymentFormStatus] = useState<"مدفوع" | "غير مدفوع">("مدفوع");
   const [paymentFormDate, setPaymentFormDate] = useState("");
   const [paymentFormMethod, setPaymentFormMethod] = useState<"نقداً" | "تحويل بنكي" | "شيك">("نقداً");
   const [paymentFormReceiptNo, setPaymentFormReceiptNo] = useState("");
@@ -246,6 +253,8 @@ export function useUiState() {
     setSelectedClassId,
     attendanceDate,
     setAttendanceDate,
+    attendanceClassPickedFor,
+    setAttendanceClassPickedFor,
     showTeacherStudentFileModal,
     setShowTeacherStudentFileModal,
     teacherSelectedStudent,
@@ -365,6 +374,8 @@ export function useUiState() {
     setGradeTajweed,
     gradeOverall,
     setGradeOverall,
+    gradeOverallManual,
+    setGradeOverallManual,
     gradeNotes,
     setGradeNotes,
     paymentSearchQuery,

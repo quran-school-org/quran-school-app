@@ -13,6 +13,7 @@ import { DOC_CSS } from "../../print/docStyles";
 import { openPrintWindow } from "../../print/printWindow";
 import { Payment } from "../../types";
 import { getYearAndMonthFromDate } from "../helpers";
+import { formatMoney } from "../../utils/format";
 import type { DerivedScope } from "../scope";
 
 export function usePrintActions(s: DerivedScope) {
@@ -70,7 +71,7 @@ export function usePrintActions(s: DerivedScope) {
         <tr>
           <td><span class="strong">${escapeHtml(stud?.fullName || "طالب مجهول")}</span><br/><span class="muted">ولي الأمر: ${escapeHtml(stud?.parentName || "—")}</span></td>
           <td class="c">${escapeHtml(p.month)} / ${escapeHtml(p.year)}</td>
-          <td class="c strong">${escapeHtml(p.amount)} درهم</td>
+          <td class="c strong">${escapeHtml(formatMoney(p.amount))}</td>
           <td class="c"><span class="pill ${escapeHtml(p.status === "مدفوع" ? "ok" : "ko")}">${escapeHtml(p.status === "مدفوع" ? "مدفوع" : "غير مدفوع")}</span></td>
           <td class="c ltr">${escapeHtml(p.paymentDate || "—")}</td>
           <td class="c">${escapeHtml(p.paymentMethod || "—")}</td>

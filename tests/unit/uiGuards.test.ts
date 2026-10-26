@@ -33,4 +33,17 @@ describe("interface : valeurs codées en dur retirées", () => {
   it("aucun <select> natif : liste déroulante de la charte (src/ui/Select.tsx, D83)", () => {
     expect(offending(/^\s*<select\b/m)).toEqual([]);
   });
+
+  it("aucun toLocaleString() sans argument : montants par src/utils/format.ts, locale explicite sinon (UI-10)", () => {
+    // WeeklyAttendance.tsx : modifié par une autre branche (UI-20), exception le temps de la fusion.
+    const allowed = ["src/screens/dashboard/WeeklyAttendance.tsx"];
+    const bare = offending(/\.toLocaleString\(\s*\)/).filter((f) => !allowed.includes(f.split("\\").join("/")));
+    expect(bare).toEqual([]);
+  });
+
+  it("aucun montant écrit « درهم » dans les écrans de paiements, comptabilité, activités et personnel : devise « د.م » via formatMoney", () => {
+    const dirs = ["src/screens/PaymentsScreen.tsx", "src/components/finance/", "src/components/activities/", "src/components/staff/", "src/components/FinanceManagement.tsx"];
+    const hits = all.filter(([f]) => dirs.some((d) => f.split("\\").join("/").startsWith(d))).filter(([, src]) => /\d\s*درهم|\}\s*درهم/.test(src));
+    expect(hits.map(([f]) => f)).toEqual([]);
+  });
 });

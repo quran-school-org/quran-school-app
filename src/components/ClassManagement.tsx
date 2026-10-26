@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Class, Teacher, Student } from "../types";
 import { Plus, Edit2, Archive, Calendar, Users, Search, AlertCircle, Trash2 } from "lucide-react";
-import { Button, Card, EmptyState, FilterChips, FormField, IconButton, InitialAvatar, Input, Ltr, Modal, PageHeader, Pill, ProgressBar, SearchInput, Select, cx } from "../ui";
+import { isEducatorRole, isFamilyRole } from "../security/access";
+import { navLabel } from "../shell/navModel";
+import { Button, Card, EmptyState, FilterChips, FormField, IconButton, InitialAvatar, Input, Ltr, Modal, PAGE_SIZES, PageHeader, Pill, ProgressBar, SearchInput, Select, cx } from "../ui";
 
 const parseScheduleString = (scheduleStr: string) => {
   const days = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
@@ -161,8 +163,15 @@ export default function ClassManagement({
     setShowModal(false);
   };
 
+  // Famille : uniquement les halaqas de ses enfants (les élèves reçus sont déjà ceux de son compte),
+  // sans archive. Elle ne lit pas les fiches du personnel : le محفظ n'est affiché que s'il est lisible (UI-03).
+  const family = isFamilyRole(currentRole as any);
+  const canSeeTeachers = isEducatorRole(currentRole as any);
+  const childClassIds = new Set(students.map((st) => st.classId));
+  const visibleClasses = family ? classes.filter((c) => childClassIds.has(c.id) && !c.isArchived) : classes;
+
   // Filtered classes list
-  const filteredClasses = classes.filter(c => {
+  const filteredClasses = visibleClasses.filter(c => {
     const teacher = teachers.find(t => t.id === c.teacherId);
     const matchesSearch = (c.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
                           (c.schedule || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -170,6 +179,7 @@ export default function ClassManagement({
 
     const isClassArchived = c.isArchived === true;
 
+    if (family) return !isClassArchived;
     if (archiveFilter === "active") {
       return matchesSearch && !isClassArchived;
     }
@@ -182,12 +192,22 @@ export default function ClassManagement({
   const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
   const activeCount = classes.filter((c) => !c.isArchived).length;
   const archivedCount = classes.filter((c) => c.isArchived).length;
+  // UI-21 : sous 8 halaqas, pas de recherche ; l'archive n'est proposée que s'il y en a une.
+  const showSearch = !family && (classes.length >= PAGE_SIZES.students || searchQuery !== "");
+  const showArchiveChips = !family && (archivedCount > 0 || archiveFilter !== "active");
+  const description = canCreate || canUpdate
+    ? "إضافة فصول دراسية جديدة، تعيين المحفظين المشرفين، تعديل المواعيد، وأرشفة الحلقات المكتملة."
+    : currentRole === "ولي أمر"
+      ? "حلقات أبنائك ومواعيدها."
+      : currentRole === "طالب"
+        ? "حلقتك ومواعيدها."
+        : "الحلقات القرآنية ومواعيدها والمحفظون المشرفون عليها.";
 
   return (
     <div data-screen="classes" className="flex flex-col gap-6" dir="rtl">
       <PageHeader
-        title="الحلقات"
-        description="إضافة فصول دراسية جديدة، تعيين المحفظين المشرفين، تعديل المواعيد، وأرشفة الحلقات المكتملة."
+        title={navLabel(currentRole as any, "classes")}
+        description={description}
         actions={
           canCreate && (
             <Button variant="primary" data-action="open-class-form" onClick={() => handleOpenForm()} icon={<Plus className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
@@ -197,26 +217,32 @@ export default function ClassManagement({
         }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SearchInput
-          aria-label="البحث في الحلقات"
-          icon={<Search className="w-4 h-4" strokeWidth={1.75} />}
-          placeholder="البحث باسم الحلقة، الجدول، أو المعلم..."
-          value={searchQuery}
-          onChange={(e: any) => setSearchQuery(e.target.value)}
-          className="flex-[1_1_260px] max-w-md"
-        />
-        <FilterChips
-          label="حالة الحلقات"
-          value={archiveFilter}
-          onChange={setArchiveFilter}
-          options={[
-            { value: "active", label: `الحلقات النشطة (${activeCount})` },
-            { value: "archived", label: `الأرشيف (${archivedCount})` },
-            { value: "all", label: `الكل (${classes.length})` },
-          ]}
-        />
-      </div>
+      {(showSearch || showArchiveChips) && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {showSearch && (
+            <SearchInput
+              aria-label="البحث في الحلقات"
+              icon={<Search className="w-4 h-4" strokeWidth={1.75} />}
+              placeholder="البحث باسم الحلقة، الجدول، أو المعلم..."
+              value={searchQuery}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
+              className="flex-[1_1_260px] max-w-md"
+            />
+          )}
+          {showArchiveChips && (
+            <FilterChips
+              label="حالة الحلقات"
+              value={archiveFilter}
+              onChange={setArchiveFilter}
+              options={[
+                { value: "active", label: `الحلقات النشطة (${activeCount})` },
+                { value: "archived", label: `الأرشيف (${archivedCount})` },
+                { value: "all", label: `الكل (${classes.length})` },
+              ]}
+            />
+          )}
+        </div>
+      )}
 
       {filteredClasses.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -230,50 +256,54 @@ export default function ClassManagement({
                   <div className="flex justify-between items-start gap-3 pb-3 border-b border-line-soft">
                     <div className="min-w-0">
                       <h2 id={`class-${cls.id}`} className="m-0 font-display font-semibold text-[20px] text-primary">{cls.name}</h2>
-                      <p className="m-0 mt-0.5 text-[12.5px] text-ink-3">رمز الحلقة: <Ltr>{cls.id.toUpperCase()}</Ltr></p>
+                      {!family && <p className="m-0 mt-0.5 text-[12.5px] text-ink-3">رمز الحلقة: <Ltr>{cls.id.toUpperCase()}</Ltr></p>}
                     </div>
                     <div className="flex flex-col items-end gap-1.5 shrink-0">
                       {cls.isArchived && <Pill tone="warn">حلقة مؤرشفة</Pill>}
-                      <Pill tone={cls.isArchived ? "neutral" : "primary"}>{classStudents.length} طلاب مسجلين</Pill>
+                      {!family && <Pill tone={cls.isArchived ? "neutral" : "primary"}>{classStudents.length} طلاب مسجلين</Pill>}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {teacher?.photo ? (
-                      <img src={teacher.photo} alt={teacher.fullName} className="w-11 h-11 rounded-full object-cover border border-line shrink-0" />
-                    ) : (
-                      <InitialAvatar name={teacher?.fullName || "?"} size={44} />
-                    )}
-                    <div className="min-w-0">
-                      <p className="m-0 text-[12.5px] text-ink-3">المحفظ المشرف</p>
-                      <p className="m-0 text-[14.5px] font-semibold text-ink">{teacher?.fullName || "لم يتم تعيين معلم"}</p>
-                      {teacher && <p className="m-0 text-[12.5px] text-ink-2">{teacher.specialty}</p>}
+                  {(teacher || canSeeTeachers) && (
+                    <div className="flex items-center gap-3">
+                      {teacher?.photo ? (
+                        <img src={teacher.photo} alt={teacher.fullName} className="w-11 h-11 rounded-full object-cover border border-line shrink-0" />
+                      ) : (
+                        <InitialAvatar name={teacher?.fullName || "?"} size={44} />
+                      )}
+                      <div className="min-w-0">
+                        <p className="m-0 text-[12.5px] text-ink-3">المحفظ المشرف</p>
+                        <p className="m-0 text-[14.5px] font-semibold text-ink">{teacher?.fullName || "لم يتم تعيين معلم"}</p>
+                        {teacher && <p className="m-0 text-[12.5px] text-ink-2">{teacher.specialty}</p>}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="flex items-start gap-2 rounded-xl bg-gold-100 text-[#5C4A1E] px-3 py-2.5 text-[13.5px]">
                     <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
                     <span><span className="sr-only">توقيت وجدول الحلقة: </span>{cls.schedule}</span>
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex justify-between items-center text-[12.5px] text-ink-2">
-                      <span>الاستيعاب والقدرة الاستيعابية</span>
-                      <span className="tabular-nums font-semibold">{classStudents.length} / {cls.maxStudents || 20} طالب</span>
+                  {!family && (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-[12.5px] text-ink-2">
+                        <span>الاستيعاب والقدرة الاستيعابية</span>
+                        <span className="tabular-nums font-semibold">{classStudents.length} / {cls.maxStudents || 20} طالب</span>
+                      </div>
+                      <ProgressBar
+                        value={capacityPercentage}
+                        height={8}
+                        className="flex-none"
+                        tone={capacityPercentage >= 90 ? "danger" : capacityPercentage >= 75 ? "gold" : "primary"}
+                        label={`نسبة الامتلاء ${capacityPercentage}%`}
+                      />
                     </div>
-                    <ProgressBar
-                      value={capacityPercentage}
-                      height={8}
-                      className="flex-none"
-                      tone={capacityPercentage >= 90 ? "danger" : capacityPercentage >= 75 ? "gold" : "primary"}
-                      label={`نسبة الامتلاء ${capacityPercentage}%`}
-                    />
-                  </div>
+                  )}
 
                   <div className="flex flex-col gap-2">
                     <p className="m-0 text-[13px] font-semibold text-ink-2 flex items-center gap-1.5">
                       <Users className="w-4 h-4 text-ink-3" strokeWidth={1.75} aria-hidden="true" />
-                      الطلاب المنتسبون لهذه الحلقة
+                      {currentRole === "ولي أمر" ? "أبناؤك في هذه الحلقة" : currentRole === "طالب" ? "أنت في هذه الحلقة" : "الطلاب المنتسبون لهذه الحلقة"}
                     </p>
                     {classStudents.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5">
@@ -320,9 +350,15 @@ export default function ClassManagement({
           })}
         </div>
       ) : (
-        <EmptyState icon={<AlertCircle className="w-8 h-8" strokeWidth={1.5} />} title="لا توجد فصول دراسية مطابقة لبحثك">
-          تأكد من اختيار التصفية المناسبة أو إضافة حلقة دراسية جديدة.
-        </EmptyState>
+        family ? (
+          <EmptyState icon={<AlertCircle className="w-8 h-8" strokeWidth={1.5} />} title="لا توجد حلقة بعد">
+            {currentRole === "طالب" ? "لم تُسجَّل في أي حلقة بعد." : "لم يُسجَّل أبناؤك في أي حلقة بعد."} تواصل مع إدارة المدرسة.
+          </EmptyState>
+        ) : (
+          <EmptyState icon={<AlertCircle className="w-8 h-8" strokeWidth={1.5} />} title="لا توجد فصول دراسية مطابقة لبحثك">
+            تأكد من اختيار التصفية المناسبة أو إضافة حلقة دراسية جديدة.
+          </EmptyState>
+        )
       )}
 
       {showModal && (

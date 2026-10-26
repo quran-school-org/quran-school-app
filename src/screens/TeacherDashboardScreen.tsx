@@ -1,15 +1,28 @@
 /**
- * Portail de l'enseignant (charte « لوحة الكتّاب ») : ses halaqas, ses élèves, le suivi du ḥifẓ.
+ * Portail de l'enseignant (charte « لوحة الكتّاب ») : la séance du jour et l'appel en premier,
+ * puis ses halaqas et ses élèves (ligne entièrement cliquable vers le suivi du ḥifẓ).
  */
 import { StudentAvatar } from "../utils/studentAvatar";
-import { BookOpen, Clock3, NotebookPen, Users } from "lucide-react";
-import { Button, Card, CardHeader, EmptyState, KpiGrid, KpiTile, PageHeader, Pill, ProgressBar, Table, TableWrap, Td, Th, Tr } from "../ui";
+import { BookOpen, ChevronLeft, Clock3, UserCheck, Users } from "lucide-react";
+import { Button, Card, CardHeader, EmptyState, KpiGrid, KpiTile, Ltr, PageHeader, Pill, ProgressBar } from "../ui";
 import { useApp } from "../app/AppContext";
+import { formatClock, isAutoAbsence, localIsoDate, todaySession, type SessionState } from "../app/attendanceSessions";
+
+const SESSION_PILL: Record<Exclude<SessionState, "none">, { tone: "primary" | "success" | "neutral"; label: string }> = {
+  upcoming: { tone: "neutral", label: "لم تبدأ بعد" },
+  ongoing: { tone: "success", label: "الحصة جارية" },
+  done: { tone: "neutral", label: "انتهت الحصة" },
+};
 
 export default function TeacherDashboardScreen() {
   const {
     students,
     classes,
+    attendance,
+    setActiveTab,
+    setSelectedClassId,
+    setAttendanceDate,
+    setAttendanceClassPickedFor,
     setShowTeacherStudentFileModal,
     setTeacherSelectedStudent,
     setProgressDate,
@@ -37,27 +50,52 @@ export default function TeacherDashboardScreen() {
   };
   const TAJWEED_TONE: Record<string, any> = { "ممتاز": "success", "متوسط": "warn" };
 
+  // UI-16 : séance du jour, état de l'appel, accès direct à l'appel avec la bonne halaqa.
+  const now = new Date();
+  const today = localIsoDate(now);
+  const session = todaySession(teacherClasses, now);
+  const focus = session?.cls || teacherClasses.find((c) => !c.isArchived) || null;
+  const focusStudents = focus ? students.filter((s) => s.classId === focus.id && !s.isArchived) : [];
+  const recorded = focusStudents.filter((s) => {
+    const rec = attendance.find((a) => a.date === today && a.studentId === s.id);
+    return rec && !isAutoAbsence(rec);
+  }).length;
+  const callState = focusStudents.length === 0 ? "" : recorded === 0 ? "لم يبدأ الرصد بعد" : recorded >= focusStudents.length ? "اكتمل الرصد" : `تم رصد ${recorded} من ${focusStudents.length} طالب`;
+  const goToAttendance = () => {
+    if (focus) setSelectedClassId(focus.id);
+    if (activeTeacher) setAttendanceClassPickedFor(activeTeacher.id);
+    setAttendanceDate(today);
+    setActiveTab("attendance");
+  };
+
   return (
     <div data-screen="teacher-dashboard" className="flex flex-col gap-6" dir="rtl">
-      <PageHeader
-        eyebrow="بوابة المدرس والمحفّظ"
-        title={`مرحباً بك، ${activeTeacher?.fullName || "المحفظ الفاضل"}`}
-        description="تتيح لك هذه اللوحة استعراض الحلقات والطلاب المسندين إليك، وإدخال بيانات الحفظ اليومية، ومتابعة تطور مستويات التجويد لطلابك."
-        actions={
-          activeTeacher?.specialty && (
-            <div className="rounded-xl border border-line bg-surface px-4 py-3 text-[13.5px]">
-              <p className="m-0 text-ink-3">التخصص الحالي</p>
-              <p className="m-0 font-semibold text-ink">{activeTeacher.specialty}</p>
-              {activeTeacher.trainingCourses && activeTeacher.trainingCourses.length > 0 && <p className="m-0 mt-1 text-[12.5px] text-ink-2">{activeTeacher.trainingCourses[0]}</p>}
+      <PageHeader eyebrow={`مرحباً بك، ${activeTeacher?.fullName || "المحفظ الفاضل"}`} title="لوحة المحفّظ" />
+
+      {focus && (
+        <Card data-card="today-session" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4" aria-labelledby="today-title">
+          <div className="flex flex-col gap-2 min-w-0">
+            <h2 id="today-title" className="m-0 font-display font-semibold text-[20px] text-primary">{session ? "حصة اليوم" : "لا حصة اليوم"}</h2>
+            <p className="m-0 font-semibold text-[17px] text-ink">{focus.name}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13.5px] text-ink-2">
+              <span className="inline-flex items-center gap-1.5">
+                <Clock3 className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
+                {session && session.info.start !== null ? <Ltr>{formatClock(session.info.start)}{session.info.end !== null ? ` - ${formatClock(session.info.end)}` : ""}</Ltr> : focus.schedule}
+              </span>
+              {session && session.info.state !== "none" && <Pill tone={SESSION_PILL[session.info.state].tone} dot>{SESSION_PILL[session.info.state].label}</Pill>}
+              {session && callState && <span data-call-state>{callState}</span>}
             </div>
-          )
-        }
-      />
+          </div>
+          <Button variant={session ? "primary" : "outline"} data-action="take-attendance" className="w-full sm:w-auto shrink-0" onClick={goToAttendance} icon={<UserCheck className="w-5 h-5" strokeWidth={1.75} />}>
+            تسجيل الحضور
+          </Button>
+        </Card>
+      )}
 
       <KpiGrid label="مؤشرات حلقاتي" min={160}>
         <KpiTile size="md" label="الحلقات المسندة" value={teacherClasses.length} hint="فصول دراسية نشطة" />
         <KpiTile size="md" label="إجمالي طلابي" value={teacherStudents.length} hint="طالباً تحت إشرافك" />
-        <KpiTile size="md" label="متوسط نسبة الحضور" value={`${teacherAverageAttendance}%`}>
+        <KpiTile size="md" label="متوسط نسبة الحضور" value={<Ltr>{teacherAverageAttendance}%</Ltr>}>
           <ProgressBar value={teacherAverageAttendance} height={6} className="flex-none mt-2" label={`متوسط الحضور ${teacherAverageAttendance}%`} />
         </KpiTile>
         <KpiTile size="md" label="أبعد حزب بلغه طالب" value={teacherFurthestHizb} unit="حزب" hint={`المعدل: ${teacherAverageHizb}`} />
@@ -93,93 +131,53 @@ export default function TeacherDashboardScreen() {
               id="my-students-title"
               icon={<Users className="w-5 h-5" strokeWidth={1.75} />}
               title="قائمة الطلاب المسجلين بحلقاتك"
-              description='انقر على "متابعة الحفظ والتجويد" لتسجيل الحفظ ومراجعة الطالب.'
+              description="اضغط على اسم الطالب لتسجيل الحفظ ومراجعته."
               actions={<Pill tone="primary">إجمالي طلابك: {teacherStudents.length} طلاب</Pill>}
             />
           </div>
           {teacherStudents.length === 0 ? (
             <div className="p-5"><EmptyState title="لا طلاب">لا يوجد طلاب مسجلون بحلقاتك حالياً.</EmptyState></div>
           ) : (
-            <>
-            <div className="hidden sm:block">
-            <TableWrap label="طلابي">
-              <Table>
-                <thead>
-                  <tr>
-                    <Th>اسم الطالب</Th>
-                    <Th>الحفظ الفعلي</Th>
-                    <Th>السورة الحالية</Th>
-                    <Th>التجويد</Th>
-                    <Th>نسبة الحضور</Th>
-                    <Th className="text-center">الملف التعليمي</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teacherStudents.map((student) => {
-                    const attRate = getStudentAttendanceRate(student.id);
-                    return (
-                      <Tr key={student.id}>
-                        <Td>
-                          <div className="flex items-center gap-2.5">
-                            <span className="w-9 h-9 rounded-full overflow-hidden bg-sunken border border-line shrink-0">
-                              <StudentAvatar student={student} alt={student.fullName} className="w-full h-full object-cover" />
-                            </span>
-                            <span className="flex flex-col">
-                              <span className="font-semibold text-ink">{student.fullName}</span>
-                              <span className="text-[12.5px] text-ink-3">{classes.find((c) => c.id === student.classId)?.name || "بدون فصل"}</span>
-                            </span>
-                          </div>
-                        </Td>
-                        <Td className="whitespace-nowrap"><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</Td>
-                        <Td>{student.currentSurah || "غير محدد"}</Td>
-                        <Td><Pill tone={TAJWEED_TONE[student.tajweedLevel] || "danger"}>{student.tajweedLevel}</Pill></Td>
-                        <Td>
-                          <div className="flex items-center gap-2 min-w-[110px]">
-                            <span className="tabular-nums font-semibold text-ink-2 w-10">{attRate}%</span>
-                            <ProgressBar value={attRate} height={6} tone={attRate >= 80 ? "success" : attRate >= 50 ? "gold" : "danger"} label={`نسبة الحضور ${attRate}%`} />
-                          </div>
-                        </Td>
-                        <Td className="text-center">
-                          <Button size="sm" className="whitespace-nowrap" data-action="open-teacher-student-file" onClick={() => openFile(student)} icon={<NotebookPen className="w-3.5 h-3.5" strokeWidth={1.75} />}>
-                            متابعة الحفظ والتجويد
-                          </Button>
-                        </Td>
-                      </Tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            </TableWrap>
-            </div>
-            {/* Téléphone : une carte par élève au lieu d'un tableau qui déborde (U-04). */}
-            <ul className="sm:hidden m-0 p-0 list-none divide-y divide-line-faint">
+            <ul aria-label="طلابي" className="m-0 p-0 list-none divide-y divide-line-faint">
               {teacherStudents.map((student) => {
                 const attRate = getStudentAttendanceRate(student.id);
+                const className = classes.find((c) => c.id === student.classId)?.name || "بدون فصل";
                 return (
-                  <li key={student.id} className="flex flex-col gap-3 px-4 py-4">
-                    <div className="flex items-center gap-2.5">
+                  <li key={student.id}>
+                    <button
+                      type="button"
+                      data-action="open-teacher-student-file"
+                      aria-label={`متابعة الحفظ والتجويد: ${student.fullName}`}
+                      onClick={() => openFile(student)}
+                      className="w-full min-h-16 px-4 sm:px-5 py-3 flex items-center gap-3 bg-transparent border-0 text-start cursor-pointer hover:bg-surface-2 transition-colors"
+                    >
                       <span className="w-10 h-10 rounded-full overflow-hidden bg-sunken border border-line shrink-0">
-                        <StudentAvatar student={student} alt={student.fullName} className="w-full h-full object-cover" />
+                        <StudentAvatar student={student} alt="" className="w-full h-full object-cover" />
                       </span>
-                      <span className="flex flex-col min-w-0">
+                      <span className="flex flex-col gap-0.5 min-w-0 flex-1 md:flex-none md:w-44">
                         <span className="font-semibold text-ink">{student.fullName}</span>
-                        <span className="text-[12.5px] text-ink-3">{classes.find((c) => c.id === student.classId)?.name || "بدون فصل"}</span>
+                        <span className="text-[12.5px] text-ink-3">{className}</span>
+                        <span className="md:hidden flex flex-wrap items-center gap-x-3 text-[13px] text-ink-2">
+                          <span><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</span>
+                          <span>{student.currentSurah || "غير محدد"}</span>
+                          <span>الحضور <Ltr>{attRate}%</Ltr></span>
+                        </span>
                       </span>
-                      <Pill tone={TAJWEED_TONE[student.tajweedLevel] || "danger"} className="ms-auto shrink-0">{student.tajweedLevel}</Pill>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13.5px] text-ink-2">
-                      <span><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</span>
-                      <span>{student.currentSurah || "غير محدد"}</span>
-                      <span className="tabular-nums">الحضور {attRate}%</span>
-                    </div>
-                    <Button size="sm" block data-action="open-teacher-student-file-mobile" onClick={() => openFile(student)} icon={<NotebookPen className="w-3.5 h-3.5" strokeWidth={1.75} />}>
-                      متابعة الحفظ والتجويد
-                    </Button>
+                      <span className="hidden md:flex items-center gap-6 flex-1 min-w-0 text-[14px] text-ink-2">
+                        <span className="whitespace-nowrap w-16"><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</span>
+                        <span className="flex-1 min-w-[6rem]">{student.currentSurah || "غير محدد"}</span>
+                        <span className="flex items-center gap-2 w-36 shrink-0">
+                          <Ltr className="font-semibold w-10">{attRate}%</Ltr>
+                          <ProgressBar value={attRate} height={6} tone={attRate >= 80 ? "success" : attRate >= 50 ? "gold" : "danger"} label={`نسبة الحضور ${attRate}%`} />
+                        </span>
+                      </span>
+                      <Pill tone={TAJWEED_TONE[student.tajweedLevel] || "danger"} className="shrink-0">{student.tajweedLevel}</Pill>
+                      <ChevronLeft className="w-5 h-5 text-ink-3 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                    </button>
                   </li>
                 );
               })}
             </ul>
-            </>
           )}
         </Card>
       </div>

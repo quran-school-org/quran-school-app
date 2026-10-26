@@ -72,3 +72,21 @@ export async function seedSecondSchool(db: Firestore, auth: Auth, alsoMemberUser
     await addMember(db, s.id, multiUid, alsoMemberUsername, "خالد التازي", "مدرس");
   }
 }
+
+/**
+ * Super-admin FICTIF, membre (مدير) de la seule école annour, pour tester
+ * l'aperçu par rôle (D95, tests/e2e/apercu-roles.spec.ts). Appelé par
+ * seed-emulator.ts uniquement : les tests d'émulateur qui appellent
+ * seedSecondSchool ne voient pas ce compte. Émulateurs seulement.
+ */
+export const PREVIEW_SUPER_ADMIN = { username: "super_demo", password: "demo-super-2026", fullName: "مشرف عام تجريبي" } as const;
+
+export async function seedPreviewSuperAdmin(db: Firestore, auth: Auth, schoolId: string = SECOND_SCHOOL.id): Promise<string> {
+  const a = PREVIEW_SUPER_ADMIN;
+  const uid = await ensureAccount(db, auth, a.username, a.password, a.fullName);
+  const rec = await auth.getUser(uid);
+  await auth.setCustomUserClaims(uid, { ...(rec.customClaims || {}), superAdmin: true });
+  await addMember(db, schoolId, uid, a.username, a.fullName, "مدير");
+  await db.collection("users").doc(uid).set({ lastSchoolId: schoolId, mustChangePassword: false }, { merge: true });
+  return uid;
+}
