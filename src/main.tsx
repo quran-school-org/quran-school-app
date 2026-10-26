@@ -4,6 +4,8 @@ import App from './App.tsx';
 import './index.css';
 import { initLanguage } from './i18n/language';
 import { applyLastKnownTheme } from './theme/applyTheme';
+import { ToastProvider } from './ui/Toast';
+import { ConfirmProvider } from './ui/ConfirmDialog';
 
 // Thème de couleur (D84) : dernier thème connu sur l'appareil, avant de
 // connaître l'école (écran de connexion, rechargement sans flash bleu).
@@ -12,7 +14,11 @@ applyLastKnownTheme();
 const render = () =>
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <App />
+      <ToastProvider>
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
+      </ToastProvider>
     </StrictMode>,
   );
 
