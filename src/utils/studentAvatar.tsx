@@ -1,23 +1,5 @@
 import React, { useState, useEffect } from "react";
 
-export const PRESET_STUDENT_PHOTOS_BOY = [
-  "https://images.unsplash.com/photo-1503919545889-aef636e10ad4?w=200",
-  "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=200",
-  "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200",
-  "https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?w=200",
-  "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200",
-];
-
-export const PRESET_STUDENT_PHOTOS_GIRL = [
-  "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200",
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200",
-  "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200",
-  "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?w=200",
-  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200",
-  "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200",
-];
-
 /**
  * Extracts student photo URL checking photo, photoUrl, photoURL, avatar, image, picture.
  */
@@ -45,41 +27,6 @@ export function getStudentPhotoUrl(student: any): string | null {
     return null;
   }
   return trimmed;
-}
-
-/**
- * Backward compatibility helper for getting student photo URL or preset fallback
- */
-export function getStudentPhoto(student: any): string {
-  const url = getStudentPhotoUrl(student);
-  if (url) return url;
-
-  const name = student?.fullName || "";
-  const isGirl =
-    student?.gender === "أنثى" ||
-    (name &&
-      (name.includes("عائشة") ||
-        name.includes("فاطمة") ||
-        name.includes("مريم") ||
-        name.includes("آية") ||
-        name.includes("سلمى") ||
-        name.includes("زينب") ||
-        name.includes("خديجة") ||
-        name.includes("أمينة") ||
-        name.includes("نورة") ||
-        name.includes("أسماء") ||
-        name.includes("رقية") ||
-        name.includes("فردوس")));
-
-  const photos = isGirl ? PRESET_STUDENT_PHOTOS_GIRL : PRESET_STUDENT_PHOTOS_BOY;
-  const str = student?.id || student?.fullName || "student";
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  const index = Math.abs(hash) % photos.length;
-  return photos[index];
 }
 
 /**

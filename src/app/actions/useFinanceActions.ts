@@ -4,6 +4,7 @@
 import { RealmSimDB } from "../../db";
 import { OtherIncome, SalaryPayment, Expense, ActivityTrip, ActivityParticipant, ActivityExpense } from "../../types";
 import type { DerivedScope } from "../scope";
+import { formatMoney } from "../../utils/format";
 
 export function useFinanceActions(s: DerivedScope) {
   const {
@@ -14,7 +15,7 @@ export function useFinanceActions(s: DerivedScope) {
 
   const handleSaveOtherIncome = (income: OtherIncome) => {
     RealmSimDB.saveOtherIncome(income);
-    addSysNotification("إضافة/تعديل إيراد", `تم حفظ سجل الإيراد: ${income.title} بقيمة ${income.amount} د.م.`, "مالي");
+    addSysNotification("إضافة/تعديل إيراد", `تم حفظ سجل الإيراد: ${income.title} بقيمة ${formatMoney(income.amount)}.`, "مالي");
     loadDatabase();
   };
 
@@ -26,7 +27,7 @@ export function useFinanceActions(s: DerivedScope) {
 
   const handleSaveSalaryPayment = (salary: SalaryPayment) => {
     RealmSimDB.saveSalaryPayment(salary);
-    addSysNotification("إصدار مستحق راتب", `تم تسجيل مستحق ${salary.personName} لمبلغ ${salary.amount} د.م.`, "مالي");
+    addSysNotification("إصدار مستحق راتب", `تم تسجيل مستحق ${salary.personName} لمبلغ ${formatMoney(salary.amount)}.`, "مالي");
     loadDatabase();
   };
 
@@ -38,7 +39,7 @@ export function useFinanceActions(s: DerivedScope) {
 
   const handleSaveExpense = (expense: Expense) => {
     RealmSimDB.saveExpense(expense);
-    addSysNotification("إضافة/تعديل مصروفات", `تم تسجيل مصروف ${expense.title} بقيمة ${expense.amount} د.م.`, "مالي");
+    addSysNotification("إضافة/تعديل مصروفات", `تم تسجيل مصروف ${expense.title} بقيمة ${formatMoney(expense.amount)}.`, "مالي");
     loadDatabase();
   };
 
@@ -90,7 +91,7 @@ export function useFinanceActions(s: DerivedScope) {
     RealmSimDB.saveActivityExpense(expense);
     addSysNotification(
       "تسجيل مصروف نشاط/رحلة",
-      `تم قيد مصروف "${expense.title}" بمبلغ ${expense.amount} د.م.`,
+      `تم قيد مصروف "${expense.title}" بمبلغ ${formatMoney(expense.amount)}.`,
       "مالي"
     );
     loadDatabase();

@@ -2219,6 +2219,75 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits du lot. Pour la seule barre mobile,
   passer `compact` à `false` dans `AppFrame.tsx` (l'ancienne barre complète revient).
 
+### D92. Audit UI/UX du 25/10/2026 : saisies, paiements, finances, personnel, notifications
+- **Contexte** : l'audit d'Elias (`docs/revues/AUDIT-UI-UX-2026-10-25.md`) relève des
+  pièges de saisie (examen pré-rempli à 18/20 et « ممتاز », paiement qui s'ouvre sur
+  « غير مدفوع »), des listes vides trompeuses, des montants écrits de quatre façons et
+  des écrans de gestion trop chargés. Ce lot traite UI-07 (titres par rôle, pour ces écrans
+  seulement), UI-08, UI-09 (partie paiements), UI-10, UI-11, UI-12, UI-14, UI-18, UI-19 et
+  UI-22. Données, valeurs de rôles et `firestore.rules` sont inchangées.
+- **Décision** :
+  - **Examen (UI-11)** : les deux notes sont vides et obligatoires à l'ouverture (saisie 0-20,
+    pas de 0,25). La mention est proposée d'après la **moyenne des deux notes**, avec les
+    seuils déjà utilisés par les données de démonstration (`school-fixtures.ts`) :
+    `>= 17` « ممتاز », `>= 15` « جيد جداً », `>= 12` « جيد », sinon « مقبول » (module pur
+    `src/utils/gradeMention.ts`). Elle reste modifiable ; dès que l'enseignant la choisit, elle
+    n'est plus recalculée. Le bouton dit « تسجيل وإصدار الشهادة ». `handleSaveGrade` refuse une
+    note hors 0-20 ou une mention vide.
+  - **Paiement (UI-12)** : « مدفوع » par défaut à l'ouverture depuis « إضافة » (le cas courant
+    au guichet) ; bouton « حفظ الدفعة ». « غير مدفوع » a un usage réel (échéance, relances,
+    bouton « تسديد » de la liste, total des sommes dues) : il reste choisissable dans la
+    fenêtre (« غير مدفوع (مستحق لاحقاً) », avec une aide qui dit qu'aucun reçu n'est émis).
+    Pas de deuxième action « إضافة مستحق » : un seul bouton et un seul formulaire.
+  - **Liste des paiements (UI-08, UI-09)** : le parent et l'élève n'ont pas de filtre de mois
+    (`useDerived` l'ignore pour ces rôles) et voient leurs paiements du plus récent au plus
+    ancien (ordre par défaut pour tous : période, date de paiement, identifiant). Le bureau garde
+    le mois courant par défaut ; s'il est vide, l'état vide propose « عرض كل الأشهر » et
+    « إضافة دفعة ». Le champ `type="month"` est remplacé par deux `Select` (mois en arabe
+    marocain, année) ; l'état `paymentFilterDate` garde son format « AAAA-MM » (impressions et
+    export inchangés). La date de naissance (fiche élève) et la date de paiement restent
+    natives ; la date des présences relève d'une autre branche.
+  - **Formats (UI-10)** : `src/utils/format.ts` (`formatNumber`, `formatMoney`,
+    `formatPercent`) : chiffres latins, **espace fine insécable (U+202F)** pour les milliers,
+    point décimal, devise « د.م » précédée d'une espace insécable, pourcentage sans espace
+    (`92%`) à rendre dans un `<Ltr>` (`bdi dir="ltr"`). Appliqués aux paiements (liste, fenêtre,
+    reçu, rapport, WhatsApp), à la comptabilité, aux activités et au personnel. Les montants
+    signés se rendent `<Ltr>{formatNumber(n, { signed: true })}</Ltr> د.م`. Les valeurs stockées
+    et les CSV (nombres bruts) ne changent pas. Garde-fou dans `uiGuards.test.ts` : plus de
+    `toLocaleString()` sans argument (exception provisoire : `WeeklyAttendance.tsx`, modifié
+    par une autre branche) ni de « درهم » dans ces écrans.
+  - **Avatars et CSP (UI-14)** : les six photos Unsplash de la fiche élève et le champ « URL »
+    disparaissent ; l'aperçu utilise `InitialAvatar` (dépôt de fichier et appareil photo
+    conservés). Les presets de `studentAvatar.tsx` (jamais utilisés ailleurs) sont supprimés.
+    `https://images.unsplash.com` était dans `img-src` pour ce seul usage : retiré de la CSP
+    (`firebase.json`), `tests/hosting` et `hostingHeaders.test.ts` le vérifient. Une fiche déjà
+    enregistrée avec une URL Unsplash ne charge plus l'image : `StudentAvatar` retombe sur la
+    silhouette (`onError`).
+  - **Comptabilité (UI-19)** : le total des recettes n'est affiché qu'une fois (l'en-tête de la
+    page) ; les trois cartes deviennent une ligne de répartition (`data-block="income-breakdown"`),
+    la carte sombre en double disparaît. Les onglets salaires et dépenses ne sont pas touchés
+    (leurs totaux ne doublent pas l'en-tête ; `SalariesSection` est repris par la branche des
+    jetons de couleur).
+  - **Personnel (UI-18)** : rangée de sept chiffres supprimée (les puces portent les nombres),
+    cartes à hauteur naturelle, « تعديل » en action principale, le reste (شارة العمل, أرشفة,
+    حذف) dans un menu « ⋯ » : nouveau composant `src/ui/ActionMenu.tsx` (rôle `menu`, clavier,
+    cible de 44 px, portail pour ne pas être rogné). Sans droit de modification, « شارة العمل »
+    reste l'action principale.
+  - **Notifications (UI-22)** : « تعليم الكل كمقروء » est l'action principale, réservée au
+    personnel (les familles ne lisent pas les notifications, R-07) : elle n'écrit que
+    `readBy` avec l'uid de l'utilisateur, ce que les règles autorisent hors bureau (D65, U-03) ;
+    « مسح الكل » (directeur) devient discret, avec la confirmation existante ; la ligne entière
+    est cliquable, la pastille dit « جديد ».
+  - **Titres (UI-07)** : titre = libellé du menu du rôle (paiements : « سجل الرسوم » pour le
+    parent) ; descriptions supprimées sur paiements, comptabilité, personnel et notifications ;
+    description du parent aux paiements, à la deuxième personne.
+- **Reporté** : `StaffDirectoryModal` affiche encore « {n} د.م » brut (fichier repris par
+  la branche des couleurs) ; `ActionNeeded.tsx` (tableau de bord) écrit encore « درهم » ;
+  `DashboardScreen` formate ses montants avec `toLocaleString("en-US")`.
+- **Retour arrière** : `git revert` des commits du lot (un par constat). Pour la seule CSP,
+  remettre `https://images.unsplash.com` dans `img-src` de `firebase.json` et adapter les deux
+  tests ; pour les seuils des mentions, `MENTION_THRESHOLDS` dans `src/utils/gradeMention.ts`.
+
 ### D89. Audit UI/UX d'octobre 2026, parcours famille, élèves et tableaux (UI-01, 02, 03, 06, 07, 17, 21)
 - **Contexte** : l'audit d'Elias (`docs/revues/AUDIT-UI-UX-2026-10-25.md`) montre que
   le parent et l'élève arrivent sur un écran d'administration, que l'onglet des

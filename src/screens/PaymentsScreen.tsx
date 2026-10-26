@@ -8,9 +8,12 @@ import { ArrowDown, ArrowUp, ArrowUpDown, CheckCircle2, CreditCard, Download, Ed
 import { checkUserPermission } from "../types";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { getYearAndMonthFromDate } from "../app/helpers";
+import { MONTHS_AR } from "../school/businessRules";
+import { formatMoney, formatNumber } from "../utils/format";
+import { fromPeriodFilter, periodYears, toPeriodFilter } from "../utils/paymentPeriod";
 import { useApp } from "../app/AppContext";
 import {
-  Button, Card, CardHeader, EmptyState, FormField, IconButton, Input, KpiGrid, KpiTile, Legend, Ltr, PageHeader, Pill,
+  Button, Card, CardHeader, EmptyState, FormField, IconButton, KpiGrid, KpiTile, Legend, Ltr, PageHeader, Pill,
   SearchInput, Select, Table, TableWrap, Td, Th, Tr, WhatsAppIcon,
 } from "../ui";
 
@@ -18,7 +21,7 @@ const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} />
 
 export default function PaymentsScreen() {
   const {
-    students, systemSettings, currentUser, currentRole, paymentSortKey, paymentSortDir, handleTogglePaymentSort,
+    students, payments, systemSettings, currentUser, currentRole, paymentSortKey, paymentSortDir, handleTogglePaymentSort,
     paymentSearchQuery, setPaymentSearchQuery, paymentFilterStatus, setPaymentFilterStatus, paymentFilterDate, setPaymentFilterDate,
     getSubscriptionAmount, totalPaymentsCollected, totalUnpaidCount, totalUnpaidAmount, sortedPayments, paymentChartData,
     handleTogglePayment, handleOpenPaymentForm, handleDeletePayment, handleWhatsAppShare, handleExportPaymentsToCSV,
@@ -27,6 +30,14 @@ export default function PaymentsScreen() {
   const can = (a: "create" | "update" | "delete" | "print") => checkUserPermission(currentUser, currentRole, "payments", a);
   const year = getYearAndMonthFromDate(paymentFilterDate).year || new Date().getFullYear();
   const overrides = systemSettings?.feeOverrides || [];
+  /** Parent / élève : pas de filtre de mois, tous ses paiements du plus récent au plus ancien (UI-08). */
+  const isFamily = currentRole === "ولي أمر" || currentRole === "طالب";
+  const period = fromPeriodFilter(paymentFilterDate);
+  const currentYear = new Date().getFullYear();
+  const years = periodYears(payments, currentYear);
+  if (period && !years.includes(period.year)) years.push(period.year);
+  const textFilters = !!paymentSearchQuery || paymentFilterStatus !== "all";
+  const filtersActive = textFilters || (!isFamily && !!period);
 
   const SortTh = ({ k, children, center }: { k: string; children: React.ReactNode; center?: boolean }) => {
     const on = paymentSortKey === k;
@@ -43,8 +54,8 @@ export default function PaymentsScreen() {
   return (
     <div data-screen="payments" className="flex flex-col gap-6">
       <PageHeader
-        title="الرسوم والمدفوعات"
-        description="تتبع رسوم الاشتراك الشهري، تفاصيل الدفع، طباعة الإيصالات، ومشاركة التنبيهات مع أولياء الأمور."
+        title={isFamily ? "سجل الرسوم" : "الرسوم والمدفوعات"}
+        description={isFamily ? "مدفوعات أبنائك وإيصالاتها، من الأحدث إلى الأقدم." : "سجّل الدفعات، تابع المستحقات وأصدر الإيصالات."}
         actions={
           <>
             {can("print") && (
@@ -54,17 +65,17 @@ export default function PaymentsScreen() {
               </>
             )}
             {can("create") && (
-              <Button variant="primary" data-action="open-payment-form" onClick={() => handleOpenPaymentForm()} icon={ic(Plus, "w-[18px] h-[18px]")}>إضافة سجل دفع جديد</Button>
+              <Button variant="primary" data-action="open-payment-form" onClick={() => handleOpenPaymentForm()} icon={ic(Plus, "w-[18px] h-[18px]")}>إضافة دفعة</Button>
             )}
           </>
         }
       />
 
       <KpiGrid label="ملخص الرسوم" min={160}>
-        <KpiTile label="إجمالي المقبوضات" value={totalPaymentsCollected.toLocaleString("en-US")} unit="درهم" />
-        <KpiTile label="إجمالي المستحقات المتأخرة" value={totalUnpaidAmount.toLocaleString("en-US")} unit="درهم" hint={totalUnpaidAmount > 0 ? "بانتظار السداد" : "لا مستحقات متأخرة"} hintTone={totalUnpaidAmount > 0 ? "danger" : "success"} />
+        <KpiTile label="إجمالي المقبوضات" value={formatNumber(totalPaymentsCollected)} unit="د.م" />
+        <KpiTile label="إجمالي المستحقات المتأخرة" value={formatNumber(totalUnpaidAmount)} unit="د.م" hint={totalUnpaidAmount > 0 ? "بانتظار السداد" : "لا مستحقات متأخرة"} hintTone={totalUnpaidAmount > 0 ? "danger" : "success"} />
         <KpiTile label="الفواتير المعلقة" value={totalUnpaidCount} unit="مطالبة" />
-        <KpiTile label="المداخيل المتوقعة" value={(totalPaymentsCollected + totalUnpaidAmount).toLocaleString("en-US")} unit="درهم" />
+        <KpiTile label="المداخيل المتوقعة" value={formatNumber(totalPaymentsCollected + totalUnpaidAmount)} unit="د.م" />
       </KpiGrid>
 
       <Card id="financial-flow-chart-widget" className="flex flex-col gap-5" aria-labelledby="flow-title">
@@ -77,13 +88,13 @@ export default function PaymentsScreen() {
         <div className="h-72 w-full" role="img" aria-label={`مخطط المداخيل الشهرية لعام ${year}`}>
           <ResponsiveContainer width="100%" height="100%">
             <RechartsBarChart data={paymentChartData} margin={{ top: 12, right: 4, left: 4, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E1E3D8" />
-              <XAxis dataKey="name" reversed minTickGap={4} tick={{ fill: "#4A5060", fontSize: 11.5, fontFamily: "IBM Plex Sans Arabic" }} stroke="#D0D3C6" tickLine={false} />
-              <YAxis orientation="right" tickFormatter={(val) => `${val}`} width={44} tick={{ fill: "#6B7080", fontSize: 11.5 }} stroke="#D0D3C6" tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-line-soft)" />
+              <XAxis dataKey="name" reversed minTickGap={4} tick={{ fill: "var(--color-ink-2)", fontSize: 11.5, fontFamily: "IBM Plex Sans Arabic" }} stroke="var(--color-line-strong)" tickLine={false} />
+              <YAxis orientation="right" tickFormatter={(val) => formatNumber(val)} width={52} tick={{ fill: "var(--color-ink-3)", fontSize: 11.5 }} stroke="var(--color-line-strong)" tickLine={false} axisLine={false} />
               <Tooltip
                 cursor={{ fill: "var(--color-gold)", fillOpacity: 0.08 }}
-                contentStyle={{ direction: "rtl", textAlign: "right", borderRadius: 12, borderColor: "#D9DBD0", background: "#F8F8F3", fontFamily: "IBM Plex Sans Arabic" }}
-                formatter={(value, name) => [`${value} درهم`, String(name)]}
+                contentStyle={{ direction: "rtl", textAlign: "right", borderRadius: 12, borderColor: "var(--color-line)", background: "var(--color-surface)", color: "var(--color-ink)", fontFamily: "IBM Plex Sans Arabic" }}
+                formatter={(value, name) => [formatMoney(value), String(name)]}
               />
               <RechartsBar dataKey="المداخيل المحصلة" fill="var(--color-primary)" radius={[4, 4, 0, 0]} maxBarSize={28} />
               <RechartsBar dataKey="المستحقات المعلقة" fill="var(--color-gold)" radius={[4, 4, 0, 0]} maxBarSize={28} />
@@ -98,9 +109,35 @@ export default function PaymentsScreen() {
             <SearchInput id={id} icon={ic(Search)} value={paymentSearchQuery} onChange={(e: any) => setPaymentSearchQuery(e.target.value)} placeholder="ابحث باسم الطالب، ولي الأمر، أو الإيصال..." />
           )}
         </FormField>
-        <FormField label="شهر الرصد">
-          {(id) => <Input id={id} type="month" value={paymentFilterDate} onChange={(e: any) => setPaymentFilterDate(e.target.value)} className="w-auto" />}
-        </FormField>
+        {!isFamily && (
+          <>
+            <FormField label="شهر الرصد" className="min-w-[9.5rem]">
+              {(id) => (
+                <Select
+                  id={id}
+                  data-filter="payment-month"
+                  value={period?.month ?? ""}
+                  onChange={(v) => setPaymentFilterDate(v === "" ? "" : toPeriodFilter(period?.year ?? currentYear, v))}
+                  options={[{ value: "", label: "كل الأشهر" }, ...MONTHS_AR.map((m) => ({ value: m, label: m }))]}
+                  className="w-auto"
+                />
+              )}
+            </FormField>
+            <FormField label="السنة" className="min-w-[7rem]">
+              {(id) => (
+                <Select
+                  id={id}
+                  data-filter="payment-year"
+                  value={period?.year ?? currentYear}
+                  disabled={!period}
+                  onChange={(v) => period && setPaymentFilterDate(toPeriodFilter(Number(v), period.month))}
+                  options={years.sort((x, y) => y - x).map((y) => ({ value: String(y), label: String(y) }))}
+                  className="w-auto"
+                />
+              )}
+            </FormField>
+          </>
+        )}
         <FormField label="حالة الدفع">
           {(id) => (
             <Select id={id} value={paymentFilterStatus} onChange={(v) => setPaymentFilterStatus(v)} className="w-auto">
@@ -110,8 +147,8 @@ export default function PaymentsScreen() {
             </Select>
           )}
         </FormField>
-        {(paymentSearchQuery || paymentFilterDate !== "" || paymentFilterStatus !== "all") && (
-          <Button variant="ghost" onClick={() => { setPaymentSearchQuery(""); setPaymentFilterDate(""); setPaymentFilterStatus("all"); }} icon={ic(RotateCcw)}>
+        {filtersActive && (
+          <Button variant="ghost" onClick={() => { setPaymentSearchQuery(""); if (!isFamily) setPaymentFilterDate(""); setPaymentFilterStatus("all"); }} icon={ic(RotateCcw)}>
             إعادة تعيين الفلاتر
           </Button>
         )}
@@ -121,13 +158,36 @@ export default function PaymentsScreen() {
         <div className="flex flex-wrap justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
           <h2 id="ledger-title" className="m-0 font-display font-semibold text-[20px] text-primary">سجل المعاملات والمدفوعات <span className="font-sans text-[14px] text-ink-2 font-normal">({sortedPayments.length} سجل مطابق)</span></h2>
           <span className="text-[13px] text-ink-3">
-            مبلغ الاشتراك الأساسي: <strong className="text-ink">{getSubscriptionAmount("", 0)}</strong> {systemSettings?.currency || "درهم"} / شهر
-            {overrides.length > 0 ? ` (تعريفات خاصة: ${overrides.map((o) => `${o.month} ${o.year}: ${o.amount}`).join("، ")})` : ""}
+            مبلغ الاشتراك الأساسي: <strong className="text-ink">{formatMoney(getSubscriptionAmount("", 0))}</strong> / شهر
+            {overrides.length > 0 ? ` (تعريفات خاصة: ${overrides.map((o) => `${o.month} ${o.year}: ${formatMoney(o.amount)}`).join("، ")})` : ""}
           </span>
         </div>
         {sortedPayments.length === 0 ? (
           <div className="p-5">
-            <EmptyState icon={ic(CreditCard, "w-8 h-8")} title="لا نتائج">لا توجد أي مدفوعات مطابقة لمعايير التصفية والبحث الحالية.</EmptyState>
+            {isFamily ? (
+              <EmptyState icon={ic(CreditCard, "w-8 h-8")} title="لا مدفوعات مسجلة بعد">ستظهر هنا رسوم أبنائك وإيصالاتها بمجرد تسجيلها من الإدارة.</EmptyState>
+            ) : !textFilters && period ? (
+              <EmptyState
+                icon={ic(CreditCard, "w-8 h-8")}
+                title={`لا مدفوعات مسجلة لشهر ${period.month} ${period.year}`}
+                action={
+                  <div className="flex flex-wrap justify-center gap-2.5">
+                    <Button data-action="show-all-months" onClick={() => setPaymentFilterDate("")}>عرض كل الأشهر</Button>
+                    {can("create") && <Button variant="primary" data-action="empty-add-payment" onClick={() => handleOpenPaymentForm()} icon={ic(Plus, "w-[18px] h-[18px]")}>إضافة دفعة</Button>}
+                  </div>
+                }
+              >
+                لم تُسجَّل أي دفعة لهذا الشهر بعد. اعرض كل الأشهر لرؤية بقية السجل، أو سجّل دفعة جديدة.
+              </EmptyState>
+            ) : (
+              <EmptyState
+                icon={ic(CreditCard, "w-8 h-8")}
+                title="لا نتائج"
+                action={filtersActive ? <Button onClick={() => { setPaymentSearchQuery(""); setPaymentFilterDate(""); setPaymentFilterStatus("all"); }} icon={ic(RotateCcw)}>إعادة تعيين الفلاتر</Button> : undefined}
+              >
+                لا توجد أي مدفوعات مطابقة للبحث الحالي.
+              </EmptyState>
+            )}
           </div>
         ) : (
           <TableWrap label="سجل المدفوعات">
@@ -161,7 +221,7 @@ export default function PaymentsScreen() {
                         </div>
                       </Td>
                       <Td className="whitespace-nowrap"><Pill tone="neutral">{p.month} / {p.year}</Pill></Td>
-                      <Td className="whitespace-nowrap"><strong className="tabular-nums">{p.amount}</strong> <span className="text-[12.5px] text-ink-3">درهم</span></Td>
+                      <Td className="whitespace-nowrap"><strong className="tabular-nums">{formatMoney(p.amount)}</strong></Td>
                       <Td>
                         {paid ? (
                           <span className="flex flex-col gap-1">

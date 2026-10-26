@@ -4,6 +4,7 @@
  */
 import { TrendingUp, TrendingDown, Printer, Coins, PieChart } from "lucide-react";
 import { useFinance } from "./FinanceContext";
+import { formatMoney, formatNumber } from "../../utils/format";
 
 export default function FinanceReportSection() {
   const {
@@ -66,17 +67,17 @@ export default function FinanceReportSection() {
                   <TrendingUp className="w-5 h-5 text-primary-600" />
                 </div>
                 <div className="text-3xl font-bold text-primary-900">
-                  {grossTotalIncome.toLocaleString()} <span className="text-[13px] font-normal">د.م</span>
+                  {formatNumber(grossTotalIncome)} <span className="text-[13px] font-normal">د.م</span>
                 </div>
 
                 <div className="mt-4 space-y-1.5 text-[13px] text-primary-900/80 border-t border-primary-200/60 pt-3">
                   <div className="flex justify-between">
                     <span>واجبات التلاميذ الشهرية:</span>
-                    <span className="font-bold">{totalStudentFeesAmount.toLocaleString()} د.م</span>
+                    <span className="font-bold">{formatMoney(totalStudentFeesAmount)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>التبرعات والدعم والأنشطة:</span>
-                    <span className="font-bold">{totalOtherIncomeAmount.toLocaleString()} د.م</span>
+                    <span className="font-bold">{formatMoney(totalOtherIncomeAmount)}</span>
                   </div>
                 </div>
               </div>
@@ -88,17 +89,17 @@ export default function FinanceReportSection() {
                   <TrendingDown className="w-5 h-5 text-danger-600" />
                 </div>
                 <div className="text-3xl font-bold text-danger-900">
-                  {grossTotalExpenses.toLocaleString()} <span className="text-[13px] font-normal">د.م</span>
+                  {formatNumber(grossTotalExpenses)} <span className="text-[13px] font-normal">د.م</span>
                 </div>
 
                 <div className="mt-4 space-y-1.5 text-[13px] text-danger-900/80 border-t border-danger-200/60 pt-3">
                   <div className="flex justify-between">
                     <span>كتلة الأجور المصروفة:</span>
-                    <span className="font-bold">{totalPaidSalaries.toLocaleString()} د.م</span>
+                    <span className="font-bold">{formatMoney(totalPaidSalaries)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>مصاريف ونفقات التشغيل:</span>
-                    <span className="font-bold">{totalExpensesAmount.toLocaleString()} د.م</span>
+                    <span className="font-bold">{formatMoney(totalExpensesAmount)}</span>
                   </div>
                 </div>
               </div>
@@ -114,17 +115,17 @@ export default function FinanceReportSection() {
                   <Coins className="w-5 h-5 text-gold-600" />
                 </div>
                 <div className="text-3xl font-bold">
-                  {netBalance.toLocaleString()} <span className="text-[13px] font-normal">د.م</span>
+                  {formatNumber(netBalance)} <span className="text-[13px] font-normal">د.م</span>
                 </div>
 
                 <div className="mt-4 space-y-1.5 text-[13px] border-t border-gold-200/60 pt-3">
                   <div className="flex justify-between">
                     <span>صافي صندوق النقدية:</span>
-                    <span className="font-bold">{cashBoxNetBalance.toLocaleString()} د.م</span>
+                    <span className="font-bold">{formatMoney(cashBoxNetBalance)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>صافي الحساب البنكي:</span>
-                    <span className="font-bold">{bankAccountNetBalance.toLocaleString()} د.م</span>
+                    <span className="font-bold">{formatMoney(bankAccountNetBalance)}</span>
                   </div>
                 </div>
               </div>
@@ -136,7 +137,7 @@ export default function FinanceReportSection() {
               <div className="bg-sand-50 p-5 rounded-2xl border border-line space-y-3">
                 <h4 className="font-bold text-sm text-ink border-b border-line pb-2 flex items-center justify-between">
                   <span>تفاصيل مصادر المداخيل</span>
-                  <span className="text-[13px] text-primary-800 font-bold">{grossTotalIncome.toLocaleString()} د.م</span>
+                  <span className="text-[13px] text-primary-800 font-bold">{formatMoney(grossTotalIncome)}</span>
                 </h4>
                 <div className="space-y-2 text-[13px]">
                   <div className="bg-white p-3 rounded-xl border border-line flex justify-between items-center">
@@ -144,7 +145,7 @@ export default function FinanceReportSection() {
                       <p className="font-bold text-ink">مستحقات التلاميذ السنوية والشهرية</p>
                       <p className="text-[12.5px] text-ink-3">رسوم الاشتراكات المسددة من الأولياء</p>
                     </div>
-                    <span className="font-bold text-primary-800">{totalStudentFeesAmount.toLocaleString()} د.م</span>
+                    <span className="font-bold text-primary-800">{formatMoney(totalStudentFeesAmount)}</span>
                   </div>
 
                   <div className="bg-white p-3 rounded-xl border border-line flex justify-between items-center">
@@ -153,7 +154,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">تبرعات نقدية وبنكية للمدرسة</p>
                     </div>
                     <span className="font-bold text-primary-800">
-                      {filteredOtherIncomes.filter(i => i.category === "تبرعات").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                      {formatMoney(filteredOtherIncomes.filter(i => i.category === "تبرعات").reduce((s, x) => s + x.amount, 0))}
                     </span>
                   </div>
 
@@ -163,7 +164,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">منح حكومية ومجالس منتخبين</p>
                     </div>
                     <span className="font-bold text-primary-800">
-                      {filteredOtherIncomes.filter(i => i.category === "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                      {formatMoney(filteredOtherIncomes.filter(i => i.category === "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0))}
                     </span>
                   </div>
 
@@ -173,7 +174,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">مساهمات المشاركين المحصلة آلياً</p>
                     </div>
                     <span className="font-bold text-primary-800">
-                      {totalActivityContributions.toLocaleString()} د.م
+                      {formatMoney(totalActivityContributions)}
                     </span>
                   </div>
 
@@ -183,7 +184,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">أنشطة ومسابقات ومداخيل أخرى</p>
                     </div>
                     <span className="font-bold text-primary-800">
-                      {filteredOtherIncomes.filter(i => i.category !== "تبرعات" && i.category !== "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                      {formatMoney(filteredOtherIncomes.filter(i => i.category !== "تبرعات" && i.category !== "دعم حكومي/مؤسساتي").reduce((s, x) => s + x.amount, 0))}
                     </span>
                   </div>
                 </div>
@@ -193,7 +194,7 @@ export default function FinanceReportSection() {
               <div className="bg-sand-50 p-5 rounded-2xl border border-line space-y-3">
                 <h4 className="font-bold text-sm text-ink border-b border-line pb-2 flex items-center justify-between">
                   <span>تفاصيل أبواب النفقات والمصاريف</span>
-                  <span className="text-[13px] text-danger-800 font-bold">{grossTotalExpenses.toLocaleString()} د.م</span>
+                  <span className="text-[13px] text-danger-800 font-bold">{formatMoney(grossTotalExpenses)}</span>
                 </h4>
                 <div className="space-y-2 text-[13px]">
                   <div className="bg-white p-3 rounded-xl border border-line flex justify-between items-center">
@@ -202,7 +203,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">مستحقات التأطير والتحفيظ</p>
                     </div>
                     <span className="font-bold text-danger-800">
-                      {filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType === "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                      {formatMoney(filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType === "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0))}
                     </span>
                   </div>
 
@@ -212,7 +213,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">الإدارة، الصيانة والإشراف</p>
                     </div>
                     <span className="font-bold text-danger-800">
-                      {filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType !== "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                      {formatMoney(filteredSalaries.filter(s => s.status === "تم الصرف" && s.personType !== "أستاذ / محفظ").reduce((s, x) => s + x.amount, 0))}
                     </span>
                   </div>
 
@@ -222,7 +223,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">كراء الحافلات، الإطعام واللوازم</p>
                     </div>
                     <span className="font-bold text-danger-800">
-                      {totalActivityExpenses.toLocaleString()} د.م
+                      {formatMoney(totalActivityExpenses)}
                     </span>
                   </div>
 
@@ -232,7 +233,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">استهلاك المقر الإداري والتعليمي</p>
                     </div>
                     <span className="font-bold text-danger-800">
-                      {filteredExpenses.filter(e => e.category === "فواتير وخدمات").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                      {formatMoney(filteredExpenses.filter(e => e.category === "فواتير وخدمات").reduce((s, x) => s + x.amount, 0))}
                     </span>
                   </div>
 
@@ -242,7 +243,7 @@ export default function FinanceReportSection() {
                       <p className="text-[12.5px] text-ink-3">جوائز، أدوات مكتبية وإصلاحات</p>
                     </div>
                     <span className="font-bold text-danger-800">
-                      {filteredExpenses.filter(e => e.category !== "فواتير وخدمات").reduce((s, x) => s + x.amount, 0).toLocaleString()} د.م
+                      {formatMoney(filteredExpenses.filter(e => e.category !== "فواتير وخدمات").reduce((s, x) => s + x.amount, 0))}
                     </span>
                   </div>
                 </div>

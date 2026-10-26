@@ -6,6 +6,7 @@ import { Briefcase, X } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
 import { Select } from "../../ui";
+import { formatMoney } from "../../utils/format";
 
 export default function SalaryModal() {
   const {
@@ -114,7 +115,7 @@ export default function SalaryModal() {
                     <option value="">-- اختر كادر / عامل من السجل --</option>
                     {teachers.map(t => (
                       <option key={t.id} value={t.id}>
-                        {t.fullName} ({t.category || "أستاذ"} - {t.roleTitle || t.specialty}) {t.monthlySalary ? `[${t.monthlySalary} د.م]` : ""}
+                        {t.fullName} ({t.category || "أستاذ"} - {t.roleTitle || t.specialty}) {t.monthlySalary ? `[${formatMoney(t.monthlySalary)}]` : ""}
                       </option>
                     ))}
                     <option value="custom">إدخال يدوي لشخص آخر...</option>

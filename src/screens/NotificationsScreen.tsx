@@ -5,7 +5,7 @@
  * caractère définitif de la suppression).
  */
 import { useState } from "react";
-import { AlertTriangle, Bell, CheckCircle2, Coins, Inbox, Trash2 } from "lucide-react";
+import { AlertTriangle, Bell, CheckCheck, CheckCircle2, Coins, Inbox, Trash2 } from "lucide-react";
 import { RealmSimDB } from "../db";
 import { useApp } from "../app/AppContext";
 import { isNotificationRead } from "../types";
@@ -23,6 +23,17 @@ export default function NotificationsScreen() {
   const [confirmClear, setConfirmClear] = useState(false);
   /** Toutes les notifications de l'école (celles que la suppression efface), pas seulement la liste filtrée. */
   const schoolTotal = (notifications || userNotifications).length;
+  /**
+   * « Tout marquer comme lu » : seulement pour le personnel. Hors bureau, une mise à jour ne peut
+   * qu'ajouter son propre uid à `readBy` (R-07, D65, U-03) : c'est exactement ce que fait cette action.
+   * Les familles ne lisent pas les notifications (R-07) : pas d'action d'écriture pour elles.
+   */
+  const canMarkRead = !!authUid && currentRole !== "ولي أمر" && currentRole !== "طالب";
+  const markAllRead = () => {
+    if (!authUid) return;
+    userNotifications.filter((n) => !isNotificationRead(n, authUid)).forEach((n) => RealmSimDB.markNotificationAsRead(n.id, authUid));
+    loadDatabase();
+  };
   const clearAll = () => {
     RealmSimDB.clearAllNotifications();
     loadDatabase();
@@ -33,26 +44,27 @@ export default function NotificationsScreen() {
     <div data-screen="notifications" className="flex flex-col gap-6">
       <PageHeader
         eyebrow={unread > 0 ? `${unread} غير مقروءة` : undefined}
-        title={currentRole === "ولي أمر" ? "صندوق إشعارات وتنبيهات أولياء الأمور" : currentRole === "طالب" ? "صندوق الإشعارات الشخصية للطالب" : "الإشعارات"}
-        description={
-          currentRole === "ولي أمر"
-            ? "إشعارات خاصة بانتظام وحفظ وحضور أبنائك والرسوم المستحقة."
-            : currentRole === "طالب"
-            ? "إشعارات وتنبيهات الأنشطة والامتحانات وسجل الحفظ الخاص بك."
-            : "صندوق الإشعارات الفورية والتنبيهات: تابع العمليات الإدارية، المالية والتربوية دقيقة بدقيقة."
-        }
+        title="الإشعارات"
         actions={
-          currentRole === "مدير" && (
-            <Button
-              variant="danger"
-              data-action="clear-notifications"
-              disabled={schoolTotal === 0}
-              icon={<Trash2 className="w-4 h-4" strokeWidth={1.75} />}
-              onClick={() => setConfirmClear(true)}
-            >
-              مسح جميع التنبيهات
-            </Button>
-          )
+          <>
+            {canMarkRead && unread > 0 && (
+              <Button variant="primary" data-action="mark-all-notifications-read" icon={<CheckCheck className="w-4 h-4" strokeWidth={1.75} />} onClick={markAllRead}>
+                تعليم الكل كمقروء
+              </Button>
+            )}
+            {currentRole === "مدير" && (
+              <Button
+                variant="ghost"
+                data-action="clear-notifications"
+                disabled={schoolTotal === 0}
+                className="text-danger hover:bg-danger-100"
+                icon={<Trash2 className="w-4 h-4" strokeWidth={1.75} />}
+                onClick={() => setConfirmClear(true)}
+              >
+                مسح الكل
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -72,7 +84,7 @@ export default function NotificationsScreen() {
                       loadDatabase();
                     }}
                     className={cx(
-                      "w-full text-start flex gap-4 px-5 py-4 cursor-pointer border-0 border-s-4 transition-colors hover:bg-surface-2",
+                      "w-full min-h-11 text-start flex gap-4 px-5 py-4 cursor-pointer border-0 border-s-4 transition-colors hover:bg-surface-2",
                       !read ? "bg-primary-50/60 border-s-gold" : "bg-transparent border-s-transparent",
                     )}
                   >
@@ -85,7 +97,11 @@ export default function NotificationsScreen() {
                         <Ltr className="text-[12.5px] text-ink-3">{n.date}</Ltr>
                       </span>
                       <span className="text-[14px] text-ink-2 leading-relaxed">{n.message}</span>
-                      {!read && <Pill tone="warn" className="self-start">جديد • انقر لتعليم كمقروء</Pill>}
+                      {!read && (
+                        <Pill tone="warn" className="self-start">
+                          جديد<span className="sr-only"> — انقر لتعليم الإشعار كمقروء</span>
+                        </Pill>
+                      )}
                     </span>
                   </button>
                 </li>

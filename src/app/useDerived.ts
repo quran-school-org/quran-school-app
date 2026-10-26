@@ -5,6 +5,7 @@ import { useMemo, useCallback } from "react";
 import { Student, Payment, UserRole } from "../types";
 import { linkedStudentIdsOf, linkedTeacherIdOf } from "../security/accountAlignment";
 import { getYearAndMonthFromDate } from "./helpers";
+import { comparePaymentsRecentFirst } from "../utils/paymentPeriod";
 import type { SessionScope } from "./scope";
 
 export function useDerived(s: SessionScope) {
@@ -226,6 +227,8 @@ export function useDerived(s: SessionScope) {
     return ["مدير", "إداري", "مؤطر", "متطوع", "عامل نظافة / صيانة", "أخرى"].includes(currentRole);
   }, [currentRole]);
   
+  const isFamilyRole = currentRole === "ولي أمر" || currentRole === "طالب";
+
   const filteredPayments = payments.filter(p => {
     const stud = students.find(s => s.id === p.studentId);
     
@@ -248,7 +251,8 @@ export function useDerived(s: SessionScope) {
 
     // Year & Month filter via Date picker
     const { year: filterYear, month: filterMonth } = getYearAndMonthFromDate(paymentFilterDate);
-    const matchesDate = !paymentFilterDate || (p.year === filterYear && p.month === filterMonth);
+    // Famille : pas de filtre de mois, tous ses paiements (UI-08).
+    const matchesDate = isFamilyRole || !paymentFilterDate || (p.year === filterYear && p.month === filterMonth);
 
     return matchesSearch && matchesStatus && matchesDate;
   });
@@ -283,6 +287,8 @@ export function useDerived(s: SessionScope) {
         if (valA > valB) return paymentSortDir === "asc" ? 1 : -1;
         return 0;
       });
+    } else {
+      list.sort(comparePaymentsRecentFirst);
     }
     return list;
   }, [filteredPayments, paymentSortKey, paymentSortDir, students]);

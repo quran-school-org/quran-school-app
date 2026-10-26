@@ -4,6 +4,7 @@
  * toute autre donnée est échappée ici (C-01).
  */
 import { escapeHtml } from "../security/html";
+import { formatMoney } from "../utils/format";
 import type { Payment, SystemSettings } from "../types";
 import { EMBLEM_SVG } from "./docStyles";
 
@@ -27,9 +28,9 @@ export function paymentsReportHtml(reportTitle: string, tableRows: string, filte
         </section>
 
         <section class="kpis">
-          <div class="kpi ok"><span>إجمالي المداخيل المحصلة</span><strong>${escapeHtml(totalCollected)} درهم</strong></div>
-          <div class="kpi ko"><span>إجمالي المستحقات المعلقة</span><strong>${escapeHtml(totalPending)} درهم</strong></div>
-          <div class="kpi"><span>المجموع المتوقع للدفعة</span><strong>${escapeHtml(totalCollected + totalPending)} درهم</strong></div>
+          <div class="kpi ok"><span>إجمالي المداخيل المحصلة</span><strong>${escapeHtml(formatMoney(totalCollected))}</strong></div>
+          <div class="kpi ko"><span>إجمالي المستحقات المعلقة</span><strong>${escapeHtml(formatMoney(totalPending))}</strong></div>
+          <div class="kpi"><span>المجموع المتوقع للدفعة</span><strong>${escapeHtml(formatMoney(totalCollected + totalPending))}</strong></div>
         </section>
 
         <table class="grid">

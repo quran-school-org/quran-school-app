@@ -32,5 +32,7 @@ export { Topbar, SyncPill } from "./Topbar";
 export type { SyncState } from "./Topbar";
 export { AppShell } from "./AppShell";
 export { Ltr, WhatsAppIcon, DropdownMenu, InfoRow } from "./Misc";
+export { ActionMenu } from "./ActionMenu";
+export type { ActionMenuItem } from "./ActionMenu";
 export type { MenuItem } from "./Misc";
 export { QrCode, qrPath } from "./QrCode";

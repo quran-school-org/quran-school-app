@@ -2,10 +2,11 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { TrendingUp, Plus, Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, Users, ExternalLink } from "lucide-react";
+import { Plus, Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, ExternalLink } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
 import { Select } from "../../ui";
+import { formatMoney } from "../../utils/format";
 
 export default function RevenuesSection() {
   const {
@@ -39,7 +40,6 @@ export default function RevenuesSection() {
     totalActivityExpectedFees,
     filteredOtherIncomes,
     totalOtherIncomeAmount,
-    grossTotalIncome,
     sortedOtherIncomes,
     sortedStudentPayments,
   } = useFinance();
@@ -51,65 +51,28 @@ export default function RevenuesSection() {
       {/* ========================================================================================= */}
       {activeSubTab === "revenues" && (
         <div className="space-y-6">
-          {/* Sub-cards summary (4 cards with Activities Contributions included) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-surface p-4 rounded-2xl border border-line flex items-center justify-between">
-              <div>
-                <span className="text-[13px] font-bold text-ink-3 block mb-1">المداخيل الأخرى (تبرعات/دعم)</span>
-                <div className="text-xl font-bold text-primary-800">
-                  {totalOtherIncomeAmount.toLocaleString()} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
-                </div>
-                <span className="text-[12.5px] text-ink-3 mt-1 block">عدد السجلات: {filteredOtherIncomes.length} تبرع/دعم</span>
-              </div>
-              <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center text-primary-800">
-                <Coins className="w-5 h-5" />
-              </div>
+          {/* Répartition des recettes en une ligne (UI-19) : le total est celui de l'en-tête de la page. */}
+          <dl
+            aria-label="توزيع المداخيل"
+            data-block="income-breakdown"
+            className="m-0 grid grid-cols-1 sm:grid-cols-3 gap-px bg-line border border-line rounded-2xl overflow-hidden"
+          >
+            <div className="bg-surface px-5 py-3.5 flex flex-col gap-0.5">
+              <dt className="text-[13px] font-semibold text-ink-2">رسوم التلاميذ</dt>
+              <dd className="m-0 text-[20px] font-bold text-primary tabular-nums">{formatMoney(totalStudentFeesAmount)}</dd>
+              <dd className="m-0 text-[12.5px] text-ink-3">{paidStudentPayments.length} إيصال</dd>
             </div>
-
-            <div className="bg-surface p-4 rounded-2xl border border-line flex items-center justify-between">
-              <div>
-                <span className="text-[13px] font-bold text-ink-3 block mb-1">واجبات التلاميذ (تلقائي)</span>
-                <div className="text-xl font-bold text-primary-800">
-                  {totalStudentFeesAmount.toLocaleString()} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
-                </div>
-                <span className="text-[12.5px] text-ink-3 mt-1 block">عدد المقبوضات: {paidStudentPayments.length} إيصال</span>
-              </div>
-              <div className="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center text-primary-800">
-                <CreditCard className="w-5 h-5" />
-              </div>
+            <div className="bg-surface px-5 py-3.5 flex flex-col gap-0.5">
+              <dt className="text-[13px] font-semibold text-ink-2">تبرعات ودعم</dt>
+              <dd className="m-0 text-[20px] font-bold text-primary tabular-nums">{formatMoney(totalOtherIncomeAmount)}</dd>
+              <dd className="m-0 text-[12.5px] text-ink-3">{filteredOtherIncomes.length} سجل</dd>
             </div>
-
-            <div className="bg-surface p-4 rounded-2xl border border-primary-200/70 bg-gradient-to-br from-primary-50/40 to-primary-50/20 flex items-center justify-between">
-              <div>
-                <span className="text-[13px] font-bold text-primary-900 block mb-1 flex items-center gap-1.5">
-                  <Compass className="w-3.5 h-3.5 text-primary-600" />
-                  مساهمات الأنشطة والرحلات (تلقائي)
-                </span>
-                <div className="text-xl font-bold text-primary-800">
-                  {totalActivityContributions.toLocaleString()} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
-                </div>
-                <span className="text-[12.5px] text-primary-600/80 mt-1 block">
-                  من أصل {totalActivityExpectedFees.toLocaleString()} د.م واجبة ({filteredActivityParticipants.filter(p => (Number(p.paidAmount) || 0) > 0).length} مشارك أدى)
-                </span>
-              </div>
-              <div className="w-10 h-10 bg-primary-100/80 rounded-xl flex items-center justify-center text-primary-700">
-                <Users className="w-5 h-5" />
-              </div>
+            <div className="bg-surface px-5 py-3.5 flex flex-col gap-0.5">
+              <dt className="text-[13px] font-semibold text-ink-2">مساهمات الأنشطة والرحلات</dt>
+              <dd className="m-0 text-[20px] font-bold text-primary tabular-nums">{formatMoney(totalActivityContributions)}</dd>
+              <dd className="m-0 text-[12.5px] text-ink-3">من أصل {formatMoney(totalActivityExpectedFees)} واجبة ({filteredActivityParticipants.filter(p => (Number(p.paidAmount) || 0) > 0).length} مشارك أدى)</dd>
             </div>
-
-            <div className="bg-night text-night-text p-4 rounded-2xl flex items-center justify-between border-b border-night-line">
-              <div>
-                <span className="text-[13px] font-medium text-primary-200 block mb-1">مجموع الإيرادات الكلي</span>
-                <div className="text-2xl font-bold text-gold-300">
-                  {grossTotalIncome.toLocaleString()} <span className="text-[13px] font-normal">د.م</span>
-                </div>
-                <span className="text-[12.5px] text-primary-200/70 mt-1 block">شاملة للرسوم والتبرعات والأنشطة</span>
-              </div>
-              <div className="w-10 h-10 bg-gold-400/20 rounded-xl flex items-center justify-center text-gold-300">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-            </div>
-          </div>
+          </dl>
 
           {/* Section A: Other Incomes (Donations, Grants, Support) */}
           <div className="bg-surface rounded-3xl border border-line overflow-hidden">
@@ -196,7 +159,7 @@ export default function RevenuesSection() {
                           </span>
                         </td>
                         <td className="p-3 font-bold text-primary-800 text-sm">
-                          {inc.amount.toLocaleString()} د.م
+                          {formatMoney(inc.amount)}
                         </td>
                         <td className="p-3 font-medium text-ink-2">
                           {inc.donorName || "فاعل خير"}
@@ -268,7 +231,7 @@ export default function RevenuesSection() {
               <div className="flex items-center gap-3">
                 <div className="bg-primary-100/70 border border-primary-200 px-3 py-1.5 rounded-xl text-[13px] font-bold text-primary-900 flex items-center gap-1.5">
                   <span>إجمالي المحصل:</span>
-                  <span className="font-bold text-primary-700">{totalActivityContributions.toLocaleString()} د.م</span>
+                  <span className="font-bold text-primary-700">{formatMoney(totalActivityContributions)}</span>
                 </div>
 
                 {onNavigateToActivities && (
@@ -332,14 +295,14 @@ export default function RevenuesSection() {
                             </span>
                           </td>
                           <td className="p-3 font-semibold text-ink-2">
-                            {p.paymentStatus === "معفى" && requiredFee === 0 ? "معفى (0 د.م)" : `${requiredFee.toLocaleString()} د.م`}
+                            {p.paymentStatus === "معفى" && requiredFee === 0 ? "معفى (0 د.م)" : `${formatMoney(requiredFee)}`}
                           </td>
                           <td className="p-3 font-bold text-primary-700">
-                            {paidAmount.toLocaleString()} د.م
+                            {formatMoney(paidAmount)}
                           </td>
                           <td className="p-3 font-semibold text-ink-3">
                             {remaining > 0 ? (
-                              <span className="text-gold-700 font-bold">{remaining.toLocaleString()} د.م</span>
+                              <span className="text-gold-700 font-bold">{formatMoney(remaining)}</span>
                             ) : (
                               <span className="text-ink-3">—</span>
                             )}
@@ -443,7 +406,7 @@ export default function RevenuesSection() {
                             {p.month} {p.year}
                           </td>
                           <td className="p-3 font-bold text-primary-800">
-                            {p.amount} د.م
+                            {formatMoney(p.amount)}
                           </td>
                           <td className="p-3 text-ink-2">
                             <span className="bg-sand-100 px-2.5 py-1 rounded-full text-[12.5px] border border-line">

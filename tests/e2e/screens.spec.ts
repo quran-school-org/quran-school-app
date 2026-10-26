@@ -76,7 +76,6 @@ const CASES: RoleCase[] = [
     checks: async (page) => {
       for (const tab of ["home", "students", "grades", "payments", "attendance"]) {
         await openTab(page, tab);
-        if (tab === "payments") await page.getByRole("button", { name: /إعادة تعيين الفلاتر/ }).click();
         const screen = page.locator(`[data-screen="${tab === "attendance" ? "attendance-history" : tab}"]`);
         await expect(screen.getByText("ياسين العلمي").first()).toBeVisible();
         await expect(screen.getByText("مريم العلمي").first()).toBeVisible();

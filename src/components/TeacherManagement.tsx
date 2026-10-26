@@ -7,7 +7,6 @@ import { useStaffState } from "./staff/useStaffState";
 import { StaffContext } from "./staff/StaffContext";
 export { STAFF_CATEGORIES_CONFIG } from "./staff/shared";
 import StaffHeader from "./staff/StaffHeader";
-import StaffKpis from "./staff/StaffKpis";
 import StaffCategoryTabs from "./staff/StaffCategoryTabs";
 import StaffFilterBar from "./staff/StaffFilterBar";
 import StaffList from "./staff/StaffList";
@@ -35,8 +34,6 @@ export default function TeacherManagement(props: TeacherManagementProps) {
     <StaffContext.Provider value={state}>
     <div data-screen="teachers" className="space-y-6" dir="rtl">
       <StaffHeader />
-
-      <StaffKpis />
 
       <StaffCategoryTabs />
 
