@@ -2620,3 +2620,55 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits de D98 (aucune donnée ni règle touchée). Chaque
   fenêtre revient indépendamment à son ancien balisage ; les options ajoutées à `Modal` sont
   inertes sans leurs appelants.
+
+### D99. Audit UX/UI, lot L4 : messages (`Toast`) et confirmations (`ConfirmDialog`) à la place des boîtes natives
+- **Contexte** : 52 `alert()` et 16 `confirm()` (dont un `window.confirm`) servaient de validation, de
+  succès, d'erreur et de confirmation de suppression : boîtes grises du navigateur, hors charte et hors
+  thème, qui bloquent l'écran (brutales sur mobile), non traduisibles proprement en français et sans
+  conséquence lisible pour une suppression financière. Le composant `Toast` existait sans jamais être
+  rendu. Le champ `error` de `FormField` n'était jamais renseigné (point laissé de côté par D98).
+- **Décision** :
+  - `Toast` : un seul `ToastProvider` (et `ConfirmProvider`) monté dans `src/main.tsx`, donc au-dessus de
+    l'écran de connexion, du choix d'école et de l'application. API : `const toast = useToast();
+    toast.success(msg) | toast.error(msg) | toast.info(msg)`. Succès et information : `role="status"` ;
+    erreur : `role="alert"`. Fermeture automatique à 5 s (9 s pour une erreur), suspendue au survol et au
+    focus, fermeture manuelle par le bouton « إغلاق الإشعار ». Au plus 4 messages ; un message identique
+    déjà affiché est remplacé. Position : bas de l'écran, pleine largeur sur téléphone (zone sûre
+    comprise), coin de fin de ligne (gauche en RTL) sur grand écran, car le début de ligne est occupé
+    par le menu latéral de la même teinte que le message. La région ne capte pas les clics et n'est pas
+    imprimée ; la variable CSS `--toast-bottom` la relève si une barre du bas ou un bouton flottant
+    (aucun n'existe aujourd'hui, WhatsApp n'est pas flottant) est ajouté. Le code hors React
+    (`src/print/printWindow.ts`, fenêtre d'impression bloquée) passe par `src/ui/toastBus.ts`.
+  - `ConfirmDialog` sur `Modal` (`size="sm"`), API promesse : `const confirm = useConfirm(); if (await
+    confirm({ title, message, confirmLabel, cancelLabel, tone: "danger" })) { … }`. En `tone: "danger"`
+    (toutes les suppressions, le rétablissement d'une sauvegarde) : bouton rouge plein et focus initial
+    sur « إلغاء » ; sinon focus sur la confirmation (génération des salaires). Échap, « إلغاء » et la croix
+    répondent `false`. Les demandes simultanées sont mises en file (`src/ui/confirmQueue.ts`, sans React,
+    testée seule) ; au démontage, tout est refusé. `Modal` gagne `data-autofocus` (élément à focaliser
+    en premier) et ne laisse répondre à Échap que la fenêtre la plus haute (confirmation au-dessus d'un
+    formulaire).
+  - Remplacements : les 52 `alert` (succès → `toast.success`, validations et erreurs → `toast.error`) et
+    les 16 `confirm` (→ `await confirm`), mêmes textes arabes, même logique, mêmes retours anticipés.
+    Les gestionnaires de suppression deviennent `async` (leur type de retour `void` accepte une promesse).
+    Un titre « تأكيد الحذف » et un bouton « حذف » par défaut pour le ton danger ; le rétablissement d'une
+    sauvegarde a son titre et son bouton (« تأكيد الاسترجاع », « استرجاع »). Rétablissement : le rechargement
+    de la page suit le message avec 2,5 s de délai (l'alerte bloquait jusqu'au clic).
+  - Erreurs de champ : la fenêtre de dépense d'activité renseigne `FormField error` (état `expErrors`, champ
+    `aria-invalid`, bordure rouge, focus sur le champ fautif, erreur effacée à la correction) ; la
+    bordure rouge est portée par `fieldClass` (`aria-[invalid=true]`) pour tous les champs.
+  - Garde-fou : `tests/unit/uiGuards.test.ts` interdit `alert(`, `confirm(` natifs (l'appel `await confirm(`
+    de `useConfirm` reste permis) et `window.alert/confirm` dans `src/`. Les tests e2e n'acceptent plus
+    les boîtes natives : `loginAs` les refuse et les consigne, `logout` fait échouer le test s'il y en a eu.
+  - Tests : `tests/unit/retours.test.ts` (liste et durées des messages, canal hors React, file de
+    confirmations) ; `tests/e2e/retours.spec.ts` (suppression financière : confirmation, annulation,
+    Échap, confirmation ; erreur de champ ; erreur et succès en `Toast` ; 390 px). Dictionnaire de test
+    FR : 5 entrées ajoutées.
+- **Non fait, volontairement** : les validations des formulaires à plusieurs champs (« عنوان ومبلغ »)
+  et celles que l'attribut `required` du navigateur bloque déjà en amont restent des messages
+  d'erreur (`toast.error`), sans `error` par champ ; aucune conséquence ajoutée aux textes de
+  confirmation (textes conservés à l'identique) ; l'état de chargement des boutons (`loading`) et les
+  autres blocs du lot L4 de l'audit (champs, cartes, badges) ne sont pas touchés ; l'émoji de quelques
+  messages (« ✅ », « ⚠️ ») est conservé (textes à l'identique).
+- **Retour arrière** : `git revert` des commits de D99 (aucune donnée ni règle touchée). Les briques
+  (`Toast`, `ConfirmDialog`) sont inertes sans leurs appelants ; remettre `alert`/`confirm` dans un
+  fichier revient à retirer son `useToast`/`useConfirm` (retirer aussi la règle du garde-fou).
