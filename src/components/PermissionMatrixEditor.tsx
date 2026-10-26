@@ -15,6 +15,8 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
   role,
   disabled = false,
 }) => {
+  // Identifiants des en-têtes de colonnes et des noms de lignes : le nom de chaque case est « module + action » (D98).
+  const uid = React.useId();
   // Group modules by category
   const generalModules = ALL_MODULES.filter((m) => m.category === "عام");
   const teacherModules = ALL_MODULES.filter((m) => m.category === "المدرسين");
@@ -140,7 +142,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
   };
 
   // Render a table section for a group of modules
-  const renderModuleSection = (title: string, modules: ModuleMeta[], badgeBg: string) => (
+  const renderModuleSection = (title: string, modules: ModuleMeta[], badgeBg: string, sectionKey: string) => (
     <div className="space-y-2 mb-6">
       <div className={`flex items-center justify-between p-3 rounded-xl border ${badgeBg}`}>
         <div className="flex items-center gap-2">
@@ -168,7 +170,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   title="تحديد/إلغاء تحديد كل خانات العرض"
                 >
                   <Eye className="w-3.5 h-3.5 text-primary-600" />
-                  <span>عرض</span>
+                  <span id={`${uid}-${sectionKey}-read`}>عرض</span>
                 </button>
               </th>
 
@@ -182,7 +184,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   title="تحديد/إلغاء تحديد كل خانات الإضافة"
                 >
                   <Plus className="w-3.5 h-3.5 text-primary-600" />
-                  <span>إضافة</span>
+                  <span id={`${uid}-${sectionKey}-create`}>إضافة</span>
                 </button>
               </th>
 
@@ -196,7 +198,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   title="تحديد/إلغاء تحديد كل خانات التعديل"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-gold-600" />
-                  <span>تعديل</span>
+                  <span id={`${uid}-${sectionKey}-update`}>تعديل</span>
                 </button>
               </th>
 
@@ -210,7 +212,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   title="تحديد/إلغاء تحديد كل خانات الحذف والحرص"
                 >
                   <Trash2 className="w-3.5 h-3.5 text-danger-600" />
-                  <span>حذف / أرشفة</span>
+                  <span id={`${uid}-${sectionKey}-delete`}>حذف / أرشفة</span>
                 </button>
               </th>
 
@@ -224,7 +226,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   title="تحديد/إلغاء تحديد كل خانات الطباعة"
                 >
                   <Printer className="w-3.5 h-3.5 text-primary-600" />
-                  <span>طباعة</span>
+                  <span id={`${uid}-${sectionKey}-print`}>طباعة</span>
                 </button>
               </th>
 
@@ -254,7 +256,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                   <td className="p-3">
                     <div className="font-bold text-ink flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-primary-500 shrink-0" />
-                      <span>{module.name}</span>
+                      <span id={`${uid}-${module.id}-name`}>{module.name}</span>
                     </div>
                     <p className="text-[12.5px] text-ink-3 mt-0.5">
                       {module.description}
@@ -268,6 +270,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         type="checkbox"
                         disabled={disabled}
                         checked={hasRead}
+                        aria-labelledby={`${uid}-${module.id}-name ${uid}-${sectionKey}-read`}
                         onChange={() => handleToggle(module.id, "read")}
                         className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-line-strong cursor-pointer"
                       />
@@ -281,6 +284,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         type="checkbox"
                         disabled={disabled}
                         checked={hasCreate}
+                        aria-labelledby={`${uid}-${module.id}-name ${uid}-${sectionKey}-create`}
                         onChange={() => handleToggle(module.id, "create")}
                         className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-line-strong cursor-pointer"
                       />
@@ -294,6 +298,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         type="checkbox"
                         disabled={disabled}
                         checked={hasUpdate}
+                        aria-labelledby={`${uid}-${module.id}-name ${uid}-${sectionKey}-update`}
                         onChange={() => handleToggle(module.id, "update")}
                         className="w-4 h-4 rounded text-gold-600 focus:ring-gold-500 border-line-strong cursor-pointer"
                       />
@@ -307,6 +312,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         type="checkbox"
                         disabled={disabled}
                         checked={hasDelete}
+                        aria-labelledby={`${uid}-${module.id}-name ${uid}-${sectionKey}-delete`}
                         onChange={() => handleToggle(module.id, "delete")}
                         className="w-4 h-4 rounded text-danger-600 focus:ring-danger-500 border-line-strong cursor-pointer"
                       />
@@ -320,6 +326,7 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
                         type="checkbox"
                         disabled={disabled}
                         checked={hasPrint}
+                        aria-labelledby={`${uid}-${module.id}-name ${uid}-${sectionKey}-print`}
                         onChange={() => handleToggle(module.id, "print")}
                         className="w-4 h-4 rounded text-primary-600 focus:ring-primary-500 border-line-strong cursor-pointer"
                       />
@@ -416,19 +423,22 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
       {renderModuleSection(
         "الأقسام والخدمات العامة والإدارية",
         generalModules,
-        "bg-primary-50 text-primary-900 border-primary-200"
+        "bg-primary-50 text-primary-900 border-primary-200",
+        "general"
       )}
 
       {renderModuleSection(
         "بوابة المدرسين والمحفظين",
         teacherModules,
-        "bg-gold-50 text-gold-900 border-gold-200"
+        "bg-gold-50 text-gold-900 border-gold-200",
+        "teachers"
       )}
 
       {renderModuleSection(
         "بوابة الطلاب وأولياء الأمور",
         studentParentModules,
-        "bg-primary-50 text-primary-900 border-primary-200"
+        "bg-primary-50 text-primary-900 border-primary-200",
+        "students"
       )}
     </div>
   );

@@ -1057,6 +1057,7 @@ export const FR: Record<string, string> = {
   "جاري الحفظ...": "Enregistrement…",
   "حفظ الحساب": "Enregistrer le compte",
   // components/settings/UsersSection.tsx
+  "مسح البحث": "Effacer la recherche",
   "إدارة حسابات المستخدمين والصلاحيات": "Gestion des comptes utilisateurs et des droits",
   "إضافة وإدارة حسابات المعلمين والمدراء والطلاب وأولياء الأمور مع التحكم الدقيق في مستويات الوصول.": "Création et gestion des comptes des enseignants, directeurs, élèves et parents, avec un contrôle précis des niveaux d'accès.",
   "إضافة مستخدم جديد": "Nouvel utilisateur",
