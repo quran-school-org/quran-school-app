@@ -47,7 +47,7 @@ export default function DashboardScreen() {
             <Button id="manual-db-backup-btn" onClick={handleBackupRealmDB} title="تحميل نسخة احتياطية كاملة من قاعدة البيانات كملف JSON" icon={<Download className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
               تنزيل نسخة احتياطية
             </Button>
-            <input type="file" id="restore-backup-file-input" accept=".json" onChange={handleRestoreRealmDB} className="hidden" />
+            <input type="file" id="restore-backup-file-input" aria-label="استرجاع قاعدة البيانات كاملة من ملف JSON احتياطي" accept=".json" onChange={handleRestoreRealmDB} className="hidden" />
             <Button id="manual-db-restore-btn" onClick={() => document.getElementById("restore-backup-file-input")?.click()} title="استرجاع قاعدة البيانات كاملة من ملف JSON احتياطي" icon={<RefreshCw className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
               استرجاع نسخة
             </Button>

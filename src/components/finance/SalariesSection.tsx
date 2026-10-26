@@ -54,7 +54,7 @@ export default function SalariesSection() {
                 <div className="text-2xl font-bold text-gold-700">
                   {formatNumber(totalPendingSalaries)} <span className="text-[13px] text-ink-3 font-normal">د.م</span>
                 </div>
-                <span className="text-[12.5px] text-gold-600 mt-1 block">مستحقات واجبة الصرف</span>
+                <span className="text-[12.5px] text-gold-700 mt-1 block">مستحقات واجبة الصرف</span>
               </div>
               <div className="w-12 h-12 bg-gold-50 rounded-2xl flex items-center justify-center text-gold-800">
                 <AlertTriangle className="w-6 h-6" />

@@ -34,6 +34,12 @@ describe("interface : valeurs codées en dur retirées", () => {
     expect(offending(/^\s*<select\b/m)).toEqual([]);
   });
 
+  it("aucune fenêtre écrite à la main : `fixed inset-0` seulement dans Modal et dans le tiroir du menu (D98)", () => {
+    const allowed = ["src/ui/Modal.tsx", "src/ui/AppShell.tsx"];
+    const hits = offending(/fixed inset-0/).filter((f) => !allowed.includes(f.split("\\").join("/")));
+    expect(hits).toEqual([]);
+  });
+
   it("aucun toLocaleString() sans argument : montants par src/utils/format.ts, locale explicite sinon (UI-10)", () => {
     // WeeklyAttendance.tsx : modifié par une autre branche (UI-20), exception le temps de la fusion.
     const allowed = ["src/screens/dashboard/WeeklyAttendance.tsx"];

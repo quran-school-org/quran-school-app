@@ -1,12 +1,14 @@
 /**
  * Module activités et sorties (participants, dépenses, lien comptable).
  * Découpé mécaniquement depuis ActivitiesManagement.tsx (Lot 2, sans changement de comportement).
+ * Fenêtre sur `Modal` de la charte (D98) : Échap, `role="dialog"`, focus piégé et rendu,
+ * étiquettes reliées aux champs ; « enregistrer » en variante primaire (plus en rouge).
  */
 import { ActivityExpenseCategory } from "../../types";
-import { DollarSign, X } from "lucide-react";
+import { DollarSign } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
-import { Select } from "../../ui";
+import { Button, FormField, Input, Modal, Select } from "../../ui";
 
 export default function ActivityExpenseModal() {
   const {
@@ -33,146 +35,79 @@ export default function ActivityExpenseModal() {
     handleSaveExpenseForm,
   } = useActivities();
 
+  if (!showExpenseModal || !currentActivity) return null;
+  const close = () => setShowExpenseModal(false);
+
   return (
-    <>
-      {/* MODAL 3: Create / Edit Expense */}
-      {showExpenseModal && currentActivity && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto print:hidden bg-night/55 backdrop-blur-[2px]">
-          <div className="bg-surface border border-line max-w-lg w-full overflow-hidden my-8 rounded-3xl shadow-pop">
-            <div className="p-5 border-b border-line-soft bg-sand-50 flex items-center justify-between">
-              <h3 className="font-bold text-primary flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-danger-600" />
-                <span>{editingExpense ? "تعديل بيان المصروف" : `تسجيل مصروف لـ "${currentActivity.title}"`}</span>
-              </h3>
-              <button
-                onClick={() => setShowExpenseModal(false)}
-                className="text-ink-3 hover:text-ink-2 p-1 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+    <Modal
+      modalId="activity-expense-form"
+      size="base"
+      printHidden
+      icon={<DollarSign className="w-5 h-5" />}
+      title={editingExpense ? "تعديل بيان المصروف" : `تسجيل مصروف لـ "${currentActivity.title}"`}
+      onClose={close}
+      onSubmit={handleSaveExpenseForm}
+      bodyClassName="space-y-4"
+      footer={
+        <>
+          <Button onClick={close}>إلغاء</Button>
+          <Button type="submit" variant="primary">{editingExpense ? "حفظ التعديلات" : "تسجيل المصروف"}</Button>
+        </>
+      }
+    >
+      <FormField label="بيان / عنوان المصروف *">
+        {(id) => (
+          <Input id={id} type="text" required value={expTitle} onChange={(e) => setExpTitle(e.target.value)} placeholder="مثال: كراء حافلة نقل ممتازة سعة 48 مقعداً" />
+        )}
+      </FormField>
 
-            <form onSubmit={handleSaveExpenseForm} className="p-6 space-y-4 text-right">
-              <div>
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">بيان / عنوان المصروف *</label>
-                <input
-                  type="text"
-                  required
-                  value={expTitle}
-                  onChange={(e) => setExpTitle(e.target.value)}
-                  placeholder="مثال: كراء حافلة نقل ممتازة سعة 48 مقعداً"
-                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                />
-              </div>
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="الصنف / الفئة *">
+          {(id) => (
+            <Select id={id} value={expCategory} onChange={(v) => setExpCategory(v as ActivityExpenseCategory)}>
+              {EXPENSE_CATEGORIES.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </Select>
+          )}
+        </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الصنف / الفئة *</label>
-                  <Select
-                    aria-label="الصنف / الفئة"
-                    value={expCategory}
-                    onChange={(v) => setExpCategory(v as ActivityExpenseCategory)}
-                  >
-                    {EXPENSE_CATEGORIES.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </Select>
-                </div>
+        <FormField label="المبلغ (د.م) *">
+          {(id) => (
+            <Input id={id} type="number" min="1" required value={expAmount || ""} onChange={(e) => setExpAmount(Number(e.target.value))} placeholder="0.00" />
+          )}
+        </FormField>
+      </div>
 
-                <div>
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المبلغ (د.م) *</label>
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    value={expAmount || ""}
-                    onChange={(e) => setExpAmount(Number(e.target.value))}
-                    placeholder="0.00"
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                  />
-                </div>
-              </div>
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="تاريخ الصرف *">
+          {(id) => <Input id={id} type="date" required value={expDate} onChange={(e) => setExpDate(e.target.value)} />}
+        </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تاريخ الصرف *</label>
-                  <input
-                    type="date"
-                    required
-                    value={expDate}
-                    onChange={(e) => setExpDate(e.target.value)}
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                  />
-                </div>
+        <FormField label="طريقة الدفع">
+          {(id) => (
+            <Select id={id} value={expPaymentMethod} onChange={(v) => setExpPaymentMethod(v as any)}>
+              <option value="نقداً">نقداً</option>
+              <option value="تحويل بنكي">تحويل بنكي</option>
+              <option value="شيك">شيك</option>
+            </Select>
+          )}
+        </FormField>
+      </div>
 
-                <div>
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">طريقة الدفع</label>
-                  <Select
-                    aria-label="طريقة الدفع"
-                    value={expPaymentMethod}
-                    onChange={(v) => setExpPaymentMethod(v as any)}
-                  >
-                    <option value="نقداً">نقداً</option>
-                    <option value="تحويل بنكي">تحويل بنكي</option>
-                    <option value="شيك">شيك</option>
-                  </Select>
-                </div>
-              </div>
+      <div className="grid grid-cols-2 gap-4">
+        <FormField label="المورد أو الشركة">
+          {(id) => <Input id={id} type="text" value={expSupplier} onChange={(e) => setExpSupplier(e.target.value)} placeholder="مثال: شركة الأطلس للنقل" />}
+        </FormField>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">المورد أو الشركة</label>
-                  <input
-                    type="text"
-                    value={expSupplier}
-                    onChange={(e) => setExpSupplier(e.target.value)}
-                    placeholder="مثال: شركة الأطلس للنقل"
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                  />
-                </div>
+        <FormField label="رقم الفاتورة / الوصل">
+          {(id) => <Input id={id} type="text" value={expReceiptNo} onChange={(e) => setExpReceiptNo(e.target.value)} placeholder="FAC-2026-XXXX" className="font-mono" />}
+        </FormField>
+      </div>
 
-                <div>
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الفاتورة / الوصل</label>
-                  <input
-                    type="text"
-                    value={expReceiptNo}
-                    onChange={(e) => setExpReceiptNo(e.target.value)}
-                    placeholder="FAC-2026-XXXX"
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">القائم بالأداء / المسؤول</label>
-                <input
-                  type="text"
-                  value={expPaidBy}
-                  onChange={(e) => setExpPaidBy(e.target.value)}
-                  placeholder="أمين المال أو المشرف"
-                  className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line-soft">
-                <button
-                  type="button"
-                  onClick={() => setShowExpenseModal(false)}
-                  className="px-4 py-2.5 text-[13px] font-semibold text-ink-2 hover:text-ink"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="bg-danger-700 hover:bg-danger-800 text-white text-[13px] font-bold px-5 py-2.5 rounded-xl transition-all"
-                >
-                  {editingExpense ? "حفظ التعديلات" : "تسجيل المصروف"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </>
+      <FormField label="القائم بالأداء / المسؤول">
+        {(id) => <Input id={id} type="text" value={expPaidBy} onChange={(e) => setExpPaidBy(e.target.value)} placeholder="أمين المال أو المشرف" />}
+      </FormField>
+    </Modal>
   );
 }

@@ -163,6 +163,7 @@ export default function UsersSection() {
               </span>
               <input
                 type="text"
+                aria-label="البحث باسم المستخدم أو الاسم الكامل..."
                 placeholder="البحث باسم المستخدم أو الاسم الكامل..."
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
@@ -170,8 +171,10 @@ export default function UsersSection() {
               />
               {userSearchQuery && (
                 <button
+                  type="button"
                   onClick={() => setUserSearchQuery("")}
                   aria-label="مسح البحث"
+                  title="مسح البحث"
                   className="absolute inset-y-0 left-0 pl-3 flex items-center text-ink-3 hover:text-ink-2"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -376,7 +379,7 @@ export default function UsersSection() {
                 <div
                   key={user.id}
                   className={`bg-surface border rounded-2xl p-4 relative transition hover:border-line-strong flex flex-col justify-between ${
-                    !user.isActive ? "opacity-75 border-danger-200/80 bg-danger-50/20" : "border-sand-200/90"
+                    !user.isActive ? "border-danger-200/80 bg-danger-50/20" : "border-sand-200/90"
                   }`}
                 >
                   <div>

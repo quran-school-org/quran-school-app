@@ -1057,6 +1057,7 @@ export const FR: Record<string, string> = {
   "جاري الحفظ...": "Enregistrement…",
   "حفظ الحساب": "Enregistrer le compte",
   // components/settings/UsersSection.tsx
+  "مسح البحث": "Effacer la recherche",
   "إدارة حسابات المستخدمين والصلاحيات": "Gestion des comptes utilisateurs et des droits",
   "إضافة وإدارة حسابات المعلمين والمدراء والطلاب وأولياء الأمور مع التحكم الدقيق في مستويات الوصول.": "Création et gestion des comptes des enseignants, directeurs, élèves et parents, avec un contrôle précis des niveaux d'accès.",
   "إضافة مستخدم جديد": "Nouvel utilisateur",
@@ -2225,7 +2226,6 @@ export const FR: Record<string, string> = {
   "وضع تسجيلك": "Votre situation d'inscription",
   // Audit UX/UI, lot L1 (D97) : noms accessibles des boutons icône
   "حذف التعريفة الخاصة": "Supprimer le tarif spécial",
-  "مسح البحث": "Effacer la recherche",
   "تحديد {0}": "Sélectionner {0}",
   "نسبة تكبير / تصغير البطاقة للطباعة": "Échelle d'agrandissement / réduction de la carte à l'impression",
 };

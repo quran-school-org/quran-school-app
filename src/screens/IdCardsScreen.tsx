@@ -99,6 +99,7 @@ export default function IdCardsScreen() {
               value={searchLabQuery}
               onChange={(e) => setSearchLabQuery(e.target.value)}
               placeholder="ابحث باسم الطالب أو الرقم التعريفي..."
+              aria-label="ابحث باسم الطالب أو الرقم التعريفي..."
               className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
             />
           </div>

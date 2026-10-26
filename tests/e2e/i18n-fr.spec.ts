@@ -185,8 +185,9 @@ test.describe.serial("langue de l'interface AR / FR (D79, D93)", () => {
     await expect(roleOption).toContainText("Directeur");
     await page.keyboard.press("Escape");
     await expect(page.locator("[data-select-menu]")).toHaveCount(0);
+    // Deuxième Échap : la fenêtre du compte (sur Modal depuis D98) se ferme.
     await page.keyboard.press("Escape");
-    await page.locator(".fixed.inset-0, [data-modal]").last().getByRole("button", { name: /Annuler|Fermer/ }).first().click().catch(() => undefined);
+    await expect(page.locator('[data-modal="user-form"]')).toHaveCount(0);
 
     // Retour en arabe dans l'application : texte et sens d'origine.
     await setLang(page, "ar");

@@ -2576,3 +2576,47 @@ là-bas (R-06).
   `#6B7080` pour `--color-ink-3`, rétablir `overflow-hidden` sur le `<nav>` de
   `SideNav` (le défilement du tiroir disparaît), retirer la classe `after:` de
   `IconButton` et `min-w-[1480px]` de `HifzMap`.
+
+### D98. Audit UX/UI, lots L2 et L3 : fenêtres sur `Modal`, champs nommés
+- **Contexte** : l'audit UX/UI du 26/10/2026 (constats 3, 4, 6, 9, 10) a relevé 12 fenêtres
+  écrites à la main (`fixed inset-0 z-50`) au lieu de `src/ui/Modal.tsx` : pas d'Échap, pas de
+  `role="dialog"`, ni titre relié, ni focus piégé ou rendu ; des étiquettes `<label>` non reliées
+  à leurs champs (732 champs, 44 composants) ; des boutons « × » sans nom ; trois contrastes
+  insuffisants ; deux boutons « enregistrer » en rouge (couleur du danger).
+- **Décision** :
+  - Les 12 fenêtres passent sur `Modal`, sans changer le contenu, les couleurs ni les données
+    écrites : recette, salaire, dépense, rapport financier imprimable (comptabilité) ; activité,
+    participant, dépense d'activité, aperçu d'impression (activités) ; fiche, badge, liste
+    imprimable (personnel) ; compte utilisateur (paramètres). Repères `data-modal` : `income-form`,
+    `salary-form`, `expense-form`, `finance-print-report`, `activity-form`, `participant-form`,
+    `activity-expense-form`, `activity-print`, `staff-form`, `staff-directory`, `staff-badge`
+    (inchangé), `user-form`. L'identifiant `app-user-form-modal` (jamais lu) disparaît ;
+    `btn-confirm-save-user` est conservé ; les aperçus d'impression (rapport, activité) ont leur bouton d'impression dans le pied. `AppShell` (tiroir du menu) garde son `fixed inset-0`.
+  - `Modal` est étendu **sans rien changer pour ses 9 usages existants** : focus piégé (Tab et
+    Maj+Tab bouclent dans la fenêtre), `size="base"` (max-w-lg), `printHidden` (fenêtre de
+    saisie absente de l'impression), `print` (aperçu d'un document : en-tête et pied masqués à
+    l'impression, corps sans défilement), `flush` (corps sans marge), `footerAlign="between"`.
+  - Chaque champ de ces fenêtres a une étiquette reliée : `FormField` + `Input`/`Textarea`/`Select`
+    partout, `htmlFor`/`id` pour `GeneralSettingsSection` (seul changement dans ce fichier : le
+    lot L1 y touche les grilles et la poubelle) ; groupes de cases et de boutons : `role="group"`
+    relié à leur titre ; matrice des droits : chaque case est nommée par `aria-labelledby`
+    (nom du module + colonne) ; champs sans étiquette visible : `aria-label` repris du
+    `placeholder` (chaînes déjà au dictionnaire). Boutons sans nom : « إغلاق » (fourni par
+    `Modal`), « إزالة الصورة », « إظهار / إخفاء كلمة المرور », « مسح البحث » (une entrée ajoutée
+    à `fr.ts`).
+  - Contrastes : bandeau du compte en `Modal tone="night"` (jetons `night-text`, `night-muted`,
+    plus de `ink-3` sur fond sombre) ; carte d'un compte suspendu sans `opacity-75` (le liseré
+    rouge et la pastille « موقوف » portent l'état) ; texte des salaires en attente en
+    `gold-700` (5,05:1 au lieu de 3,2:1).
+  - « Enregistrer » une dépense (comptabilité et activité) en `Button variant="primary"`.
+  - Tests : `tests/e2e/fenetres-formulaires.spec.ts` (ouverture, `role="dialog"` relié au titre,
+    focus dans la fenêtre, Échap, retour du focus au bouton d'origine, piège du focus, champs
+    sans nom accessible sur les fenêtres et balayage des écrans du directeur).
+- **Non fait, volontairement** : `error` de `FormField` non branché (les validations existantes sont
+  des `alert()` dans les hooks et des attributs `required`/`min`, sans état d'erreur par champ : le
+  branchement relève du lot L4, `Toast` et `ConfirmDialog`) ; grilles à 3 colonnes de `SalaryModal`
+  à 390 px et poubelle de `GeneralSettingsSection` (lot L1) ; cartes d'identité (lot L1) ; aucun
+  `<select>` natif restant (déjà garanti par `uiGuards.test.ts`) ; les `alert()` et `confirm()`.
+- **Retour arrière** : `git revert` des commits de D98 (aucune donnée ni règle touchée). Chaque
+  fenêtre revient indépendamment à son ancien balisage ; les options ajoutées à `Modal` sont
+  inertes sans leurs appelants.
