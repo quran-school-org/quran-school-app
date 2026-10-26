@@ -151,7 +151,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
   return (
     <AppShell
       sidebar={<SideNav navId="desktop" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t)} footer={footer(false)} className="flex-1" />}
-      drawer={isMobileMenuOpen && compact ? <SideNav navId="mobile" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t, true)} footer={footer(true)} className="flex-1 pt-16" /> : null}
+      drawer={isMobileMenuOpen && compact ? <SideNav navId="mobile" brand={brand} groups={groups} active={activeTab} onSelect={(t) => go(t, true)} footer={footer(true)} className="flex-1" headerExtra={<span aria-hidden="true" data-drawer-close-gap className="w-10 shrink-0" />} /> : null}
       drawerOpen={isMobileMenuOpen}
       onCloseDrawer={() => setIsMobileMenuOpen(false)}
       topbar={
