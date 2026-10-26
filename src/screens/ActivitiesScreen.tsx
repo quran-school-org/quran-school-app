@@ -4,6 +4,9 @@
 import { checkUserPermission } from "../types";
 import ActivitiesManagement from "../components/ActivitiesManagement";
 import { useApp } from "../app/AppContext";
+import { isFamilyRole } from "../security/access";
+import FamilyActivities from "./family/FamilyActivities";
+import { isoDay } from "./family/familySummary";
 
 export default function ActivitiesScreen() {
   const {
@@ -25,6 +28,19 @@ export default function ActivitiesScreen() {
     handleDeleteActivityExpense,
     handleSyncActivityToFinance,
   } = useApp();
+
+  // Parents et élèves : vue simplifiée en lecture seule (D94), sans dépenses ni budget.
+  if (isFamilyRole(currentRole)) {
+    return (
+      <FamilyActivities
+        activities={activities}
+        participants={activityParticipants}
+        children={students.filter((s) => !s.isArchived)}
+        isParent={currentRole === "ولي أمر"}
+        today={isoDay(new Date())}
+      />
+    );
+  }
 
   return (
     <ActivitiesManagement
