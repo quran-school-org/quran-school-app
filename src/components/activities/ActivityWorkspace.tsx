@@ -5,10 +5,11 @@
 import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Printer, CheckCircle2, TrendingUp, Search, FileText, RefreshCw, CheckCircle, Info } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
-import { Ltr, Select } from "../../ui";
+import { Ltr, Select, useConfirm } from "../../ui";
 import { formatMoney, formatNumber } from "../../utils/format";
 
 export default function ActivityWorkspace() {
+  const confirm = useConfirm();
   const {
     canCreateActivity,
     canUpdateActivity,
@@ -117,8 +118,8 @@ export default function ActivityWorkspace() {
                   )}
                   {canDeleteActivity && (
                     <button
-                      onClick={() => {
-                        if (confirm(`هل أنت متأكد من حذف النشاط "${currentActivity.title}" وجميع سجلات المشاركين ومصاريفه؟`)) {
+                      onClick={async () => {
+                        if (await confirm({ message: `هل أنت متأكد من حذف النشاط "${currentActivity.title}" وجميع سجلات المشاركين ومصاريفه؟`, tone: "danger" })) {
                           onDeleteActivity(currentActivity.id);
                           setSelectedActivityId(null);
                         }
@@ -426,8 +427,8 @@ export default function ActivityWorkspace() {
 
                                 <button
                                   title="حذف المشارك" aria-label="حذف المشارك"
-                                  onClick={() => {
-                                    if (confirm(`هل أنت متأكد من حذف المشارك "${part.fullName}"؟`)) {
+                                  onClick={async () => {
+                                    if (await confirm({ message: `هل أنت متأكد من حذف المشارك "${part.fullName}"؟`, tone: "danger" })) {
                                       onDeleteParticipant(part.id);
                                     }
                                   }}
@@ -559,8 +560,8 @@ export default function ActivityWorkspace() {
                                 </button>
                                 <button
                                   title="حذف المصروف" aria-label="حذف المصروف"
-                                  onClick={() => {
-                                    if (confirm(`هل أنت متأكد من حذف المصروف "${exp.title}"؟`)) {
+                                  onClick={async () => {
+                                    if (await confirm({ message: `هل أنت متأكد من حذف المصروف "${exp.title}"؟`, tone: "danger" })) {
                                       onDeleteActivityExpense(exp.id);
                                     }
                                   }}

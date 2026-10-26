@@ -6,8 +6,11 @@ import React, { useState } from "react";
 import { OtherIncome, SalaryPayment, Expense } from "../../types";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import type { FinanceManagementProps } from "../FinanceManagement";
+import { useConfirm, useToast } from "../../ui";
 
 export function useFinanceForms(props: FinanceManagementProps) {
+  const toast = useToast();
+  const confirm = useConfirm();
   const {
   students,
   teachers,
@@ -189,7 +192,7 @@ export function useFinanceForms(props: FinanceManagementProps) {
   const handleSaveIncome = (e: React.FormEvent) => {
     e.preventDefault();
     if (!incomeTitle || incomeAmount <= 0) {
-      alert("يرجى إدخال عنوان ومبلغ الدخل بشكل صحيح.");
+      toast.error("يرجى إدخال عنوان ومبلغ الدخل بشكل صحيح.");
       return;
     }
     const newRecord: OtherIncome = {
@@ -280,7 +283,7 @@ export function useFinanceForms(props: FinanceManagementProps) {
   const handleSaveSalary = (e: React.FormEvent) => {
     e.preventDefault();
     if (!salaryPersonName || salaryAmount <= 0) {
-      alert("يرجى إدخال اسم المستفيد والمبلغ بشكل صحيح.");
+      toast.error("يرجى إدخال اسم المستفيد والمبلغ بشكل صحيح.");
       return;
     }
     const newRecord: SalaryPayment = {
@@ -304,12 +307,12 @@ export function useFinanceForms(props: FinanceManagementProps) {
   };
 
   // Quick Auto-Populate Salaries for Active Teachers
-  const handleAutoGenerateTeacherSalaries = () => {
+  const handleAutoGenerateTeacherSalaries = async () => {
     if (teachers.length === 0) {
-      alert("لا يوجد أساتذة مسجلين في النظام.");
+      toast.error("لا يوجد أساتذة مسجلين في النظام.");
       return;
     }
-    if (!confirm(`هل ترغب في توليد مسودة صرف الأجور لجميع الأساتذة النشطين (${teachers.length} أساتذة) لشهر ${salaryMonth} ${salaryYear}؟`)) {
+    if (!(await confirm({ message: `هل ترغب في توليد مسودة صرف الأجور لجميع الأساتذة النشطين (${teachers.length} أساتذة) لشهر ${salaryMonth} ${salaryYear}؟` }))) {
       return;
     }
     teachers.forEach((t, idx) => {
@@ -336,7 +339,7 @@ export function useFinanceForms(props: FinanceManagementProps) {
         onSaveSalaryPayment(autoRecord);
       }
     });
-    alert("تم إنشاء سجلات مستحقات الرواتب للأساتذة بنجاح!");
+    toast.success("تم إنشاء سجلات مستحقات الرواتب للأساتذة بنجاح!");
   };
 
   // Handler for Opening Expense Modal
@@ -368,7 +371,7 @@ export function useFinanceForms(props: FinanceManagementProps) {
   const handleSaveExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!expenseTitle || expenseAmount <= 0) {
-      alert("يرجى تسجيل بيان المصاريف والمبلغ بشكل صحيح.");
+      toast.error("يرجى تسجيل بيان المصاريف والمبلغ بشكل صحيح.");
       return;
     }
     const newRecord: Expense = {
