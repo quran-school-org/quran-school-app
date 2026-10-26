@@ -46,3 +46,25 @@ export function formatMoney(n: unknown, options: FormatOptions = {}): string {
 export function formatPercent(n: unknown, { maxDecimals = 0, signed = false }: FormatOptions = {}): string {
   return `${formatNumber(n, { maxDecimals, signed })}%`;
 }
+
+const DATE_FORMAT = (() => {
+  try {
+    return new Intl.DateTimeFormat("ar-MA-u-nu-latn", { day: "numeric", month: "long", year: "numeric" });
+  } catch {
+    return null;
+  }
+})();
+
+/**
+ * Date lisible (« 1 أكتوبر 2026 ») à partir d'une date ISO `AAAA-MM-JJ`
+ * (heure éventuelle ignorée), en chiffres latins comme le reste de
+ * l'interface (audit UX/UI, constat 22, D100). L'ISO reste pour les exports.
+ * Valeur vide ou non reconnue : rendue telle quelle.
+ */
+export function formatDate(value: unknown): string {
+  const s = typeof value === "string" ? value.trim() : "";
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (!m || !DATE_FORMAT) return s;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Number.isNaN(d.getTime()) ? s : DATE_FORMAT.format(d);
+}

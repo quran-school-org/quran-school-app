@@ -2672,3 +2672,21 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits de D99 (aucune donnée ni règle touchée). Les briques
   (`Toast`, `ConfirmDialog`) sont inertes sans leurs appelants ; remettre `alert`/`confirm` dans un
   fichier revient à retirer son `useToast`/`useConfirm` (retirer aussi la règle du garde-fou).
+
+### D100. Audit UX/UI, lot L5 : hiérarchie des écrans
+- **Contexte** : audit UX/UI du 26/10/2026 (Mélik), constats 11, 20, 21 et 22.
+- **Décision** :
+  - **Sauvegarde et restauration** quittent le tableau de bord pour Paramètres
+    › إعدادات الجمعية (section « النسخ الاحتياطي », directeur seulement,
+    `settings/BackupSection.tsx`). La restauration est en bouton « danger » et
+    garde sa confirmation (`ConfirmDialog`).
+  - **« تحتاج إجراءً »** passe en premier dans sa rangée (à droite en RTL),
+    juste sous les chiffres clés, devant la performance des محفظين.
+  - **Présence de la semaine** : quand la semaine en cours n'a aucun relevé mais
+    que la précédente en a, une phrase le dit au lieu de cases vides.
+  - **Comptabilité** : l'impression du rapport annuel passe en bouton
+    secondaire ; l'ajout reste le bouton principal de chaque sous-onglet.
+  - **Dates lisibles** : `formatDate` (`src/utils/format.ts`, « 1 أكتوبر 2026 »,
+    chiffres latins) pour l'accueil famille, les examens, l'historique de
+    présence, la fiche et la liste des élèves ; l'ISO reste dans les exports.
+- **Retour arrière** : `git revert` du commit.

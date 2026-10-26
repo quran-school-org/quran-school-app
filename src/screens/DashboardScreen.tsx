@@ -3,10 +3,9 @@
  * les données réelles de l'école active.
  */
 import { useMemo, useState } from "react";
-import { Download, RefreshCw } from "lucide-react";
 import { useApp } from "../app/AppContext";
 import { buildNavGroups, visibleTabs } from "../shell/navModel";
-import { Button, HifzMap, KpiGrid, KpiTile, Legend, PageHeader, StackedBar, TextAction } from "../ui";
+import { HifzMap, KpiGrid, KpiTile, Legend, PageHeader, StackedBar, TextAction } from "../ui";
 import ActionNeeded from "./dashboard/ActionNeeded";
 import HifzProgress from "./dashboard/HifzProgress";
 import TeacherPerformance from "./dashboard/TeacherPerformance";
@@ -24,7 +23,7 @@ export default function DashboardScreen() {
     students, teachers, classes, attendance, grades, payments, systemSettings, currentUser, currentRole,
     setActiveTab, setSelectedStudent, totalStudentsCount, advancedStudentsCount,
     excellentTajweedCount, averageTajweedCount, weakTajweedCount, totalPaymentsCollected, totalUnpaidCount,
-    handleBackupRealmDB, handleRestoreRealmDB,
+
   } = useApp();
 
   const tabs = useMemo(() => visibleTabs(buildNavGroups({ currentUser, currentRole, unread: 0 })), [currentUser, currentRole]);
@@ -42,17 +41,6 @@ export default function DashboardScreen() {
       <PageHeader
         title="لوحة الكتّاب"
         description="حال الحلقات والطلاب والمالية في نظرة واحدة."
-        actions={
-          <>
-            <Button id="manual-db-backup-btn" onClick={handleBackupRealmDB} title="تحميل نسخة احتياطية كاملة من قاعدة البيانات كملف JSON" icon={<Download className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
-              تنزيل نسخة احتياطية
-            </Button>
-            <input type="file" id="restore-backup-file-input" aria-label="استرجاع قاعدة البيانات كاملة من ملف JSON احتياطي" accept=".json" onChange={handleRestoreRealmDB} className="hidden" />
-            <Button id="manual-db-restore-btn" onClick={() => document.getElementById("restore-backup-file-input")?.click()} title="استرجاع قاعدة البيانات كاملة من ملف JSON احتياطي" icon={<RefreshCw className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
-              استرجاع نسخة
-            </Button>
-          </>
-        }
       />
 
       <HifzMap students={active.map((s) => ({ id: s.id, name: s.fullName, hizb: s.hizbCount }))} selected={selected} onSelect={setSel} />
@@ -100,8 +88,9 @@ export default function DashboardScreen() {
       </KpiGrid>
 
       <div className="flex flex-wrap gap-6 items-stretch">
-        <TeacherPerformance teachers={teachers} classes={classes} students={students} grades={grades} onAssign={canGo("classes") ? () => go("classes") : undefined} />
+        {/* « تحتاج إجراءً » en premier (à droite en RTL), juste sous les chiffres clés (audit, D100). */}
         <ActionNeeded students={students} classes={classes} teachers={teachers} attendance={attendance} payments={canSeeFees ? payments : []} canGo={canGo} go={go} />
+        <TeacherPerformance teachers={teachers} classes={classes} students={students} grades={grades} onAssign={canGo("classes") ? () => go("classes") : undefined} />
       </div>
 
       <WeeklyAttendance attendance={attendance} classes={classes} students={students} />

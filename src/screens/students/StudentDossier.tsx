@@ -7,6 +7,7 @@ import { StudentAvatar } from "../../utils/studentAvatar";
 import { useApp } from "../../app/AppContext";
 import { isFamilyRole } from "../../security/access";
 import { ActionAlert, Button, Card, CardHeader, EmptyState, InfoRow, Ltr, Modal, Pill, WhatsAppIcon } from "../../ui";
+import { formatDate } from "../../utils/format";
 
 export default function StudentDossier({ classes }: { classes: Class[] }) {
   const { selectedStudent, schoolName, currentRole, currentUser } = useApp();
@@ -52,8 +53,8 @@ export default function StudentDossier({ classes }: { classes: Class[] }) {
         </div>
         <dl className="m-0 bg-surface-2 rounded-xl px-4 py-1.5">
           <InfoRow label="الجنس">{st.gender}</InfoRow>
-          <InfoRow label="تاريخ الازدياد"><Ltr>{st.birthDate}</Ltr></InfoRow>
-          <InfoRow label="تاريخ التسجيل"><Ltr>{st.registrationDate}</Ltr></InfoRow>
+          <InfoRow label="تاريخ الازدياد">{formatDate(st.birthDate)}</InfoRow>
+          <InfoRow label="تاريخ التسجيل">{formatDate(st.registrationDate)}</InfoRow>
           <InfoRow label="اسم ولي الأمر">{st.parentName}</InfoRow>
           <InfoRow label="هاتف ولي الأمر"><Ltr>{st.parentPhone}</Ltr></InfoRow>
           <InfoRow label="الحفظ الفعلي" strong>{st.hizbCount} حزب من القرآن</InfoRow>

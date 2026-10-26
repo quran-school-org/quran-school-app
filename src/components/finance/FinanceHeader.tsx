@@ -1,6 +1,6 @@
 /**
  * Comptabilité : en-tête et indicateurs globaux (charte « لوحة الكتّاب »).
- * Mêmes chiffres et même action d'impression qu'auparavant.
+ * Impression en bouton secondaire : l'action fréquente est l'ajout, dans chaque sous-onglet (audit, D100).
  */
 import { Printer } from "lucide-react";
 import { useFinance } from "./FinanceContext";
@@ -19,7 +19,7 @@ export default function FinanceHeader() {
         eyebrow={`السنة المالية: ${selectedYear === "all" ? "جميع السنوات" : selectedYear}`}
         actions={
           canPrint && (
-            <Button variant="primary" onClick={() => setShowPrintReportModal(true)} icon={<Printer className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
+            <Button variant="outline" onClick={() => setShowPrintReportModal(true)} icon={<Printer className="w-[18px] h-[18px]" strokeWidth={1.75} />}>
               طباعة التقرير المالي الختامي
             </Button>
           )

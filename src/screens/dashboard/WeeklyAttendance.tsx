@@ -70,6 +70,11 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
         )}
       </div>
 
+      {/* Semaine en cours sans aucun relevé (la précédente en a) : le dire au lieu de cases vides (audit, D100). */}
+      {!empty && w.thisAvg === null && !pending && (
+        <p data-weekly="this-week-empty" className="m-0 text-[14px] text-ink-2">لم يُسجَّل حضور هذا الأسبوع بعد.</p>
+      )}
+
       {empty || shown.length === 0 ? (
         <p className="m-0 text-center text-[14.5px] leading-[1.7] text-ink-2 bg-surface-2 px-4.5 py-6 rounded-xl border-[1.5px] border-dashed border-line-strong">{emptyText}</p>
       ) : (
