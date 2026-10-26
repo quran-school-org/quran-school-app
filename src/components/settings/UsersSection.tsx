@@ -375,7 +375,7 @@ export default function UsersSection() {
                 <div
                   key={user.id}
                   className={`bg-surface border rounded-2xl p-4 relative transition hover:border-line-strong flex flex-col justify-between ${
-                    !user.isActive ? "opacity-75 border-danger-200/80 bg-danger-50/20" : "border-sand-200/90"
+                    !user.isActive ? "border-danger-200/80 bg-danger-50/20" : "border-sand-200/90"
                   }`}
                 >
                   <div>

@@ -88,8 +88,9 @@ export default function GeneralSettingsSection() {
               </h3>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم الجمعية / المدرسة <span className="text-danger-500">*</span></label>
+                <label htmlFor="gs-associationName" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم الجمعية / المدرسة <span className="text-danger-500">*</span></label>
                 <input
+                  id="gs-associationName"
                   type="text"
                   required
                   value={associationName}
@@ -99,7 +100,7 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم المشرف العام <span className="text-danger-500">*</span></label>
+                <label htmlFor="input-general-supervisor-name" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم المشرف العام <span className="text-danger-500">*</span></label>
                 <input
                   type="text"
                   required
@@ -112,8 +113,9 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم مدير المدرسة المسؤول (المدير التنفيذي) <span className="text-danger-500">*</span></label>
+                <label htmlFor="gs-directorName" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">اسم مدير المدرسة المسؤول (المدير التنفيذي) <span className="text-danger-500">*</span></label>
                 <input
+                  id="gs-directorName"
                   type="text"
                   required
                   value={directorName}
@@ -125,10 +127,11 @@ export default function GeneralSettingsSection() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الهاتف <span className="text-danger-500">*</span></label>
+                  <label htmlFor="gs-associationPhone" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الهاتف <span className="text-danger-500">*</span></label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-ink-3"><Phone className="w-4 h-4" /></span>
                     <input
+                      id="gs-associationPhone"
                       type="text"
                       required
                       value={associationPhone}
@@ -139,10 +142,11 @@ export default function GeneralSettingsSection() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">البريد الإلكتروني <span className="text-danger-500">*</span></label>
+                  <label htmlFor="gs-associationEmail" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">البريد الإلكتروني <span className="text-danger-500">*</span></label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-ink-3"><Mail className="w-4 h-4" /></span>
                     <input
+                      id="gs-associationEmail"
                       type="email"
                       required
                       value={associationEmail}
@@ -154,10 +158,11 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">العنوان الجغرافي المقر الرسمي <span className="text-danger-500">*</span></label>
+                <label htmlFor="gs-associationAddress" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">العنوان الجغرافي المقر الرسمي <span className="text-danger-500">*</span></label>
                 <div className="relative">
                   <span className="absolute right-3 top-3 text-ink-3"><MapPin className="w-4 h-4" /></span>
                   <textarea
+                    id="gs-associationAddress"
                     required
                     rows={2}
                     value={associationAddress}
@@ -168,7 +173,7 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-2 pt-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">شعار المؤسسة الرسمي</label>
+                <label htmlFor="logo-upload-input" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">شعار المؤسسة الرسمي</label>
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -236,10 +241,11 @@ export default function GeneralSettingsSection() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">سنة / تاريخ التأسيس</label>
+                  <label htmlFor="gs-foundingDate" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">سنة / تاريخ التأسيس</label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-ink-3"><Calendar className="w-4 h-4" /></span>
                     <input
+                      id="gs-foundingDate"
                       type="text"
                       value={foundingDate}
                       onChange={(e) => setFoundingDate(e.target.value)}
@@ -250,10 +256,11 @@ export default function GeneralSettingsSection() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الترخيص / وصل الإيداع القانوني</label>
+                  <label htmlFor="gs-licenseNumber" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رقم الترخيص / وصل الإيداع القانوني</label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-ink-3"><FileCheck className="w-4 h-4" /></span>
                     <input
+                      id="gs-licenseNumber"
                       type="text"
                       value={licenseNumber}
                       onChange={(e) => setLicenseNumber(e.target.value)}
@@ -265,10 +272,11 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الحساب البنكي للجمعية (RIB)</label>
+                <label htmlFor="gs-bankRIB" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الحساب البنكي للجمعية (RIB)</label>
                 <div className="relative">
                   <span className="absolute right-3 top-3 text-ink-3"><CreditCard className="w-4 h-4" /></span>
                   <input
+                    id="gs-bankRIB"
                     type="text"
                     value={bankRIB}
                     onChange={(e) => setBankRIB(e.target.value)}
@@ -289,8 +297,9 @@ export default function GeneralSettingsSection() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رسوم الاشتراك الشهري المرجعية</label>
+                    <label htmlFor="gs-subscriptionFee" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">رسوم الاشتراك الشهري المرجعية</label>
                     <input
+                      id="gs-subscriptionFee"
                       type="number"
                       required
                       value={subscriptionFee}
@@ -300,8 +309,9 @@ export default function GeneralSettingsSection() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">العملة الرسمية</label>
+                    <label htmlFor="gs-currency" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">العملة الرسمية</label>
                     <input
+                      id="gs-currency"
                       type="text"
                       required
                       value={currency}
@@ -313,8 +323,9 @@ export default function GeneralSettingsSection() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">سنة الافتتاح الرسمي (بداية الفوترة)</label>
+                    <label htmlFor="gs-openingYear" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">سنة الافتتاح الرسمي (بداية الفوترة)</label>
                     <input
+                      id="gs-openingYear"
                       type="number"
                       value={openingYear}
                       onChange={(e) => setOpeningYear(e.target.value === "" ? "" : Number(e.target.value))}
@@ -323,8 +334,9 @@ export default function GeneralSettingsSection() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">شهر الافتتاح الرسمي</label>
+                    <label htmlFor="gs-openingMonth" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">شهر الافتتاح الرسمي</label>
                     <Select
+                      id="gs-openingMonth"
                       aria-label="شهر الافتتاح الرسمي"
                       value={openingMonth}
                       onChange={(v) => setOpeningMonth(v)}
@@ -335,12 +347,13 @@ export default function GeneralSettingsSection() {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تعريفات خاصة لبعض الأشهر (عروض وتخفيضات)</label>
+                <div className="space-y-1.5" role="group" aria-labelledby="gs-feeOverridesLabel">
+                  <span id="gs-feeOverridesLabel" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">تعريفات خاصة لبعض الأشهر (عروض وتخفيضات)</span>
                   {feeOverrides.map((o, i) => (
                     <div key={i} className="grid grid-cols-7 gap-2 items-center">
                       <input
                         type="number"
+                        aria-label="السنة"
                         value={o.year}
                         onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, year: Number(e.target.value) } : x)))}
                         className="col-span-2 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
@@ -356,6 +369,7 @@ export default function GeneralSettingsSection() {
                       </Select>
                       <input
                         type="number"
+                        aria-label="المبلغ (د.م)"
                         value={o.amount}
                         onChange={(e) => setFeeOverrides((prev) => prev.map((x, j) => (j === i ? { ...x, amount: Number(e.target.value) } : x)))}
                         className="col-span-2 p-2 border border-line-strong rounded-xl text-[13px] bg-white font-bold"
@@ -391,10 +405,11 @@ export default function GeneralSettingsSection() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الموسم الدراسي النشط <span className="text-danger-500">*</span></label>
+                  <label htmlFor="gs-activeAcademicSeason" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الموسم الدراسي النشط <span className="text-danger-500">*</span></label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-ink-3"><Tag className="w-4 h-4" /></span>
                     <input
+                      id="gs-activeAcademicSeason"
                       type="text"
                       required
                       value={activeAcademicSeason}
@@ -406,10 +421,11 @@ export default function GeneralSettingsSection() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">صيغة ترقيم الوصولات</label>
+                  <label htmlFor="gs-receiptPrefixFormat" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">صيغة ترقيم الوصولات</label>
                   <div className="relative">
                     <span className="absolute right-3 top-3 text-ink-3"><FileText className="w-4 h-4" /></span>
                     <input
+                      id="gs-receiptPrefixFormat"
                       type="text"
                       value={receiptPrefixFormat}
                       onChange={(e) => setReceiptPrefixFormat(e.target.value)}
@@ -422,8 +438,9 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الشعار اللفظي / الرؤية المؤسساتية</label>
+                <label htmlFor="gs-mottoVision" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">الشعار اللفظي / الرؤية المؤسساتية</label>
                 <input
+                  id="gs-mottoVision"
                   type="text"
                   value={mottoVision}
                   onChange={(e) => setMottoVision(e.target.value)}
@@ -433,8 +450,9 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">شروط وأحكام القانون الداخلي (تدرج باستمارة التسجيل)</label>
+                <label htmlFor="gs-internalBylaws" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">شروط وأحكام القانون الداخلي (تدرج باستمارة التسجيل)</label>
                 <textarea
+                  id="gs-internalBylaws"
                   rows={3}
                   value={internalBylaws}
                   onChange={(e) => setInternalBylaws(e.target.value)}
@@ -444,8 +462,9 @@ export default function GeneralSettingsSection() {
               </div>
 
               <div className="space-y-1">
-                <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نص الترويسة السفلي (للوصلات والشهادات الرسمية)</label>
+                <label htmlFor="gs-footerNotice" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نص الترويسة السفلي (للوصلات والشهادات الرسمية)</label>
                 <input
+                  id="gs-footerNotice"
                   type="text"
                   value={footerNotice}
                   onChange={(e) => setFooterNotice(e.target.value)}
@@ -494,8 +513,9 @@ export default function GeneralSettingsSection() {
 
                 {showStampOnReceipts && (
                   <div className="space-y-1 pt-1 animate-fadeIn">
-                    <label className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نص الختم المعتمد</label>
+                    <label htmlFor="gs-stampText" className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">نص الختم المعتمد</label>
                     <input
+                      id="gs-stampText"
                       type="text"
                       value={stampText}
                       onChange={(e) => setStampText(e.target.value)}
