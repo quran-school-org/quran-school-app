@@ -1,6 +1,6 @@
 /**
  * Carte / section de la charte : surface #F8F8F3, bordure #D9DBD0, rayon 18 px,
- * marge intérieure 24 px ; titre en Reem Kufi 22 px bleu nuit.
+ * marge intérieure 24 px ; titre en IBM Plex Sans Arabic 600, 22 px (UI-15).
  */
 import React from "react";
 import { cx } from "./cx";
@@ -35,7 +35,7 @@ export function CardHeader({ title, description, actions, id, icon, className, l
   return (
     <div className={cx("flex flex-wrap justify-between items-start gap-x-5 gap-y-3", className)}>
       <div className="flex flex-col gap-1 min-w-0 max-w-[60ch]">
-        <H id={id} className={cx("m-0 font-display font-semibold text-primary flex items-center gap-2", level === 2 ? "text-[22px] leading-snug" : "text-[18px] leading-snug")}>
+        <H id={id} className={cx("m-0 font-sans font-semibold text-primary flex items-center gap-2", level === 2 ? "text-[22px] leading-snug" : "text-[18px] leading-snug")}>
           {icon && <span aria-hidden="true" className="inline-flex text-gold-700">{icon}</span>}
           {title}
         </H>
