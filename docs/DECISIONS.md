@@ -2782,3 +2782,12 @@ là-bas (R-06).
   jetons (retirer les lignes `tint` de `TOKENS` et régénérer `themes.css`), libellés (inverser les chaînes et `fr.ts`),
   échelle (remettre les `text-[Npx]` : table du mapping ci-dessus), RTL (table `mr → ms`… inversée), tableaux (un
   fichier à la fois), `touch-target` (retirer la classe).
+
+### D102. CI seulement sur les PR (minutes GitHub Actions)
+- **Contexte** : le 27/10/2026, l'organisation a atteint sa limite de dépenses GitHub Actions : plus aucun
+  workflow ne démarrait, ni tests ni déploiements. `ci.yml` tournait deux fois par changement (`push` sur toute
+  branche autre que `main` et `pull_request`), y compris sur les branches d'agents sans PR.
+- **Décision** : `ci.yml` ne se déclenche plus que sur `pull_request`. La `concurrency` existante annule les
+  exécutions obsolètes d'une même PR. Une branche sans PR n'est pas testée sur GitHub : tests locaux (`npm run check`,
+  `npm run test:e2e`) avant d'ouvrir la PR.
+- **Retour arrière** : remettre `push: branches-ignore: [main]` dans `on:` de `ci.yml`.
