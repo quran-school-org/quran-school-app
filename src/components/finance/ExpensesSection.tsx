@@ -2,16 +2,17 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Wallet, Building2, Plus, Edit3, Trash2, Receipt } from "lucide-react";
+import { Wallet, Building2, Edit3, Trash2, Receipt } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { formatMoney, formatNumber } from "../../utils/format";
 import { useConfirm } from "../../ui";
+
+import { formatDateAr } from "../../format/date";
 
 export default function ExpensesSection() {
   const confirm = useConfirm();
   const {
     onDeleteExpense,
-    canCreate,
     canUpdate,
     canDelete,
     activeSubTab,
@@ -89,17 +90,6 @@ export default function ExpensesSection() {
                   تسجيل الفواتير، التجهيزات، صيانة المقر، ومصاريف الأنشطة مع تحديد المصدر المالي.
                 </p>
               </div>
-
-              {canCreate && (
-                <button
-                  data-action="open-expense-form"
-                  onClick={() => openExpenseModal()}
-                  className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>تسجيل فاتورة / نفقة جديدة</span>
-                </button>
-              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -154,7 +144,7 @@ export default function ExpensesSection() {
                           {exp.invoiceNo || "—"}
                         </td>
                         <td className="p-3 text-ink-3">
-                          {exp.date}
+                          {formatDateAr(exp.date)}
                         </td>
                         <td className="p-3">
                           <div className="flex items-center justify-center gap-1">

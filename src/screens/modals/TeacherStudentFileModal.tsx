@@ -4,8 +4,9 @@
 import { checkUserPermission, TajweedLevel } from "../../types";
 import { StudentAvatar } from "../../utils/studentAvatar";
 import { BookOpen, Award, Trash2, Check, FileText } from "lucide-react";
-import { Button, EmptyState, FormField, IconButton, Input, Ltr, Modal, Pill, Select, Textarea, cx } from "../../ui";
+import { Button, EmptyState, FormField, IconButton, Input, Modal, Pill, Select, Textarea, cx } from "../../ui";
 import { useApp } from "../../app/AppContext";
+import { formatDateAr } from "../../format/date";
 
 const TAJWEED_LEVELS: TajweedLevel[] = ["ممتاز", "متوسط", "ضعيف"];
 
@@ -160,7 +161,7 @@ export default function TeacherStudentFileModal() {
                       <span aria-hidden="true" className="absolute top-2 -start-[7px] w-3 h-3 rounded-full bg-gold border-2 border-white" />
                       <div className="rounded-xl border border-line-soft bg-surface-2 p-3 flex flex-col gap-2">
                         <div className="flex justify-between items-center gap-2">
-                          <Ltr className="text-[12.5px] text-ink-2 font-semibold">{record.date}</Ltr>
+                          <span className="text-[12.5px] text-ink-2 font-semibold">{formatDateAr(record.date)}</span>
                           <span className="flex items-center gap-1.5">
                             <Pill tone={RATING_TONE[record.rating] || "danger"}>{record.rating}</Pill>
                             <IconButton size="sm" tone="danger" label="حذف هذا السجل" onClick={() => handleDeleteDailyProgress(record.id)}><Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} /></IconButton>

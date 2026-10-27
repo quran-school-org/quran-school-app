@@ -13,6 +13,8 @@ import { resolveThemeId, type ThemeId } from "../../theme/palettes";
 import { applyTheme } from "../../theme/applyTheme";
 import { useToast } from "../../ui";
 
+import { formatDateTimeAr, formatTimeAr } from "../../format/date";
+
 export function useSettingsState(props: SettingsManagementProps) {
   const toast = useToast();
   const {
@@ -92,9 +94,9 @@ export function useSettingsState(props: SettingsManagementProps) {
       if (diffMins < 1) return "الآن (نشط)";
       if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
       if (diffHours < 24 && date.getDate() === now.getDate()) {
-        return `اليوم ${date.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}`;
+        return `اليوم ${formatTimeAr(lastLoginStr)}`;
       }
-      return `${date.toLocaleDateString("ar-EG", { year: "numeric", month: "short", day: "numeric" })} ${date.toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}`;
+      return formatDateTimeAr(lastLoginStr, lastLoginStr);
     } catch {
       return lastLoginStr;
     }

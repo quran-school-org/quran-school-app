@@ -2,11 +2,12 @@
  * Module comptabilité (recettes, salaires, dépenses, rapport).
  * Découpé mécaniquement depuis FinanceManagement.tsx (Lot 2, sans changement de comportement).
  */
-import { Plus, Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, ExternalLink } from "lucide-react";
+import { Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, ExternalLink } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
 import { Select, useConfirm } from "../../ui";
 import { formatMoney } from "../../utils/format";
+import { formatDateAr } from "../../format/date";
 
 export default function RevenuesSection() {
   const confirm = useConfirm();
@@ -14,7 +15,6 @@ export default function RevenuesSection() {
     students,
     onDeleteOtherIncome,
     onNavigateToActivities,
-    canCreate,
     canUpdate,
     canDelete,
     activeSubTab,
@@ -112,17 +112,6 @@ export default function RevenuesSection() {
                     <option value="أخرى">أخرى</option>
                   </Select>
                 </div>
-
-                {canCreate && (
-                  <button
-                    data-action="open-income-form"
-                    onClick={() => openIncomeModal()}
-                    className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>إضافة دخل / تبرع جديد</span>
-                  </button>
-                )}
               </div>
             </div>
 
@@ -175,7 +164,7 @@ export default function RevenuesSection() {
                           </span>
                         </td>
                         <td className="p-3 text-ink-3">
-                          {inc.date}
+                          {formatDateAr(inc.date)}
                         </td>
                         <td className="p-3 text-ink-3 font-mono text-[12.5px]">
                           {inc.receiptNo || "—"}
@@ -285,7 +274,7 @@ export default function RevenuesSection() {
                               <Compass className="w-3.5 h-3.5 text-primary-600 shrink-0" />
                               <span>{act ? act.title : `نشاط #${p.activityId}`}</span>
                             </span>
-                            {act?.startDate && <p className="text-[11.5px] text-ink-3 font-normal">{act.startDate}</p>}
+                            {act?.startDate && <p className="text-[11.5px] text-ink-3 font-normal">{formatDateAr(act.startDate)}</p>}
                           </td>
                           <td className="p-3 font-bold text-ink">
                             {participantName}
@@ -314,7 +303,7 @@ export default function RevenuesSection() {
                             </span>
                           </td>
                           <td className="p-3 text-ink-3 font-mono text-[12.5px]">
-                            {p.paymentDate || "—"}
+                            {formatDateAr(p.paymentDate)}
                           </td>
                           <td className="p-3 text-center">
                             {p.paymentStatus === "معفى" ? (
@@ -418,7 +407,7 @@ export default function RevenuesSection() {
                             {p.receiptNo || "—"}
                           </td>
                           <td className="p-3 text-ink-3">
-                            {p.paymentDate}
+                            {formatDateAr(p.paymentDate)}
                           </td>
                           <td className="p-3">
                             <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-[11.5px] px-2.5 py-1 rounded-full">

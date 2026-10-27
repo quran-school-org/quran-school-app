@@ -364,6 +364,7 @@ export const FR: Record<string, string> = {
   "الوجهة أو المكان:": "Destination ou lieu :",
   "تاريخ الانطلاق:": "Date de départ :",
   "إلى {0}": "au {0}",
+  "{0} إلى {1}": "{0} au {1}",
   "المؤطرون والمشرفون المعتمدون:": "Encadrants et accompagnateurs désignés :",
   "الإدارة التربوية": "Direction pédagogique",
   "الاسم الكامل للمشارك": "Nom complet du participant",
@@ -1500,8 +1501,6 @@ export const FR: Record<string, string> = {
   "الأسبوع الماضي": "Semaine précédente",
   "{0}: {1}، الأسبوع الماضي {2}": "{0} : {1}, semaine précédente {2}",
   "لا تسجيل": "Aucun pointage",
-  "لم تُسجَّل أي حصة في {0} منذ {1}. تظهر المقارنة هنا بعد أول تسجيل للحضور.": "Aucune séance pointée dans {0} depuis le {1}. La comparaison s'affichera ici après le premier pointage.",
-  "لم تُسجَّل أي حصة في {0} بعد. تظهر المقارنة هنا بعد أول تسجيل للحضور.": "Aucune séance pointée dans {0} pour l'instant. La comparaison s'affichera ici après le premier pointage.",
   // screens/DashboardScreen.tsx
   "ضعيف": "Faible",
   "درهم": "DH",
@@ -2234,4 +2233,15 @@ export const FR: Record<string, string> = {
   "تأكيد الاسترجاع": "Confirmer la restauration",
   "استرجاع": "Restaurer",
   "إغلاق الإشعار": "Fermer le message",
+
+  // L5 (D100) : hiérarchie
+  "تصفية السجلات المالية": "Filtrer les écritures financières",
+  "النسخ الاحتياطي": "Sauvegarde",
+  "نزّل نسخة كاملة من بيانات المدرسة في ملف JSON واحتفظ بها في مكان آمن. الاسترجاع يستبدل جميع البيانات الحالية ببيانات الملف، فلا تستعمله إلا عند الضرورة.": "Téléchargez une copie complète des données de l'école dans un fichier JSON et conservez-la en lieu sûr. La restauration remplace toutes les données actuelles par celles du fichier : à n'utiliser qu'en cas de nécessité.",
+  "لم يُسجَّل حضور هذا الأسبوع بعد.": "Aucune présence enregistrée cette semaine pour l'instant.",
+  "لم يُسجَّل حضور هذا الأسبوع بعد في {0}.": "Aucune présence enregistrée cette semaine pour l'instant ({0}).",
+  "آخر حصة مسجّلة: {0}.": "Dernière séance enregistrée : {0}.",
+  "الحصة جارية الآن، وتُحتسب نسبتها عند انتهائها.": "La séance est en cours ; son taux sera compté à sa fin.",
+  "لم تبدأ حصة اليوم بعد.": "La séance d'aujourd'hui n'a pas encore commencé.",
+  "تظهر المقارنة هنا بعد أول تسجيل للحضور.": "La comparaison apparaîtra ici après la première saisie de présence.",
 };

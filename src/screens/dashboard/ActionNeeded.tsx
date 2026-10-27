@@ -7,9 +7,11 @@ import { classPlacement, classesWithoutTeacher, missingDocuments, studentsLabel,
 
 const icon = (C: any) => <C className="w-5 h-5" strokeWidth={1.75} />;
 
-export default function ActionNeeded({ students, classes, teachers, attendance, payments, canGo, go }: {
+export default function ActionNeeded({ students, classes, teachers, attendance, payments, canGo, go, wide = false }: {
   students: Student[]; classes: Class[]; teachers: Teacher[]; attendance: Attendance[]; payments: Payment[];
   canGo: (tab: string) => boolean; go: (tab: string) => void;
+  /** Pleine largeur (bloc remonté sous les chiffres clés) : les alertes se répartissent sur deux colonnes. */
+  wide?: boolean;
 }) {
   const missing = missingDocuments(students);
   const noTeacher = classesWithoutTeacher(classes, teachers);
@@ -54,9 +56,9 @@ export default function ActionNeeded({ students, classes, teachers, attendance, 
     );
   }
   return (
-    <Card className="flex-[1_1_300px] flex flex-col gap-3.5" aria-labelledby="actions-title">
+    <Card data-block="action-needed" className={wide ? "flex flex-col gap-3.5" : "flex-[1_1_300px] flex flex-col gap-3.5"} aria-labelledby="actions-title">
       <CardHeader id="actions-title" title="تحتاج إجراءً" />
-      {items.length > 0 ? items : (
+      {items.length > 0 ? (wide ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 items-start">{items}</div> : items) : (
         <ActionAlert tone="success" icon={icon(CheckCircle2)} title="لا شيء يحتاج إجراءً الآن">
           الوثائق مكتملة، والحلقات مؤطّرة، والحضور مسجّل هذا الأسبوع.
         </ActionAlert>

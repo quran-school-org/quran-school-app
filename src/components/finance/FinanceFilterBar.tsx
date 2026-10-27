@@ -12,7 +12,7 @@ export default function FinanceFilterBar() {
   const { activeSubTab, setActiveSubTab, selectedYear, setSelectedYear, searchQuery, setSearchQuery } = useFinance();
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-col gap-3">
       <SegmentedControl
         label="أقسام المحاسبة"
         value={activeSubTab}
@@ -24,8 +24,9 @@ export default function FinanceFilterBar() {
           { value: "report", label: "تقرير مالي وختامي", icon: ic(PieChart), attrs: { "data-subtab": "report" } },
         ]}
       />
-      <div className="flex items-center gap-2 flex-wrap">
-        <SearchInput aria-label="بحث في السجلات المالية" icon={<Search className="w-4 h-4" strokeWidth={1.75} />} placeholder="بحث بالاسم أو رقم الإيصال..." value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} className="w-56" />
+      {/* Recherche et exercice juste au-dessus des chiffres et des tableaux qu'ils filtrent (constat 21, D100). */}
+      <div data-block="finance-filters" role="group" aria-label="تصفية السجلات المالية" className="flex items-center gap-2 flex-wrap">
+        <SearchInput aria-label="بحث في السجلات المالية" icon={<Search className="w-4 h-4" strokeWidth={1.75} />} placeholder="بحث بالاسم أو رقم الإيصال..." value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} className="w-full sm:w-72" />
         <Select aria-label="السنة المالية" value={selectedYear} onChange={(v) => setSelectedYear(v)} className="w-auto">
           {[0, 1, 2].map((d) => {
             const y = new Date().getFullYear() - d;

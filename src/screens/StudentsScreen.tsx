@@ -14,6 +14,7 @@ import { Button, Card, DataTable, DropdownMenu, EmptyState, FilterChips, IconBut
 import { navLabel } from "../shell/navModel";
 import StudentDossier from "./students/StudentDossier";
 import { tajweedTone } from "./students/tajweed";
+import { formatDateAr } from "../format/date";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} />;
 
@@ -33,7 +34,7 @@ const nameBlock = (st: Student) => (
       <span className={cx("font-semibold text-[14.5px]", st.isArchived ? "text-ink-3 line-through" : "text-ink")}>{st.fullName}</span>
       {st.isArchived && <Pill tone="neutral">مؤرشف</Pill>}
     </span>
-    <span className="text-[12.5px] text-ink-3">ازدياد: <Ltr>{st.birthDate}</Ltr></span>
+    <span className="text-[12.5px] text-ink-3">ازدياد: {formatDateAr(st.birthDate)}</span>
   </span>
 );
 

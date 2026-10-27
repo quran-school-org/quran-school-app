@@ -13,6 +13,23 @@ export interface HifzStudent {
 }
 
 const MAX_DOTS = 20;
+/** Hauteur de la zone des points : un point de 8 px + 3 px d'écart par élève, plus les marges. */
+const DOT_STEP = 11;
+const PLOT_MIN = 96;
+const PLOT_MAX = 236;
+
+/**
+ * Hauteur (px) de la zone des points selon le ḥizb le plus peuplé : elle suit les
+ * élèves au lieu de réserver 236 px à vide quand ils sont peu dispersés (D100).
+ * Minimum de 96 px (la zone reste cliquable et lisible), maximum 236 px (valeur
+ * historique, atteinte avec 20 points ou davantage, « +N » compris).
+ */
+export function hifzPlotHeight(maxPerHizb: number): number {
+  const shown = Math.min(Math.max(0, Math.floor(maxPerHizb)), MAX_DOTS);
+  const label = maxPerHizb > MAX_DOTS ? 14 : 0; // pastille « +N »
+  const content = shown * DOT_STEP + label + 14; // 14 : marges verticales du bouton et respiration
+  return Math.max(PLOT_MIN, Math.min(PLOT_MAX, content + 12));
+}
 
 export function hizbOf(count: number | string | undefined | null): number {
   const n = Math.round(Number(count) || 0);
@@ -38,6 +55,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
     return m;
   }, [students]);
   const onMap = Array.from(byHizb.values()).reduce((a, l) => a + l.length, 0);
+  const plotHeight = hifzPlotHeight(Math.max(0, ...Array.from(byHizb.values(), (l) => l.length)));
   const furthest = byHizb.size ? Math.max(...byHizb.keys()) : 0;
   const selList = byHizb.get(selected) || [];
   const selCount = selList.length === 0 ? "لا يوجد طالب في هذا الحزب بعد" : selList.length === 1 ? "طالب واحد" : `${selList.length} طلاب`;
@@ -67,7 +85,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
       <div className="relative mt-6 overflow-x-auto pb-1" tabIndex={0} role="region" aria-label="الأحزاب الستون، مرّر أفقياً">
         {/* px-2 : les numéros des bords (1, 60) débordaient d'un pixel et faisaient apparaître la barre de défilement. */}
         <div className="min-w-[680px] max-sm:min-w-[1480px] pointer-coarse:min-w-[1480px] px-2">
-          <div role="group" aria-label="الأحزاب الستون" className="grid gap-0.5 h-[236px] items-stretch" style={{ gridTemplateColumns: "repeat(60, minmax(0, 1fr))" }}>
+          <div role="group" aria-label="الأحزاب الستون" data-plot-height={plotHeight} className="grid gap-0.5 items-stretch" style={{ gridTemplateColumns: "repeat(60, minmax(0, 1fr))", height: plotHeight }}>
             {Array.from({ length: 60 }, (_, i) => i + 1).map((n) => {
               const here = byHizb.get(n) || [];
               const on = n === selected;

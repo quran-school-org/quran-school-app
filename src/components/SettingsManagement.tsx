@@ -2,6 +2,7 @@
  * Paramètres de l'école et gestion des comptes (matrice de droits).
  * État et logique : settings/useSettingsState ; sections : settings/.
  */
+import type React from "react";
 import { SystemSettings, AppUser, Teacher, Student } from "../types";
 import { useSettingsState } from "./settings/useSettingsState";
 import { SettingsContext } from "./settings/SettingsContext";
@@ -9,6 +10,7 @@ import SettingsTabs from "./settings/SettingsTabs";
 import GeneralSettingsSection from "./settings/GeneralSettingsSection";
 import UsersSection from "./settings/UsersSection";
 import UserFormModal from "./settings/UserFormModal";
+import BackupSection from "./settings/BackupSection";
 import { PageHeader } from "../ui";
 
 export interface SettingsManagementProps {
@@ -29,6 +31,9 @@ export interface SettingsManagementProps {
   onSaveTeacher?: (teacher: Teacher, assignedClassIds?: string[]) => void;
   onNavigateToStaff?: () => void;
   onHarmonizeUsers?: () => void;
+  /** Sauvegarde et restauration de la base (section « النسخ الاحتياطي ») : absentes, la section n'est pas affichée. */
+  onBackup?: () => void;
+  onRestore?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function SettingsManagement(props: SettingsManagementProps) {
@@ -40,6 +45,8 @@ export default function SettingsManagement(props: SettingsManagementProps) {
       <SettingsTabs />
 
       <GeneralSettingsSection />
+
+      {props.onBackup && props.onRestore && <BackupSection onBackup={props.onBackup} onRestore={props.onRestore} />}
 
       <UsersSection />
 

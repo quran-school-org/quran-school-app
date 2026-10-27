@@ -7,10 +7,11 @@
 import { useId, useMemo, useState } from "react";
 import { Calendar, ChevronDown, Clock, Compass, MapPin, Search, Wallet } from "lucide-react";
 import type { ActivityParticipant, ActivityTrip, Student } from "../../types";
-import { Card, EmptyState, Ltr, PageHeader, Pill, SearchInput, Select, type PillTone } from "../../ui";
+import { Card, EmptyState, PageHeader, Pill, SearchInput, Select, type PillTone } from "../../ui";
 import { foldForSearch } from "../../ui/textSearch";
 import { formatMoney } from "../../utils/format";
 import { FAMILY_ACTIVITIES_SEARCH_MIN, childActivityState, familyActivityTexts, isLongText, sortFamilyActivities } from "./familyActivitiesData";
+import { formatDateRangeAr } from "../../format/date";
 
 const STATUS_TONE: Record<string, PillTone> = { "مكتمل": "neutral", "قيد التسجيل": "primary", "قيد التنفيذ": "success", "ملغى": "danger", "مخطط له": "warn" };
 const STATUSES = ["مخطط له", "قيد التسجيل", "قيد التنفيذ", "مكتمل", "ملغى"];
@@ -126,7 +127,7 @@ export default function FamilyActivities({ activities, participants, children, i
                   <div className="flex items-center gap-1.5">
                     <dt className="sr-only">التاريخ</dt>
                     {ic(Calendar)}
-                    <dd className="m-0"><Ltr>{a.startDate}</Ltr>{a.endDate && a.endDate !== a.startDate && <> – <Ltr>{a.endDate}</Ltr></>}</dd>
+                    <dd className="m-0">{formatDateRangeAr(a.startDate, a.endDate)}</dd>
                   </div>
                   {a.location && (
                     <div className="flex items-center gap-1.5 min-w-0">

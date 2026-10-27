@@ -7,6 +7,7 @@ import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
 import { Ltr, Select, useConfirm } from "../../ui";
 import { formatMoney, formatNumber } from "../../utils/format";
+import { formatDateAr, formatDateRangeAr } from "../../format/date";
 
 export default function ActivityWorkspace() {
   const confirm = useConfirm();
@@ -97,7 +98,7 @@ export default function ActivityWorkspace() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-primary-400" />
-                      <span>التاريخ: {currentActivity.startDate} {currentActivity.endDate ? `إلى ${currentActivity.endDate}` : ""}</span>
+                      <span>التاريخ: <bdi>{formatDateRangeAr(currentActivity.startDate, currentActivity.endDate)}</bdi></span>
                     </span>
                     <span className="flex items-center gap-1">
                       <DollarSign className="w-3.5 h-3.5 text-primary-400" />
@@ -546,7 +547,7 @@ export default function ActivityWorkspace() {
                               </span>
                             </td>
                             <td className="p-3 font-bold text-danger-700">{formatMoney(exp.amount)}</td>
-                            <td className="p-3 text-ink-2 font-mono">{exp.date}</td>
+                            <td className="p-3 text-ink-2">{formatDateAr(exp.date)}</td>
                             <td className="p-3 text-ink-2">{exp.supplier || "—"}</td>
                             <td className="p-3 font-mono text-ink-3">{exp.receiptOrInvoiceNo || "—"}</td>
                             <td className="p-3 text-center">

@@ -2672,3 +2672,51 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits de D99 (aucune donnée ni règle touchée). Les briques
   (`Toast`, `ConfirmDialog`) sont inertes sans leurs appelants ; remettre `alert`/`confirm` dans un
   fichier revient à retirer son `useToast`/`useConfirm` (retirer aussi la règle du garde-fou).
+
+### D100. Audit UX/UI, lot L5 : hiérarchie des écrans, dates lisibles, 409 à la connexion
+- **Contexte** : l'audit UX/UI du 26/10/2026 (constats 11, 20, 21, 22, 23 et critique de design) a relevé :
+  la sauvegarde et surtout la restauration (« استرجاع نسخة », qui remplace toutes les données) au premier plan du
+  tableau de bord ; le bloc « تحتاج إجراء » en 3ᵉ position ; une carte du ḥifẓ de 236 px même quand les
+  élèves sont regroupés ; en comptabilité, l'impression du rapport final comme bouton principal ; trois cases
+  vides sans message pour la présence ; des dates ISO (`2026-10-01`) dans les écrans ; une requête `commit` en 409
+  à la connexion du directeur d'annour.
+- **Décision** :
+  - Sauvegarde : une section « النسخ الاحتياطي » (`settings/BackupSection.tsx`, onglet général des Paramètres) avec
+    une phrase d'explication ; mêmes gestionnaires (`handleBackupRealmDB`, `handleRestoreRealmDB`, donc la même
+    confirmation avant remplacement), mêmes identifiants de boutons. Elle suit les droits de l'écran Paramètres
+    (directeur par défaut) : les rôles qui voyaient le tableau de bord (administratif, encadrant) n'ont plus ces
+    deux boutons, ce qui resserre l'accès sans rien retirer au directeur. « استرجاع نسخة » passe en variante `danger`.
+  - « تحتاج إجراء » : remonté pleine largeur juste sous les chiffres clés, avant la carte du ḥifẓ, dès qu'il y a au
+    moins une alerte (documents manquants, halaqa sans muḥaffiẓ ou élève sans halaqa, cotisations impayées :
+    `actionAlertCount`). Le simple rappel « لا حضور مسجّل هذا الأسبوع » ne déclenche pas la remontée (il reviendrait
+    chaque début de semaine). Sans alerte : ordre d'origine (carte du ḥifẓ, chiffres, bloc à côté des muḥaffiẓ).
+  - Carte du ḥifẓ : la zone des points a une hauteur qui suit le ḥizb le plus peuplé (`hifzPlotHeight` : 96 px au
+    minimum, 236 px au maximum, valeur historique). Dessin et couleurs inchangés.
+  - Comptabilité : « طباعة التقرير المالي الختامي » en variante secondaire ; l'ajout du sous-onglet actif (recette,
+    salaire, dépense) devient le bouton principal de l'en-tête (mêmes `data-action`, même libellé, même gestionnaire ;
+    retiré de l'en-tête de chaque tableau, où il faisait doublon). Recherche et exercice : sous les onglets, sur leur
+    propre ligne, avant les chiffres et le tableau qu'ils filtrent (ils agissent aussi sur les chiffres : ils ne
+    descendent pas sous ceux-ci).
+  - Présence de la semaine : dès qu'aucun relevé n'est compté cette semaine, un message explicite remplace les
+    colonnes vides (« لم يُسجَّل حضور هذا الأسبوع بعد », avec la date de la dernière séance et l'état de la séance du jour).
+  - Dates : `src/format/date.ts` (`formatDateAr`, `formatDateRangeAr`, `formatTimeAr`, `formatDateTimeAr`) écrit
+    « 1 أكتوبر 2026 » avec les mois de l'application (`MONTHS_AR` : « يوليوز », « غشت », « شتمبر »…), chiffres
+    latins, sans décalage de fuseau ; date vide ou invalide : « — ». Utilisé dans l'accueil famille, la fiche et la liste
+    des élèves, les notifications, les paiements, les résultats, l'historique de présence, les tableaux de comptabilité,
+    les activités et la dernière connexion. Inchangés : valeurs stockées, champs `<input type="date">`, exports
+    CSV/JSON/PDF, impression et aperçus d'impression (`src/print/`, badge, rapport mensuel, fiche d'activité), numéros de reçus.
+  - 409 : `updateOwnUserFields` et `updateOwnMemberFields` passent par une file par document (`utils/writeQueue.ts`).
+    Cause probable (lecture du code ; non reproduite en 6 connexions sur l'émulateur) : à la première connexion à une
+    école, `enterSchool` lance `lastSchoolId` sans l'attendre, puis la connexion lance `lastLogin` sur le même
+    `users/{uid}` : deux commits simultanés sur un document, que l'émulateur peut refuser en ABORTED (409). Sans effet
+    visible à l'écran (les écritures échouent en silence, `console.warn`) ; elles sont désormais exécutées l'une après l'autre. Règles
+    Firestore non touchées.
+  - Tests : `tests/unit/dateFormat.test.ts`, `writeQueue.test.ts`, `dashboardHierarchie.test.ts` ;
+    `tests/e2e/hierarchie.spec.ts` (section de sauvegarde pour le directeur et absente pour l'enseignant, ordre du
+    bloc d'alertes, état vide de la présence, boutons de la comptabilité, dates de l'accueil parent).
+- **Non fait, volontairement** : dates des impressions et des exports ; la barre du haut (`AppFrame`, jour de la
+  semaine compris) garde `Intl` ;
+  le titre du bloc d'alertes reste « تحتاج إجراءً » (libellé existant) ; pas de hauteur repliable pour la carte du ḥifẓ.
+- **Retour arrière** : `git revert` des commits de D100 (aucune donnée ni règle touchée). Séparément : remettre les
+  deux boutons dans `PageHeader` de `DashboardScreen`, retirer `urgent` de `DashboardScreen`, rétablir `h-[236px]` dans
+  `HifzMap`, ou appeler `setDoc` directement dans `firebase.ts` sans `serializeWrites`.

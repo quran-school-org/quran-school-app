@@ -34,6 +34,7 @@ import { firebaseWebConfig, firestoreDatabaseId, emulatorConfig, appCheckConfig 
 import { loginEmailCandidates, normalizeAuthPassword, normalizeUsername } from "./security/accounts";
 import { getCacheScope, scopedKey } from "./cache/localCache";
 import { shrinkInlinePhotos } from "./utils/imageCompression";
+import { serializeWrites } from "./utils/writeQueue";
 import { STAFF_PRIVATE_COLLECTION, STAFF_PRIVATE_FIELDS, mergeStaffRecords, splitStaffRecord, stripStaffPrivate } from "./security/staffPrivate";
 
 /** Région des Cloud Functions (identique à functions/src/config.ts). */
@@ -196,7 +197,8 @@ export async function listAllSchools(): Promise<SchoolInfo[]> {
 
 /** Champs anodins de son profil global (école mémorisée, mot de passe changé…). */
 export async function updateOwnUserFields(uid: string, fields: Partial<Pick<UserProfile, "lastSchoolId" | "mustChangePassword" | "passwordChangedAt" | "lastLogin">>) {
-  await setDoc(doc(db, "users", uid), sanitizeForFirestore(fields), { merge: true });
+  // Même document écrit deux fois à la connexion (école mémorisée, dernière connexion) : une à la fois (D100).
+  await serializeWrites(`users/${uid}`, () => setDoc(doc(db, "users", uid), sanitizeForFirestore(fields), { merge: true }));
 }
 
 /** Champs anodins de son appartenance à une école (nom affiché, dernière connexion). */
@@ -206,7 +208,7 @@ export async function markNotificationReadBy(schoolId: string, notificationId: s
 }
 
 export async function updateOwnMemberFields(schoolId: string, uid: string, fields: Partial<Pick<AppUser, "lastLogin" | "fullName" | "phone">>) {
-  await setDoc(schoolDocRef(schoolId, "members", uid), sanitizeForFirestore(fields), { merge: true });
+  await serializeWrites(`schools/${schoolId}/members/${uid}`, () => setDoc(schoolDocRef(schoolId, "members", uid), sanitizeForFirestore(fields), { merge: true }));
 }
 
 // ---------------------------------------------------------------------------

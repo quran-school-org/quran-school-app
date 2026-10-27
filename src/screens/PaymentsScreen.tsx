@@ -16,6 +16,7 @@ import {
   Button, Card, CardHeader, EmptyState, FormField, IconButton, KpiGrid, KpiTile, Legend, Ltr, PageHeader, Pill,
   SearchInput, Select, Table, TableWrap, Td, Th, Tr, WhatsAppIcon,
 } from "../ui";
+import { formatDateAr } from "../format/date";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} />;
 
@@ -225,7 +226,7 @@ export default function PaymentsScreen() {
                       <Td>
                         {paid ? (
                           <span className="flex flex-col gap-1">
-                            <span className="text-[12.5px] text-ink-2">تاريخ الدفع: <Ltr className="text-ink">{p.paymentDate || "—"}</Ltr></span>
+                            <span className="text-[12.5px] text-ink-2">تاريخ الدفع: <span className="text-ink">{formatDateAr(p.paymentDate)}</span></span>
                             <Pill tone="primary" className="self-start">{p.paymentMethod || "نقداً"}</Pill>
                           </span>
                         ) : (
