@@ -113,7 +113,7 @@ beforeAll(async () => {
   // École de test créée depuis l'interface (createSchool), avec quelques saisies à la main.
   await createSchool(S, "مدرسة الاختبار");
   const w = (path: string, data: Record<string, unknown>) => admin.db.doc(`schools/${S}/${path}`).set({ schoolId: S, ...data });
-  await w("members/owner-uid", { uid: "owner-uid", username: "superadmin_melik", fullName: "Melik", role: "مدير", isActive: true, permissions: null });
+  await w("members/owner-uid", { uid: "owner-uid", username: "superadmin_demo", fullName: "مشرف عام", role: "مدير", isActive: true, permissions: null });
   await w("members/autre-uid", { uid: "autre-uid", username: "prof_test", fullName: "أستاذ", role: "مدرس", isActive: true, linkedTeacherId: "t_manuel" });
   await w("teachers/t_manuel", { id: "t_manuel", fullName: "أستاذ مضاف يدويا", category: "أستاذ / محفظ", phone: "0600000099", isArchived: false });
   await w("staffPrivate/t_manuel", { teacherId: "t_manuel", monthlySalary: 1000 });

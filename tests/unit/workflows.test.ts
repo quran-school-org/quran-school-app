@@ -382,7 +382,7 @@ describe("workflows GitHub Actions (D68)", () => {
     });
 
     describe("D80 : super-admin du dev (dev-super-admin, dev-super-admin-revoke)", () => {
-      const USER = "superadmin_melik";
+      const USER = "superadmin_demo";
       const ACTIONS = ["dev-super-admin", "dev-super-admin-revoke"];
 
       it("dev, apply=true, confirm = projet de dev, identifiant valide, clé publique : accepté, code de main", () => {
@@ -391,7 +391,7 @@ describe("workflows GitHub Actions (D68)", () => {
           expect(r.code, r.out).toBe(0);
           expect(r.outputs).toContain("code_ref=main");
         }
-        for (const ok of ["ab", "superadmin.melik", "a-b_c.d", "9" + "x".repeat(39)]) {
+        for (const ok of ["ab", "superadmin.demo", "a-b_c.d", "9" + "x".repeat(39)]) {
           expect(run({ ACTION: "dev-super-admin", USERNAME_INPUT: ok }).code, ok).toBe(0);
         }
         // Le retrait ne produit aucun mot de passe : la clé publique n'est pas exigée.
@@ -419,7 +419,7 @@ describe("workflows GitHub Actions (D68)", () => {
       });
 
       it("identifiant invalide ou absent refusé, sans jamais être affiché ni exécuté", () => {
-        const bad = ["", "a", "-x", "_x", "Superadmin", "super admin", "x".repeat(41), "a;id", "$(id)", "a`id`", "::error::x", "a\nb", "ab/../c", "é_melik"];
+        const bad = ["", "a", "-x", "_x", "Superadmin", "super admin", "x".repeat(41), "a;id", "$(id)", "a`id`", "::error::x", "a\nb", "ab/../c", "é_demo"];
         for (const action of ACTIONS) {
           for (const u of bad) {
             const r = run({ ACTION: action, USERNAME_INPUT: u });
