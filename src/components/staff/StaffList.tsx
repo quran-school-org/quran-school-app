@@ -6,7 +6,7 @@ import { Edit2, Archive, ArchiveRestore, Mail, Phone, Trash2, MessageCircle, Ale
 import { STAFF_CATEGORIES_CONFIG } from "./shared";
 import { useStaff } from "./StaffContext";
 import { formatMoney } from "../../format/money";
-import { ActionMenu, Button, type ActionMenuItem } from "../../ui";
+import { ActionMenu, Button, DataTable, type ActionMenuItem, type DataColumn } from "../../ui";
 
 export default function StaffList() {
   const {
@@ -20,6 +20,88 @@ export default function StaffList() {
     handleStaffDelete,
     handleStaffArchive,
   } = useStaff();
+
+  type StaffRow = (typeof filteredTeachers)[number];
+  const catOf = (staff: StaffRow) => STAFF_CATEGORIES_CONFIG[staff.category || "أستاذ / محفظ"] || STAFF_CATEGORIES_CONFIG["أستاذ / محفظ"];
+  const StaffAvatar = ({ staff }: { staff: StaffRow }) => (
+    <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-line bg-sand-100 flex items-center justify-center">
+      {staff.photo ? <img src={staff.photo} alt={staff.fullName} className="w-full h-full object-cover" /> : <span>{catOf(staff).icon}</span>}
+    </div>
+  );
+  const rosterColumns: DataColumn<StaffRow>[] = [
+    {
+      id: "person", header: "الكادر / العامل", card: "title",
+      cell: (staff) => (
+        <div className="flex items-center gap-3">
+          <StaffAvatar staff={staff} />
+          <div>
+            <div className="font-bold text-ink flex items-center gap-1.5">
+              <span>{staff.fullName}</span>
+              {staff.isFromSettings && (
+                <span className="inline-flex items-center gap-0.5 text-small font-bold text-primary-700 bg-primary-50 border border-primary-200 px-1.5 py-0.2 rounded" title="مربوط ديناميكياً من وثيقة الإعدادات العامة">
+                  <Sparkles className="w-2.5 h-2.5 text-primary-600" />
+                  <span>إعدادات</span>
+                </span>
+              )}
+            </div>
+            {staff.cinNumber && <div className="text-caption text-ink-3 font-mono">CIN: {staff.cinNumber}</div>}
+          </div>
+        </div>
+      ),
+      cardCell: (staff) => (
+        <div>
+          <div className="font-bold text-ink">{staff.fullName}</div>
+          {staff.cinNumber && <div className="text-caption text-ink-3 font-mono">CIN: {staff.cinNumber}</div>}
+        </div>
+      ),
+    },
+    {
+      id: "category", header: "الفئة والمسمى الوظيفي", card: "field",
+      cell: (staff) => (
+        <div className="space-y-0.5">
+          <span className={`inline-block text-caption font-bold px-2 py-0.5 rounded ${catOf(staff).bg} ${catOf(staff).text}`}>
+            {catOf(staff).icon} {staff.category || "أستاذ / محفظ"}
+          </span>
+          <div className="text-small text-ink-2 font-semibold">{staff.roleTitle || staff.specialty}</div>
+        </div>
+      ),
+    },
+    {
+      id: "contact", header: "معلومات الاتصال", card: "field",
+      cell: (staff) => (
+        <div className="space-y-1 font-mono text-small">
+          <div className="text-ink-2">{staff.phone}</div>
+          {staff.email && <div className="text-ink-3 text-caption truncate max-w-[120px]">{staff.email}</div>}
+        </div>
+      ),
+    },
+    {
+      id: "contract", header: "نوع التعاقد",
+      cell: (staff) => <span className="font-medium text-ink-2 bg-sand-100 px-2 py-1 rounded text-small">{staff.contractType || "مكافأة شهرية"}</span>,
+    },
+    { id: "salary", header: "المكافأة الشهرية", card: "field", className: "font-bold text-primary-800 font-mono", cell: (staff) => (staff.monthlySalary ? formatMoney(staff.monthlySalary) : "-") },
+    {
+      id: "tasks", header: "المهام / الفصول",
+      cell: (staff) => {
+        const assignedClasses = classes.filter((c) => c.teacherId === staff.id);
+        return (staff.category || "أستاذ / محفظ") === "أستاذ / محفظ" ? (
+          assignedClasses.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {assignedClasses.map((c) => (
+                <span key={c.id} className="bg-primary-50 text-primary-800 text-caption px-1.5 py-0.5 rounded font-bold">{c.name}</span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-ink-3 text-caption">غير مسند</span>
+          )
+        ) : (
+          <span className="text-ink-2 text-small truncate block max-w-[150px]" title={staff.assignedAreas || staff.duties}>
+            {staff.assignedAreas || staff.duties || "-"}
+          </span>
+        );
+      },
+    },
+  ];
 
   /** Actions d'une fiche : « تعديل » en action principale, le reste dans le menu « ⋯ » (UI-18). */
   const menuItemsOf = (staff: (typeof filteredTeachers)[number]): ActionMenuItem[] => [
@@ -236,119 +318,31 @@ export default function StaffList() {
           </div>
         ) : (
           /* Table Roster View */
-          <div className="bg-surface rounded-2xl border border-line overflow-x-auto">
-            <table className="w-full text-start text-small">
-              <thead className="bg-sand-50 border-b border-line text-ink-2 font-bold">
-                <tr>
-                  <th className="p-3.5">الكادر / العامل</th>
-                  <th className="p-3.5">الفئة والمسمى الوظيفي</th>
-                  <th className="p-3.5">معلومات الاتصال</th>
-                  <th className="p-3.5">نوع التعاقد</th>
-                  <th className="p-3.5">المكافأة الشهرية</th>
-                  <th className="p-3.5">المهام / الفصول</th>
-                  <th className="p-3.5 text-center">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line-faint">
-                {filteredTeachers.map((staff) => {
-                  const cat = staff.category || "أستاذ / محفظ";
-                  const catCfg = STAFF_CATEGORIES_CONFIG[cat] || STAFF_CATEGORIES_CONFIG["أستاذ / محفظ"];
-                  const assignedClasses = classes.filter(c => c.teacherId === staff.id);
-
-                  return (
-                    <tr key={staff.id} className="hover:bg-sand-50/70 transition">
-                      <td className="p-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-line bg-sand-100 flex items-center justify-center">
-                            {staff.photo ? (
-                              <img src={staff.photo} alt={staff.fullName} className="w-full h-full object-cover" />
-                            ) : (
-                              <span>{catCfg.icon}</span>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-bold text-ink flex items-center gap-1.5">
-                              <span>{staff.fullName}</span>
-                              {staff.isFromSettings && (
-                                <span className="inline-flex items-center gap-0.5 text-small font-bold text-primary-700 bg-primary-50 border border-primary-200 px-1.5 py-0.2 rounded" title="مربوط تلقائياً من الإعدادات">
-                                  <Sparkles className="w-2.5 h-2.5 text-primary-600" />
-                                  <span>إعدادات</span>
-                                </span>
-                              )}
-                            </div>
-                            {staff.cinNumber && (
-                              <div className="text-caption text-ink-3 font-mono">CIN: {staff.cinNumber}</div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="p-3.5">
-                        <div className="space-y-0.5">
-                          <span className={`inline-block text-caption font-bold px-2 py-0.5 rounded ${catCfg.bg} ${catCfg.text}`}>
-                            {catCfg.icon} {staff.category || "أستاذ / محفظ"}
-                          </span>
-                          <div className="text-small text-ink-2 font-semibold">{staff.roleTitle || staff.specialty}</div>
-                        </div>
-                      </td>
-
-                      <td className="p-3.5">
-                        <div className="space-y-1 font-mono text-small">
-                          <div className="text-ink-2">{staff.phone}</div>
-                          {staff.email && <div className="text-ink-3 text-caption truncate max-w-[120px]">{staff.email}</div>}
-                        </div>
-                      </td>
-
-                      <td className="p-3.5">
-                        <span className="font-medium text-ink-2 bg-sand-100 px-2 py-1 rounded text-small">
-                          {staff.contractType || "مكافأة شهرية"}
-                        </span>
-                      </td>
-
-                      <td className="p-3.5 font-bold text-primary-800 font-mono">
-                        {staff.monthlySalary ? `${formatMoney(staff.monthlySalary)}` : "-"}
-                      </td>
-
-                      <td className="p-3.5">
-                        {cat === "أستاذ / محفظ" ? (
-                          assignedClasses.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
-                              {assignedClasses.map(c => (
-                                <span key={c.id} className="bg-primary-50 text-primary-800 text-caption px-1.5 py-0.5 rounded font-bold">
-                                  {c.name}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="text-ink-3 text-caption">غير مسند</span>
-                          )
-                        ) : (
-                          <span className="text-ink-2 text-small truncate block max-w-[150px]" title={staff.assignedAreas || staff.duties}>
-                            {staff.assignedAreas || staff.duties || "-"}
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-3.5 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {canUpdate && (
-                            <Button size="sm" variant="primary" data-action="edit-staff" onClick={() => handleOpenForm(staff)} icon={<Edit2 className="w-4 h-4" strokeWidth={1.75} />}>
-                              تعديل
-                            </Button>
-                          )}
-                          {!canUpdate && (
-                            <Button size="sm" data-action="open-staff-badge" onClick={() => openBadgeModal(staff)} icon={<Printer className="w-4 h-4" strokeWidth={1.75} />}>
-                              شارة العمل
-                            </Button>
-                          )}
-                          {menuItemsOf(staff).length > 0 && <ActionMenu label={`المزيد من الإجراءات: ${staff.fullName}`} items={menuItemsOf(staff)} />}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="bg-surface rounded-2xl border border-line overflow-hidden">
+            <DataTable
+              label="قائمة الكادر والعاملين"
+              rows={filteredTeachers}
+              rowKey={(staff) => staff.id}
+              columns={rosterColumns}
+              cardLeading={(staff) => <StaffAvatar staff={staff} />}
+              actions={(staff) => (
+                <>
+                  {canUpdate && (
+                    <Button size="sm" variant="primary" data-action="edit-staff" onClick={() => handleOpenForm(staff)} icon={<Edit2 className="w-4 h-4" strokeWidth={1.75} />}>
+                      تعديل
+                    </Button>
+                  )}
+                  {!canUpdate && (
+                    <Button size="sm" data-action="open-staff-badge" onClick={() => openBadgeModal(staff)} icon={<Printer className="w-4 h-4" strokeWidth={1.75} />}>
+                      شارة العمل
+                    </Button>
+                  )}
+                  {menuItemsOf(staff).length > 0 && <ActionMenu label={`المزيد من الإجراءات: ${staff.fullName}`} items={menuItemsOf(staff)} />}
+                </>
+              )}
+              actionsHeader="الإجراءات"
+              dense
+            />
           </div>
         )
       ) : (

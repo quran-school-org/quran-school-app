@@ -83,36 +83,36 @@ export function useFinanceForms(props: FinanceManagementProps) {
     }
   };
 
+  /**
+   * Contenu de l'en-tête d'une colonne triable (à passer en `header` d'une colonne de `DataTable`) :
+   * un vrai bouton (clavier, lecteur d'écran), avec la flèche de l'ordre en cours.
+   */
   const renderSortableHeader = (
     label: string,
     key: string,
     currentKey: string | null,
     currentDir: "asc" | "desc",
     onSort: (key: string) => void,
-    align: "right" | "center" = "right"
   ) => {
     const isActive = currentKey === key;
     return (
-      <th
+      <button
+        type="button"
         onClick={() => onSort(key)}
-        className={`p-3 cursor-pointer select-none hover:bg-sand-200/80 transition rounded-lg ${
-          align === "center" ? "text-center" : "text-start"
-        }`}
+        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 font-[inherit] text-[length:inherit] text-inherit cursor-pointer select-none hover:text-ink transition-colors"
         title={`ترتيب حسب ${label} (من الأصغر للأكبر أو العكس)`}
       >
-        <div className={`flex items-center gap-1.5 ${align === "center" ? "justify-center" : "justify-start"}`}>
-          <span>{label}</span>
-          {isActive ? (
-            currentDir === "asc" ? (
-              <ArrowUp className="w-3.5 h-3.5 text-primary-800 font-bold shrink-0" />
-            ) : (
-              <ArrowDown className="w-3.5 h-3.5 text-primary-800 font-bold shrink-0" />
-            )
+        <span>{label}</span>
+        {isActive ? (
+          currentDir === "asc" ? (
+            <ArrowUp aria-hidden="true" className="w-3.5 h-3.5 text-primary-800 shrink-0" />
           ) : (
-            <ArrowUpDown className="w-3.5 h-3.5 text-ink-3 opacity-60 hover:opacity-100 shrink-0" />
-          )}
-        </div>
-      </th>
+            <ArrowDown aria-hidden="true" className="w-3.5 h-3.5 text-primary-800 shrink-0" />
+          )
+        ) : (
+          <ArrowUpDown aria-hidden="true" className="w-3.5 h-3.5 text-ink-3 opacity-60 hover:opacity-100 shrink-0" />
+        )}
+      </button>
     );
   };
 

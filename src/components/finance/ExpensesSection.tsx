@@ -5,7 +5,8 @@
 import { Wallet, Building2, Edit3, Trash2, Receipt } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { formatMoney, formatNumber } from "../../format/money";
-import { useConfirm, SectionHeader } from "../../ui";
+import { DataTable, EmptyState, IconButton, SectionHeader, useConfirm, type DataColumn } from "../../ui";
+import type { Expense } from "../../types";
 
 import { formatDateAr } from "../../format/date";
 
@@ -28,6 +29,33 @@ export default function ExpensesSection() {
     cashBoxExpenses,
     bankAccountExpenses,
   } = useFinance();
+
+  const sortHeader = (label: string, key: string) =>
+    renderSortableHeader(label, key, expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir));
+  const columns: DataColumn<Expense>[] = [
+    {
+      id: "title", header: sortHeader("بيان النفقة / المشتريات", "title"), card: "title", className: "font-bold text-ink",
+      cell: (exp) => (<>{exp.title}{exp.notes && <p className="m-0 text-caption text-ink-3 font-normal">{exp.notes}</p>}</>),
+    },
+    {
+      id: "category", header: sortHeader("نوع النفقة", "category"), card: "field",
+      cell: (exp) => (
+        <span className="bg-sand-100 text-ink font-semibold px-2.5 py-1 rounded-full text-caption border border-line">{exp.category}</span>
+      ),
+    },
+    { id: "amount", header: sortHeader("المبلغ", "amount"), card: "field", className: "font-bold text-danger-700", cell: (exp) => formatMoney(exp.amount) },
+    {
+      id: "source", header: sortHeader("المصدر المالي", "source"), card: "field",
+      cell: (exp) => (
+        <span className={`px-2.5 py-1 rounded-full text-caption font-bold ${
+          exp.source === "حساب الجمعية البنكي" ? "bg-primary-50 text-primary-800 border border-primary-200" : "bg-gold-50 text-gold-800 border border-gold-200"
+        }`}>{exp.source}</span>
+      ),
+    },
+    { id: "supplier", header: sortHeader("المورد / المتاجر", "supplier"), className: "font-medium text-ink-2", cell: (exp) => exp.supplier || "—" },
+    { id: "invoiceNo", header: sortHeader("رقم الفاتورة", "invoiceNo"), className: "text-ink-3 font-mono", cell: (exp) => exp.invoiceNo || "—" },
+    { id: "date", header: sortHeader("التاريخ", "date"), card: "field", className: "text-ink-3", cell: (exp) => formatDateAr(exp.date) },
+  ];
 
   return (
     <>
@@ -90,92 +118,37 @@ export default function ExpensesSection() {
               />
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-start text-small">
-                <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
-                  <tr>
-                    {renderSortableHeader("بيان النفقة / المشتريات", "title", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}
-                    {renderSortableHeader("نوع النفقة", "category", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}
-                    {renderSortableHeader("المبلغ", "amount", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}
-                    {renderSortableHeader("المصدر المالي", "source", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}
-                    {renderSortableHeader("المورد / المتاجر", "supplier", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}
-                    {renderSortableHeader("رقم الفاتورة", "invoiceNo", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}
-                    {renderSortableHeader("التاريخ", "date", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}
-                    <th className="p-3 text-center">إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line-faint">
-                  {sortedExpenses.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center p-8 text-ink-3">
-                        لا توجد مصاريف أو فواتير مسجلة وفق التصفية الحالية.
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedExpenses.map((exp) => (
-                      <tr key={exp.id} className="hover:bg-sand-50 transition">
-                        <td className="p-3 font-bold text-ink">
-                          {exp.title}
-                          {exp.notes && <p className="text-caption text-ink-3 font-normal">{exp.notes}</p>}
-                        </td>
-                        <td className="p-3">
-                          <span className="bg-sand-100 text-ink font-semibold px-2.5 py-1 rounded-full text-caption border border-line">
-                            {exp.category}
-                          </span>
-                        </td>
-                        <td className="p-3 font-bold text-danger-700 text-sm">
-                          {formatMoney(exp.amount)}
-                        </td>
-                        <td className="p-3">
-                          <span className={`px-2.5 py-1 rounded-full text-caption font-bold ${
-                            exp.source === "حساب الجمعية البنكي" 
-                              ? "bg-primary-50 text-primary-800 border border-primary-200" 
-                              : "bg-gold-50 text-gold-800 border border-gold-200"
-                          }`}>
-                            {exp.source}
-                          </span>
-                        </td>
-                        <td className="p-3 font-medium text-ink-2">
-                          {exp.supplier || "—"}
-                        </td>
-                        <td className="p-3 text-ink-3 font-mono text-small">
-                          {exp.invoiceNo || "—"}
-                        </td>
-                        <td className="p-3 text-ink-3">
-                          {formatDateAr(exp.date)}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center justify-center gap-1">
-                            {canUpdate && (
-                              <button
-                                onClick={() => openExpenseModal(exp)}
-                                className="p-1.5 text-ink-2 hover:text-primary-800 hover:bg-sand-100 rounded-lg transition"
-                                title="تعديل" aria-label="تعديل"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                            {canDelete && (
-                              <button
-                                onClick={async () => {
-                                  if (await confirm({ message: "هل أنت متأكد من حذف هذه النفقة؟", tone: "danger" })) {
-                                    onDeleteExpense(exp.id);
-                                  }
-                                }}
-                                className="p-1.5 text-ink-3 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition"
-                                title="حذف" aria-label="حذف"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {sortedExpenses.length === 0 ? (
+              <div className="p-5"><EmptyState title="لا توجد مصاريف أو فواتير مسجلة وفق التصفية الحالية." /></div>
+            ) : (
+              <DataTable
+                label="جدول المصاريف والمشتريات والفواتير"
+                rows={sortedExpenses}
+                rowKey={(exp) => exp.id}
+                columns={columns}
+                actions={canUpdate || canDelete ? (exp) => (
+                  <>
+                    {canUpdate && (
+                      <IconButton size="sm" label="تعديل" onClick={() => openExpenseModal(exp)}><Edit3 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                    )}
+                    {canDelete && (
+                      <IconButton
+                        size="sm"
+                        tone="danger"
+                        label="حذف"
+                        onClick={async () => {
+                          if (await confirm({ message: "هل أنت متأكد من حذف هذه النفقة؟", tone: "danger" })) {
+                            onDeleteExpense(exp.id);
+                          }
+                        }}
+                      ><Trash2 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                    )}
+                  </>
+                ) : undefined}
+                actionsHeader="إجراءات"
+                dense
+              />
+            )}
           </div>
         </div>
       )}

@@ -14,8 +14,8 @@ export function TableWrap({ children, className, label }: { children: React.Reac
   );
 }
 
-export function Table({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <table className={cx("w-full border-collapse text-body text-ink", className)}>{children}</table>;
+export function Table({ children, className, dense }: { children: React.ReactNode; className?: string; dense?: boolean }) {
+  return <table className={cx("w-full border-collapse text-ink", dense ? "text-small" : "text-body", className)}>{children}</table>;
 }
 
 export function Th({ children, className, ...rest }: React.ThHTMLAttributes<HTMLTableCellElement>) {
@@ -79,6 +79,8 @@ export interface DataTableProps<T> {
   rowClassName?: (row: T) => string | undefined;
   /** Largeur à partir de laquelle on affiche le tableau (défaut : `md`, 768 px). */
   tableFrom?: string;
+  /** Tableau serré (texte `text-small`) pour les tableaux à beaucoup de colonnes (comptabilité). */
+  dense?: boolean;
 }
 
 const MD = "(min-width: 768px)";
@@ -88,13 +90,13 @@ const MD = "(min-width: 768px)";
  * utile est rendue. Les actions restent visibles (pied de carte) au lieu de
  * sortir de l'écran dans un défilement horizontal.
  */
-export function DataTable<T>({ rows, rowKey, columns, label, actions, actionsHeader = "الإجراءات", cardLeading, onRowClick, isSelected, rowClassName, tableFrom = MD }: DataTableProps<T>) {
+export function DataTable<T>({ rows, rowKey, columns, label, actions, actionsHeader = "الإجراءات", cardLeading, onRowClick, isSelected, rowClassName, tableFrom = MD, dense }: DataTableProps<T>) {
   const wide = useMediaQuery(tableFrom);
 
   if (wide) {
     return (
       <TableWrap label={label}>
-        <Table>
+        <Table dense={dense}>
           <thead>
             <tr>
               {columns.map((c) => <Th key={c.id} className={c.className}>{c.header}</Th>)}

@@ -2243,4 +2243,7 @@ export const FR: Record<string, string> = {
   "الحصة جارية الآن، وتُحتسب نسبتها عند انتهائها.": "La séance est en cours ; son taux sera compté à sa fin.",
   "لم تبدأ حصة اليوم بعد.": "La séance d'aujourd'hui n'a pas encore commencé.",
   "تظهر المقارنة هنا بعد أول تسجيل للحضور.": "La comparaison apparaîtra ici après la première saisie de présence.",
+  // Lot L6 (D101) : noms accessibles des tableaux de la comptabilité.
+  "مساهمات ومداخيل الأنشطة والرحلات": "Contributions et recettes des activités et sorties",
+  "مداخيل مستحقات وواجبات التلاميذ الشهرية": "Recettes des cotisations mensuelles des élèves",
 };

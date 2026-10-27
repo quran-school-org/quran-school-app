@@ -5,7 +5,8 @@
 import { Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, Compass, ExternalLink } from "lucide-react";
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
-import { Select, useConfirm, SectionHeader } from "../../ui";
+import { DataTable, EmptyState, IconButton, Select, SectionHeader, useConfirm, type DataColumn } from "../../ui";
+import type { ActivityParticipant, OtherIncome, Payment } from "../../types";
 import { formatMoney } from "../../format/money";
 import { formatDateAr } from "../../format/date";
 
@@ -44,6 +45,126 @@ export default function RevenuesSection() {
     sortedOtherIncomes,
     sortedStudentPayments,
   } = useFinance();
+
+  /** Contribution due d'un participant : montant propre, sinon celui de l'activité. */
+  const participantFee = (p: ActivityParticipant) => {
+    const act = safeActivities.find((a) => a.id === p.activityId);
+    return Number(p.fee !== undefined && p.fee !== null ? p.fee : (act?.contributionFee ?? 0));
+  };
+
+  const sortIncome = (label: string, key: string) =>
+    renderSortableHeader(label, key, incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir));
+  const sortStudentPay = (label: string, key: string) =>
+    renderSortableHeader(label, key, studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir));
+
+  const incomeColumns: DataColumn<OtherIncome>[] = [
+    {
+      id: "title", header: sortIncome("عنوان الدخل / التبرع", "title"), card: "title", className: "font-bold text-ink",
+      cell: (inc) => (<>{inc.title}{inc.notes && <p className="m-0 text-caption text-ink-3 font-normal">{inc.notes}</p>}</>),
+    },
+    {
+      id: "category", header: sortIncome("نوع الدخل", "category"), card: "field",
+      cell: (inc) => (
+        <span className="bg-primary-50 text-primary-800 font-semibold px-2.5 py-1 rounded-full text-caption border border-primary-200">{inc.category}</span>
+      ),
+    },
+    { id: "amount", header: sortIncome("المبلغ", "amount"), card: "field", className: "font-bold text-primary-800", cell: (inc) => formatMoney(inc.amount) },
+    { id: "donorName", header: sortIncome("المتبرع / الجهة", "donorName"), className: "font-medium text-ink-2", cell: (inc) => inc.donorName || "فاعل خير" },
+    {
+      id: "source", header: sortIncome("مكان الإيداع", "source"), card: "field",
+      cell: (inc) => (
+        <span className={`px-2.5 py-1 rounded-full text-caption font-bold ${
+          inc.source === "حساب الجمعية البنكي" ? "bg-primary-50 text-primary-800 border border-primary-200" : "bg-gold-50 text-gold-800 border border-gold-200"
+        }`}>{inc.source}</span>
+      ),
+    },
+    { id: "date", header: sortIncome("تاريخ الاستلام", "date"), card: "field", className: "text-ink-3", cell: (inc) => formatDateAr(inc.date) },
+    { id: "receiptNo", header: sortIncome("رقم الإيصال", "receiptNo"), className: "text-ink-3 font-mono", cell: (inc) => inc.receiptNo || "—" },
+  ];
+
+  const participantColumns: DataColumn<ActivityParticipant>[] = [
+    {
+      id: "activity", header: "النشاط / الرحلة", card: "title", className: "font-bold text-ink",
+      cell: (p) => {
+        const act = safeActivities.find((a) => a.id === p.activityId);
+        return (
+          <>
+            <span className="flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-primary-600 shrink-0" />
+              <span>{act ? act.title : `نشاط #${p.activityId}`}</span>
+            </span>
+            {act?.startDate && <p className="m-0 text-caption text-ink-3 font-normal">{formatDateAr(act.startDate)}</p>}
+          </>
+        );
+      },
+    },
+    { id: "name", header: "اسم المشارك", card: "field", className: "font-bold text-ink", cell: (p) => p.fullName || (p as any).participantName || "مشارك" },
+    {
+      id: "role", header: "الصفة / النوع",
+      cell: (p) => <span className="bg-sand-100 text-ink-2 px-2 py-0.5 rounded-md text-caption font-medium border border-line">{p.participantType || "مشارك"}</span>,
+    },
+    { id: "fee", header: "المساهمة الواجبة", className: "font-semibold text-ink-2", cell: (p) => { const f = participantFee(p); return p.paymentStatus === "معفى" && f === 0 ? "معفى (0 د.م)" : formatMoney(f); } },
+    { id: "paid", header: "المبلغ المحصل", card: "field", className: "font-bold text-primary-700", cell: (p) => formatMoney(Number(p.paidAmount) || 0) },
+    {
+      id: "remaining", header: "المتبقي", className: "font-semibold text-ink-3",
+      cell: (p) => { const r = Math.max(0, participantFee(p) - (Number(p.paidAmount) || 0)); return r > 0 ? <span className="text-gold-700 font-bold">{formatMoney(r)}</span> : <span className="text-ink-3">—</span>; },
+    },
+    {
+      id: "method", header: "طريقة الأداء", className: "text-ink-2",
+      cell: (p) => <span className="bg-sand-100 px-2.5 py-1 rounded-full text-caption border border-line">{p.paymentMethod || "نقداً"}</span>,
+    },
+    { id: "date", header: "تاريخ الأداء", className: "text-ink-3 font-mono", cell: (p) => formatDateAr(p.paymentDate) },
+    {
+      id: "status", header: "حالة الأداء", card: "field", className: "text-center",
+      cell: (p) => {
+        const requiredFee = participantFee(p);
+        const paidAmount = Number(p.paidAmount) || 0;
+        return p.paymentStatus === "معفى" ? (
+          <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full border border-primary-200">
+            معفى
+          </span>
+        ) : p.paymentStatus === "مدفوع" || (requiredFee > 0 && paidAmount >= requiredFee) ? (
+          <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full border border-primary-200">
+            <CheckCircle className="w-3 h-3" />
+            مدفوع
+          </span>
+        ) : paidAmount > 0 ? (
+          <span className="inline-flex items-center gap-1 bg-gold-100 text-gold-800 font-bold text-caption px-2.5 py-1 rounded-full border border-gold-200">
+            <AlertTriangle className="w-3 h-3" />
+            مدفوع جزئياً
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 bg-danger-100 text-danger-800 font-bold text-caption px-2.5 py-1 rounded-full border border-danger-200">
+            غير مدفوع
+          </span>
+        );
+      },
+    },
+  ];
+
+  const studentPayColumns: DataColumn<Payment>[] = [
+    {
+      id: "student", header: sortStudentPay("الطالب / المكتتب", "studentName"), card: "title", className: "font-bold text-ink",
+      cell: (p) => { const student = students.find((s) => s.id === p.studentId); return student ? student.fullName : `طالب #${p.studentId}`; },
+    },
+    { id: "period", header: sortStudentPay("الشهر / السنة", "monthYear"), card: "field", className: "font-semibold text-ink-2", cell: (p) => `${p.month} ${p.year}` },
+    { id: "amount", header: sortStudentPay("المبلغ المدفوع", "amount"), card: "field", className: "font-bold text-primary-800", cell: (p) => formatMoney(p.amount) },
+    {
+      id: "method", header: sortStudentPay("طريقة الأداء", "paymentMethod"), className: "text-ink-2",
+      cell: (p) => <span className="bg-sand-100 px-2.5 py-1 rounded-full text-small border border-line">{p.paymentMethod || "نقداً"}</span>,
+    },
+    { id: "receiptNo", header: sortStudentPay("رقم الإيصال", "receiptNo"), className: "text-ink-3 font-mono", cell: (p) => p.receiptNo || "—" },
+    { id: "date", header: sortStudentPay("تاريخ التسديد", "paymentDate"), className: "text-ink-3", cell: (p) => formatDateAr(p.paymentDate) },
+    {
+      id: "status", header: sortStudentPay("الحالة", "status"), card: "field",
+      cell: () => (
+        <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full">
+          <CheckCircle className="w-3 h-3" />
+          مدفوع ومسجل
+        </span>
+      ),
+    },
+  ];
 
   return (
     <>
@@ -113,94 +234,37 @@ export default function RevenuesSection() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-start text-small">
-                <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
-                  <tr>
-                    {renderSortableHeader("عنوان الدخل / التبرع", "title", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
-                    {renderSortableHeader("نوع الدخل", "category", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
-                    {renderSortableHeader("المبلغ", "amount", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
-                    {renderSortableHeader("المتبرع / الجهة", "donorName", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
-                    {renderSortableHeader("مكان الإيداع", "source", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
-                    {renderSortableHeader("تاريخ الاستلام", "date", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
-                    {renderSortableHeader("رقم الإيصال", "receiptNo", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
-                    <th className="p-3 text-center">إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line-faint">
-                  {sortedOtherIncomes.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="text-center p-8 text-ink-3">
-                        لا توجد مداخيل أو تبرعات مسجلة حالياً.
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedOtherIncomes.map((inc) => (
-                      <tr key={inc.id} className="hover:bg-sand-50 transition">
-                        <td className="p-3 font-bold text-ink">
-                          {inc.title}
-                          {inc.notes && <p className="text-caption text-ink-3 font-normal">{inc.notes}</p>}
-                        </td>
-                        <td className="p-3">
-                          <span className="bg-primary-50 text-primary-800 font-semibold px-2.5 py-1 rounded-full text-caption border border-primary-200">
-                            {inc.category}
-                          </span>
-                        </td>
-                        <td className="p-3 font-bold text-primary-800 text-sm">
-                          {formatMoney(inc.amount)}
-                        </td>
-                        <td className="p-3 font-medium text-ink-2">
-                          {inc.donorName || "فاعل خير"}
-                        </td>
-                        <td className="p-3">
-                          <span className={`px-2.5 py-1 rounded-full text-caption font-bold ${
-                            inc.source === "حساب الجمعية البنكي" 
-                              ? "bg-primary-50 text-primary-800 border border-primary-200" 
-                              : "bg-gold-50 text-gold-800 border border-gold-200"
-                          }`}>
-                            {inc.source}
-                          </span>
-                        </td>
-                        <td className="p-3 text-ink-3">
-                          {formatDateAr(inc.date)}
-                        </td>
-                        <td className="p-3 text-ink-3 font-mono text-small">
-                          {inc.receiptNo || "—"}
-                        </td>
-                        <td className="p-3">
-                          {(canUpdate || canDelete) && (
-                            <div className="flex items-center justify-center gap-1">
-                              {canUpdate && (
-                                <button
-                                  onClick={() => openIncomeModal(inc)}
-                                  className="p-1.5 text-ink-2 hover:text-primary-800 hover:bg-sand-100 rounded-lg transition"
-                                  title="تعديل" aria-label="تعديل"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                              {canDelete && (
-                                <button
-                                  onClick={async () => {
-                                    if (await confirm({ message: "هل أنت متأكد من حذف هذا السجل المالي؟", tone: "danger" })) {
-                                      onDeleteOtherIncome(inc.id);
-                                    }
-                                  }}
-                                  className="p-1.5 text-ink-3 hover:text-danger-600 hover:bg-danger-50 rounded-lg transition"
-                                  title="حذف" aria-label="حذف"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {sortedOtherIncomes.length === 0 ? (
+              <div className="p-5"><EmptyState title="لا توجد مداخيل أو تبرعات مسجلة حالياً." /></div>
+            ) : (
+              <DataTable
+                label="المداخيل الأخرى (تبرعات، دعم مؤسساتي، اشتراكات جمعية)"
+                rows={sortedOtherIncomes}
+                rowKey={(inc) => inc.id}
+                columns={incomeColumns}
+                actions={canUpdate || canDelete ? (inc) => (
+                  <>
+                    {canUpdate && (
+                      <IconButton size="sm" label="تعديل" onClick={() => openIncomeModal(inc)}><Edit3 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                    )}
+                    {canDelete && (
+                      <IconButton
+                        size="sm"
+                        tone="danger"
+                        label="حذف"
+                        onClick={async () => {
+                          if (await confirm({ message: "هل أنت متأكد من حذف هذا السجل المالي؟", tone: "danger" })) {
+                            onDeleteOtherIncome(inc.id);
+                          }
+                        }}
+                      ><Trash2 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                    )}
+                  </>
+                ) : undefined}
+                actionsHeader="إجراءات"
+                dense
+              />
+            )}
           </div>
 
           {/* Section B: Activity & Trip Contributions (Synced automatically from Activities Module) */}
@@ -232,103 +296,17 @@ export default function RevenuesSection() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-start text-small">
-                <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
-                  <tr>
-                    <th className="p-3">النشاط / الرحلة</th>
-                    <th className="p-3">اسم المشارك</th>
-                    <th className="p-3">الصفة / النوع</th>
-                    <th className="p-3">المساهمة الواجبة</th>
-                    <th className="p-3">المبلغ المحصل</th>
-                    <th className="p-3">المتبقي</th>
-                    <th className="p-3">طريقة الأداء</th>
-                    <th className="p-3">تاريخ الأداء</th>
-                    <th className="p-3 text-center">حالة الأداء</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line-faint">
-                  {filteredActivityParticipants.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="text-center p-8 text-ink-3">
-                        لا توجد مساهمات مسجلة للمشاركين في الأنشطة والرحلات حالياً.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredActivityParticipants.map((p) => {
-                      const act = safeActivities.find(a => a.id === p.activityId);
-                      const requiredFee = Number(p.fee !== undefined && p.fee !== null ? p.fee : (act?.contributionFee ?? 0));
-                      const paidAmount = Number(p.paidAmount) || 0;
-                      const remaining = Math.max(0, requiredFee - paidAmount);
-                      const participantName = p.fullName || (p as any).participantName || "مشارك";
-                      const roleDisplay = p.participantType || "مشارك";
-
-                      return (
-                        <tr key={p.id} className="hover:bg-sand-50 transition">
-                          <td className="p-3 font-bold text-ink">
-                            <span className="flex items-center gap-1.5">
-                              <Compass className="w-3.5 h-3.5 text-primary-600 shrink-0" />
-                              <span>{act ? act.title : `نشاط #${p.activityId}`}</span>
-                            </span>
-                            {act?.startDate && <p className="text-caption text-ink-3 font-normal">{formatDateAr(act.startDate)}</p>}
-                          </td>
-                          <td className="p-3 font-bold text-ink">
-                            {participantName}
-                          </td>
-                          <td className="p-3">
-                            <span className="bg-sand-100 text-ink-2 px-2 py-0.5 rounded-md text-caption font-medium border border-line">
-                              {roleDisplay}
-                            </span>
-                          </td>
-                          <td className="p-3 font-semibold text-ink-2">
-                            {p.paymentStatus === "معفى" && requiredFee === 0 ? "معفى (0 د.م)" : `${formatMoney(requiredFee)}`}
-                          </td>
-                          <td className="p-3 font-bold text-primary-700">
-                            {formatMoney(paidAmount)}
-                          </td>
-                          <td className="p-3 font-semibold text-ink-3">
-                            {remaining > 0 ? (
-                              <span className="text-gold-700 font-bold">{formatMoney(remaining)}</span>
-                            ) : (
-                              <span className="text-ink-3">—</span>
-                            )}
-                          </td>
-                          <td className="p-3 text-ink-2">
-                            <span className="bg-sand-100 px-2.5 py-1 rounded-full text-caption border border-line">
-                              {p.paymentMethod || "نقداً"}
-                            </span>
-                          </td>
-                          <td className="p-3 text-ink-3 font-mono text-small">
-                            {formatDateAr(p.paymentDate)}
-                          </td>
-                          <td className="p-3 text-center">
-                            {p.paymentStatus === "معفى" ? (
-                              <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full border border-primary-200">
-                                معفى
-                              </span>
-                            ) : p.paymentStatus === "مدفوع" || (requiredFee > 0 && paidAmount >= requiredFee) ? (
-                              <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full border border-primary-200">
-                                <CheckCircle className="w-3 h-3" />
-                                مدفوع
-                              </span>
-                            ) : paidAmount > 0 ? (
-                              <span className="inline-flex items-center gap-1 bg-gold-100 text-gold-800 font-bold text-caption px-2.5 py-1 rounded-full border border-gold-200">
-                                <AlertTriangle className="w-3 h-3" />
-                                مدفوع جزئياً
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 bg-danger-100 text-danger-800 font-bold text-caption px-2.5 py-1 rounded-full border border-danger-200">
-                                غير مدفوع
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {filteredActivityParticipants.length === 0 ? (
+              <div className="p-5"><EmptyState title="لا توجد مساهمات مسجلة للمشاركين في الأنشطة والرحلات حالياً." /></div>
+            ) : (
+              <DataTable
+                label="مساهمات ومداخيل الأنشطة والرحلات"
+                rows={filteredActivityParticipants}
+                rowKey={(p) => p.id}
+                columns={participantColumns}
+                dense
+              />
+            )}
           </div>
 
           {/* Section C: Student Monthly Fees (Synced automatically) */}
@@ -358,64 +336,17 @@ export default function RevenuesSection() {
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-start text-small">
-                <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
-                  <tr>
-                    {renderSortableHeader("الطالب / المكتتب", "studentName", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}
-                    {renderSortableHeader("الشهر / السنة", "monthYear", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}
-                    {renderSortableHeader("المبلغ المدفوع", "amount", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}
-                    {renderSortableHeader("طريقة الأداء", "paymentMethod", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}
-                    {renderSortableHeader("رقم الإيصال", "receiptNo", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}
-                    {renderSortableHeader("تاريخ التسديد", "paymentDate", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}
-                    {renderSortableHeader("الحالة", "status", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-line-faint">
-                  {sortedStudentPayments.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="text-center p-8 text-ink-3">
-                        لا توجد مداخيل مدفوعة مسجلة للتلاميذ وفق التصفية الحالية.
-                      </td>
-                    </tr>
-                  ) : (
-                    sortedStudentPayments.map((p) => {
-                      const student = students.find(s => s.id === p.studentId);
-                      return (
-                        <tr key={p.id} className="hover:bg-sand-50 transition">
-                          <td className="p-3 font-bold text-ink">
-                            {student ? student.fullName : `طالب #${p.studentId}`}
-                          </td>
-                          <td className="p-3 font-semibold text-ink-2">
-                            {p.month} {p.year}
-                          </td>
-                          <td className="p-3 font-bold text-primary-800">
-                            {formatMoney(p.amount)}
-                          </td>
-                          <td className="p-3 text-ink-2">
-                            <span className="bg-sand-100 px-2.5 py-1 rounded-full text-small border border-line">
-                              {p.paymentMethod || "نقداً"}
-                            </span>
-                          </td>
-                          <td className="p-3 text-ink-3 font-mono text-small">
-                            {p.receiptNo || "—"}
-                          </td>
-                          <td className="p-3 text-ink-3">
-                            {formatDateAr(p.paymentDate)}
-                          </td>
-                          <td className="p-3">
-                            <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full">
-                              <CheckCircle className="w-3 h-3" />
-                              مدفوع ومسجل
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {sortedStudentPayments.length === 0 ? (
+              <div className="p-5"><EmptyState title="لا توجد مداخيل مدفوعة مسجلة للتلاميذ وفق التصفية الحالية." /></div>
+            ) : (
+              <DataTable
+                label="مداخيل مستحقات وواجبات التلاميذ الشهرية"
+                rows={sortedStudentPayments}
+                rowKey={(p) => p.id}
+                columns={studentPayColumns}
+                dense
+              />
+            )}
           </div>
         </div>
       )}

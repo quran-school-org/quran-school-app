@@ -5,7 +5,8 @@
 import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Printer, CheckCircle2, TrendingUp, Search, FileText, RefreshCw, CheckCircle, Info } from "lucide-react";
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
-import { Ltr, Select, useConfirm, SectionHeader } from "../../ui";
+import { DataTable, IconButton, Ltr, Select, SectionHeader, useConfirm, type DataColumn } from "../../ui";
+import type { ActivityExpense, ActivityParticipant } from "../../types";
 import { formatMoney, formatNumber } from "../../format/money";
 import { formatDateAr, formatDateRangeAr } from "../../format/date";
 
@@ -65,6 +66,66 @@ export default function ActivityWorkspace() {
     handleOpenEditExpense,
     handleSyncActivityFinance,
   } = useActivities();
+
+  const sortPart = (label: string, key: string) =>
+    renderSortableHeader(label, key, partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir));
+  const sortExp = (label: string, key: string) =>
+    renderSortableHeader(label, key, expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir));
+
+  const participantColumns: DataColumn<ActivityParticipant>[] = [
+    { id: "n", header: "#", className: "text-ink-3 font-mono text-center", cell: (part) => filteredParticipants.indexOf(part) + 1 },
+    {
+      id: "fullName", header: sortPart("المشارك", "fullName"), card: "title", className: "font-bold text-ink",
+      cell: (part) => (
+        <>
+          {part.fullName}
+          {part.medicalNotes && (
+            <span className="block text-caption text-gold-800 font-normal mt-0.5">
+              <span className="sr-only">ملاحظة صحية: </span>{part.medicalNotes}
+            </span>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "role", header: sortPart("الصفة", "participantType"), card: "field",
+      cell: (part) => {
+        const role = getParticipantRole(part);
+        return <span className={`px-2.5 py-1 rounded-lg font-bold text-small inline-flex items-center gap-1 ${getRoleBadgeStyle(role)}`}>{role}</span>;
+      },
+    },
+    { id: "phone", header: sortPart("الهاتف", "phone"), className: "font-mono text-ink-2", cell: (part) => part.phone || "—" },
+    {
+      id: "fee", header: sortPart("الواجب", "fee"), className: "font-semibold text-ink-2",
+      cell: (part) => {
+        const feeVal = resolveParticipantFee(part);
+        if (resolvePaymentStatusInfo(part).status === "معفى" && feeVal === 0) return <span className="text-primary-700 font-bold">معفى (0 د.م)</span>;
+        return <span>{formatMoney(feeVal)}</span>;
+      },
+    },
+    { id: "paid", header: sortPart("المدفوع", "paidAmount"), card: "field", className: "font-bold text-primary-700", cell: (part) => formatMoney(resolveParticipantPaid(part)) },
+    {
+      id: "status", header: sortPart("حالة الأداء", "paymentStatus"), card: "field",
+      cell: (part) => {
+        const statusInfo = resolvePaymentStatusInfo(part);
+        return <span className={`px-2.5 py-1 rounded-full font-bold text-caption inline-flex items-center gap-1 ${statusInfo.badgeClass}`}>{statusInfo.label}</span>;
+      },
+    },
+    { id: "receiptNo", header: sortPart("رقم الوصل", "receiptNo"), className: "font-mono text-ink-3", cell: (part) => part.receiptNo || "—" },
+  ];
+
+  const expenseColumns: DataColumn<ActivityExpense>[] = [
+    { id: "n", header: "#", className: "text-ink-3 font-mono text-center", cell: (exp) => filteredExpenses.indexOf(exp) + 1 },
+    { id: "title", header: sortExp("بيان المصروف", "title"), card: "title", className: "font-bold text-ink", cell: (exp) => exp.title },
+    {
+      id: "category", header: sortExp("الفئة / الصنف", "category"), card: "field",
+      cell: (exp) => <span className="bg-sand-100 text-ink-2 px-2 py-0.5 rounded-md font-semibold text-caption">{exp.category}</span>,
+    },
+    { id: "amount", header: sortExp("المبلغ", "amount"), card: "field", className: "font-bold text-danger-700", cell: (exp) => formatMoney(exp.amount) },
+    { id: "date", header: sortExp("التاريخ", "date"), card: "field", className: "text-ink-2", cell: (exp) => formatDateAr(exp.date) },
+    { id: "supplier", header: sortExp("المورد / الجهة", "supplier"), className: "text-ink-2", cell: (exp) => exp.supplier || "—" },
+    { id: "receipt", header: sortExp("رقم الفاتورة/الوصل", "receiptOrInvoiceNo"), className: "font-mono text-ink-3", cell: (exp) => exp.receiptOrInvoiceNo || "—" },
+  ];
 
   return (
     <>
@@ -338,108 +399,38 @@ export default function ActivityWorkspace() {
                     <p className="text-small text-ink-3 font-medium">لا توجد نتائج مطابقة لبحث المشاركين</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border border-line rounded-xl">
-                    <table className="w-full text-start text-small">
-                      <thead className="bg-sand-50 text-ink-2 font-bold border-b border-line">
-                        <tr>
-                          <th className="p-3 text-center">#</th>
-                          {renderSortableHeader("المشارك", "fullName", partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir))}
-                          {renderSortableHeader("الصفة", "participantType", partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir))}
-                          {renderSortableHeader("الهاتف", "phone", partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir))}
-                          {renderSortableHeader("الواجب", "fee", partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir))}
-                          {renderSortableHeader("المدفوع", "paidAmount", partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir))}
-                          {renderSortableHeader("حالة الأداء", "paymentStatus", partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir))}
-                          {renderSortableHeader("رقم الوصل", "receiptNo", partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir))}
-                          <th className="p-3 text-center">إجراءات</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line-faint">
-                        {filteredParticipants.map((part, idx) => (
-                          <tr key={part.id} className="hover:bg-sand-50/70 transition-colors">
-                            <td className="p-3 text-ink-3 font-mono text-center">{idx + 1}</td>
-                            <td className="p-3 font-bold text-ink">
-                              {part.fullName}
-                              {part.medicalNotes && (
-                                <span className="block text-caption text-gold-800 font-normal mt-0.5">
-                                  <span className="sr-only">ملاحظة صحية: </span>{part.medicalNotes}
-                                </span>
-                              )}
-                            </td>
-                            <td className="p-3">
-                              {(() => {
-                                const role = getParticipantRole(part);
-                                const badgeClass = getRoleBadgeStyle(role);
-
-                                return (
-                                  <span className={`px-2.5 py-1 rounded-lg font-bold text-small inline-flex items-center gap-1 ${badgeClass}`}>
-                                    {role}
-                                  </span>
-                                );
-                              })()}
-                            </td>
-                            <td className="p-3 font-mono text-ink-2">{part.phone || "—"}</td>
-                            <td className="p-3 font-semibold text-ink-2">
-                              {(() => {
-                                const feeVal = resolveParticipantFee(part);
-                                const statusInfo = resolvePaymentStatusInfo(part);
-                                if (statusInfo.status === "معفى" && feeVal === 0) {
-                                  return <span className="text-primary-700 font-bold">معفى (0 د.م)</span>;
-                                }
-                                return <span>{formatMoney(feeVal)}</span>;
-                              })()}
-                            </td>
-                            <td className="p-3 font-bold text-primary-700">
-                              {formatMoney(resolveParticipantPaid(part))}
-                            </td>
-                            <td className="p-3">
-                              {(() => {
-                                const statusInfo = resolvePaymentStatusInfo(part);
-                                return (
-                                  <span className={`px-2.5 py-1 rounded-full font-bold text-caption inline-flex items-center gap-1 ${statusInfo.badgeClass}`}>
-                                    {statusInfo.label}
-                                  </span>
-                                );
-                              })()}
-                            </td>
-                            <td className="p-3 font-mono text-small text-ink-3">{part.receiptNo || "—"}</td>
-                            <td className="p-3 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  title="طباعة بطاقة المشارك" aria-label="طباعة بطاقة المشارك"
-                                  onClick={() => {
-                                     setSelectedParticipantForTicket(part);
-                                     setPrintType("participant-ticket");
-                                  }}
-                                  className="p-1 text-ink-3 hover:text-primary-700 hover:bg-primary-50 rounded"
-                                >
-                                  <FileText className="w-3.5 h-3.5" />
-                                </button>
-
-                                <button
-                                  title="تعديل بيانات المشارك والدفع" aria-label="تعديل بيانات المشارك والدفع"
-                                  onClick={() => handleOpenEditParticipant(part)}
-                                  className="p-1 text-ink-3 hover:text-primary-700 hover:bg-primary-50 rounded"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-
-                                <button
-                                  title="حذف المشارك" aria-label="حذف المشارك"
-                                  onClick={async () => {
-                                    if (await confirm({ message: `هل أنت متأكد من حذف المشارك "${part.fullName}"؟`, tone: "danger" })) {
-                                      onDeleteParticipant(part.id);
-                                    }
-                                  }}
-                                  className="p-1 text-ink-3 hover:text-danger-700 hover:bg-danger-50 rounded"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="border border-line rounded-xl overflow-hidden">
+                    <DataTable
+                      label="لائحة المشاركين والمساهمات"
+                      rows={filteredParticipants}
+                      rowKey={(part) => part.id}
+                      columns={participantColumns}
+                      actions={(part) => (
+                        <>
+                          <IconButton
+                            size="sm"
+                            label="طباعة بطاقة المشارك"
+                            onClick={() => {
+                              setSelectedParticipantForTicket(part);
+                              setPrintType("participant-ticket");
+                            }}
+                          ><FileText className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                          <IconButton size="sm" label="تعديل بيانات المشارك والدفع" onClick={() => handleOpenEditParticipant(part)}><Edit3 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                          <IconButton
+                            size="sm"
+                            tone="danger"
+                            label="حذف المشارك"
+                            onClick={async () => {
+                              if (await confirm({ message: `هل أنت متأكد من حذف المشارك "${part.fullName}"؟`, tone: "danger" })) {
+                                onDeleteParticipant(part.id);
+                              }
+                            }}
+                          ><Trash2 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                        </>
+                      )}
+                      actionsHeader="إجراءات"
+                      dense
+                    />
                   </div>
                 )}
               </div>
@@ -516,60 +507,30 @@ export default function ActivityWorkspace() {
                     <p className="text-small text-ink-3 font-medium">لا توجد مصاريف مطابقة للبحث</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border border-line rounded-xl">
-                    <table className="w-full text-start text-small">
-                      <thead className="bg-sand-50 text-ink-2 font-bold border-b border-line">
-                        <tr>
-                          <th className="p-3 text-center">#</th>
-                          {renderSortableHeader("بيان المصروف", "title", expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir))}
-                          {renderSortableHeader("الفئة / الصنف", "category", expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir))}
-                          {renderSortableHeader("المبلغ", "amount", expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir))}
-                          {renderSortableHeader("التاريخ", "date", expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir))}
-                          {renderSortableHeader("المورد / الجهة", "supplier", expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir))}
-                          {renderSortableHeader("رقم الفاتورة/الوصل", "receiptOrInvoiceNo", expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir))}
-                          <th className="p-3 text-center">إجراءات</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-line-faint">
-                        {filteredExpenses.map((exp, idx) => (
-                          <tr key={exp.id} className="hover:bg-sand-50/70 transition-colors">
-                            <td className="p-3 text-ink-3 font-mono text-center">{idx + 1}</td>
-                            <td className="p-3 font-bold text-ink">{exp.title}</td>
-                            <td className="p-3">
-                              <span className="bg-sand-100 text-ink-2 px-2 py-0.5 rounded-md font-semibold text-caption">
-                                {exp.category}
-                              </span>
-                            </td>
-                            <td className="p-3 font-bold text-danger-700">{formatMoney(exp.amount)}</td>
-                            <td className="p-3 text-ink-2">{formatDateAr(exp.date)}</td>
-                            <td className="p-3 text-ink-2">{exp.supplier || "—"}</td>
-                            <td className="p-3 font-mono text-ink-3">{exp.receiptOrInvoiceNo || "—"}</td>
-                            <td className="p-3 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  title="تعديل المصروف" aria-label="تعديل المصروف"
-                                  onClick={() => handleOpenEditExpense(exp)}
-                                  className="p-1 text-ink-3 hover:text-primary-700 hover:bg-primary-50 rounded"
-                                >
-                                  <Edit3 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  title="حذف المصروف" aria-label="حذف المصروف"
-                                  onClick={async () => {
-                                    if (await confirm({ message: `هل أنت متأكد من حذف المصروف "${exp.title}"؟`, tone: "danger" })) {
-                                      onDeleteActivityExpense(exp.id);
-                                    }
-                                  }}
-                                  className="p-1 text-ink-3 hover:text-danger-700 hover:bg-danger-50 rounded"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="border border-line rounded-xl overflow-hidden">
+                    <DataTable
+                      label="مصاريف النشاط والرحلة"
+                      rows={filteredExpenses}
+                      rowKey={(exp) => exp.id}
+                      columns={expenseColumns}
+                      actions={(exp) => (
+                        <>
+                          <IconButton size="sm" label="تعديل المصروف" onClick={() => handleOpenEditExpense(exp)}><Edit3 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                          <IconButton
+                            size="sm"
+                            tone="danger"
+                            label="حذف المصروف"
+                            onClick={async () => {
+                              if (await confirm({ message: `هل أنت متأكد من حذف المصروف "${exp.title}"؟`, tone: "danger" })) {
+                                onDeleteActivityExpense(exp.id);
+                              }
+                            }}
+                          ><Trash2 className="w-4 h-4" strokeWidth={1.75} /></IconButton>
+                        </>
+                      )}
+                      actionsHeader="إجراءات"
+                      dense
+                    />
                   </div>
                 )}
               </div>
