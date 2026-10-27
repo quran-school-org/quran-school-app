@@ -307,6 +307,71 @@ Puis vérifications par rôle par le propriétaire (MIGRATION-BASCULE.md §5.3 �
 l'application (super-admin). Retour arrière : MIGRATION-BASCULE.md §6, avec
 `deploy-lot0.yml` pour les règles et les fonctions du Lot 0 (`force=true`).
 
+## 5 bis. Avant l'ouverture du code : mots de passe jamais changés, purge de la copie réelle (D103)
+
+Contexte : le Lot 0 a repris les anciens mots de passe (« 123 » et autres) sans
+rotation. Un compte dont `mustChangePassword` est encore `true` ne s'est jamais
+reconnecté : il a toujours son ancien mot de passe. Ces comptes reçoivent un mot de
+passe temporaire aléatoire, que le directeur de chaque école remet à la personne.
+Puis la copie des données réelles d'`alfajr` est supprimée du dev.
+
+Prérequis : branche `feat/ops-mots-de-passe-anciens` fusionnée dans `main` (le code
+exécuté est celui de `main`) ; clé publique `ARTIFACT_GPG_PUBLIC_KEY` posée (Free :
+`PROD_ARTIFACT_GPG_PUBLIC_KEY` / `DEV_ARTIFACT_GPG_PUBLIC_KEY` ou
+`ARTIFACT_GPG_PUBLIC_KEY`), sans quoi l'apply de `rotate-stale-passwords` s'arrête au
+garde-fou ; propriétaire disponible pour récupérer l'artefact et prévenir les
+directeurs avant l'apply.
+
+### Mots de passe jamais changés : `rotate-stale-passwords` (prod et dev)
+
+Cibles : `users/{uid}` avec `mustChangePassword == true`, **sauf** super-admins,
+comptes désactivés et comptes réinitialisés depuis moins de 7 jours (comptés à part,
+`recentlyReset` : ils ont déjà un mot de passe neuf du directeur). Comptes sans école
+ou absents d'Auth : ignorés et comptés.
+
+| # | Commande | À vérifier | Si échec |
+|---|---|---|---|
+| R.1 | `run ops.yml -f environment=production -f action=rotate-stale-passwords -f confirm=$P` (simulation ; `-f school_id=alfajr` pour une seule école) | `RESUME_JSON` : `mode: simulation`, `scanned`, `targeted` (nombre attendu de comptes jamais connectés), `recentlyReset`, `ignored.*` (super-admin, désactivés, absents d'Auth, sans école), `bySchool` | `targeted` très différent de l'attendu : arrêt, rapport au propriétaire |
+| R.2 | **Go du propriétaire** (et directeurs prévenus). `run ops.yml -f environment=production -f action=rotate-stale-passwords -f apply=true -f confirm=$P` | export préalable `EXPORT=<…>-avant-rotate-stale-passwords` ; `RESUME_JSON` : `mode: application`, `failures: 0`, `rotated = targeted`, `passwordsFile: true` ; artefact `mots-de-passe-temporaires-production-<run>-<tentative>` (chiffré, 1 jour) | code 2 (`failures` > 0) : relancer **la même commande** (les comptes déjà traités sont « récents » et ne sont pas recassés) ; clé publique absente : la faire poser |
+| R.3 | (propriétaire) télécharger l'artefact, `unzip`, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, lire `mots-de-passe-temporaires-1.csv` : colonnes `ecole`, `identifiant`, `nomComplet`, `role`, `motDePasseTemporaire` | une ligne par compte et par école ; aucun mot de passe affiché dans les journaux | — |
+
+Remise par le directeur : le propriétaire donne à **chaque directeur** les seules
+lignes de son école (par un canal privé, jamais un groupe). Le directeur remet à
+chaque personne son identifiant et son mot de passe temporaire avec le message de
+`docs/communication/identifiants.md` §4 (« Réinitialisation d'un mot de passe » :
+identité vérifiée, un message par personne, identifiant et mot de passe par deux
+canaux si possible, aucune copie gardée). À la première connexion, l'application
+demande un nouveau mot de passe (`mustChangePassword`). Le propriétaire supprime le CSV
+et l'artefact ensuite. Les sessions ouvertes des comptes traités sont révoquées (la
+personne se reconnecte au plus tard dans l'heure).
+
+- **Relance dans les 7 jours** : sans effet sur les comptes déjà traités (mots de passe
+  temporaires toujours valables). Un mot de passe temporaire perdu : le directeur le
+  réinitialise dans l'application, ou relancer l'action après 7 jours (nouveau mot de
+  passe, l'ancien temporaire cesse de marcher).
+- **Dev** : mêmes commandes avec `environment=dev` et `confirm=$DEV` (les comptes de la
+  copie y ont déjà des mots de passe aléatoires depuis la répétition 4.4).
+- L'orchestrateur ne télécharge pas l'artefact et ne lit jamais les mots de passe.
+
+### Purge de la copie des données réelles : `purge-dev-real-copy` (dev SEULEMENT)
+
+Refusée en production par le workflow, par l'étape et par le script (qui lit le projet de
+prod dans `.env.production`). À faire **après** la dernière répétition de bascule : le
+dev ne contient plus alors aucune donnée d'`alfajr`.
+
+| # | Commande | À vérifier | Si échec |
+|---|---|---|---|
+| P.1 | `run ops.yml -f environment=dev -f action=purge-dev-real-copy` (simulation, aucune écriture) | `RESUME_JSON` : `mode: simulation`, `documents.schoolByCollection` (élèves, paiements…), `documents.legacyByCollection`, `unknownRootCollections` (vide attendu : sinon, signalé et jamais supprimé), `accounts.keptSuperAdmin` ≥ 1, `keptOtherSchool` = comptes des écoles de test, `authToDelete` | `unknownRootCollections` non vide : rapport au propriétaire |
+| P.2 | **Go du propriétaire.** `run ops.yml -f environment=dev -f action=purge-dev-real-copy -f apply=true -f confirm=$DEV` | export préalable du dev `EXPORT=<…>-avant-purge-dev-real-copy` ; `RESUME_JSON` : `mode: application`, `remaining` tout à 0, `deleted.authFailures: 0` | code 2 : relancer la même commande (le plan est recalculé) |
+| P.3 | `run ops.yml -f environment=dev -f action=verify-counts` | plus de `schools.alfajr`, collections racine héritées à 0 ; les autres écoles inchangées | écart : arrêt, rapport |
+
+Après la purge, par le propriétaire (voir D103) : supprimer l'export
+`…-avant-purge-dev-real-copy` du bucket de sauvegarde du **dev** une fois la purge
+validée (il contient la copie réelle), et garder en tête que la récupération à un
+instant donné du dev conserve les données supprimées pendant sa période de rétention
+(7 jours). Retour arrière : `gcloud firestore import` de cet export par un humain ; les
+comptes Auth supprimés se recréent par la répétition de migration (§4).
+
 ## 6. Référence des entrées
 
 | Workflow | Entrée | Valeurs |
@@ -316,12 +381,12 @@ l'application (super-admin). Retour arrière : MIGRATION-BASCULE.md §6, avec
 | | `force` | `false` (défaut), `true` : `--force` (supprime les fonctions absentes de `release/lot0`) |
 | | `confirm` | production : `gen-lang-client-0481880143` |
 | `ops.yml` | `environment` | `dev`, `production` |
-| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts`, `seed-demo` (dev), `remove-demo` (dev), `dev-super-admin` (dev), `dev-super-admin-revoke` (dev), `seed-school-fixtures` (dev), `remove-school-fixtures` (dev) |
-| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore ; **obligatoire** pour seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures et remove-school-fixtures |
+| | `action` | `describe-db`, `export-firestore`, `import-firestore` (dev), `lot0-provision`, `migrate-to-tenants`, `verify-counts`, `seed-demo` (dev), `remove-demo` (dev), `dev-super-admin` (dev), `dev-super-admin-revoke` (dev), `seed-school-fixtures` (dev), `remove-school-fixtures` (dev), `rotate-stale-passwords`, `purge-dev-real-copy` (dev) |
+| | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore, rotate-stale-passwords, purge-dev-real-copy ; **obligatoire** pour seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures et remove-school-fixtures |
 | | `rotate_passwords` | `none` (défaut, D53), `weak`, `all` : lot0-provision, migrate-to-tenants |
 | | `import_source` | import-firestore : `AAAAMMJJ-HHMMSSZ-(manuel\|avant-lot0-provision\|avant-migrate-to-tenants)` |
 | | `username` | dev-super-admin, dev-super-admin-revoke (obligatoire, vide pour les autres actions) : `^[a-z0-9][a-z0-9._-]{1,39}$`, ex. `superadmin_melik` |
-| | `school_id` | seed-school-fixtures, remove-school-fixtures (obligatoire, vide pour les autres actions) : `^[a-z0-9-]{3,40}$`, jamais `alfajr`, ex. `test1234` |
+| | `school_id` | seed-school-fixtures, remove-school-fixtures (obligatoire, vide pour les autres actions) : `^[a-z0-9-]{3,40}$`, jamais `alfajr`, ex. `test1234` ; rotate-stale-passwords (facultatif, vide = toutes les écoles ; `alfajr` permise) |
 | | `size` | seed-school-fixtures : `large` (défaut), `small` ; `large` pour toute autre action |
 | | `confirm` | identifiant du projet visé : obligatoire pour `apply=true`, et en production pour tout sauf `describe-db` et `verify-counts` |
 | `deploy.yml` | `environment`, `target`, `confirm` | comme avant ; `force` (`false` par défaut) pour la bascule |

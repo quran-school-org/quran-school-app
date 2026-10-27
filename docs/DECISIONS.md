@@ -2720,3 +2720,60 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits de D100 (aucune donnée ni règle touchée). Séparément : remettre les
   deux boutons dans `PageHeader` de `DashboardScreen`, retirer `urgent` de `DashboardScreen`, rétablir `h-[236px]` dans
   `HifzMap`, ou appeler `setDoc` directement dans `firebase.ts` sans `serializeWrites`.
+
+### D103. Avant l'ouverture du code : mots de passe jamais changés remplacés (prod et dev), copie réelle d'alfajr purgée du dev
+- **Contexte** : le dépôt va devenir public. L'ancienne application donnait « 123 » par défaut (stocké
+  `123_secure_fajr` dans Firebase Auth). Le Lot 0 a été appliqué en prod **sans rotation** (D53) : 81 comptes Auth
+  ont gardé leur ancien mot de passe, et `users/{uid}.mustChangePassword = true` leur a été posé. Un compte qui l'a
+  encore à `true` ne s'est donc jamais reconnecté pour choisir un mot de passe : l'ancien, peut-être faible et
+  connu de l'ancien code, ouvre toujours le compte. Par ailleurs le projet dev contient une copie des **données
+  réelles** d'`alfajr` (élèves mineurs, paiements, salaires), faite pour les répétitions de bascule (D77) : elle
+  ne doit pas survivre à l'ouverture du code.
+- **Décision** :
+  - **`rotate-stale-passwords`** (`scripts/admin/rotate-stale-passwords.ts`, action d'`ops.yml`, prod et dev).
+    Cible tous les `users/{uid}` à `mustChangePassword === true`, hors super-admins (claim), comptes Auth
+    désactivés et comptes réinitialisés depuis moins de 7 jours (`passwordResetAt` : le directeur leur a déjà remis
+    un mot de passe neuf, ils ne sont pas cassés ; comptés à part, `recentlyReset`). S'y ajoutent, comptés aussi, les
+    comptes absents d'Auth et ceux sans école (personne ne peut leur remettre un mot de passe). `--school=<id>`
+    restreint à une école. Par compte : mot de passe temporaire aléatoire (`generateTemporaryPassword`), sessions
+    révoquées, `mustChangePassword` reste `true`, `passwordResetAt` = maintenant, `passwordResetBy` =
+    `ops:rotate-stale-passwords`. Ce marquage rend la **relance sûre** : un compte traité est « récent » pendant 7
+    jours et n'est pas recassé (les mots de passe déjà remis restent valables). Sortie : `resume.json` (nombres
+    par école et par raison d'exclusion, aucune donnée personnelle) et `mots-de-passe-temporaires.csv` (école,
+    identifiant, nom complet, rôle, mot de passe ; mode 600, une ligne par école d'appartenance, écrit au fur et à
+    mesure : un arrêt en route ne perd aucun mot de passe déjà changé). `ops.yml` : simulation par défaut, `confirm`
+    exigé en prod comme pour les autres actions, **apply refusé sans clé publique GPG**, export Firestore préalable
+    avant toute écriture, CSV dans l'artefact chiffré d'un jour seulement, résumé en liste blanche. Le script refuse
+    la prod hors du workflow (`GITHUB_ACTIONS`) et lit le projet de prod dans `.env.production`
+    (`scripts/admin/lib/prodProject.ts`, échec fermé).
+  - **`purge-dev-real-copy`** (`scripts/admin/purge-dev-real-copy.ts`, **dev seulement**). Refus de la prod à trois
+    niveaux : garde du workflow (`environment` = `dev`, projet ≠ prod, avant toute autre vérification), étape du
+    script d'`ops.yml`, et script (liste `FORBIDDEN_PROJECT_IDS` lue dans `.env.production`, refus avant même
+    l'analyse des autres options). Simulation : compte les documents (arbre `schools/alfajr`, collections racine
+    héritées) et les comptes. `--apply` supprime l'arbre `schools/alfajr` (sous-collections comprises), les
+    collections racine héritées de `migrate-to-tenants` (14 collections métier, `appUsers`, `authLinks`,
+    `settings`) et les comptes Auth, profils `users/` et entrées `usernames/` qui n'appartiennent plus à aucune
+    école. Conservés : les super-admins (claim) et les membres d'une **autre** école (fixtures, `annour`…), dont on
+    retire seulement `alfajr` de `schoolIds` et de `lastSchoolId`. Une collection racine inconnue n'est jamais
+    supprimée : son nom est signalé (`unknownRootCollections`). Après la suppression, le script recompte tout
+    (`remaining`, tout à 0 attendu ; sinon code 2). Export Firestore du dev d'abord (`…-avant-purge-dev-real-copy`).
+  - Les deux actions utilisent le code de `main` : elles ne sont disponibles qu'après fusion de la branche.
+  - Tests : `tests/emulator/rotate-stale-passwords.test.ts` et `tests/emulator/purge-dev-real-copy.test.ts`
+    (émulateurs), `tests/unit/workflows.test.ts` (garde-fous d'`ops.yml` rejoués avec bash).
+- **Non fait, volontairement** : pas de rotation des comptes super-admin (leur mot de passe se change par
+  `dev-super-admin` ou dans l'application) ; pas de purge d'autres services du dev (Cloud Storage, exports) ;
+  l'action ne supprime pas l'export qu'elle crée, qui contient la copie réelle (voir ci-dessous).
+- **Traces à nettoyer par un humain après la purge** : l'export `…-avant-purge-dev-real-copy` du bucket de
+  sauvegarde du **dev** (à supprimer une fois la purge validée), la récupération à un instant donné (PITR) du dev
+  qui garde les données supprimées pendant sa période de rétention (7 jours), les artefacts GitHub des
+  anciens runs (`rapport-*`, 3 jours). Les exports de la **prod** (bucket de prod) ne sont pas concernés.
+- **Retour arrière** :
+  - `rotate-stale-passwords` : aucun retour au mot de passe précédent (c'est le but ; il est exposé). Un mot de
+    passe temporaire perdu se remplace par la réinitialisation du directeur dans l'application (`resetUserPassword`)
+    ou, après 7 jours, par une relance de l'action. Une erreur de ciblage se corrige en relançant ; `mustChangePassword`
+    n'est jamais retiré. Sans artefact chiffré lisible, relancer sur l'école concernée après 7 jours.
+  - `purge-dev-real-copy` (irréversible sans l'export) : `gcloud firestore import` de l'export du dev, par un humain
+    (ou récupération à un instant donné, dans les 7 jours). Les comptes Firebase Auth supprimés **ne sont pas** dans
+    l'export Firestore : les recréer en rejouant la répétition de migration (`import-firestore` puis
+    `migrate-to-tenants`, runbook OPERATIONS-CLAUDE.md §4). Pour le code : `git revert` des commits de D103 (aucune
+    donnée ni règle touchée).
