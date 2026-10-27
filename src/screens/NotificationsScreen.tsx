@@ -19,7 +19,7 @@ const TYPE_ICON: Record<string, { icon: any; cls: string }> = {
 };
 
 export default function NotificationsScreen() {
-  const { currentRole, loadDatabase, userNotifications, notifications, authUid } = useApp();
+  const { currentRole, loadDatabase, userNotifications, notifications, setNotifications, authUid } = useApp();
   const unread = userNotifications.filter((n) => !isNotificationRead(n, authUid)).length;
   const [confirmClear, setConfirmClear] = useState(false);
   /** Toutes les notifications de l'école (celles que la suppression efface), pas seulement la liste filtrée. */
@@ -30,11 +30,17 @@ export default function NotificationsScreen() {
    * Les familles ne lisent pas les notifications (R-07) : pas d'action d'écriture pour elles.
    */
   const canMarkRead = !!authUid && currentRole !== "ولي أمر" && currentRole !== "طالب";
-  const markAllRead = () => {
-    if (!authUid) return;
-    userNotifications.filter((n) => !isNotificationRead(n, authUid)).forEach((n) => RealmSimDB.markNotificationAsRead(n.id, authUid));
-    loadDatabase();
+  /**
+   * Marque comme lues pour ce compte, sans recharger toute l'école : seules ces
+   * notifications changent dans l'état, la liste ne clignote pas et garde son ordre.
+   */
+  const markRead = (ids: string[]) => {
+    if (!authUid || ids.length === 0) return;
+    ids.forEach((id) => RealmSimDB.markNotificationAsRead(id, authUid));
+    const marked = new Set(ids);
+    setNotifications((prev) => prev.map((n) => (marked.has(n.id) ? { ...n, readBy: Array.from(new Set([...(n.readBy ?? []), authUid])) } : n)));
   };
+  const markAllRead = () => markRead(userNotifications.filter((n) => !isNotificationRead(n, authUid)).map((n) => n.id));
   const clearAll = () => {
     RealmSimDB.clearAllNotifications();
     loadDatabase();
@@ -77,12 +83,11 @@ export default function NotificationsScreen() {
               const t = TYPE_ICON[n.type] || { icon: Bell, cls: "bg-primary-100 text-primary" };
               const Icon = t.icon;
               return (
-                <li key={n.id}>
+                <li key={n.id} data-notification={n.id}>
                   <button
                     type="button"
                     onClick={() => {
-                      if (!read && authUid) RealmSimDB.markNotificationAsRead(n.id, authUid);
-                      loadDatabase();
+                      if (!read) markRead([n.id]);
                     }}
                     className={cx(
                       "w-full min-h-11 text-start flex gap-4 px-5 py-4 cursor-pointer border-0 border-s-4 transition-colors hover:bg-surface-2",

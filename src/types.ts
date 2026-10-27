@@ -139,6 +139,25 @@ export interface Notification {
 export const isNotificationRead = (n: Notification, uid: string | null | undefined) =>
   n.isRead === true || (!!uid && (n.readBy ?? []).includes(uid));
 
+/** Instant de création : `n_<horodatage ms>` quand il existe, sinon le jour (`date`, AAAA-MM-JJ). */
+const notificationTime = (n: Notification): number => {
+  const fromId = /^n_(\d{10,})/.exec(n.id ?? "");
+  if (fromId) return Number(fromId[1]);
+  const t = Date.parse(n.date ?? "");
+  return Number.isNaN(t) ? 0 : t;
+};
+
+/**
+ * Ordre d'affichage stable, la plus récente d'abord : par jour, puis par instant de
+ * création, puis par identifiant. Le cache local et Firestore ne rendent pas les
+ * notifications dans le même ordre : sans ce tri, la liste se réordonnait sous le
+ * doigt après un clic.
+ */
+export const compareNotificationsNewestFirst = (a: Notification, b: Notification): number =>
+  (b.date ?? "").localeCompare(a.date ?? "") || notificationTime(b) - notificationTime(a) || (b.id ?? "").localeCompare(a.id ?? "");
+
+export const sortNotificationsNewestFirst = (list: Notification[]): Notification[] => [...list].sort(compareNotificationsNewestFirst);
+
 /** 'office' : bureau ; 'educators' : pédagogie ; 'staff' : tout le personnel. */
 export type NotificationAudience = "office" | "educators" | "staff";
 

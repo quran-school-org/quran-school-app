@@ -2,7 +2,7 @@
  * Extrait mécaniquement d'App.tsx (Lot 2, sans changement de comportement).
  */
 import { useMemo, useCallback } from "react";
-import { Student, Payment, UserRole } from "../types";
+import { Student, Payment, UserRole, sortNotificationsNewestFirst } from "../types";
 import { linkedStudentIdsOf, linkedTeacherIdOf } from "../security/accountAlignment";
 import { getYearAndMonthFromDate } from "./helpers";
 import { comparePaymentsRecentFirst } from "../utils/paymentPeriod";
@@ -123,16 +123,18 @@ export function useDerived(s: SessionScope) {
   }, [teacherClasses, students]);
 
   // Role-scoped notifications list
+  // Toujours la plus récente d'abord, quel que soit l'ordre du cache ou de Firestore.
+  const notificationsNewestFirst = useMemo(() => sortNotificationsNewestFirst(notifications), [notifications]);
   const userNotifications = useMemo(() => {
     if (currentRole === "مدير") {
-      return notifications;
+      return notificationsNewestFirst;
     }
 
     if (currentRole === "ولي أمر") {
       const parentName = currentUser?.fullName || "";
       const childNames = parentStudents.map(s => s.fullName);
 
-      return notifications.filter(n => {
+      return notificationsNewestFirst.filter(n => {
         if (n.title.includes("تسجيل دخول") && !n.message.includes(parentName)) {
           return false;
         }
@@ -151,7 +153,7 @@ export function useDerived(s: SessionScope) {
     if (currentRole === "طالب") {
       const studentName = currentStudentObj ? currentStudentObj.fullName : currentUser?.fullName || "";
 
-      return notifications.filter(n => {
+      return notificationsNewestFirst.filter(n => {
         if (n.title.includes("تسجيل دخول") && !n.message.includes(studentName)) return false;
         if (n.message.includes("admin_alfajr") || n.message.includes("إعدادات الجمعية")) return false;
 
@@ -166,7 +168,7 @@ export function useDerived(s: SessionScope) {
       const teacherName = activeTeacher ? activeTeacher.fullName : currentUser?.fullName || "";
       const teacherStudentNames = teacherStudents.map(s => s.fullName);
 
-      return notifications.filter(n => {
+      return notificationsNewestFirst.filter(n => {
         if (n.title.includes("تسجيل دخول") && !n.message.includes(teacherName)) return false;
         if (n.message.includes("admin_alfajr") || n.message.includes("إعدادات الجمعية")) return false;
 
@@ -178,8 +180,8 @@ export function useDerived(s: SessionScope) {
       });
     }
 
-    return notifications;
-  }, [notifications, currentRole, currentUser, parentStudents, currentStudentObj, activeTeacher, teacherStudents]);
+    return notificationsNewestFirst;
+  }, [notificationsNewestFirst, currentRole, currentUser, parentStudents, currentStudentObj, activeTeacher, teacherStudents]);
 
   // Global calculations
   const activeStudents = students.filter(s => !s.isArchived);
