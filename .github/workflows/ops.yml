@@ -277,7 +277,7 @@ jobs:
           # D80 : identifiant du super-admin du dev, format strict (jamais exécuté, passé par env).
           case "${ACTION}" in
             dev-super-admin|dev-super-admin-revoke)
-              [[ "${USERNAME_INPUT}" =~ ^[a-z0-9][a-z0-9._-]{1,39}$ ]] || fail "username invalide : attendu ^[a-z0-9][a-z0-9._-]{1,39}$ (ex. superadmin_melik)."
+              [[ "${USERNAME_INPUT}" =~ ^[a-z0-9][a-z0-9._-]{1,39}$ ]] || fail "username invalide : attendu ^[a-z0-9][a-z0-9._-]{1,39}$ (ex. superadmin_demo)."
               ;;
             *) [ -z "${USERNAME_INPUT}" ] || fail "username ne concerne que dev-super-admin et dev-super-admin-revoke." ;;
           esac

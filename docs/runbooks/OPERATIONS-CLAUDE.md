@@ -119,7 +119,7 @@ aucune copie des données réelles** (sinon `seed-demo` refuse : `REAL_DATA`).
 
 But : le propriétaire teste la création d'écoles sur le dev, qui contient une
 **copie des données réelles** (école `alfajr`, traitée comme la prod, D77).
-Le compte `superadmin_melik` (« Melik Zaanouni ») reçoit le claim `superAdmin`
+Le compte `superadmin_demo` (« مشرف عام تجريبي ») reçoit le claim `superAdmin`
 et **aucune appartenance d'école** : il liste les écoles et en crée, mais ne
 lit les données d'aucune école dont il n'est pas membre (D25). Une école créée
 depuis l'interface le rend directeur de **cette** école seulement
@@ -138,8 +138,8 @@ pour `createSchool`) ; clé publique `ARTIFACT_GPG_PUBLIC_KEY` posée (Free :
 
 | # | Commande | À vérifier | Si échec |
 |---|---|---|---|
-| S.1 | `run ops.yml -f environment=dev -f action=dev-super-admin -f username=superadmin_melik -f apply=true -f confirm=$DEV` | run vert ; `RESUME_JSON` : `mode: application`, `operation: grant`, `username: superadmin_melik`, `created: true` (première fois) ou `reset: true` (relance), `superAdmin: true`, `schoolMemberships: 0`, `disabled: false`, `passwordsFile: true` ; artefact `mots-de-passe-temporaires-dev-<run>-<tentative>` (chiffré, 1 jour) | `ACCOUNT_CONFLICT` : l'identifiant est pris par un autre compte (registre, compte Auth hors registre, ou deux domaines) : **arrêt**, rapport au propriétaire, ne rien forcer ; `MEMBER_ACCOUNT` : le compte appartient déjà à une école (compte réel de la copie ?) : arrêt, rapport (le workflow ne passe jamais `--allow-existing-member`) ; `username invalide` : corriger l'entrée ; clé publique absente : la faire poser |
-| S.2 | (propriétaire) télécharger l'artefact, `unzip`, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, lire `mots-de-passe-temporaires-1.csv`, se connecter sur `https://$DEV.web.app` avec `superadmin_melik` | page de choix d'école (liste des écoles, dont `alfajr`, et formulaire de création) ; aucune donnée d'`alfajr` lisible sans en être membre ; création d'une école de test ; changement de mot de passe demandé à l'entrée dans l'école créée (`mustChangePassword`) | connexion refusée : relancer S.1 (nouveau mot de passe) |
+| S.1 | `run ops.yml -f environment=dev -f action=dev-super-admin -f username=superadmin_demo -f apply=true -f confirm=$DEV` | run vert ; `RESUME_JSON` : `mode: application`, `operation: grant`, `username: superadmin_demo`, `created: true` (première fois) ou `reset: true` (relance), `superAdmin: true`, `schoolMemberships: 0`, `disabled: false`, `passwordsFile: true` ; artefact `mots-de-passe-temporaires-dev-<run>-<tentative>` (chiffré, 1 jour) | `ACCOUNT_CONFLICT` : l'identifiant est pris par un autre compte (registre, compte Auth hors registre, ou deux domaines) : **arrêt**, rapport au propriétaire, ne rien forcer ; `MEMBER_ACCOUNT` : le compte appartient déjà à une école (compte réel de la copie ?) : arrêt, rapport (le workflow ne passe jamais `--allow-existing-member`) ; `username invalide` : corriger l'entrée ; clé publique absente : la faire poser |
+| S.2 | (propriétaire) télécharger l'artefact, `unzip`, `gpg --decrypt contenu.tar.gz.gpg \| tar -xz`, lire `mots-de-passe-temporaires-1.csv`, se connecter sur `https://$DEV.web.app` avec `superadmin_demo` | page de choix d'école (liste des écoles, dont `alfajr`, et formulaire de création) ; aucune donnée d'`alfajr` lisible sans en être membre ; création d'une école de test ; changement de mot de passe demandé à l'entrée dans l'école créée (`mustChangePassword`) | connexion refusée : relancer S.1 (nouveau mot de passe) |
 
 - **Relance** (mot de passe perdu ou exposé) : la même commande S.1. Nouveau
   mot de passe, sessions révoquées, compte réactivé s'il était désactivé,
@@ -149,7 +149,7 @@ pour `createSchool`) ; clé publique `ARTIFACT_GPG_PUBLIC_KEY` posée (Free :
   propriétaire change son mot de passe dans l'application, ou le retire de
   l'école de test puis relance).
 - **Retrait** (fin des essais, et en tout cas si le compte est exposé) :
-  `run ops.yml -f environment=dev -f action=dev-super-admin-revoke -f username=superadmin_melik -f apply=true -f confirm=$DEV`
+  `run ops.yml -f environment=dev -f action=dev-super-admin-revoke -f username=superadmin_demo -f apply=true -f confirm=$DEV`
   (script : `--revoke`). `RESUME_JSON` : `operation: revoke`,
   `superAdmin: false`, `sessionsRevoked: true`, `disabled: true` si le compte
   n'appartient à aucune école (sinon `false` et `schoolMemberships` > 0 : il
@@ -320,7 +320,7 @@ l'application (super-admin). Retour arrière : MIGRATION-BASCULE.md §6, avec
 | | `apply` | `false` (défaut), `true` : lot0-provision, migrate-to-tenants, import-firestore ; **obligatoire** pour seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures et remove-school-fixtures |
 | | `rotate_passwords` | `none` (défaut, D53), `weak`, `all` : lot0-provision, migrate-to-tenants |
 | | `import_source` | import-firestore : `AAAAMMJJ-HHMMSSZ-(manuel\|avant-lot0-provision\|avant-migrate-to-tenants)` |
-| | `username` | dev-super-admin, dev-super-admin-revoke (obligatoire, vide pour les autres actions) : `^[a-z0-9][a-z0-9._-]{1,39}$`, ex. `superadmin_melik` |
+| | `username` | dev-super-admin, dev-super-admin-revoke (obligatoire, vide pour les autres actions) : `^[a-z0-9][a-z0-9._-]{1,39}$`, ex. `superadmin_demo` |
 | | `school_id` | seed-school-fixtures, remove-school-fixtures (obligatoire, vide pour les autres actions) : `^[a-z0-9-]{3,40}$`, jamais `alfajr`, ex. `test1234` |
 | | `size` | seed-school-fixtures : `large` (défaut), `small` ; `large` pour toute autre action |
 | | `confirm` | identifiant du projet visé : obligatoire pour `apply=true`, et en production pour tout sauf `describe-db` et `verify-counts` |

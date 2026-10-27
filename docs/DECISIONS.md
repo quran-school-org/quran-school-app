@@ -1661,7 +1661,7 @@ là-bas (R-06).
   - `--username` obligatoire, normalisé et validé par `normalizeUsername` et
     `isValidUsername` de `src/security/accounts.ts` (copie à l'identique de
     `functions/src/shared/accounts.ts`, parité testée) ; `--full-name`
-    facultatif (défaut « Melik Zaanouni », 120 caractères imprimables au plus) ;
+    facultatif (défaut « مشرف عام تجريبي », 120 caractères imprimables au plus) ;
   - **convention identifiant → email de `createSchoolUser`** :
     `usernameToEmail(username, NEW_ACCOUNTS_EMAIL_DOMAIN)`, soit
     `<username>@comptes.kuttab.local` ; la connexion de l'application
@@ -2720,3 +2720,16 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits de D100 (aucune donnée ni règle touchée). Séparément : remettre les
   deux boutons dans `PageHeader` de `DashboardScreen`, retirer `urgent` de `DashboardScreen`, rétablir `h-[236px]` dans
   `HifzMap`, ou appeler `setDoc` directement dans `firebase.ts` sans `serializeWrites`.
+
+### D104. Préparation de l'ouverture du code (open source)
+- **Contexte** : le propriétaire veut publier le dépôt. L'audit (`docs/revues/OUVERTURE-OPEN-SOURCE-2026-10-27.md`)
+  a examiné tout l'historique, les journaux Actions et les textes GitHub. Aucun secret n'est à révoquer, mais deux
+  risques d'exploitation restent : les anciens mots de passe jamais changés en prod (mot de passe par défaut hérité)
+  et la copie des données réelles sur le dev.
+- **Décision** :
+  - licence **MIT**, `SECURITY.md` (signalement privé, tests sur émulateurs seulement), `README.md` public ;
+  - noms et identifiants personnels retirés des scripts, tests et runbooks (`superadmin_demo`) ;
+  - fichiers AI Studio inutilisés retirés (`firebase-applet-config.json`, `metadata.json`, `assets/.aistudio`) ;
+  - on garde le dépôt actuel (WIF, historique) ; son ouverture attend que la liste de contrôle de l'audit (§3) soit remplie.
+- **Retour arrière** : la visibilité se remet en privé dans les réglages GitHub. Les fichiers retirés se
+  restaurent depuis l'historique. On peut changer de licence tant qu'aucune contribution extérieure n'a été acceptée.

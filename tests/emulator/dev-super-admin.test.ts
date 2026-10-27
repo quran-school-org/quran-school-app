@@ -34,7 +34,7 @@ const PROJECT = "demo-quran-school";
 const PROD = "gen-lang-client-0481880143";
 const PROD_DB = "ai-studio-a6572431-c7db-4071-82bf-a922d18511ec";
 const DOMAIN = "comptes.kuttab.local";
-const USER = "superadmin_melik";
+const USER = "superadmin_demo";
 const REGION = "europe-west1";
 let admin: AdminHandles;
 let env: RulesTestEnvironment;
@@ -113,10 +113,10 @@ describe("arguments : prod refusée, identifiant validé comme dans les Function
     expect(() => parseDevSuperAdminArgs([`--username=${USER}`], emuEnv)).toThrow(/--project/);
     expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`], emuEnv)).toThrow(/--username/);
     expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`, "--username"], emuEnv)).toThrow(/--username/);
-    for (const bad of ["a", "-melik", "melik zaanouni", "mélik", "x".repeat(41), "melik@x", "../etc", "_melik"]) {
+    for (const bad of ["a", "-demo", "super admin demo", "démo", "x".repeat(41), "demo@x", "../etc", "_demo"]) {
       expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${bad}`], emuEnv), bad).toThrow(/--username invalide/);
     }
-    expect(parseDevSuperAdminArgs([`--project=${PROJECT}`, "--username= SuperAdmin_Melik "], emuEnv).username).toBe(USER);
+    expect(parseDevSuperAdminArgs([`--project=${PROJECT}`, "--username= SuperAdmin_Demo "], emuEnv).username).toBe(USER);
     expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${USER}`, "--force"], emuEnv)).toThrow(/inconnue/);
     expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${USER}`], {})).toThrow(/émulateurs/);
     expect(() => parseDevSuperAdminArgs(["--project=fajr-c4c6e", `--username=${USER}`, "--apply"], {})).toThrow(/--database/);
@@ -125,8 +125,8 @@ describe("arguments : prod refusée, identifiant validé comme dans les Function
     expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${USER}`, "--full-name="], emuEnv)).toThrow(/--full-name/);
     expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${USER}`, "--full-name=a\nb"], emuEnv)).toThrow(/--full-name/);
     expect(() => parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${USER}`, "--revoke", "--allow-existing-member"], emuEnv)).toThrow(/--revoke/);
-    expect(parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${USER}`, "--full-name=Melik Z.", "--allow-existing-member"], emuEnv))
-      .toMatchObject({ fullName: "Melik Z.", allowExistingMember: true });
+    expect(parseDevSuperAdminArgs([`--project=${PROJECT}`, `--username=${USER}`, "--full-name=Super Admin Z.", "--allow-existing-member"], emuEnv))
+      .toMatchObject({ fullName: "Super Admin Z.", allowExistingMember: true });
   });
 
   it("le script lancé sur la prod s'arrête avant toute connexion (code 1), --force compris", () => {
@@ -224,7 +224,7 @@ describe("compte super-admin", () => {
   });
 
   it("compte membre d'une école : refusé sans --allow-existing-member (rien n'est modifié), signalé avec", async () => {
-    await expect(runDevSuperAdmin(admin.db, admin.auth, opts())).rejects.toThrow(/MEMBER_ACCOUNT superadmin_melik : le compte appartient à 1 école/);
+    await expect(runDevSuperAdmin(admin.db, admin.auth, opts())).rejects.toThrow(/MEMBER_ACCOUNT superadmin_demo : le compte appartient à 1 école/);
     expect(await signInLikeApp(USER, password)).toBe("ok");
 
     const { summary, credential } = await runDevSuperAdmin(admin.db, admin.auth, opts({ allowExistingMember: true }));
@@ -256,7 +256,7 @@ describe("compte super-admin", () => {
 
     // Deux domaines, deux comptes : connexion ambiguë.
     await admin.auth.createUser({ email: `${USER}@alfajr.local`, password: "mot-de-passe-tiers" });
-    await expect(runDevSuperAdmin(admin.db, admin.auth, opts({ allowExistingMember: true }))).rejects.toThrow(/ACCOUNT_CONFLICT superadmin_melik : les deux domaines/);
+    await expect(runDevSuperAdmin(admin.db, admin.auth, opts({ allowExistingMember: true }))).rejects.toThrow(/ACCOUNT_CONFLICT superadmin_demo : les deux domaines/);
     await admin.auth.deleteUser((await admin.auth.getUserByEmail(`${USER}@alfajr.local`)).uid);
     expect(await signInLikeApp(USER, password)).toBe("ok");
   });
