@@ -18,7 +18,9 @@
  *  - D80 : `dev-super-admin` / `dev-super-admin-revoke` réservés au dev, entrée
  *    `username` validée par une expression régulière stricte, passée par env ;
  *  - D82 : `seed-school-fixtures` / `remove-school-fixtures` réservés au dev,
- *    entrée `school_id` stricte, `alfajr` refusée, passée par env.
+ *    entrée `school_id` stricte, `alfajr` refusée, passée par env ;
+ *  - D103 : `rotate-stale-passwords` (prod et dev, apply refusé sans clé publique,
+ *    confirm en prod, export préalable) et `purge-dev-real-copy` (dev seulement).
  * Analyse ligne à ligne (pas de dépendance YAML) : suffisante pour ces fichiers.
  */
 import { spawnSync } from "node:child_process";
@@ -328,7 +330,7 @@ describe("workflows GitHub Actions (D68)", () => {
     };
 
     it("choix d'action : seed-demo et remove-demo", () => {
-      expect(text).toMatch(/options: \[describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures, remove-school-fixtures\]/);
+      expect(text).toMatch(/options: \[describe-db, export-firestore, import-firestore, lot0-provision, migrate-to-tenants, verify-counts, seed-demo, remove-demo, dev-super-admin, dev-super-admin-revoke, seed-school-fixtures, remove-school-fixtures, rotate-stale-passwords, purge-dev-real-copy\]/);
     });
 
     it("dev, apply=true, confirm = projet de dev, clé publique : accepté, code de main", () => {
@@ -371,7 +373,7 @@ describe("workflows GitHub Actions (D68)", () => {
       expect(script).toMatch(/if \[ "\$\{ENVIRONMENT\}" != "dev" \] \|\| \[ "\$\{PROJECT_ID\}" = "\$\{PROD_PROJECT_ID\}" \]; then echo "::error::\$\{ACTION\} refusé hors dev."; exit 1; fi/);
       expect(script).toContain("-path '*/seed-demo-*/resume.json'");
       expect(script).toContain("-name 'mots-de-passe-temporaires.csv'");
-      expect(text).toMatch(/if: inputs\.action == 'lot0-provision' \|\| inputs\.action == 'migrate-to-tenants' \|\| inputs\.action == 'seed-demo' \|\| inputs\.action == 'remove-demo' \|\| inputs\.action == 'dev-super-admin' \|\| inputs\.action == 'dev-super-admin-revoke' \|\| inputs\.action == 'seed-school-fixtures' \|\| inputs\.action == 'remove-school-fixtures'\n/);
+      expect(text).toMatch(/if: inputs\.action == 'lot0-provision' \|\| inputs\.action == 'migrate-to-tenants' \|\| inputs\.action == 'seed-demo' \|\| inputs\.action == 'remove-demo' \|\| inputs\.action == 'dev-super-admin' \|\| inputs\.action == 'dev-super-admin-revoke' \|\| inputs\.action == 'seed-school-fixtures' \|\| inputs\.action == 'remove-school-fixtures' \|\| inputs\.action == 'rotate-stale-passwords' \|\| inputs\.action == 'purge-dev-real-copy'\n/);
       const secret = text.slice(text.indexOf("- name: Mots de passe temporaires (SECRET, 1 jour)"));
       expect(secret).toMatch(/^\s+retention-days: 1$/m);
       const imp = stepScript("import-firestore (dev seulement)");
@@ -540,6 +542,132 @@ describe("workflows GitHub Actions (D68)", () => {
         expect(text.match(/^\s+SCHOOL_ID_INPUT: \$\{\{ inputs\.school_id \}\}$/gm)).toHaveLength(2);
         // Jamais confondue avec l'école migrée (SCHOOL_ID = alfajr, migrate-to-tenants).
         expect(branch).not.toMatch(/\$\{SCHOOL_ID\}/);
+      });
+    });
+
+    describe("D103 : mots de passe jamais changés (rotate-stale-passwords) et purge de la copie réelle (purge-dev-real-copy)", () => {
+      const script = stepScript("${{ inputs.action }} (script Admin SDK, journal en artefact)");
+      const branchOf = (action: string) => {
+        const start = script.indexOf(`elif [ "\${ACTION}" = "${action}" ]`);
+        expect(start, action).toBeGreaterThan(0);
+        return script.slice(start, script.indexOf("elif", start + 10));
+      };
+
+      describe("rotate-stale-passwords (prod et dev)", () => {
+        const A = "rotate-stale-passwords";
+
+        it("dev et production : accepté depuis main, code de main ; en production, confirm = projet de prod exigé même en simulation", () => {
+          for (const env of ["dev", "production"]) {
+            const apply = run({ ENVIRONMENT: env, ACTION: A, APPLY: "true" });
+            expect(apply.code, apply.out).toBe(0);
+            expect(apply.outputs).toContain("code_ref=main");
+            expect(run({ ENVIRONMENT: env, ACTION: A, APPLY: "false" }).code, env).toBe(0);
+            expect(run({ ENVIRONMENT: env, ACTION: A, APPLY: "true", SCHOOL_ID_INPUT: "alfajr" }).code, env).toBe(0);
+            expect(run({ ENVIRONMENT: env, ACTION: A, APPLY: "true", CONFIRM: "" }).out, env).toMatch(/Confirmation incorrecte/);
+            expect(run({ ENVIRONMENT: env, ACTION: A, APPLY: "true", CONFIRM: env === "dev" ? PROD : DEV }).code, env).toBe(1);
+          }
+          // Simulation : confirmation exigée en production seulement (lecture de données personnelles), pas sur le dev.
+          expect(run({ ENVIRONMENT: "production", ACTION: A, APPLY: "false", CONFIRM: "" }).out).toMatch(/Confirmation incorrecte/);
+          expect(run({ ENVIRONMENT: "dev", ACTION: A, APPLY: "false", CONFIRM: "" }).code).toBe(0);
+          // La production ne se lance que depuis main.
+          expect(run({ ENVIRONMENT: "production", ACTION: A, REF: "refs/heads/feat/x" }).out).toMatch(/depuis le workflow de main/);
+        });
+
+        it("apply sans clé publique refusé (mots de passe chiffrés seulement) ; la simulation n'en exige pas", () => {
+          for (const env of ["dev", "production"]) {
+            const noKey = run({ ENVIRONMENT: env, ACTION: A, APPLY: "true", ARTIFACT_KEY: "" });
+            expect(noKey.code, env).toBe(1);
+            expect(noKey.out).toMatch(/rotate-stale-passwords appliqué exige la variable .*ARTIFACT_GPG_PUBLIC_KEY/);
+            expect(run({ ENVIRONMENT: env, ACTION: A, APPLY: "false", ARTIFACT_KEY: "" }).code, env).toBe(0);
+          }
+        });
+
+        it("school_id facultative, format strict, jamais affichée ; rotate_passwords et les autres entrées refusés", () => {
+          for (const ok of ["", "alfajr", "annour", "abc", "ecole-2", "a".repeat(40)]) expect(run({ ACTION: A, SCHOOL_ID_INPUT: ok }).code, ok).toBe(0);
+          for (const u of ["ab", "Alfajr", "alfajr ", "test_1", "a".repeat(41), "a;id", "$(id)", "a`id`", "::error::x", "a\nb", "../x", "école"]) {
+            const r = run({ ACTION: A, SCHOOL_ID_INPUT: u });
+            expect(r.code, JSON.stringify(u)).toBe(1);
+            expect(r.out, JSON.stringify(u)).toMatch(/school_id invalide/);
+            if (u.length > 6) expect(r.out).not.toContain(u);
+          }
+          expect(run({ ACTION: A, ROTATE: "all" }).out).toMatch(/rotate_passwords ne concerne/);
+          expect(run({ ACTION: A, USERNAME_INPUT: "x_y" }).out).toMatch(/username ne concerne/);
+          expect(run({ ACTION: A, SIZE_INPUT: "small" }).out).toMatch(/size ne concerne/);
+          expect(run({ ACTION: A, IMPORT_SOURCE: "20261101-193000Z-manuel" }).out).toMatch(/import_source ne concerne/);
+        });
+
+        it("étape : école par env, format revalidé, export préalable avant l'écriture, résumé en liste blanche, CSV vers l'artefact chiffré", () => {
+          const branch = branchOf(A);
+          expect(branch).toContain("SCRIPT=scripts/admin/rotate-stale-passwords.ts");
+          expect(branch).toContain('[[ "${SCHOOL_ID_INPUT}" =~ ^[a-z0-9-]{3,40}$ ]]');
+          expect(branch).toContain('ARGS+=(--school="${SCHOOL_ID_INPUT}")');
+          // Pas de restriction au dev : la prod passe par ce workflow.
+          expect(branch).not.toMatch(/refusé hors dev/);
+          expect(script).toContain("-path '*/rotate-stale-passwords-*/resume.json'");
+          expect(script).toContain("-name 'mots-de-passe-temporaires.csv'");
+          const filter = script.match(/FILTER='(\{mode, school, scanned[^']*\})'/)?.[1];
+          expect(filter).toBeDefined();
+          expect(filter).not.toMatch(/password[^s]|reportDir|username|fullName|credentials/i);
+          expect(script).toMatch(/rotate-stale-passwords\|purge-dev-real-copy\|seed-school-fixtures\)\\\] \(ÉCHEC/);
+          expect(text.match(/if: inputs\.apply && \(inputs\.action == 'lot0-provision' \|\| inputs\.action == 'migrate-to-tenants' \|\| inputs\.action == 'rotate-stale-passwords' \|\| inputs\.action == 'purge-dev-real-copy'\)/g)).toHaveLength(1);
+          expect(text.indexOf("- name: Export préalable (avant écriture)")).toBeLessThan(text.indexOf("(script Admin SDK, journal en artefact)"));
+          expect(script).toContain('[ "${APPLY}" = "true" ] && ARGS+=(--apply --confirm-prod="${PROJECT_ID}")');
+        });
+      });
+
+      describe("purge-dev-real-copy (dev seulement)", () => {
+        const A = "purge-dev-real-copy";
+
+        it("dev : simulation sans confirmation, apply avec confirm = projet de dev ; code de main ; clé publique inutile", () => {
+          const sim = run({ ACTION: A, APPLY: "false", CONFIRM: "", ARTIFACT_KEY: "" });
+          expect(sim.code, sim.out).toBe(0);
+          expect(sim.outputs).toContain("code_ref=main");
+          const apply = run({ ACTION: A, APPLY: "true", ARTIFACT_KEY: "" });
+          expect(apply.code, apply.out).toBe(0);
+          expect(apply.outputs).toContain("code_ref=main");
+          expect(run({ ACTION: A, APPLY: "true", CONFIRM: "" }).out).toMatch(/Confirmation incorrecte/);
+          expect(run({ ACTION: A, APPLY: "true", CONFIRM: PROD }).code).toBe(1);
+        });
+
+        it("refusée en production dans tous les cas : simulation, apply, confirmée, depuis main", () => {
+          for (const apply of ["false", "true"]) {
+            for (const confirm of ["", PROD]) {
+              const r = run({ ENVIRONMENT: "production", ACTION: A, APPLY: apply, CONFIRM: confirm });
+              expect(r.code, `${apply}/${confirm}`).toBe(1);
+              expect(r.out).toMatch(/purge-dev-real-copy est refusé en production/);
+            }
+          }
+          // Un dev mal configuré qui viserait la prod.
+          for (const apply of ["false", "true"]) {
+            const croise = run({ ACTION: A, APPLY: apply, PROJECT_ID: PROD, CONFIRM: PROD, OPS_SA: `github-ops@${PROD}.iam.gserviceaccount.com`, BACKUP_BUCKET: "autre-bucket" });
+            expect(croise.code, apply).toBe(1);
+            expect(croise.out).toMatch(/purge-dev-real-copy : le projet visé est la prod|pointe vers la prod/);
+          }
+        });
+
+        it("aucune autre entrée : school_id, username, rotate_passwords, size, import_source refusés", () => {
+          expect(run({ ACTION: A, APPLY: "false", CONFIRM: "", SCHOOL_ID_INPUT: "alfajr" }).out).toMatch(/school_id ne concerne que/);
+          expect(run({ ACTION: A, APPLY: "false", CONFIRM: "", USERNAME_INPUT: "x_y" }).out).toMatch(/username ne concerne/);
+          expect(run({ ACTION: A, APPLY: "false", CONFIRM: "", ROTATE: "all" }).out).toMatch(/rotate_passwords ne concerne/);
+          expect(run({ ACTION: A, APPLY: "false", CONFIRM: "", SIZE_INPUT: "small" }).out).toMatch(/size ne concerne/);
+          expect(run({ ACTION: A, APPLY: "false", CONFIRM: "", IMPORT_SOURCE: "20261101-193000Z-manuel" }).out).toMatch(/import_source ne concerne/);
+        });
+
+        it("la garde de dev passe avant toute autre vérification de l'action", () => {
+          const garde = stepScript("Garde-fous");
+          expect(garde.indexOf('"${ACTION}" = "purge-dev-real-copy" ]; then')).toBeGreaterThan(0);
+          expect(garde.indexOf('"${ACTION}" = "purge-dev-real-copy" ]; then')).toBeLessThan(garde.indexOf("# Formats stricts"));
+        });
+
+        it("étape : revalidée hors dev, script de main, export préalable du dev, résumé en liste blanche sans mot de passe", () => {
+          const branch = branchOf(A);
+          expect(branch).toMatch(/if \[ "\$\{ENVIRONMENT\}" != "dev" \] \|\| \[ "\$\{PROJECT_ID\}" = "\$\{PROD_PROJECT_ID\}" \]; then echo "::error::\$\{ACTION\} refusé hors dev."; exit 1; fi/);
+          expect(branch).toContain("SCRIPT=scripts/admin/purge-dev-real-copy.ts");
+          expect(script).toContain("-path '*/purge-dev-real-copy-*/resume.json'");
+          const filter = script.match(/FILTER='(\{mode, school, documents[^']*\})'/)?.[1];
+          expect(filter).toBeDefined();
+          expect(filter).not.toMatch(/password|reportDir|username|credentials/i);
+        });
       });
     });
   });
