@@ -9,7 +9,7 @@ import { checkUserPermission } from "../types";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { getYearAndMonthFromDate } from "../app/helpers";
 import { MONTHS_AR } from "../school/businessRules";
-import { formatMoney, formatNumber } from "../utils/format";
+import { formatMoney, formatNumber } from "../format/money";
 import { fromPeriodFilter, periodYears, toPeriodFilter } from "../utils/paymentPeriod";
 import { useApp } from "../app/AppContext";
 import {

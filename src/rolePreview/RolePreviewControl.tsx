@@ -34,7 +34,7 @@ export default function RolePreviewControl() {
       >
         {PREVIEW_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
       </Select>
-      {busy && <p role="status" className="m-0 text-[13px] text-ink-2">جارٍ تغيير الدور…</p>}
+      {busy && <p role="status" className="m-0 text-[13px] text-ink-2">جاري تغيير الدور...</p>}
       {error && (
         <ActionAlert role="alert" tone="danger" title="تعذر تغيير الدور">
           {error}

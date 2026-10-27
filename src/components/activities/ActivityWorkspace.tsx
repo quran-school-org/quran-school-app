@@ -6,7 +6,7 @@ import { Compass, MapPin, Calendar, Users, DollarSign, Plus, Edit3, Trash2, Prin
 import { EXPENSE_CATEGORIES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
 import { Ltr, Select, useConfirm } from "../../ui";
-import { formatMoney, formatNumber } from "../../utils/format";
+import { formatMoney, formatNumber } from "../../format/money";
 import { formatDateAr, formatDateRangeAr } from "../../format/date";
 
 export default function ActivityWorkspace() {
@@ -714,7 +714,7 @@ export default function ActivityWorkspace() {
                 className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 mt-4 gap-1.5"
               >
                 <Plus className="w-4 h-4" />
-                <span>إنشاء نشاط جديد الآن</span>
+                <span>إضافة نشاط جديد الآن</span>
               </button>
             )}
           </div>

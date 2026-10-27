@@ -4,6 +4,7 @@ import { BookOpen, CheckCircle2, CreditCard, ShieldAlert, UserCheck } from "luci
 import type { Attendance, Class, Payment, Student, Teacher } from "../../types";
 import { ActionAlert, Card, CardHeader, TextAction } from "../../ui";
 import { classPlacement, classesWithoutTeacher, missingDocuments, studentsLabel, weeklyAttendance } from "./dashboardData";
+import { formatMoney } from "../../format/money";
 
 const icon = (C: any) => <C className="w-5 h-5" strokeWidth={1.75} />;
 
@@ -44,7 +45,7 @@ export default function ActionNeeded({ students, classes, teachers, attendance, 
     const sum = unpaid.reduce((a, p) => a + (Number(p.amount) || 0), 0);
     items.push(
       <ActionAlert key="fees" tone="warn" icon={icon(CreditCard)} title={`${unpaid.length} ${unpaid.length > 10 ? "دفعة" : "دفعات"} غير مسدّدة`} action={link("payments", "متابعة الرسوم")}>
-        مجموع المستحقات المعلّقة {sum} درهم.
+        مجموع المستحقات المعلّقة {formatMoney(sum)}.
       </ActionAlert>,
     );
   }

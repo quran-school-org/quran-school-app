@@ -4,7 +4,7 @@
  */
 import { useApp } from "../../app/AppContext";
 import { Button, FormField, Input, Modal, Select, Textarea } from "../../ui";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 
 const MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "ماي", "يونيو", "يوليوز", "غشت", "شتمبر", "أكتوبر", "نونبر", "دجنبر"];
 const YEARS = Array.from({ length: 2099 - 2026 + 1 }, (_, i) => 2026 + i);

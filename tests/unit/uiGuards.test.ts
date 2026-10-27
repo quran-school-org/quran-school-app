@@ -58,9 +58,27 @@ describe("interface : valeurs codées en dur retirées", () => {
     expect(bare).toEqual([]);
   });
 
-  it("aucun montant écrit « درهم » dans les écrans de paiements, comptabilité, activités et personnel : devise « د.م » via formatMoney", () => {
-    const dirs = ["src/screens/PaymentsScreen.tsx", "src/components/finance/", "src/components/activities/", "src/components/staff/", "src/components/FinanceManagement.tsx"];
-    const hits = all.filter(([f]) => dirs.some((d) => f.split("\\").join("/").startsWith(d))).filter(([, src]) => /\d\s*درهم|\}\s*درهم/.test(src));
+  it("devise « د.م » partout : aucun « درهم » affiché, montants par src/format/money.ts (D101)", () => {
+    // Exceptions : nom de la devise dans les paramètres de l'école (valeur par défaut « درهم مغربي »),
+    // en-tête de colonne de l'export CSV des paiements, en-tête de l'aperçu d'impression du rapport
+    // financier (« المبلغ بالدرهم (MAD) »), impressions et dictionnaire de test.
+    const allowed = ["src/school/businessRules.ts", "src/db.ts", "src/app/actions/useGradePaymentActions.ts", "src/components/finance/PrintReportModal.tsx", "src/screens/DashboardScreen.tsx", "src/types.ts"];
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/ .*$/gm, "");
+    const hits = all
+      .filter(([f]) => !f.startsWith("src/print/") && !f.startsWith("src/i18n-test/") && !allowed.includes(f.split("\\").join("/")))
+      .filter(([, src]) => /درهم/.test(code(src)));
     expect(hits.map(([f]) => f)).toEqual([]);
+  });
+
+  it("aucun toLocaleString(\"en-US\") ni locale numérique arabe (ar-EG) : chiffres latins par formatNumber", () => {
+    expect(offending(/toLocale\w*String\(\s*["'](en-US|ar-EG|ar-SA)/)).toEqual([]);
+  });
+
+  it("libellés d'action : une seule forme (« حفظ التغييرات », « إضافة … », « جاري … ») (D101)", () => {
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const hits = (re: RegExp) => all.filter(([f, src]) => !f.startsWith("src/i18n-test/") && re.test(code(src))).map(([f]) => f);
+    expect(hits(/حفظ التعديلات/)).toEqual([]);
+    expect(hits(/["'>`](إنشاء (الحلقة|النشاط)|تسجيل (الكادر|المصروف)|تأكيد التسجيل|إتمام التسجيل والبدء)["'<`]/)).toEqual([]);
+    expect(hits(/["'>`]جارٍ /)).toEqual([]);
   });
 });

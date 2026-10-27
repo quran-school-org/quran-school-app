@@ -109,7 +109,7 @@ export default function StaffFormModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingTeacher ? "حفظ التغييرات" : "تسجيل الكادر"}</Button>
+          <Button type="submit" variant="primary">{editingTeacher ? "حفظ التغييرات" : "إضافة الكادر"}</Button>
         </>
       }
     >

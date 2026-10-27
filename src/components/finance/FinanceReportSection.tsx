@@ -4,7 +4,7 @@
  */
 import { TrendingUp, TrendingDown, Printer, Coins, PieChart } from "lucide-react";
 import { useFinance } from "./FinanceContext";
-import { formatMoney, formatNumber } from "../../utils/format";
+import { formatMoney, formatNumber } from "../../format/money";
 
 export default function FinanceReportSection() {
   const {

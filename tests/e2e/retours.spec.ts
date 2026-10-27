@@ -121,7 +121,7 @@ test.describe.serial("retours : confirmation et messages (D99)", () => {
     // Un intitulé fait d'espaces passe la validation native du navigateur, pas celle de l'application.
     await title.fill("   ");
     await form.getByLabel("المبلغ (د.م)").fill("50");
-    await form.getByRole("button", { name: "تسجيل المصروف" }).click();
+    await form.getByRole("button", { name: "إضافة المصروف" }).click();
 
     const error = form.getByRole("alert").filter({ hasText: "يرجى إدخال وصف أو اسم المصروف." });
     await expect(error).toHaveCount(1);

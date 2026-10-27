@@ -77,7 +77,7 @@ export default function ParticipantModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingParticipant ? "حفظ التعديلات" : "تأكيد التسجيل"}</Button>
+          <Button type="submit" variant="primary">{editingParticipant ? "حفظ التغييرات" : "إضافة المشارك"}</Button>
         </>
       }
     >

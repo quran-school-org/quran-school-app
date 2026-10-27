@@ -11,6 +11,7 @@ import HifzProgress from "./dashboard/HifzProgress";
 import TeacherPerformance from "./dashboard/TeacherPerformance";
 import WeeklyAttendance from "./dashboard/WeeklyAttendance";
 import { actionAlertCount, busiestHizb, classPlacement, classesLabel } from "./dashboard/dashboardData";
+import { CURRENCY, formatNumber } from "../format/money";
 
 const TAJWEED = [
   { key: "ممتاز", color: "var(--color-primary)" },
@@ -32,7 +33,7 @@ export default function DashboardScreen() {
   const [sel, setSel] = useState<number | null>(null);
   const selected = sel ?? busiestHizb(students);
   const placement = classPlacement(students, classes);
-  const currencyShort = /درهم/.test(systemSettings?.currency || "درهم") ? "د.م" : systemSettings?.currency || "";
+  const currencyShort = /درهم/.test(systemSettings?.currency || "درهم") ? CURRENCY : systemSettings?.currency || "";
   const canSeeFees = canGo("payments") || canGo("finance");
   // « تحتاج إجراءً » remonte sous les chiffres clés (avant la carte du ḥifẓ) dès qu'il y a une alerte (D100).
   const urgent = actionAlertCount(students, classes, teachers, canSeeFees ? payments : []) > 0;
@@ -59,7 +60,7 @@ export default function DashboardScreen() {
         <KpiTile label="بلغوا 20 حزباً فأكثر" value={advancedStudentsCount} hint="مرشحون للختم لاحقاً" />
         <KpiTile
           label="الرسوم المحصّلة"
-          value={canSeeFees ? totalPaymentsCollected.toLocaleString("en-US") : "—"}
+          value={canSeeFees ? formatNumber(totalPaymentsCollected) : "—"}
           unit={canSeeFees ? currencyShort : undefined}
         >
           {!canSeeFees ? (

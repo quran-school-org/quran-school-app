@@ -171,7 +171,7 @@ test.describe.serial("fenêtres sur Modal et champs nommés (D98)", () => {
       name: "activite-depense",
       between: async (modal) => {
         await expect(modal.getByLabel("بيان / عنوان المصروف")).toBeVisible();
-        await expect(modal.getByRole("button", { name: "تسجيل المصروف" })).toBeVisible();
+        await expect(modal.getByRole("button", { name: "إضافة المصروف" })).toBeVisible();
       },
     });
     await logout(page);
@@ -189,7 +189,7 @@ test.describe.serial("fenêtres sur Modal et champs nommés (D98)", () => {
         await expect(modal.getByLabel("الاسم الكامل")).toBeVisible();
         await expect(modal.getByLabel("رقم الهاتف", { exact: false }).first()).toBeVisible();
         await expect(modal.getByRole("group", { name: /فئة الكادر/ })).toBeVisible();
-        await expect(modal.getByRole("button", { name: "تسجيل الكادر" })).toBeVisible();
+        await expect(modal.getByRole("button", { name: "إضافة الكادر" })).toBeVisible();
       },
     });
     await checkDialog(page, screen.getByRole("button", { name: "طباعة لائحة الطاقم" }), "staff-directory", { name: "personnel-liste", fields: false });

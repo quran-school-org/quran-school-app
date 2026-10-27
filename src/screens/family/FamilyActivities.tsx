@@ -9,7 +9,7 @@ import { Calendar, ChevronDown, Clock, Compass, MapPin, Search, Wallet } from "l
 import type { ActivityParticipant, ActivityTrip, Student } from "../../types";
 import { Card, EmptyState, PageHeader, Pill, SearchInput, Select, type PillTone } from "../../ui";
 import { foldForSearch } from "../../ui/textSearch";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 import { FAMILY_ACTIVITIES_SEARCH_MIN, childActivityState, familyActivityTexts, isLongText, sortFamilyActivities } from "./familyActivitiesData";
 import { formatDateRangeAr } from "../../format/date";
 

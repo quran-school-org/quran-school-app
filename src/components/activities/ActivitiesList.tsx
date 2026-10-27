@@ -6,7 +6,7 @@ import { Compass, MapPin, Calendar, CheckCircle2, Search, ArrowUpDown, ArrowUp, 
 import { ACTIVITY_TYPES, ACTIVITY_STATUSES } from "./shared";
 import { useActivities } from "./ActivitiesContext";
 import { Button, Card, CountBadge, EmptyState, IconButton, Ltr, Pill, SearchInput, Select, cx } from "../../ui";
-import { formatMoney, formatNumber } from "../../utils/format";
+import { formatMoney, formatNumber } from "../../format/money";
 import { formatDateAr } from "../../format/date";
 
 export default function ActivitiesList() {

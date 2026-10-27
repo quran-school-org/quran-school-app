@@ -14,6 +14,7 @@ import { StudentAvatar } from "../utils/studentAvatar";
 import { Button, Card, EmptyState, HifzBar, PageHeader, Pill, hizbOf, type PillTone } from "../ui";
 import { ABSENCE_WINDOW_DAYS, countStatuses, feeOfMonth, lastGradeOf, monthLabel, recentSessions, sessionsOf } from "./family/familySummary";
 import { formatDateAr } from "../format/date";
+import { formatMoney } from "../format/money";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} aria-hidden="true" />;
 const OVERALL_TONE: Record<string, PillTone> = { "ممتاز": "gold", "جيد جداً": "success", "جيد": "primary", "مقبول": "neutral" };
@@ -112,7 +113,7 @@ export default function FamilyHomeScreen() {
                       {fee.kind === "unpaid" && (
                         <span className="flex flex-wrap items-center gap-2">
                           <Pill tone="danger">غير مدفوع</Pill>
-                          <span className="text-[13.5px] text-ink-2"><strong className="text-ink tabular-nums">{fee.payment.amount || getSubscriptionAmount(fee.payment.month, Number(fee.payment.year))}</strong> درهم</span>
+                          <span className="text-[13.5px] text-ink-2"><strong className="text-ink tabular-nums">{formatMoney(fee.payment.amount || getSubscriptionAmount(fee.payment.month, Number(fee.payment.year)))}</strong></span>
                         </span>
                       )}
                       {fee.kind === "none" && <span className="text-ink-2">لا توجد رسوم مسجلة لهذا الشهر.</span>}

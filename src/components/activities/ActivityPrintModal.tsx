@@ -6,7 +6,7 @@
  */
 import { Compass, Users, Printer } from "lucide-react";
 import { useActivities } from "./ActivitiesContext";
-import { formatMoney, formatNumber } from "../../utils/format";
+import { formatMoney, formatNumber } from "../../format/money";
 import { Button, Ltr, Modal } from "../../ui";
 
 export default function ActivityPrintModal() {

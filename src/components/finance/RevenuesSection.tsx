@@ -6,7 +6,7 @@ import { Edit3, Trash2, Filter, CheckCircle, AlertTriangle, Coins, CreditCard, C
 import { MONTHS_LIST } from "./shared";
 import { useFinance } from "./FinanceContext";
 import { Select, useConfirm } from "../../ui";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 import { formatDateAr } from "../../format/date";
 
 export default function RevenuesSection() {

@@ -372,7 +372,7 @@ export default function ClassManagement({
           footer={
             <>
               <Button onClick={() => setShowModal(false)}>إلغاء</Button>
-              <Button type="submit" variant="primary">{editingClass ? "حفظ التغييرات" : "إنشاء الحلقة"}</Button>
+              <Button type="submit" variant="primary">{editingClass ? "حفظ التغييرات" : "إضافة الحلقة"}</Button>
             </>
           }
         >

@@ -6,6 +6,7 @@
 import { Printer, FileText } from "lucide-react";
 import { useStaff } from "./StaffContext";
 import { Button, Modal } from "../../ui";
+import { formatMoney } from "../../format/money";
 
 export default function StaffDirectoryModal() {
   const {
@@ -67,7 +68,7 @@ export default function StaffDirectoryModal() {
               <td className="p-2 font-mono border-l border-line">{staff.phone}</td>
               <td className="p-2 border-l border-line">{staff.contractType || "مكافأة شهرية"}</td>
               <td className="p-2 font-mono font-bold text-primary-800">
-                {staff.monthlySalary ? `${staff.monthlySalary} د.م` : "-"}
+                {staff.monthlySalary ? formatMoney(staff.monthlySalary) : "-"}
               </td>
             </tr>
           ))}

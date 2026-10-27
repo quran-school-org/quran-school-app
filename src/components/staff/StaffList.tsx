@@ -5,7 +5,7 @@
 import { Edit2, Archive, ArchiveRestore, Mail, Phone, Trash2, MessageCircle, AlertCircle, Printer, Sparkles, Clock, DollarSign } from "lucide-react";
 import { STAFF_CATEGORIES_CONFIG } from "./shared";
 import { useStaff } from "./StaffContext";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 import { ActionMenu, Button, type ActionMenuItem } from "../../ui";
 
 export default function StaffList() {

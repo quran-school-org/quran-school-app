@@ -32,7 +32,7 @@ export default function StudentFormModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingStudent ? "حفظ التعديلات" : "إتمام التسجيل والبدء"}</Button>
+          <Button type="submit" variant="primary">{editingStudent ? "حفظ التغييرات" : "إضافة الطالب"}</Button>
         </>
       }
     >

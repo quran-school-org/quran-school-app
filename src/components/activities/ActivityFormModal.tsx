@@ -63,7 +63,7 @@ export default function ActivityFormModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingActivity ? "حفظ التعديلات" : "إنشاء النشاط"}</Button>
+          <Button type="submit" variant="primary">{editingActivity ? "حفظ التغييرات" : "إضافة النشاط"}</Button>
         </>
       }
     >

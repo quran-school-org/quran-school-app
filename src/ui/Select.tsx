@@ -381,7 +381,7 @@ export function Select(props: SelectProps) {
   }, [open, active, matches]);
 
   const noMatch = !!matches && !matches.some(Boolean);
-  const display = selected ? selected.label : placeholder ?? "اختر…";
+  const display = selected ? selected.label : placeholder ?? "اختر...";
 
   return (
     <div ref={rootRef} className={cx("relative min-w-0", fullWidth ? "w-full" : fit ? "inline-flex max-w-full" : "", className)}>
@@ -454,7 +454,7 @@ export function Select(props: SelectProps) {
                     onChange={(e) => filter(e.target.value)}
                     onKeyDown={onSearchKeyDown}
                     aria-label="بحث في الخيارات"
-                    placeholder="بحث…"
+                    placeholder="بحث..."
                     aria-controls={listId}
                     aria-autocomplete="list"
                     aria-activedescendant={active >= 0 ? optId(active) : undefined}

@@ -4,7 +4,7 @@
  */
 import { Wallet, Building2, Edit3, Trash2, Receipt } from "lucide-react";
 import { useFinance } from "./FinanceContext";
-import { formatMoney, formatNumber } from "../../utils/format";
+import { formatMoney, formatNumber } from "../../format/money";
 import { useConfirm } from "../../ui";
 
 import { formatDateAr } from "../../format/date";

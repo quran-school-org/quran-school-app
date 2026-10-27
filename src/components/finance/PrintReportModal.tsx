@@ -6,7 +6,7 @@
  */
 import { Printer, FileText } from "lucide-react";
 import { useFinance } from "./FinanceContext";
-import { formatMoney, formatNumber } from "../../utils/format";
+import { formatMoney, formatNumber } from "../../format/money";
 import { Button, Ltr, Modal } from "../../ui";
 
 export default function PrintReportModal() {

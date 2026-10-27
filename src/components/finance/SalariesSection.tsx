@@ -4,7 +4,7 @@
  */
 import { Edit3, Trash2, CheckCircle, AlertTriangle, Briefcase, RefreshCw } from "lucide-react";
 import { useFinance } from "./FinanceContext";
-import { formatMoney, formatNumber } from "../../utils/format";
+import { formatMoney, formatNumber } from "../../format/money";
 import { useConfirm } from "../../ui";
 
 import { formatDateAr } from "../../format/date";

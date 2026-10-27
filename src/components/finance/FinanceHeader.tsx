@@ -5,7 +5,7 @@
 import { Plus, Printer } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { Button, KpiGrid, KpiTile, PageHeader } from "../../ui";
-import { formatNumber } from "../../utils/format";
+import { formatNumber } from "../../format/money";
 
 const fmt = (n: number) => formatNumber(n);
 

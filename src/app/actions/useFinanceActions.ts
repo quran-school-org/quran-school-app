@@ -4,7 +4,7 @@
 import { RealmSimDB } from "../../db";
 import { OtherIncome, SalaryPayment, Expense, ActivityTrip, ActivityParticipant, ActivityExpense } from "../../types";
 import type { DerivedScope } from "../scope";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 
 export function useFinanceActions(s: DerivedScope) {
   const {
