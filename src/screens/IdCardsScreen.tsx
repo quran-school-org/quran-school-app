@@ -57,7 +57,7 @@ export default function IdCardsScreen() {
       <div className="flex bg-surface p-1.5 rounded-2xl border border-sand-200/80 gap-2">
         <button
           onClick={() => setIdCardLabTab("student-card")}
-          className={`flex-1 sm:flex-initial py-3 px-6 text-[13px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 ${
+          className={`flex-1 sm:flex-initial py-3 px-6 text-small sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 ${
             idCardLabTab === "student-card"
               ? "bg-primary-700 text-white"
               : "text-ink-2 hover:bg-sand-50 hover:text-ink"
@@ -68,7 +68,7 @@ export default function IdCardsScreen() {
         </button>
         <button
           onClick={() => setIdCardLabTab("membership-card")}
-          className={`flex-1 sm:flex-initial py-3 px-6 text-[13px] sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 ${
+          className={`flex-1 sm:flex-initial py-3 px-6 text-small sm:text-sm font-bold rounded-xl transition flex items-center justify-center gap-2 ${
             idCardLabTab === "membership-card"
               ? "bg-primary-700 text-white"
               : "text-ink-2 hover:bg-sand-50 hover:text-ink"
@@ -86,12 +86,12 @@ export default function IdCardsScreen() {
         <div className="lg:col-span-4 bg-surface rounded-2xl border border-line p-5 space-y-4">
           <div className="space-y-1">
             <h3 className="font-bold text-sm text-primary">قائمة الطلاب</h3>
-            <p className="text-[12.5px] text-ink-3">اختر طالباً للمعاينة، أو حدد دفعة من الطلاب للطباعة الجماعية.</p>
+            <p className="text-small text-ink-3">اختر طالباً للمعاينة، أو حدد دفعة من الطلاب للطباعة الجماعية.</p>
           </div>
 
           {/* Search Input */}
           <div className="relative">
-            <span className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-ink-3">
+            <span className="absolute inset-y-0 start-3 flex items-center pointer-events-none text-ink-3">
               <Search className="w-4 h-4 text-primary-600" />
             </span>
             <input
@@ -100,7 +100,7 @@ export default function IdCardsScreen() {
               onChange={(e) => setSearchLabQuery(e.target.value)}
               placeholder="ابحث باسم الطالب أو الرقم التعريفي..."
               aria-label="ابحث باسم الطالب أو الرقم التعريفي..."
-              className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
+              className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-9 pe-3"
             />
           </div>
 
@@ -115,7 +115,7 @@ export default function IdCardsScreen() {
 
             return (
               <div className="space-y-2">
-                <div className="flex items-center justify-between bg-sand-50 p-2.5 rounded-xl border border-sand-150 text-[13px]">
+                <div className="flex items-center justify-between bg-sand-50 p-2.5 rounded-xl border border-line-soft text-small">
                   <label className="flex items-center gap-2 cursor-pointer font-bold text-ink-2 py-3 -my-3">
                     <input
                       type="checkbox"
@@ -138,7 +138,7 @@ export default function IdCardsScreen() {
                   {bulkSelectedIds.length > 0 && (
                     <button
                       onClick={() => setBulkSelectedIds([])}
-                      className="text-danger-600 hover:text-danger-700 font-bold transition flex items-center gap-1 text-[12.5px]"
+                      className="text-danger-600 hover:text-danger-700 font-bold transition flex items-center gap-1 text-small"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>إلغاء ({bulkSelectedIds.length})</span>
@@ -152,7 +152,7 @@ export default function IdCardsScreen() {
                       onClick={() => {
                         setLabPrintMode("bulk");
                       }}
-                      className={`flex-1 text-[12.5px] py-1.5 px-2.5 rounded-lg border font-bold transition flex items-center justify-center gap-1 ${
+                      className={`flex-1 text-small py-1.5 px-2.5 rounded-lg border font-bold transition flex items-center justify-center gap-1 ${
                         labPrintMode === "bulk"
                           ? "bg-primary-600 text-white border-primary-600"
                           : "bg-gold-50 text-gold-800 border-gold-200 hover:bg-gold-100"
@@ -164,7 +164,7 @@ export default function IdCardsScreen() {
                     {labPrintMode === "bulk" && (
                       <button
                         onClick={() => setLabPrintMode("single")}
-                        className="text-[12.5px] py-1.5 px-2.5 rounded-lg border border-line text-ink-2 hover:bg-sand-50 font-bold transition"
+                        className="text-small py-1.5 px-2.5 rounded-lg border border-line text-ink-2 hover:bg-sand-50 font-bold transition"
                       >
                         عودة للمنفرد
                       </button>
@@ -176,7 +176,7 @@ export default function IdCardsScreen() {
           })()}
 
           {/* Student list container */}
-          <div className="max-h-[520px] overflow-y-auto divide-y divide-line-faint pr-1 space-y-1.5">
+          <div className="max-h-[520px] overflow-y-auto divide-y divide-line-faint ps-1 space-y-1.5">
             {students.filter(s => {
               const normSearch = searchLabQuery.toLowerCase().trim();
               if (!normSearch) return !s.isArchived;
@@ -216,16 +216,16 @@ export default function IdCardsScreen() {
                       setSelectedLabStudentId(st.id);
                       setLabFlip(false);
                     }}
-                    className="flex-1 flex items-center gap-2.5 text-right overflow-hidden"
+                    className="flex-1 flex items-center gap-2.5 text-start overflow-hidden"
                   >
                     <div className="w-9 h-9 rounded-full overflow-hidden bg-sand-100 border border-line flex items-center justify-center shrink-0">
                       <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-grow min-w-0">
-                      <p className="font-bold text-[13px] truncate">{st.fullName}</p>
+                      <p className="font-bold text-small truncate">{st.fullName}</p>
                       <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-[11.5px] text-ink-3 font-mono">ID: {st.id.toUpperCase()}</span>
-                        <span className="text-[11.5px] bg-sand-100 text-ink-2 px-1.5 py-0.5 rounded-md truncate max-w-[100px]">
+                        <span className="text-caption text-ink-3 font-mono">ID: {st.id.toUpperCase()}</span>
+                        <span className="text-caption bg-sand-100 text-ink-2 px-1.5 py-0.5 rounded-md truncate max-w-[100px]">
                           {stClass?.name || "غير محدد"}
                         </span>
                       </div>
@@ -250,7 +250,7 @@ export default function IdCardsScreen() {
                         ? "خيارات تخصيص بطاقة الطالب الرسمية" 
                         : "خيارات تخصيص بطاقة الهوية الرقمية"}
                     </h3>
-                    <p className="text-[12.5px] text-ink-3">اضبط المقياس وتنسيق الطباعة والجهوزية بدقة متناهية.</p>
+                    <p className="text-small text-ink-3">اضبط المقياس وتنسيق الطباعة والجهوزية بدقة متناهية.</p>
                   </div>
 
                   {checkUserPermission(currentUser, currentRole, "id-cards-lab", "print") && (
@@ -258,7 +258,7 @@ export default function IdCardsScreen() {
                       {/* 1. Print Both Sides */}
                       <button
                         onClick={() => handlePrintLabCard("both")}
-                        className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
+                        className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-body font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5"
                         title="طباعة وجه وظهر البطاقة معاً"
                       >
                         <Printer className="w-3.5 h-3.5" />
@@ -272,7 +272,7 @@ export default function IdCardsScreen() {
                       {/* 2. Print Front Only */}
                       <button
                         onClick={() => handlePrintLabCard("front")}
-                        className="bg-white hover:bg-primary-50 text-primary-700 border border-primary-300 font-bold text-[13px] px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
+                        className="touch-target bg-white hover:bg-primary-50 text-primary-700 border border-primary-300 font-bold text-small px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
                         title="طباعة الجهة الأمامية للبطاقة فقط"
                       >
                         <FileText className="w-3.5 h-3.5 text-primary-600" />
@@ -286,7 +286,7 @@ export default function IdCardsScreen() {
                       {/* 3. Print Back Only */}
                       <button
                         onClick={() => handlePrintLabCard("back")}
-                        className="bg-white hover:bg-gold-50 text-gold-700 border border-gold-300 font-bold text-[13px] px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
+                        className="touch-target bg-white hover:bg-gold-50 text-gold-700 border border-gold-300 font-bold text-small px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
                         title="طباعة الجهة الخلفية للبطاقة فقط"
                       >
                         <FileText className="w-3.5 h-3.5 text-gold-600" />
@@ -303,9 +303,9 @@ export default function IdCardsScreen() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Scale Slider & Presets */}
                   <div className="space-y-3">
-                    <label className="block text-[13px] font-bold text-ink-2 flex justify-between">
+                    <label className="block text-small font-bold text-ink-2 flex justify-between">
                       <span>نسبة تكبير / تصغير البطاقة للطباعة:</span>
-                      <span className="text-primary-700 font-mono font-bold bg-primary-50 px-2 py-0.5 rounded-md text-[12.5px] border border-primary-100">
+                      <span className="text-primary-700 font-mono font-bold bg-primary-50 px-2 py-0.5 rounded-md text-small border border-primary-100">
                         {Math.round(labScale * 100)}% ({labScale.toFixed(2)}x)
                       </span>
                     </label>
@@ -334,7 +334,7 @@ export default function IdCardsScreen() {
                         <button
                           key={preset.val}
                           onClick={() => setLabScale(preset.val)}
-                          className={`text-[11.5px] font-bold px-2.5 py-1.5 rounded-lg border transition ${
+                          className={`touch-target text-caption font-bold px-2.5 py-1.5 rounded-lg border transition ${
                             Math.abs(labScale - preset.val) < 0.01
                               ? "bg-primary-600 text-white border-primary-600"
                               : "bg-sand-50 hover:bg-sand-100 border-line text-ink-2"
@@ -350,14 +350,14 @@ export default function IdCardsScreen() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="block text-[13px] font-bold text-ink-2 mb-2">تنسيق عرض الجهات:</span>
-                        <div className="grid grid-cols-3 gap-1 bg-sand-100 p-1 rounded-xl border border-line text-[11.5px]">
+                        <span className="block text-small font-bold text-ink-2 mb-2">تنسيق عرض الجهات:</span>
+                        <div className="grid grid-cols-3 gap-1 bg-sand-100 p-1 rounded-xl border border-line text-caption">
                           <button
                             onClick={() => {
                               setLabViewMode("both");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labViewMode === "both" && labDisplayType === "print" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -368,7 +368,7 @@ export default function IdCardsScreen() {
                               setLabViewMode("front");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labViewMode === "front" && labDisplayType === "print" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -379,7 +379,7 @@ export default function IdCardsScreen() {
                               setLabViewMode("back");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labViewMode === "back" && labDisplayType === "print" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -390,11 +390,11 @@ export default function IdCardsScreen() {
 
                       {/* Print Mode Selector */}
                       <div>
-                        <span className="block text-[13px] font-bold text-ink-2 mb-2">طريقة المعاينة:</span>
-                        <div className="grid grid-cols-2 gap-1 bg-sand-100 p-1 rounded-xl border border-line text-[11.5px]">
+                        <span className="block text-small font-bold text-ink-2 mb-2">طريقة المعاينة:</span>
+                        <div className="grid grid-cols-2 gap-1 bg-sand-100 p-1 rounded-xl border border-line text-caption">
                           <button
                             onClick={() => setLabPrintMode("single")}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labPrintMode === "single" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -408,7 +408,7 @@ export default function IdCardsScreen() {
                               setLabPrintMode("bulk");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labPrintMode === "bulk" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -420,8 +420,8 @@ export default function IdCardsScreen() {
 
                     {/* View style toggle */}
                     <div>
-                      <span className="block text-[13px] font-bold text-ink-2 mb-2">طريقة عرض المعمل:</span>
-                      <div className="grid grid-cols-2 gap-2 bg-sand-100 p-1 rounded-xl border border-line text-[13px]">
+                      <span className="block text-small font-bold text-ink-2 mb-2">طريقة عرض المعمل:</span>
+                      <div className="grid grid-cols-2 gap-2 bg-sand-100 p-1 rounded-xl border border-line text-small">
                         <button
                           onClick={() => setLabDisplayType("print")}
                           className={`py-2 px-1 rounded-lg font-bold transition text-center flex items-center justify-center gap-1.5 ${
@@ -449,7 +449,7 @@ export default function IdCardsScreen() {
                 </div>
 
                 {/* Tip */}
-                <p className="m-0 text-[12.5px] text-ink-2 rounded-lg bg-gold-100 px-3 py-2">
+                <p className="m-0 text-small text-ink-2 rounded-lg bg-gold-100 px-3 py-2">
                   <strong className="text-gold-800">نصيحة للطباعة الاحترافية:</strong> للطباعة على كروت البلاستيك، يوصى بمقياس <span className="font-bold text-primary-700">85% (بطاقة CR80)</span>. أما للطباعة على ورق مقوى عادي يفضل المقدار <span className="font-bold text-primary-700">100%</span>.
                 </p>
               </div>
@@ -459,7 +459,7 @@ export default function IdCardsScreen() {
 
                 {/* Interactive indicator for 3D mode */}
                 {labDisplayType === "3d" && (
-                  <div className="absolute top-4 start-4 bg-gold text-night text-[12.5px] font-semibold px-3 py-1 rounded-full z-20">
+                  <div className="absolute top-4 start-4 bg-gold text-night text-small font-semibold px-3 py-1 rounded-full z-20">
                     انقر فوق الكارت لقلبه
                   </div>
                 )}
@@ -562,7 +562,7 @@ export default function IdCardsScreen() {
               </div>
             </>
           ) : (
-            <div className="bg-surface rounded-2xl border border-line p-8 text-center text-ink-3 text-[13px]">
+            <div className="bg-surface rounded-2xl border border-line p-8 text-center text-ink-3 text-small">
               يرجى إضافة طلاب نشطين أولاً لتتمكن من معاينة وإصدار البطاقات الذكية.
             </div>
           )}

@@ -9,9 +9,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  DEFAULT_THEME, REFERENCE_TOKENS, THEMES, THEME_IDS, THEME_TOKEN_NAMES, getTheme, resolveThemeId, themeTokens, themesStylesheet,
+  DEFAULT_THEME, NEUTRAL_BACKGROUNDS, REFERENCE_TOKENS, THEMES, THEME_IDS, THEME_TOKEN_NAMES, getTheme, resolveThemeId, themeTokens, themesStylesheet,
 } from "../../src/theme/palettes";
-import { transposeShade } from "../../src/theme/color";
+import { hexToOklch, transposeShade } from "../../src/theme/color";
 import { readLastTheme, readSchoolTheme, rememberLastTheme, rememberSchoolTheme } from "../../src/cache/localCache";
 import { schoolThemeToApply } from "../../src/theme/applyTheme";
 
@@ -115,17 +115,45 @@ describe("contrastes WCAG (texte ≥ 4,5:1)", () => {
   }
 });
 
-describe("gris secondaire ink-3 (texte ≥ 4,5:1 sur les fonds sable)", () => {
+describe("gris du texte (ink, ink-2, ink-3 : texte ≥ 4,5:1 sur les fonds sable de chaque thème)", () => {
   const css = readFileSync(join(ROOT, "src/index.css"), "utf8");
-  const ink3 = css.match(/--color-ink-3:\s*(#[0-9A-Fa-f]{6});/)![1];
-  // Fonds sur lesquels le gris secondaire est posé : fond de l'application de chaque thème, surfaces, creux, calme.
-  const backgrounds: [string, string][] = [
-    ...THEMES.map((def): [string, string] => [`fond ${def.id}`, themeTokens(def.id).app]),
-    ...["surface", "surface-2", "sunken", "quiet"].map((n): [string, string] => [n, css.match(new RegExp(`--color-${n}:\\s*(#[0-9A-Fa-f]{6});`))![1]]),
-  ];
-  for (const [label, bg] of backgrounds) {
-    it(`${label} (${bg})`, () => expect(ratio(ink3, bg), `${ink3} / ${bg}`).toBeGreaterThanOrEqual(4.5));
+  const declared = (n: string) => css.match(new RegExp(`--color-${n}:\\s*(#[0-9A-Fa-f]{6});`))![1];
+  it("les fonds neutres du garde-fou sont ceux de la feuille de style", () => {
+    for (const [name, hex] of Object.entries(NEUTRAL_BACKGROUNDS)) expect(declared(name).toUpperCase(), name).toBe(hex);
+  });
+  for (const def of THEMES) {
+    const t = themeTokens(def.id);
+    // Fonds sur lesquels le gris est posé : fond de l'application du thème, surfaces, creux, calme.
+    const backgrounds: [string, string][] = [
+      [`fond ${def.id}`, t.app],
+      ...Object.entries(NEUTRAL_BACKGROUNDS).map(([n, hex]): [string, string] => [n, hex]),
+    ];
+    for (const token of ["ink", "ink-2", "ink-3"]) {
+      for (const [label, bg] of backgrounds) {
+        it(`${def.id} : ${token} sur ${label}`, () => expect(ratio(t[token], bg), `${t[token]} / ${bg}`).toBeGreaterThanOrEqual(token === "ink" ? 7 : 4.5));
+      }
+    }
   }
+});
+
+describe("gris dérivés de la palette de chaque thème (D101)", () => {
+  const GRAYS = ["ink", "ink-2", "ink-3", "sand-500", "sand-600", "sand-700", "sand-800", "sand-900", "sand-950"];
+  it("bleu nuit : valeurs d'origine ; autres thèmes : même luminosité, teinte de la barre latérale", () => {
+    const ref = themeTokens("bleu-nuit");
+    for (const id of THEME_IDS.filter((i) => i !== "bleu-nuit")) {
+      const t = themeTokens(id);
+      for (const g of GRAYS) {
+        const a = hexToOklch(ref[g]);
+        const b = hexToOklch(t[g]);
+        expect(Math.abs(a.l - b.l), `${id} ${g} luminosité`).toBeLessThan(0.02);
+        const night = hexToOklch(t.night);
+        const hueGap = Math.abs(((b.h - night.h + 540) % 360) - 180);
+        expect(hueGap, `${id} ${g} teinte (${b.h.toFixed(0)}° / barre ${night.h.toFixed(0)}°)`).toBeLessThan(40);
+      }
+      expect(t.ink).not.toBe(ref.ink);
+    }
+    for (const g of GRAYS) expect(ref[g], g).toBe(REFERENCE_TOKENS[g]);
+  });
 });
 
 describe("couleurs de la charte codées en dur", () => {
@@ -156,10 +184,9 @@ describe("couleurs de la charte codées en dur", () => {
 describe("jetons sombres non thématisés (UI-13)", () => {
   // `sand-800` / `sand-900` (#2A3040, #1A1F2B) ne suivent pas le thème : fonds sombres
   // à écrire avec `night` / `night-2`. Exceptions : aperçus d'impression, dont la charte
-  // est fixe (D88), et UsersSection, corrigée par un autre lot (retirer cette ligne ensuite).
+  // est fixe (D88).
   const FORBIDDEN = /\bsand-(800|900)\b/;
   const EXCEPTIONS = [
-    "src/components/settings/UsersSection.tsx", // TEMPORAIRE : lot comptes (UI-13, UI-06)
     "src/components/finance/PrintReportModal.tsx",
     "src/components/activities/ActivityPrintModal.tsx",
   ];
@@ -235,5 +262,61 @@ describe("thème de l'école à la connexion (pas de flash vert)", () => {
     } finally {
       g.localStorage = previous;
     }
+  });
+});
+
+/** Code d'un fichier sans ses commentaires (blocs, lignes entières et commentaires JSX). */
+const withoutComments = (src: string) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+describe("aucune couleur hexadécimale dans les écrans (D101)", () => {
+  // Exceptions : impressions et jetons (hors périmètre, charte fixe), traduction de test,
+  // QrCode (noir sur blanc voulu, recopié dans les fenêtres d'impression),
+  // feuille de style d'impression de la comptabilité (`#fff` : papier blanc).
+  const SKIP = ["src/theme/", "src/print/", "src/i18n-test/"];
+  const EXCEPTIONS = ["src/ui/QrCode.tsx", "src/components/finance/useFinanceTotals.tsx"];
+  const HEX = /(?<![&\w])#[0-9a-fA-F]{6}\b|(?<![&\w])#[0-9a-fA-F]{3}\b(?![\w;-])/;
+  const walk = (dir: string): string[] =>
+    readdirSync(join(ROOT, dir)).flatMap((f) => {
+      const rel = `${dir}/${f}`;
+      if (statSync(join(ROOT, rel)).isDirectory()) return walk(rel);
+      return /\.tsx?$/.test(f) ? [rel] : [];
+    });
+
+  it("couleurs par les jetons ou les variables du thème", () => {
+    const offenders = walk("src")
+      .filter((f) => !SKIP.some((s) => f.startsWith(s)) && !EXCEPTIONS.includes(f))
+      .flatMap((f) => withoutComments(readFileSync(join(ROOT, f), "utf8")).split("\n").map((line, i) => [f, i + 1, line] as const))
+      .filter(([, , line]) => HEX.test(line))
+      .map(([f, n, line]) => `${f}:${n} ${line.trim().slice(0, 80)}`);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("classes de jetons de couleur inconnues (D101)", () => {
+  const theme = indexCss.slice(indexCss.indexOf("@theme {"), indexCss.indexOf("\n}", indexCss.indexOf("@theme {")));
+  const defined = new Set([...theme.matchAll(/--color-([a-z0-9-]+):/g)].map((m) => m[1]));
+  const families = new Set([...defined].map((n) => n.split("-")[0]));
+  const PREFIX = "(?:bg|text|border|border-[tblrxyse]|ring|ring-offset|from|via|to|fill|stroke|divide|placeholder|outline|decoration|accent|caret|shadow)";
+  const CLASS = new RegExp(`(?<![\\w-])${PREFIX}-((?:${[...families].join("|")})(?:-[a-z0-9]+)*)(?:/[0-9.]+|/\\[[^\\]]+\\])?(?![\\w-])`, "g");
+  const walk = (dir: string): string[] =>
+    readdirSync(join(ROOT, dir)).flatMap((f) => {
+      const rel = `${dir}/${f}`;
+      if (statSync(join(ROOT, rel)).isDirectory()) return walk(rel);
+      return /\.tsx?$/.test(f) ? [rel] : [];
+    });
+  // Variantes de Tailwind sur les familles de jetons (`border-line`, `text-primary-800`…) : tout nom
+  // doit exister dans @theme ; sinon Tailwind ignore la classe en silence (`text-primary-2`, `border-sand-150`).
+  const unknown = (code: string) => [...code.matchAll(CLASS)].map((m) => m[1]).filter((n) => !defined.has(n));
+
+  it("le garde-fou lui-même : repère un jeton absent, laisse passer les jetons et variantes valides", () => {
+    expect(unknown('className="text-primary-2 border-sand-150"')).toEqual(["primary-2", "sand-150"]);
+    expect(unknown('className="text-primary-800 bg-night/55 border-line-soft hover:bg-surface-2 ring-primary/15 text-ink-3"')).toEqual([]);
+    expect(unknown('className="border-t-2 border-dashed text-sm text-center"')).toEqual([]);
+  });
+
+  it("toutes les classes de couleur des écrans pointent vers un jeton défini dans src/index.css", () => {
+    const offenders = walk("src").flatMap((f) => unknown(readFileSync(join(ROOT, f), "utf8")).map((n) => `${f} : ${n}`));
+    expect(offenders).toEqual([]);
   });
 });

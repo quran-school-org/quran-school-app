@@ -36,21 +36,21 @@ export default function HifzProgress({ students, classes, onOpenStudent }: { stu
           return (
             <div key={s.id} className="grid items-center gap-3 sm:gap-4 py-2.5 border-b border-line-faint" style={{ gridTemplateColumns: "minmax(110px, 200px) minmax(0, 1fr) 72px" }}>
               {onOpenStudent ? (
-                <button type="button" onClick={() => onOpenStudent(s)} className="text-start bg-transparent border-0 p-0 text-[14.5px] font-medium text-ink truncate cursor-pointer hover:text-primary hover:underline underline-offset-4 min-h-8">
+                <button type="button" onClick={() => onOpenStudent(s)} className="text-start bg-transparent border-0 p-0 text-body font-medium text-ink truncate cursor-pointer hover:text-primary hover:underline underline-offset-4 min-h-8">
                   {s.fullName}
                 </button>
               ) : (
-                <span className="text-[14.5px] font-medium truncate">{s.fullName}</span>
+                <span className="text-body font-medium truncate">{s.fullName}</span>
               )}
               <HifzBar hizb={h} label={`${s.fullName}، ${h} من 60 حزباً`} />
-              <span className="text-[13.5px] text-ink-2 tabular-nums text-end" dir="ltr"><strong className="text-ink">{h}</strong> / 60</span>
+              <span className="text-small text-ink-2 tabular-nums text-end" dir="ltr"><strong className="text-ink">{h}</strong> / 60</span>
             </div>
           );
         })}
-        {visible.length === 0 && <p className="m-0 py-5 text-[14px] text-ink-2">لا يوجد طلاب في هذا التصنيف.</p>}
+        {visible.length === 0 && <p className="m-0 py-5 text-body text-ink-2">لا يوجد طلاب في هذا التصنيف.</p>}
       </div>
       <div className="flex flex-wrap justify-between items-center gap-3">
-        <span className="text-[13px] text-ink-3">الخط الذهبي كل 10 أحزاب.</span>
+        <span className="text-small text-ink-3">الخط الذهبي كل 10 أحزاب.</span>
         {filtered.length > 10 && (
           <Button size="sm" onClick={() => setShowAll(!showAll)} className="text-primary">{showAll ? "عرض أقل" : `عرض الطلاب الـ${filtered.length}`}</Button>
         )}

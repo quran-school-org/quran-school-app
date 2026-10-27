@@ -53,7 +53,7 @@ export function ConfirmDialog({ options, onAnswer }: { options: ConfirmOptions; 
         </>
       }
     >
-      <p className="m-0 text-[14.5px] text-ink leading-relaxed whitespace-pre-line">{options.message}</p>
+      <p className="m-0 text-body text-ink leading-relaxed whitespace-pre-line">{options.message}</p>
     </Modal>
   );
 }

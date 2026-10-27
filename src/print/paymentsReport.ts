@@ -4,7 +4,7 @@
  * toute autre donnée est échappée ici (C-01).
  */
 import { escapeHtml } from "../security/html";
-import { formatMoney } from "../utils/format";
+import { formatMoney } from "../format/money";
 import type { Payment, SystemSettings } from "../types";
 import { EMBLEM_SVG } from "./docStyles";
 

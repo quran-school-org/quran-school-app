@@ -6,7 +6,7 @@ import React, {  } from "react";
 import { ActivityTrip, ActivityParticipant, ActivityExpense, ParticipantType } from "../../types";
 import type { useActivitiesForms } from "./useActivitiesForms";
 import type { useActivitiesData } from "./useActivitiesData";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 import { useToast } from "../../ui";
 
 export function useActivitiesHandlers(s: ReturnType<typeof useActivitiesForms> & ReturnType<typeof useActivitiesData>) {

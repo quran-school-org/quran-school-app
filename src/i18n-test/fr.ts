@@ -307,8 +307,7 @@ export const FR: Record<string, string> = {
   "رقم الفاتورة / الوصل": "N° de facture / reçu",
   "القائم بالأداء / المسؤول": "Payé par / responsable",
   "أمين المال أو المشرف": "Trésorier ou encadrant",
-  "حفظ التعديلات": "Enregistrer les modifications",
-  "تسجيل المصروف": "Enregistrer la dépense",
+  "إضافة المصروف": "Ajouter la dépense",
   // components/activities/ActivityFormModal.tsx
   "تعديل بيانات النشاط/الرحلة": "Modifier l'activité / la sortie",
   "إنشاء نشاط أو رحلة جديدة": "Créer une activité ou une sortie",
@@ -339,7 +338,7 @@ export const FR: Record<string, string> = {
   "وصف مختصر للنشاط وأهدافه التربوية والترفيهية...": "Brève description de l'activité et de ses objectifs éducatifs et récréatifs…",
   "البرنامج الزمني والتفصيلي": "Programme détaillé",
   "تفاصيل المحطات، الوجبات، الأنشطة والمسابقات وساعة العودة...": "Détail des étapes, repas, activités, concours et heure de retour…",
-  "إنشاء النشاط": "Créer l'activité",
+  "إضافة النشاط": "Ajouter l'activité",
   // components/activities/ActivityPrintModal.tsx
   "معاينة طباعة لائحة المشاركين الرسمية": "Aperçu avant impression : liste officielle des participants",
   "معاينة طباعة التقرير المالي والمحاسبي للنشاط": "Aperçu avant impression : rapport financier et comptable de l'activité",
@@ -511,7 +510,7 @@ export const FR: Record<string, string> = {
   "د.م)": "DH)",
   "اختر نشاطاً أو رحلة من القائمة": "Choisissez une activité ou une sortie dans la liste",
   "يمكنك الاطلاع على تفاصيل البرنامج، تسجيل المشاركين، تتبع المصاريف، وتصدير الصافي إلى المحاسبة": "Vous pouvez consulter le programme, inscrire les participants, suivre les dépenses et reporter le résultat net en comptabilité",
-  "إنشاء نشاط جديد الآن": "Créer une nouvelle activité",
+  "إضافة نشاط جديد الآن": "Ajouter une nouvelle activité",
   // components/activities/ParticipantModal.tsx
   "تعديل بيانات المشارك": "Modifier le participant",
   "تسجيل مشارك في \"{0}\"": "Inscrire un participant à « {0} »",
@@ -543,7 +542,7 @@ export const FR: Record<string, string> = {
   "رقم وصل الأداء": "N° du reçu de paiement",
   "ملاحظات صحية أو حساسية خاصة (اختياري)": "Remarques médicales ou allergies (facultatif)",
   "مثال: حساسية ضد الفول السوداني أو الربو...": "Ex. : allergie aux arachides, asthme…",
-  "تأكيد التسجيل": "Confirmer l'inscription",
+  "إضافة المشارك": "Ajouter le participant",
   // components/activities/shared.tsx
   "رحلة استكشافية": "Sortie découverte",
   "مخيم قرآني صيفي/ربيعي": "Camp coranique d'été / de printemps",
@@ -626,7 +625,7 @@ export const FR: Record<string, string> = {
   "إضافة حلقة قرآنية جديدة": "Nouvelle halaqa coranique",
   "إلغاء": "Annuler",
   "حفظ التغييرات": "Enregistrer les modifications",
-  "إنشاء الحلقة": "Créer la halaqa",
+  "إضافة الحلقة": "Ajouter la halaqa",
   "اسم الفصل / الحلقة *": "Nom de la halaqa *",
   "مثال: حلقة الإمام نافع": "Ex. : halaqa de l'imam Nafi'",
   "أيام الحلقة الدراسية *": "Jours de la halaqa *",
@@ -1229,7 +1228,7 @@ export const FR: Record<string, string> = {
   "مثال: تنظيف وتعقيم قاعات التحفيظ يومياً، تجهيز المصاحف والسبورات، مراقبة التجهيزات الصوتية...": "Ex. : nettoyage et désinfection quotidiens des salles de hifz, préparation des mushafs et des tableaux, surveillance de la sonorisation…",
   "سجل الشواهد والدورات التدريبية (افصل بينها بفاصلة)": "Diplômes et formations (séparés par des virgules)",
   "مثال: الإجازة في التجويد، دورة الإسعافات الأولية، شهادة في التدبير الإداري...": "Ex. : ijaza en tajwid, formation aux premiers secours, certificat en gestion administrative…",
-  "تسجيل الكادر": "Enregistrer le membre du personnel",
+  "إضافة الكادر": "Ajouter le membre du personnel",
   "مؤطر / مشرف تربوي": "Encadrant / superviseur pédagogique",
   // components/staff/StaffHeader.tsx
   "العاملون والمدرّسون": "Personnel et enseignants",
@@ -1345,8 +1344,8 @@ export const FR: Record<string, string> = {
   "خروج": "Déconnexion",
   // school/SchoolSwitcher.tsx
   "تغيير المدرسة": "Changer d'école",
-  "كل المدارس…": "Toutes les écoles…",
-  "اختيار مدرسة…": "Choisir une école…",
+  "كل المدارس...": "Toutes les écoles…",
+  "اختيار مدرسة...": "Choisir une école…",
   // screens/AttendanceScreen.tsx
   "سجّل حضور طلاب حلقتك وغيابهم: اضغط «تسجيل الجميع حاضرين» ثم صحّح الغائبين والمتأخرين.": "Pointez les présences et absences de votre halaqa : appuyez sur « Tout le monde présent », puis corrigez les absents et les retards.",
   "اختر الحلقة والتاريخ ثم سجّل حضور الطلاب وغيابهم.": "Choisissez la halaqa et la date, puis pointez les présences et absences des élèves.",
@@ -1705,7 +1704,7 @@ export const FR: Record<string, string> = {
   "تعديل ملف الطالب": "Modifier la fiche de l'élève",
   "تسجيل طالب جديد في النادي": "Inscrire un nouvel élève au club",
   "البيانات الشخصية، ولي الأمر، الحفظ والوثائق الإدارية.": "Informations personnelles, parent, hifz et documents administratifs.",
-  "إتمام التسجيل والبدء": "Finaliser l'inscription",
+  "إضافة الطالب": "Ajouter l'élève",
   "صورة الطالب الشخصية": "Photo de l'élève",
   "معاينة صورة الطالب": "Aperçu de la photo de l'élève",
   "JPG، PNG (الحد الأقصى 2 ميغابايت)": "JPG, PNG (2 Mo maximum)",
@@ -1994,7 +1993,7 @@ export const FR: Record<string, string> = {
   // rolePreview (aperçu par rôle du super-admin, D95)
   "معاينة كدور": "Aperçu en tant que rôle",
   "للاختبار في هذه المدرسة التجريبية فقط: يتغير دورك فعلياً في هذه المدرسة (وليس محاكاة)، فتطبَّق عليك صلاحيات الدور وقواعد قاعدة البيانات كما لأي مستخدم حقيقي.": "Pour les tests, dans cette école de test uniquement : votre rôle change réellement dans cette école (ce n'est pas une simulation), et les droits du rôle et les règles de la base s'appliquent comme pour un vrai utilisateur.",
-  "جارٍ تغيير الدور…": "Changement de rôle en cours…",
+  "جاري تغيير الدور...": "Changement de rôle en cours…",
   "تعذر تغيير الدور": "Impossible de changer de rôle",
   "العودة إلى مدير": "Revenir à directeur",
   "وضع المعاينة : {0} ({1})": "Mode aperçu : {0} ({1})",
@@ -2128,9 +2127,9 @@ export const FR: Record<string, string> = {
   "يجب الحفاظ على نظافة المصحف والممتلكات الخاصة بالجمعية.": "Prendre soin du mushaf et des biens de l'association.",
   "تقديم هذه البطاقة شرط أساسي للدخول وحضور الفصول والأنشطة.": "La présentation de cette carte est obligatoire pour accéder aux halaqas et aux activités.",
   // ui/Select.tsx, ui/Pagination.tsx, listes paginées et filtres (D83)
-  "اختر…": "Choisir…",
+  "اختر...": "Choisir…",
   "بحث في الخيارات": "Rechercher dans les options",
-  "بحث…": "Rechercher…",
+  "بحث...": "Rechercher…",
   "لا توجد نتائج مطابقة": "Aucun résultat correspondant",
   "الصفحة السابقة": "Page précédente",
   "الصفحة التالية": "Page suivante",
@@ -2244,4 +2243,7 @@ export const FR: Record<string, string> = {
   "الحصة جارية الآن، وتُحتسب نسبتها عند انتهائها.": "La séance est en cours ; son taux sera compté à sa fin.",
   "لم تبدأ حصة اليوم بعد.": "La séance d'aujourd'hui n'a pas encore commencé.",
   "تظهر المقارنة هنا بعد أول تسجيل للحضور.": "La comparaison apparaîtra ici après la première saisie de présence.",
+  // Lot L6 (D101) : noms accessibles des tableaux de la comptabilité.
+  "مساهمات ومداخيل الأنشطة والرحلات": "Contributions et recettes des activités et sorties",
+  "مداخيل مستحقات وواجبات التلاميذ الشهرية": "Recettes des cotisations mensuelles des élèves",
 };

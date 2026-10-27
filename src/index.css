@@ -16,6 +16,20 @@
   --font-quran: "Amiri", "Traditional Arabic", serif;
   --font-mono: "IBM Plex Sans Arabic", ui-monospace, monospace;
 
+  /*
+   * Échelle typographique (D101) : 7 pas qui remplacent les 23 tailles `text-[Npx]`
+   * (arrondi au pas le plus proche : 0,5 px d'écart pour l'essentiel, 1 px au plus
+   * jusqu'à 22 px, 4 px au plus pour les titres d'affichage). Pas de hauteur de ligne
+   * imposée : chaque écran garde la sienne (`leading-*`).
+   */
+  --text-caption: 11.5px;
+  --text-small: 13px;
+  --text-body: 14.5px;
+  --text-lead: 17px;
+  --text-title: 21px;
+  --text-heading: 30px;
+  --text-display: 40px;
+
   /* Fonds, surfaces, texte, bordures (valeurs exactes de la maquette) */
   --color-app: #ECEDE6;
   --color-surface: #F8F8F3;
@@ -41,6 +55,10 @@
   --color-line-strong: #D0D3C6;
   --color-line-soft: #E1E3D8;
   --color-line-faint: #E8EAE1;
+  /* Filets spéciaux (états vides en pointillés, survol des boutons contour) et texte brun sur bandeau or */
+  --color-line-dashed: #CFD2C4;
+  --color-line-hover: #B9BDAF;
+  --color-gold-ink: #5C4A1E;
 
   /* Primaire (bleu nuit) */
   --color-primary: #1B3A6B;
@@ -122,6 +140,24 @@
   --radius-3xl: 22px;
   --shadow-toast: 0 10px 30px rgba(16, 36, 70, 0.25);
   --shadow-pop: 0 12px 32px rgba(16, 36, 70, 0.16);
+}
+
+/*
+ * Zone de toucher d'au moins 44 px (D101) autour d'un contrôle plus petit, sans changer son dessin
+ * ni la mise en page : pseudo-élément transparent centré sur le contrôle (même technique que
+ * `IconButton size="sm"`). À poser sur un contrôle statique (le pseudo-élément le suppose `relative`).
+ */
+@utility touch-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    translate: -50% -50%;
+  }
 }
 
 @layer base {

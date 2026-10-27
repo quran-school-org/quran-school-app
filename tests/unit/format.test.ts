@@ -1,6 +1,6 @@
 /** Formats des montants et pourcentages (UI-10, D92). */
 import { describe, expect, it } from "vitest";
-import { CURRENCY, formatMoney, formatNumber, formatPercent } from "../../src/utils/format";
+import { CURRENCY, formatMoney, formatNumber, formatPercent } from "../../src/format/money";
 
 const THIN = " ";
 const NBSP = " ";

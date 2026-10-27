@@ -25,13 +25,13 @@ export default function TeacherPerformance({ teachers, classes, students, grades
           />
         }
       />
-      <div className="flex flex-wrap gap-x-7 gap-y-2 text-[14px] text-ink-2">
+      <div className="flex flex-wrap gap-x-7 gap-y-2 text-body text-ink-2">
         <span><strong className="text-ink tabular-nums">{examCount}</strong> اختبار مسجّل</span>
         <span><strong className="text-ink tabular-nums">{perf.length}</strong> {perf.length > 2 ? "محفّظين" : perf.length === 2 ? "محفّظان" : "محفّظ"}</span>
         {best && <span>أفضل حلقة: <strong className="text-ink">{best.name}</strong></span>}
       </div>
       {perf.length === 0 ? (
-        <p className="m-0 py-5 text-[14px] text-ink-2">لا يوجد محفّظون مسجّلون في شؤون العاملين بعد.</p>
+        <p className="m-0 py-5 text-body text-ink-2">لا يوجد محفّظون مسجّلون في شؤون العاملين بعد.</p>
       ) : (
         <div className="flex flex-col border-t border-line-soft" aria-label={muhaffizLabel}>
           {perf.map((p, i) => {
@@ -41,27 +41,27 @@ export default function TeacherPerformance({ teachers, classes, students, grades
                 <div className="flex items-center gap-3 flex-[1_1_200px] min-w-0">
                   <InitialAvatar name={p.teacher.fullName} tone={has ? "primary" : "muted"} />
                   <span className="flex flex-col min-w-0">
-                    <span className="font-semibold text-[15px] truncate">{p.teacher.fullName}</span>
-                    <span className="text-[13px] text-ink-3">{has ? `${p.classes.map((c) => c.name).join("، ")}، ${studentsLabel(p.students)}` : "لا حلقة مسندة"}</span>
+                    <span className="font-semibold text-body truncate">{p.teacher.fullName}</span>
+                    <span className="text-small text-ink-3">{has ? `${p.classes.map((c) => c.name).join("، ")}، ${studentsLabel(p.students)}` : "لا حلقة مسندة"}</span>
                   </span>
                 </div>
                 {!has ? (
-                  <div className="flex-[2_1_280px] flex flex-wrap items-center gap-x-3.5 gap-y-2 text-[13.5px] text-ink-2">
+                  <div className="flex-[2_1_280px] flex flex-wrap items-center gap-x-3.5 gap-y-2 text-small text-ink-2">
                     <span>لا تظهر له نتائج حتى تُسند إليه حلقة.</span>
                     {onAssign && <span className="text-primary"><TextAction onClick={onAssign}>إسناد حلقة</TextAction></span>}
                   </div>
                 ) : mode === "scores" ? (
                   <div className="flex-[2_1_280px] flex flex-col gap-2">
                     {p.exams === 0 ? (
-                      <span className="text-[13.5px] text-ink-2">لا اختبارات مسجّلة لطلابه بعد.</span>
+                      <span className="text-small text-ink-2">لا اختبارات مسجّلة لطلابه بعد.</span>
                     ) : (
                       <>
-                        <div className="flex items-center gap-2.5 text-[13px]">
+                        <div className="flex items-center gap-2.5 text-small">
                           <span className="w-12 text-ink-2">الحفظ</span>
                           <ProgressBar value={p.memo || 0} max={20} label={`الحفظ ${p.memo} من 20`} />
                           <span className="w-12 font-bold tabular-nums" dir="ltr">{p.memo}/20</span>
                         </div>
-                        <div className="flex items-center gap-2.5 text-[13px]">
+                        <div className="flex items-center gap-2.5 text-small">
                           <span className="w-12 text-ink-2">التجويد</span>
                           <ProgressBar value={p.tajweed || 0} max={20} tone="gold" label={`التجويد ${p.tajweed} من 20`} />
                           <span className="w-12 font-bold tabular-nums" dir="ltr">{p.tajweed}/20</span>
@@ -70,7 +70,7 @@ export default function TeacherPerformance({ teachers, classes, students, grades
                     )}
                   </div>
                 ) : (
-                  <div className="flex-[2_1_280px] flex items-center gap-2.5 text-[13px]">
+                  <div className="flex-[2_1_280px] flex items-center gap-2.5 text-small">
                     <ProgressBar value={p.students} max={p.capacity || p.students || 1} label={`${p.students} من ${p.capacity} مقعداً`} />
                     <span className="font-bold tabular-nums whitespace-nowrap">{p.students} / {p.capacity} مقعداً</span>
                   </div>
@@ -80,7 +80,7 @@ export default function TeacherPerformance({ teachers, classes, students, grades
           })}
         </div>
       )}
-      <p className="m-0 text-[13px] text-ink-3 leading-relaxed">المعدل = مجموع درجات اختبارات طلاب المحفّظ ÷ عدد تلك الاختبارات.</p>
+      <p className="m-0 text-small text-ink-3 leading-relaxed">المعدل = مجموع درجات اختبارات طلاب المحفّظ ÷ عدد تلك الاختبارات.</p>
     </Card>
   );
 }

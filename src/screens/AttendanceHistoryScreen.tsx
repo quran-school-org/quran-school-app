@@ -81,11 +81,11 @@ export default function AttendanceHistoryScreen() {
                 {pg.pageItems.map((a) => (
                   <li key={a.id} data-session={a.date} className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
                     <span className="flex flex-col min-w-0">
-                      <span className="text-[14.5px] font-semibold text-ink">{weekday(a.date)}</span>
-                      <span className="text-[13px] text-ink-2">{formatDateAr(a.date)}</span>
+                      <span className="text-body font-semibold text-ink">{weekday(a.date)}</span>
+                      <span className="text-small text-ink-2">{formatDateAr(a.date)}</span>
                     </span>
                     <span className="flex flex-wrap items-center gap-2 justify-end">
-                      {a.notes && <span className="text-[13px] text-ink-3 max-w-[40ch]">{a.notes}</span>}
+                      {a.notes && <span className="text-small text-ink-3 max-w-[40ch]">{a.notes}</span>}
                       <Pill tone={TONE[a.status] || "neutral"}>{a.status}</Pill>
                     </span>
                   </li>

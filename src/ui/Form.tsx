@@ -6,7 +6,7 @@ import React, { useId } from "react";
 import { cx } from "./cx";
 
 export const fieldClass =
-  "min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] font-sans placeholder:text-ink-3 transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/20 disabled:bg-surface-2 disabled:text-ink-3 disabled:cursor-not-allowed";
+  "min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body font-sans placeholder:text-ink-3 transition-colors focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 aria-[invalid=true]:border-danger aria-[invalid=true]:focus:border-danger aria-[invalid=true]:focus:ring-danger/20 disabled:bg-surface-2 disabled:text-ink-3 disabled:cursor-not-allowed";
 
 /** Largeur pleine par défaut, sauf si la classe fournie fixe déjà une largeur. */
 const widthOf = (className?: string) => (/(^|\s)(w-|flex-)/.test(className || "") ? "" : "w-full");
@@ -32,10 +32,10 @@ export function FormField({ label, hint, error, className, children }: FormField
   const id = useId();
   return (
     <div className={cx("flex flex-col gap-1.5 min-w-0", className)}>
-      <label htmlFor={id} className="text-[13.5px] font-semibold text-ink-2">{label}</label>
+      <label htmlFor={id} className="text-small font-semibold text-ink-2">{label}</label>
       {children(id)}
-      {hint && <span className="text-[12.5px] text-ink-3 leading-relaxed">{hint}</span>}
-      {error && <span role="alert" className="text-[12.5px] font-semibold text-danger">{error}</span>}
+      {hint && <span className="text-small text-ink-3 leading-relaxed">{hint}</span>}
+      {error && <span role="alert" className="text-small font-semibold text-danger">{error}</span>}
     </div>
   );
 }
@@ -43,7 +43,7 @@ export function FormField({ label, hint, error, className, children }: FormField
 /** Case à cocher avec libellé, cible tactile de 44 px. */
 export function CheckboxRow({ checked, onChange, children, className, disabled }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode; className?: string; disabled?: boolean }) {
   return (
-    <label className={cx("flex items-center gap-2.5 min-h-11 px-3 rounded-[10px] border border-line bg-white cursor-pointer hover:bg-surface-2 transition-colors text-[14px] text-ink", disabled && "opacity-60 cursor-not-allowed", className)}>
+    <label className={cx("flex items-center gap-2.5 min-h-11 px-3 rounded-[10px] border border-line bg-white cursor-pointer hover:bg-surface-2 transition-colors text-body text-ink", disabled && "opacity-60 cursor-not-allowed", className)}>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} className="w-4 h-4 accent-primary shrink-0" />
       <span className="min-w-0">{children}</span>
     </label>

@@ -154,60 +154,60 @@ export default function MonthlyReportModal() {
                   </FormField>
                 </div>
 
-                <div id="printable-monthly-report" className="bg-white rounded-xl border border-line-soft p-5 text-[13.5px] text-ink">
+                <div id="printable-monthly-report" className="bg-white rounded-xl border border-line-soft p-5 text-small text-ink">
                   <div className="flex flex-col gap-5">
                     <div className="flex justify-between items-start gap-4 border-b-2 border-primary pb-4">
                       <div className="flex items-center gap-3">
                         {logo ? <img src={logo} alt="" className="w-14 h-14 object-contain" /> : <Emblem size={48} />}
                         <div className="flex flex-col gap-0.5">
-                          <p className="m-0 font-display font-semibold text-[18px] text-primary">{schoolName}</p>
-                          {systemSettings?.mottoVision && <p className="m-0 text-[12.5px] text-ink-2">{systemSettings.mottoVision}</p>}
-                          {systemSettings?.licenseNumber && <p className="m-0 text-[12.5px] text-ink-3">رقم الترخيص: {systemSettings.licenseNumber}</p>}
+                          <p className="m-0 font-display font-semibold text-lead text-primary">{schoolName}</p>
+                          {systemSettings?.mottoVision && <p className="m-0 text-small text-ink-2">{systemSettings.mottoVision}</p>}
+                          {systemSettings?.licenseNumber && <p className="m-0 text-small text-ink-3">رقم الترخيص: {systemSettings.licenseNumber}</p>}
                         </div>
                       </div>
                       <div className="text-end flex flex-col items-end gap-1">
-                        <span className="inline-block bg-night text-gold-100 font-semibold text-[13px] px-3 py-1.5 rounded-lg">كشف الحضور والغياب الشهري</span>
-                        <span className="text-[12px] text-ink-3">تاريخ الإصدار: {new Date().toLocaleDateString("ar-MA-u-nu-latn")}</span>
+                        <span className="inline-block bg-night text-gold-100 font-semibold text-small px-3 py-1.5 rounded-lg">كشف الحضور والغياب الشهري</span>
+                        <span className="text-caption text-ink-3">تاريخ الإصدار: {new Date().toLocaleDateString("ar-MA-u-nu-latn")}</span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 rounded-xl bg-surface-2 border border-line-soft p-4">
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[12px] text-ink-3">معلومات الطالب</span>
-                        <span className="font-semibold text-[15px]">{selectedStudentForReport.fullName}</span>
-                        <span className="text-[12.5px] text-ink-3">مستوى التجويد: {selectedStudentForReport.tajweedLevel}</span>
+                        <span className="text-caption text-ink-3">معلومات الطالب</span>
+                        <span className="font-semibold text-body">{selectedStudentForReport.fullName}</span>
+                        <span className="text-small text-ink-3">مستوى التجويد: {selectedStudentForReport.tajweedLevel}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[12px] text-ink-3">الحلقة والمشرف</span>
+                        <span className="text-caption text-ink-3">الحلقة والمشرف</span>
                         <span className="font-semibold">{studentClass?.name || "غير محدد"}</span>
-                        <span className="text-[12.5px] text-ink-3">المحفظ: {classTeacher?.fullName || "لم يتم تعيين معلّم"}</span>
+                        <span className="text-small text-ink-3">المحفظ: {classTeacher?.fullName || "لم يتم تعيين معلّم"}</span>
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[12px] text-ink-3">الفترة الزمنية للرصد</span>
+                        <span className="text-caption text-ink-3">الفترة الزمنية للرصد</span>
                         <span className="font-semibold text-primary">{MONTH_NAMES_AR[month]} {year}</span>
-                        <span className="text-[12.5px] text-ink-3">الفترة المحددة: {reportYearMonth}</span>
+                        <span className="text-small text-ink-3">الفترة المحددة: {reportYearMonth}</span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                       {stats.map((s) => (
                         <div key={s.label} className={"rounded-xl p-3 text-center " + s.cls}>
-                          <p className="m-0 text-[12.5px] font-semibold">{s.label}</p>
-                          <p className="m-0 mt-1 text-[20px] font-bold tabular-nums">{s.value} <span className="text-[12.5px] font-medium">{s.unit}</span></p>
+                          <p className="m-0 text-small font-semibold">{s.label}</p>
+                          <p className="m-0 mt-1 text-title font-bold tabular-nums">{s.value} <span className="text-small font-medium">{s.unit}</span></p>
                         </div>
                       ))}
                       <div className="col-span-2 sm:col-span-1 rounded-xl p-3 text-center bg-night text-night-text">
-                        <p className="m-0 text-[12.5px] font-semibold text-gold-100">نسبة الالتزام</p>
-                        <p className="m-0 mt-1 text-[20px] font-bold tabular-nums">{attendanceRate}%</p>
+                        <p className="m-0 text-small font-semibold text-gold-100">نسبة الالتزام</p>
+                        <p className="m-0 mt-1 text-title font-bold tabular-nums">{attendanceRate}%</p>
                       </div>
                     </div>
 
-                    <p className="m-0 rounded-xl bg-gold-100 text-[#5C4A1E] p-3 text-[12.5px] leading-relaxed">
+                    <p className="m-0 rounded-xl bg-gold-100 text-gold-ink p-3 text-small leading-relaxed">
                       <strong>تنويه نظام الجمعية الحسابي:</strong> تم رصد وإعداد هذا الكشف باستبعاد <strong>أيام الجمعة ({totalFridays} أيام في هذا الشهر)</strong> تماماً من حساب الإحصائيات الحالية ومجمل أيام الدراسة، عملاً بالنظام الداخلي الذي يعتبر يوم الجمعة عطلة رسمية بالجمعية.
                     </p>
 
                     <div className="border border-line rounded-xl overflow-hidden">
-                      <table className="w-full text-start border-collapse text-[13px]">
+                      <table className="w-full text-start border-collapse text-small">
                         <thead>
                           <tr className="bg-sunken text-ink-2">
                             <th scope="col" className="p-2.5 text-start font-semibold">اليوم والتاريخ</th>
@@ -233,8 +233,8 @@ export default function MonthlyReportModal() {
                     <div className="grid grid-cols-3 gap-4 pt-8 mt-6 border-t-2 border-dashed border-line text-center">
                       {["توقيع المحفظ المشرف", "ختم الجمعية الرسمي", "توقيع إدارة الأكاديمية"].map((label) => (
                         <div key={label} className="flex flex-col gap-10">
-                          <p className="m-0 font-semibold text-[13px]">{label}</p>
-                          <p className="m-0 text-[12px] text-ink-4">----------------------</p>
+                          <p className="m-0 font-semibold text-small">{label}</p>
+                          <p className="m-0 text-caption text-ink-4">----------------------</p>
                         </div>
                       ))}
                     </div>

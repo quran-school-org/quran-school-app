@@ -11,7 +11,7 @@ export type ButtonSize = "md" | "sm" | "xs";
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-primary text-white border border-primary hover:bg-primary-hover hover:border-primary-hover",
-  outline: "bg-surface text-ink border border-line-strong hover:bg-surface-2 hover:border-[#B9BDAF]",
+  outline: "bg-surface text-ink border border-line-strong hover:bg-surface-2 hover:border-line-hover",
   danger: "bg-white text-danger border border-danger-200 hover:bg-danger-100",
   "danger-solid": "bg-danger text-white border border-danger hover:bg-danger-700",
   success: "bg-success-700 text-white border border-success-700 hover:bg-success-800",
@@ -21,9 +21,9 @@ const VARIANTS: Record<ButtonVariant, string> = {
 };
 
 const SIZES: Record<ButtonSize, string> = {
-  md: "min-h-11 px-4 gap-2 text-[14.5px] rounded-[10px]",
-  sm: "min-h-9 px-3 gap-1.5 text-[13.5px] rounded-[10px]",
-  xs: "min-h-8 px-2.5 gap-1 text-[12.5px] rounded-lg",
+  md: "min-h-11 px-4 gap-2 text-body rounded-[10px]",
+  sm: "min-h-9 px-3 gap-1.5 text-small rounded-[10px] touch-target",
+  xs: "min-h-8 px-2.5 gap-1 text-small rounded-lg touch-target",
 };
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {

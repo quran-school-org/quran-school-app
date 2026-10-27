@@ -63,7 +63,7 @@ export default function ActivityFormModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingActivity ? "حفظ التعديلات" : "إنشاء النشاط"}</Button>
+          <Button type="submit" variant="primary">{editingActivity ? "حفظ التغييرات" : "إضافة النشاط"}</Button>
         </>
       }
     >
@@ -146,13 +146,13 @@ export default function ActivityFormModal() {
             </datalist>
 
             <div className="flex flex-wrap items-center gap-1 pt-0.5">
-              <span className="text-[11.5px] text-ink-3 font-medium ml-1">خيارات سريعة:</span>
+              <span className="text-caption text-ink-3 font-medium me-1">خيارات سريعة:</span>
               {["الطالبات فقط", "الطلاب فقط", "الجميع (طلاب، أطر، أولياء أمور)", "الكوادر والمدرسين فقط", "أولياء الأمور"].map(tag => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => setFormTargetAudience(tag)}
-                  className={`text-[11.5px] px-2 py-0.5 rounded-lg border transition ${
+                  className={`text-caption px-2 py-0.5 rounded-lg border transition ${
                     formTargetAudience === tag
                       ? "bg-primary-600 text-white border-primary-600 font-bold"
                       : "bg-sand-100 text-ink-2 hover:bg-primary-50 hover:text-primary-800 border-line"
@@ -179,12 +179,12 @@ export default function ActivityFormModal() {
       </div>
 
       <div role="group" aria-labelledby={leadersLabelId} className="flex flex-col gap-1.5">
-        <span id={leadersLabelId} className="text-[13.5px] font-semibold text-ink-2">المؤطرون والمشرفون المعتمدون</span>
+        <span id={leadersLabelId} className="text-small font-semibold text-ink-2">المؤطرون والمشرفون المعتمدون</span>
         <div className="border border-line rounded-xl p-3 bg-sand-50 max-h-32 overflow-y-auto space-y-1.5">
           {teachers.map(t => {
             const isChecked = formLeaderIds.includes(t.id);
             return (
-              <label key={t.id} className="flex items-center gap-2 text-[13px] text-ink-2 cursor-pointer hover:text-ink">
+              <label key={t.id} className="flex items-center gap-2 text-small text-ink-2 cursor-pointer hover:text-ink">
                 <input
                   type="checkbox"
                   checked={isChecked}
@@ -198,7 +198,7 @@ export default function ActivityFormModal() {
                   className="rounded text-primary-600 focus:ring-primary-500"
                 />
                 <span>{t.fullName}</span>
-                <span className="text-[11.5px] text-ink-3">({t.category || t.specialty || "مؤطر"})</span>
+                <span className="text-caption text-ink-3">({t.category || t.specialty || "مؤطر"})</span>
               </label>
             );
           })}

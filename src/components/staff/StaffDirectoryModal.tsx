@@ -6,6 +6,7 @@
 import { Printer, FileText } from "lucide-react";
 import { useStaff } from "./StaffContext";
 import { Button, Modal } from "../../ui";
+import { formatMoney } from "../../format/money";
 
 export default function StaffDirectoryModal() {
   const {
@@ -37,37 +38,37 @@ export default function StaffDirectoryModal() {
     >
       {/* Official Document Header */}
       <div className="text-center pb-4 border-b border-line space-y-1">
-        <div className="text-[13px] text-ink-3">{systemSettings?.associationName || ""}</div>
+        <div className="text-small text-ink-3">{systemSettings?.associationName || ""}</div>
         <h3 className="text-lg font-bold text-primary">سجل وحصر شؤون العاملين والأطر</h3>
-        <p className="text-[13px] text-ink-3">الموسم الدراسي: {systemSettings?.activeAcademicSeason || ""}</p>
+        <p className="text-small text-ink-3">الموسم الدراسي: {systemSettings?.activeAcademicSeason || ""}</p>
       </div>
 
       {/* Table */}
-      <table className="w-full text-right text-[13px] border border-line">
+      <table className="w-full text-start text-small border border-line">
         <thead className="bg-sand-100 border-b border-line text-ink font-bold">
           <tr>
-            <th className="p-2 border-l border-line">#</th>
-            <th className="p-2 border-l border-line">الاسم الكامل</th>
-            <th className="p-2 border-l border-line">الفئة</th>
-            <th className="p-2 border-l border-line">المسمى والمهام</th>
-            <th className="p-2 border-l border-line">CIN</th>
-            <th className="p-2 border-l border-line">الهاتف</th>
-            <th className="p-2 border-l border-line">نوع العقد</th>
+            <th className="p-2 border-e border-line">#</th>
+            <th className="p-2 border-e border-line">الاسم الكامل</th>
+            <th className="p-2 border-e border-line">الفئة</th>
+            <th className="p-2 border-e border-line">المسمى والمهام</th>
+            <th className="p-2 border-e border-line">CIN</th>
+            <th className="p-2 border-e border-line">الهاتف</th>
+            <th className="p-2 border-e border-line">نوع العقد</th>
             <th className="p-2">المكافأة</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line-soft">
           {allStaff.filter(t => !t.isArchived).map((staff, idx) => (
             <tr key={staff.id} className="hover:bg-sand-50">
-              <td className="p-2 font-mono text-center border-l border-line">{idx + 1}</td>
-              <td className="p-2 font-bold text-ink border-l border-line">{staff.fullName}</td>
-              <td className="p-2 border-l border-line">{staff.category || "أستاذ / محفظ"}</td>
-              <td className="p-2 border-l border-line">{staff.roleTitle || staff.specialty}</td>
-              <td className="p-2 font-mono border-l border-line">{staff.cinNumber || "-"}</td>
-              <td className="p-2 font-mono border-l border-line">{staff.phone}</td>
-              <td className="p-2 border-l border-line">{staff.contractType || "مكافأة شهرية"}</td>
+              <td className="p-2 font-mono text-center border-e border-line">{idx + 1}</td>
+              <td className="p-2 font-bold text-ink border-e border-line">{staff.fullName}</td>
+              <td className="p-2 border-e border-line">{staff.category || "أستاذ / محفظ"}</td>
+              <td className="p-2 border-e border-line">{staff.roleTitle || staff.specialty}</td>
+              <td className="p-2 font-mono border-e border-line">{staff.cinNumber || "-"}</td>
+              <td className="p-2 font-mono border-e border-line">{staff.phone}</td>
+              <td className="p-2 border-e border-line">{staff.contractType || "مكافأة شهرية"}</td>
               <td className="p-2 font-mono font-bold text-primary-800">
-                {staff.monthlySalary ? `${staff.monthlySalary} د.م` : "-"}
+                {staff.monthlySalary ? formatMoney(staff.monthlySalary) : "-"}
               </td>
             </tr>
           ))}
@@ -75,18 +76,18 @@ export default function StaffDirectoryModal() {
       </table>
 
       {/* Signatures */}
-      <div className="grid grid-cols-3 gap-6 pt-6 border-t border-line text-center text-[13px]">
+      <div className="grid grid-cols-3 gap-6 pt-6 border-t border-line text-center text-small">
         <div>
           <p className="font-bold text-ink-2">توقيع الكاتب العام</p>
-          <p className="text-[11.5px] text-ink-3 mt-8">{systemSettings?.secretaryGeneralName || "........................"}</p>
+          <p className="text-caption text-ink-3 mt-8">{systemSettings?.secretaryGeneralName || "........................"}</p>
         </div>
         <div>
           <p className="font-bold text-ink-2">أمين المال</p>
-          <p className="text-[11.5px] text-ink-3 mt-8">{systemSettings?.treasurerName || "........................"}</p>
+          <p className="text-caption text-ink-3 mt-8">{systemSettings?.treasurerName || "........................"}</p>
         </div>
         <div>
           <p className="font-bold text-ink-2">رئيس الجمعية</p>
-          <p className="text-[11.5px] text-ink-3 mt-8">{systemSettings?.presidentName || "........................"}</p>
+          <p className="text-caption text-ink-3 mt-8">{systemSettings?.presidentName || "........................"}</p>
         </div>
       </div>
     </Modal>

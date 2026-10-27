@@ -3,6 +3,10 @@
  * écriture dans toute l'interface, chiffres latins, un seul séparateur de
  * milliers (espace fine insécable), devise « د.م ».
  *
+ * Unique formateur de montants de l'interface (D101) : tout montant affiché passe par
+ * `formatMoney` / `formatNumber` (garde-fous de `tests/unit/uiGuards.test.ts` : ni
+ * « درهم » dans un écran, ni `toLocaleString`). Devise toujours APRÈS le nombre.
+ *
  * Les valeurs stockées ne changent pas : ce sont des formats d'AFFICHAGE.
  * Un nombre signé (« -150 », « +300 ») commence par un signe : le rendre dans
  * un `<Ltr>` (src/ui) pour qu'il reste collé à ses chiffres dans un texte RTL.

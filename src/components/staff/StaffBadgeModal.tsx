@@ -42,9 +42,9 @@ export default function StaffBadgeModal() {
       <div id="staff-badge-print-area" data-theme="bleu-nuit" className="w-[320px] bg-surface rounded-2xl shadow-lg border-2 border-primary-800 overflow-hidden text-right font-sans relative">
         {/* Badge Top Header */}
         <div className="bg-primary-800 text-white p-3.5 text-center relative">
-          <div className="text-[11.5px] font-medium opacity-90">{systemSettings?.associationName || ""}</div>
-          <div className="text-[13px] font-bold tracking-wide mt-0.5">بطاقة التعريف المهنية والشارة</div>
-          <div className="text-[12.5px] opacity-75 mt-0.5">الموسم: {systemSettings?.activeAcademicSeason || ""}</div>
+          <div className="text-caption font-medium opacity-90">{systemSettings?.associationName || ""}</div>
+          <div className="text-small font-bold tracking-wide mt-0.5">بطاقة التعريف المهنية والشارة</div>
+          <div className="text-small opacity-75 mt-0.5">الموسم: {systemSettings?.activeAcademicSeason || ""}</div>
         </div>
 
         {/* Badge Body */}
@@ -61,15 +61,15 @@ export default function StaffBadgeModal() {
 
             <div className="flex-1 min-w-0">
               <div className="font-bold text-ink text-sm">{badgeStaff.fullName}</div>
-              <div className="text-[13px] font-bold text-primary-800 mt-0.5">{badgeStaff.roleTitle || badgeStaff.specialty}</div>
-              <span className="inline-block text-[12.5px] font-bold bg-sand-100 text-ink-2 px-2 py-0.5 rounded mt-1">
+              <div className="text-small font-bold text-primary-800 mt-0.5">{badgeStaff.roleTitle || badgeStaff.specialty}</div>
+              <span className="inline-block text-small font-bold bg-sand-100 text-ink-2 px-2 py-0.5 rounded mt-1">
                 {badgeStaff.category || "أستاذ / محفظ"}
               </span>
             </div>
           </div>
 
           {/* Badge Details Grid */}
-          <div className="bg-sand-50 p-2.5 rounded-xl border border-line text-[11.5px] space-y-1.5 font-mono">
+          <div className="bg-sand-50 p-2.5 rounded-xl border border-line text-caption space-y-1.5 font-mono">
             {badgeStaff.cinNumber && (
               <div className="flex justify-between">
                 <span className="text-ink-3 font-sans">رقم البطاقة (CIN):</span>
@@ -92,9 +92,9 @@ export default function StaffBadgeModal() {
 
           {/* QR Code & Signature Seal */}
           <div className="flex items-center justify-between pt-1 border-t border-line">
-            <div className="text-[12.5px] text-ink-3 space-y-0.5">
+            <div className="text-small text-ink-3 space-y-0.5">
               <p className="font-bold text-ink-2 font-sans">ختم وتوقيع الإدارة</p>
-              <p className="font-sans text-[11.5px]">صالحة للموسم الحالي</p>
+              <p className="font-sans text-caption">صالحة للموسم الحالي</p>
             </div>
 
             <div className="w-14 h-14 bg-white p-1 rounded-lg border border-line">
@@ -104,7 +104,7 @@ export default function StaffBadgeModal() {
         </div>
 
         {/* Badge Bottom Stripe */}
-        <div className="bg-night text-white text-[11.5px] py-1 text-center font-mono">
+        <div className="bg-night text-white text-caption py-1 text-center font-mono">
           ID: {badgeStaff.id} • {systemSettings?.associationPhone || "—"}
         </div>
       </div>

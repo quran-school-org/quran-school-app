@@ -4,6 +4,8 @@ export { Button, IconButton } from "./Button";
 export type { ButtonVariant } from "./Button";
 export { Card, CardHeader, Divider } from "./Card";
 export { PageHeader } from "./PageHeader";
+export { SectionHeader } from "./SectionHeader";
+export type { SectionHeaderProps } from "./SectionHeader";
 export { KpiGrid, KpiTile } from "./Kpi";
 export { ProgressBar, StackedBar, Legend } from "./Bars";
 export { Pill, CountBadge } from "./Pill";

@@ -5,7 +5,7 @@
 import { Landmark, Plus } from "lucide-react";
 import { useActivities } from "./ActivitiesContext";
 import { Button, KpiGrid, KpiTile, Ltr, PageHeader } from "../../ui";
-import { formatNumber } from "../../utils/format";
+import { formatNumber } from "../../format/money";
 
 export default function ActivitiesOverview() {
   const { canCreateActivity, onNavigateToFinance, globalStats, handleOpenAddActivity } = useActivities();

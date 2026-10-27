@@ -14,6 +14,7 @@ import { StudentAvatar } from "../utils/studentAvatar";
 import { Button, Card, EmptyState, HifzBar, PageHeader, Pill, hizbOf, type PillTone } from "../ui";
 import { ABSENCE_WINDOW_DAYS, countStatuses, feeOfMonth, lastGradeOf, monthLabel, recentSessions, sessionsOf } from "./family/familySummary";
 import { formatDateAr } from "../format/date";
+import { formatMoney } from "../format/money";
 
 const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} aria-hidden="true" />;
 const OVERALL_TONE: Record<string, PillTone> = { "ممتاز": "gold", "جيد جداً": "success", "جيد": "primary", "مقبول": "neutral" };
@@ -23,8 +24,8 @@ function Line({ icon, label, children }: { icon: ReactNode; label: string; child
     <div className="flex items-start gap-3 py-3 border-b border-line-faint last:border-b-0">
       <span className="mt-0.5 text-gold-700 shrink-0">{icon}</span>
       <div className="min-w-0 flex-1 flex flex-col gap-1">
-        <span className="text-[13px] text-ink-2">{label}</span>
-        <div className="text-[14.5px] text-ink">{children}</div>
+        <span className="text-small text-ink-2">{label}</span>
+        <div className="text-body text-ink">{children}</div>
       </div>
     </div>
   );
@@ -67,8 +68,8 @@ export default function FamilyHomeScreen() {
                     <StudentAvatar student={st} alt="" className="w-full h-full object-cover" />
                   </span>
                   <div className="min-w-0">
-                    <h2 id={`child-${st.id}`} className="m-0 font-display font-semibold text-[22px] leading-snug text-primary">{st.fullName}</h2>
-                    <p className="m-0 text-[14px] text-ink-2">
+                    <h2 id={`child-${st.id}`} className="m-0 font-display font-semibold text-title leading-snug text-primary">{st.fullName}</h2>
+                    <p className="m-0 text-body text-ink-2">
                       {klass ? klass.name : "بلا حلقة"}
                       {st.isArchived && <> · <Pill tone="neutral">مؤرشف</Pill></>}
                     </p>
@@ -82,7 +83,7 @@ export default function FamilyHomeScreen() {
                   <Line icon={ic(BookOpen)} label="الحفظ">
                     <div className="flex flex-col gap-2">
                       <HifzBar hizb={hizb} label={`${st.fullName}، ${hizb} من 60 حزباً`} />
-                      <span className="text-[13.5px] text-ink-2"><strong className="text-ink tabular-nums">{hizb}</strong> / 60 حزباً{st.currentSurah ? <> · السورة الحالية: {st.currentSurah}</> : null}</span>
+                      <span className="text-small text-ink-2"><strong className="text-ink tabular-nums">{hizb}</strong> / 60 حزباً{st.currentSurah ? <> · السورة الحالية: {st.currentSurah}</> : null}</span>
                     </div>
                   </Line>
                   <Line icon={ic(Award)} label="آخر امتحان">
@@ -90,9 +91,9 @@ export default function FamilyHomeScreen() {
                       <div className="flex flex-col gap-1.5">
                         <span className="flex flex-wrap items-center gap-2">
                           <Pill tone={OVERALL_TONE[exam.overallGrade] || "neutral"}>{exam.overallGrade}</Pill>
-                          <span className="text-[13.5px] text-ink-2">{exam.testedPortion}</span>
+                          <span className="text-small text-ink-2">{exam.testedPortion}</span>
                         </span>
-                        <span className="text-[13.5px] text-ink-2">
+                        <span className="text-small text-ink-2">
                           الحفظ <strong className="text-ink tabular-nums">{exam.memorizationGrade}/20</strong> · التجويد <strong className="text-ink tabular-nums">{exam.tajweedGrade}/20</strong> · {formatDateAr(exam.examDate)}
                         </span>
                       </div>
@@ -112,7 +113,7 @@ export default function FamilyHomeScreen() {
                       {fee.kind === "unpaid" && (
                         <span className="flex flex-wrap items-center gap-2">
                           <Pill tone="danger">غير مدفوع</Pill>
-                          <span className="text-[13.5px] text-ink-2"><strong className="text-ink tabular-nums">{fee.payment.amount || getSubscriptionAmount(fee.payment.month, Number(fee.payment.year))}</strong> درهم</span>
+                          <span className="text-small text-ink-2"><strong className="text-ink tabular-nums">{formatMoney(fee.payment.amount || getSubscriptionAmount(fee.payment.month, Number(fee.payment.year)))}</strong></span>
                         </span>
                       )}
                       {fee.kind === "none" && <span className="text-ink-2">لا توجد رسوم مسجلة لهذا الشهر.</span>}

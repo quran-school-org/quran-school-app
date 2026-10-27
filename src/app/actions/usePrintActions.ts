@@ -13,7 +13,7 @@ import { DOC_CSS } from "../../print/docStyles";
 import { openPrintWindow } from "../../print/printWindow";
 import { Payment } from "../../types";
 import { getYearAndMonthFromDate } from "../helpers";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 import type { DerivedScope } from "../scope";
 import { useToast } from "../../ui";
 

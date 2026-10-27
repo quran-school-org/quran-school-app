@@ -58,9 +58,81 @@ describe("interface : valeurs codées en dur retirées", () => {
     expect(bare).toEqual([]);
   });
 
-  it("aucun montant écrit « درهم » dans les écrans de paiements, comptabilité, activités et personnel : devise « د.م » via formatMoney", () => {
-    const dirs = ["src/screens/PaymentsScreen.tsx", "src/components/finance/", "src/components/activities/", "src/components/staff/", "src/components/FinanceManagement.tsx"];
-    const hits = all.filter(([f]) => dirs.some((d) => f.split("\\").join("/").startsWith(d))).filter(([, src]) => /\d\s*درهم|\}\s*درهم/.test(src));
+  it("devise « د.م » partout : aucun « درهم » affiché, montants par src/format/money.ts (D101)", () => {
+    // Exceptions : nom de la devise dans les paramètres de l'école (valeur par défaut « درهم مغربي »),
+    // en-tête de colonne de l'export CSV des paiements, en-tête de l'aperçu d'impression du rapport
+    // financier (« المبلغ بالدرهم (MAD) »), impressions et dictionnaire de test.
+    const allowed = ["src/school/businessRules.ts", "src/db.ts", "src/app/actions/useGradePaymentActions.ts", "src/components/finance/PrintReportModal.tsx", "src/screens/DashboardScreen.tsx", "src/types.ts"];
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/ .*$/gm, "");
+    const hits = all
+      .filter(([f]) => !f.startsWith("src/print/") && !f.startsWith("src/i18n-test/") && !allowed.includes(f.split("\\").join("/")))
+      .filter(([, src]) => /درهم/.test(code(src)));
     expect(hits.map(([f]) => f)).toEqual([]);
+  });
+
+  it("aucun toLocaleString(\"en-US\") ni locale numérique arabe (ar-EG) : chiffres latins par formatNumber", () => {
+    expect(offending(/toLocale\w*String\(\s*["'](en-US|ar-EG|ar-SA)/)).toEqual([]);
+  });
+
+  it("libellés d'action : une seule forme (« حفظ التغييرات », « إضافة … », « جاري … ») (D101)", () => {
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const hits = (re: RegExp) => all.filter(([f, src]) => !f.startsWith("src/i18n-test/") && re.test(code(src))).map(([f]) => f);
+    expect(hits(/حفظ التعديلات/)).toEqual([]);
+    expect(hits(/["'>`](إنشاء (الحلقة|النشاط)|تسجيل (الكادر|المصروف)|تأكيد التسجيل|إتمام التسجيل والبدء)["'<`]/)).toEqual([]);
+    expect(hits(/["'>`]جارٍ /)).toEqual([]);
+  });
+  it("tailles de texte : échelle `text-caption … text-display` de src/index.css, plus de `text-[Npx]` (D101)", () => {
+    // Exceptions : impressions et aperçus de cartes (src/print/, tailles calées sur le papier), et le « +N » de
+    // la carte du hifz (9 px dans une colonne de 20 px : aucun pas de l'échelle n'y tient).
+    const allowed = ["src/ui/HifzMap.tsx"];
+    const hits = all
+      .filter(([f]) => !f.startsWith("src/print/") && !allowed.includes(f.split("\\").join("/")))
+      .filter(([, src]) => /text-\[\d+(\.\d+)?px\]/.test(src));
+    expect(hits.map(([f]) => f)).toEqual([]);
+    const css = readFileSync("src/index.css", "utf8");
+    const steps = [...css.matchAll(/--text-([a-z]+):\s*([\d.]+)px;/g)].map((m) => m[1]);
+    expect(steps).toEqual(["caption", "small", "body", "lead", "title", "heading", "display"]);
+  });
+  it("RTL logique : plus de classe physique (ml/mr/pl/pr, left/right, text-left/right, border-l/r, rounded-l/r) hors exceptions (D101)", () => {
+    // L'interface est en RTL (le français bascule en LTR par `fr.css`) : `ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`,
+    // `text-start`/`text-end`, `border-s`/`border-e`, `rounded-s`/`rounded-e` suivent le sens de lecture.
+    // `mr-` (côté droit en RTL) devient `ms-`, `ml-` devient `me-`, `right-` devient `start-`, `text-left` devient `text-end`.
+    const PHYSICAL = /(?<![-\w/.])(?:[a-z0-9-]+:)*(?:-?(?:ml|mr|pl|pr|left|right)-(?=[\d[]|px\b|auto\b|full\b)|text-(?:left|right)\b|border-[lr](?![a-z])|rounded-(?:l|r|tl|tr|bl|br)(?![a-z]))/g;
+    // Exceptions, par fichier ("*" : toutes les classes physiques du fichier), toujours motivées :
+    const EXCEPTIONS: Record<string, RegExp | "*"> = {
+      "src/components/finance/PrintReportModal.tsx": "*", // aperçu d'une feuille imprimée : mise en page fixe (bleu nuit, arabe), comme src/print/
+      "src/components/activities/ActivityPrintModal.tsx": "*", // idem
+      "src/components/staff/StaffBadgeModal.tsx": /^text-right$/, // zone d'impression du badge : fixe
+      "src/screens/AttendanceScreen.tsx": "*", // quatre coins du viseur du scanner : symétriques, dessin indépendant du sens de lecture
+      "src/screens/LoginScreen.tsx": "*", // champ d'identifiant `dir="ltr"` : texte latin aligné à droite sous un libellé arabe
+      "src/screens/modals/ProfileModal.tsx": "*", // idem (champ `dir="ltr"`)
+      "src/components/settings/UserFormModal.tsx": /^text-left$/, // identifiant et mot de passe : codes latins alignés à gauche
+      "src/components/settings/GeneralSettingsSection.tsx": /^text-left$/, // courriel, site : texte latin aligné à gauche
+    };
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    // Le garde-fou lui-même.
+    for (const bad of ["ml-2", "mr-auto", "pl-3", "pr-10", "right-3", "left-0", "-right-1", "text-left", "text-right", "border-l", "border-r-4", "rounded-tl-md", "sm:pr-4", "hover:text-left"]) expect(code(`className="x ${bad} y"`).match(PHYSICAL), bad).not.toBeNull();
+    for (const ok of ["ms-2", "me-auto", "ps-3", "pe-10", "start-3", "end-0", "text-start", "text-end", "border-s", "border-e-4", "rounded-ss-md", "border-line-soft", "text-center", "scroll-left", "pl", "right-aligned"]) expect(code(`className="x ${ok} y"`).match(PHYSICAL), ok).toBeNull();
+    const offenders = all
+      .filter(([f]) => !f.startsWith("src/print/") && !f.startsWith("src/i18n-test/"))
+      .flatMap(([f, src]) => {
+        const exception = EXCEPTIONS[f.split("\\").join("/")];
+        return (code(src).match(PHYSICAL) ?? [])
+          .filter((m) => exception !== "*" && !(exception && exception.test(m.replace(/^(?:[a-z0-9-]+:)*/, ""))))
+          .map((m) => `${f} : ${m}`);
+      });
+    expect(offenders).toEqual([]);
+  });
+  it("cibles tactiles : Button sm/xs, pastilles, boutons segmentés, pagination, fermeture de fenêtre et de message ont une zone de 44 px (touch-target, D101)", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/@utility touch-target \{[\s\S]*max\(100%, 44px\)[\s\S]*max\(100%, 44px\)/);
+    const has = (file: string, near: RegExp) => expect(readFileSync(file, "utf8").split("\n").some((l) => near.test(l) && l.includes("touch-target")), `${file} : ${near}`).toBe(true);
+    has("src/ui/Button.tsx", /\bsm:/);
+    has("src/ui/Button.tsx", /\bxs:/);
+    has("src/ui/SegmentedControl.tsx", /min-h-9 px-3 rounded-full/);
+    has("src/ui/SegmentedControl.tsx", /min-h-\[38px\]/);
+    has("src/ui/Pagination.tsx", /const btn/);
+    has("src/ui/Modal.tsx", /w-10 h-10 inline-flex/);
+    has("src/ui/Toast.tsx", /w-9 h-9 shrink-0/);
   });
 });

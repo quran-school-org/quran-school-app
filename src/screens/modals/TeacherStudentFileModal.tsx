@@ -72,7 +72,7 @@ export default function TeacherStudentFileModal() {
           {canEdit && (
             <>
               <section className="rounded-2xl border border-line bg-white p-4 flex flex-col gap-3" aria-labelledby="tsf-status">
-                <h3 id="tsf-status" className="m-0 flex items-center gap-2 font-sans font-semibold text-[15px] text-primary pb-2 border-b border-line-soft">
+                <h3 id="tsf-status" className="m-0 flex items-center gap-2 font-sans font-semibold text-body text-primary pb-2 border-b border-line-soft">
                   <BookOpen className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />تعديل الحالة الراهنة وبيانات التدريس
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -98,7 +98,7 @@ export default function TeacherStudentFileModal() {
               </section>
 
               <form onSubmit={handleSaveDailyProgress} className="rounded-2xl border border-line bg-white p-4 flex flex-col gap-3" aria-labelledby="tsf-daily">
-                <h3 id="tsf-daily" className="m-0 flex items-center gap-2 font-sans font-semibold text-[15px] text-primary pb-2 border-b border-line-soft">
+                <h3 id="tsf-daily" className="m-0 flex items-center gap-2 font-sans font-semibold text-body text-primary pb-2 border-b border-line-soft">
                   <Award className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />تسجيل تقييم ومتابعة الحفظ اليومي
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -116,7 +116,7 @@ export default function TeacherStudentFileModal() {
                   </FormField>
                 </div>
                 <fieldset className="m-0 p-0 border-0 flex flex-col gap-1.5">
-                  <legend className="text-[13.5px] font-semibold text-ink-2 mb-1.5">التقييم والتقدير اليومي</legend>
+                  <legend className="text-small font-semibold text-ink-2 mb-1.5">التقييم والتقدير اليومي</legend>
                   <div className="flex flex-wrap gap-2">
                     {(["ممتاز", "جيد جداً", "جيد", "مقبول", "ضعيف"] as const).map((r) => (
                       <button
@@ -124,7 +124,7 @@ export default function TeacherStudentFileModal() {
                         type="button"
                         aria-pressed={progressRating === r}
                         onClick={() => setProgressRating(r)}
-                        className={cx("min-h-11 px-4 rounded-[10px] border text-[13.5px] font-semibold cursor-pointer transition-colors", progressRating === r ? "bg-primary border-primary text-white" : "bg-white border-line text-ink-2 hover:border-ink-4")}
+                        className={cx("min-h-11 px-4 rounded-[10px] border text-small font-semibold cursor-pointer transition-colors", progressRating === r ? "bg-primary border-primary text-white" : "bg-white border-line text-ink-2 hover:border-ink-4")}
                       >
                         {r}
                       </button>
@@ -144,7 +144,7 @@ export default function TeacherStudentFileModal() {
 
         <section className="lg:col-span-5 rounded-2xl border border-line bg-white p-4 flex flex-col gap-3 max-h-[70vh] overflow-hidden" aria-labelledby="tsf-history">
           <div className="flex justify-between items-center pb-2 border-b border-line-soft">
-            <h3 id="tsf-history" className="m-0 flex items-center gap-2 font-sans font-semibold text-[15px] text-primary">
+            <h3 id="tsf-history" className="m-0 flex items-center gap-2 font-sans font-semibold text-body text-primary">
               <FileText className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />تاريخ وسجلات الحفظ السابقة
             </h3>
             <Pill tone="neutral">{records.length} سجلات</Pill>
@@ -161,18 +161,18 @@ export default function TeacherStudentFileModal() {
                       <span aria-hidden="true" className="absolute top-2 -start-[7px] w-3 h-3 rounded-full bg-gold border-2 border-white" />
                       <div className="rounded-xl border border-line-soft bg-surface-2 p-3 flex flex-col gap-2">
                         <div className="flex justify-between items-center gap-2">
-                          <span className="text-[12.5px] text-ink-2 font-semibold">{formatDateAr(record.date)}</span>
+                          <span className="text-small text-ink-2 font-semibold">{formatDateAr(record.date)}</span>
                           <span className="flex items-center gap-1.5">
                             <Pill tone={RATING_TONE[record.rating] || "danger"}>{record.rating}</Pill>
                             <IconButton size="sm" tone="danger" label="حذف هذا السجل" onClick={() => handleDeleteDailyProgress(record.id)}><Trash2 className="w-3.5 h-3.5" strokeWidth={1.75} /></IconButton>
                           </span>
                         </div>
-                        <div className="flex flex-col gap-1 text-[13px] text-ink-2">
+                        <div className="flex flex-col gap-1 text-small text-ink-2">
                           {record.memorizationPart && <p className="m-0"><strong className="text-primary">الحفظ الجديد:</strong> {record.memorizationPart}</p>}
                           {record.revisionPart && <p className="m-0"><strong className="text-primary">مراجعة قريبة:</strong> {record.revisionPart}</p>}
                           {record.oldRevisionPart && <p className="m-0"><strong className="text-ink">مراجعة بعيدة:</strong> {record.oldRevisionPart}</p>}
                           {record.notes && (
-                            <p className="m-0 mt-1 rounded-lg border border-dashed border-line-strong bg-white p-2 text-[12.5px] text-ink-2 leading-relaxed">
+                            <p className="m-0 mt-1 rounded-lg border border-dashed border-line-strong bg-white p-2 text-small text-ink-2 leading-relaxed">
                               <strong className="block text-ink mb-0.5">ملاحظات التقييم:</strong>
                               {record.notes}
                             </p>

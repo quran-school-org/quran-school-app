@@ -75,9 +75,9 @@ export default function TeacherDashboardScreen() {
       {focus && (
         <Card data-card="today-session" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4" aria-labelledby="today-title">
           <div className="flex flex-col gap-2 min-w-0">
-            <h2 id="today-title" className="m-0 font-display font-semibold text-[20px] text-primary">{session ? "حصة اليوم" : "لا حصة اليوم"}</h2>
-            <p className="m-0 font-semibold text-[17px] text-ink">{focus.name}</p>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13.5px] text-ink-2">
+            <h2 id="today-title" className="m-0 font-display font-semibold text-title text-primary">{session ? "حصة اليوم" : "لا حصة اليوم"}</h2>
+            <p className="m-0 font-semibold text-lead text-ink">{focus.name}</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-small text-ink-2">
               <span className="inline-flex items-center gap-1.5">
                 <Clock3 className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />
                 {session && session.info.start !== null ? <Ltr>{formatClock(session.info.start)}{session.info.end !== null ? ` - ${formatClock(session.info.end)}` : ""}</Ltr> : focus.schedule}
@@ -112,9 +112,9 @@ export default function TeacherDashboardScreen() {
                 const classStudents = students.filter((s) => s.classId === cls.id && !s.isArchived);
                 return (
                   <li key={cls.id} className="p-3.5 rounded-xl border border-line bg-white flex flex-col gap-2">
-                    <span className="font-semibold text-[15px] text-ink">{cls.name}</span>
-                    <span className="flex items-center gap-1.5 text-[12.5px] text-ink-2"><Clock3 className="w-3.5 h-3.5 text-gold-700" strokeWidth={1.75} aria-hidden="true" />{cls.schedule}</span>
-                    <span className="flex justify-between items-center text-[13px]">
+                    <span className="font-semibold text-body text-ink">{cls.name}</span>
+                    <span className="flex items-center gap-1.5 text-small text-ink-2"><Clock3 className="w-3.5 h-3.5 text-gold-700" strokeWidth={1.75} aria-hidden="true" />{cls.schedule}</span>
+                    <span className="flex justify-between items-center text-small">
                       <span className="text-ink-3">عدد الطلاب</span>
                       <Pill tone="primary">{classStudents.length} / {cls.maxStudents} طالب</Pill>
                     </span>
@@ -156,14 +156,14 @@ export default function TeacherDashboardScreen() {
                       </span>
                       <span className="flex flex-col gap-0.5 min-w-0 flex-1 md:flex-none md:w-44">
                         <span className="font-semibold text-ink">{student.fullName}</span>
-                        <span className="text-[12.5px] text-ink-3">{className}</span>
-                        <span className="md:hidden flex flex-wrap items-center gap-x-3 text-[13px] text-ink-2">
+                        <span className="text-small text-ink-3">{className}</span>
+                        <span className="md:hidden flex flex-wrap items-center gap-x-3 text-small text-ink-2">
                           <span><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</span>
                           <span>{student.currentSurah || "غير محدد"}</span>
                           <span>الحضور <Ltr>{attRate}%</Ltr></span>
                         </span>
                       </span>
-                      <span className="hidden md:flex items-center gap-6 flex-1 min-w-0 text-[14px] text-ink-2">
+                      <span className="hidden md:flex items-center gap-6 flex-1 min-w-0 text-body text-ink-2">
                         <span className="whitespace-nowrap w-16"><strong className="tabular-nums text-primary">{student.hizbCount}</strong> حزب</span>
                         <span className="flex-1 min-w-[6rem]">{student.currentSurah || "غير محدد"}</span>
                         <span className="flex items-center gap-2 w-36 shrink-0">

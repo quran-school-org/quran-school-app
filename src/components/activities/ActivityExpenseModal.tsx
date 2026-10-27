@@ -59,7 +59,7 @@ export default function ActivityExpenseModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingExpense ? "حفظ التعديلات" : "تسجيل المصروف"}</Button>
+          <Button type="submit" variant="primary">{editingExpense ? "حفظ التغييرات" : "إضافة المصروف"}</Button>
         </>
       }
     >

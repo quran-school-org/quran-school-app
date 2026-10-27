@@ -20,7 +20,7 @@ export default function SettingsTabs() {
           onClick={() => setSubTab("general")}
           role="tab"
           aria-selected={subTab === "general"}
-          className={`min-h-11 px-5 text-[14.5px] font-semibold border-0 border-b-2 bg-transparent cursor-pointer transition-colors ${
+          className={`min-h-11 px-5 text-body font-semibold border-0 border-b-2 bg-transparent cursor-pointer transition-colors ${
             subTab === "general" ? "border-gold text-primary" : "border-transparent text-ink-2 hover:text-ink"
           }`}
           id="btn-subtab-general"
@@ -35,7 +35,7 @@ export default function SettingsTabs() {
           onClick={() => setSubTab("users")}
           role="tab"
           aria-selected={subTab === "users"}
-          className={`min-h-11 px-5 text-[14.5px] font-semibold border-0 border-b-2 bg-transparent cursor-pointer transition-colors ${
+          className={`min-h-11 px-5 text-body font-semibold border-0 border-b-2 bg-transparent cursor-pointer transition-colors ${
             subTab === "users" ? "border-gold text-primary" : "border-transparent text-ink-2 hover:text-ink"
           }`}
           id="btn-subtab-users"

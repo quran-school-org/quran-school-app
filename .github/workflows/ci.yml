@@ -2,9 +2,9 @@
 # AUCUN déploiement ici : la prod se déploie à la main (voir docs/runbooks/).
 name: CI
 
+# Seulement sur les PR (minutes GitHub Actions limitées) : une branche sans PR
+# n'est pas testée ici ; les PR obsolètes sont annulées (concurrency).
 on:
-  push:
-    branches-ignore: [main]
   pull_request:
 
 permissions:

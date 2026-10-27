@@ -56,7 +56,7 @@ export default function ParticipantModal() {
       type="button"
       aria-pressed={partSourceType === type}
       onClick={() => setPartSourceType(type)}
-      className={`py-2 text-[13px] font-bold rounded-xl border transition-all ${
+      className={`py-2 text-small font-bold rounded-xl border transition-all ${
         partSourceType === type ? "bg-primary-100 text-primary-800 border-primary-500" : "bg-sand-50 text-ink-2 border-line"
       }`}
     >
@@ -77,12 +77,12 @@ export default function ParticipantModal() {
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingParticipant ? "حفظ التعديلات" : "تأكيد التسجيل"}</Button>
+          <Button type="submit" variant="primary">{editingParticipant ? "حفظ التغييرات" : "إضافة المشارك"}</Button>
         </>
       }
     >
       <div role="group" aria-labelledby={sourceLabelId} className="flex flex-col gap-1.5">
-        <span id={sourceLabelId} className="text-[13.5px] font-semibold text-ink-2">مصدر بيانات المشارك</span>
+        <span id={sourceLabelId} className="text-small font-semibold text-ink-2">مصدر بيانات المشارك</span>
         <div className="grid grid-cols-3 gap-2">
           {sourceButton("student", "طالب من الجمعية")}
           {sourceButton("staff", "أستاذ / كادر")}
@@ -156,7 +156,7 @@ export default function ParticipantModal() {
                 placeholder="مثال: طالب / محفظ / مؤطر / متطوع / مشارك خارجي..."
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="text-[12.5px] text-ink-3 font-bold self-center ml-1">اقتراحات سريعة:</span>
+                <span className="text-small text-ink-3 font-bold self-center me-1">اقتراحات سريعة:</span>
                 {[
                   "طالب",
                   "محفظ",
@@ -172,7 +172,7 @@ export default function ParticipantModal() {
                     key={r}
                     type="button"
                     onClick={() => setPartCustomRole(r)}
-                    className={`text-[12.5px] px-2 py-1 rounded-lg border transition-all ${
+                    className={`text-small px-2 py-1 rounded-lg border transition-all ${
                       partCustomRole === r
                         ? "bg-primary-600 text-white border-primary-600 font-bold"
                         : "bg-sand-100 hover:bg-sand-200 text-ink-2 border-line"
@@ -208,7 +208,7 @@ export default function ParticipantModal() {
 
       {/* Fee & Payment Section */}
       <div className="bg-sand-50 border border-line rounded-xl p-4 space-y-3">
-        <h4 className="font-bold text-[13px] text-ink">بيانات المساهمة والأداء</h4>
+        <h4 className="font-bold text-small text-ink">بيانات المساهمة والأداء</h4>
 
         <div className="grid grid-cols-2 gap-3">
           <FormField label="المبلغ المطلوب (د.م)">

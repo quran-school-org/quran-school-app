@@ -22,7 +22,7 @@ export type SyncState = "synced" | "syncing" | "error";
 export function SyncPill({ state }: { state: SyncState }) {
   if (state !== "error") return null;
   return (
-    <span role="status" data-sync-error title="تعذّرت مزامنة البيانات؛ العمل جارٍ على النسخة المحلية" className="inline-flex items-center gap-2 h-10 px-3.5 rounded-full text-[13.5px] font-semibold whitespace-nowrap bg-danger-100 text-danger-800">
+    <span role="status" data-sync-error title="تعذّرت مزامنة البيانات؛ العمل جارٍ على النسخة المحلية" className="inline-flex items-center gap-2 h-10 px-3.5 rounded-full text-small font-semibold whitespace-nowrap bg-danger-100 text-danger-800">
       <span aria-hidden="true" className="w-2 h-2 rounded-full bg-danger" />
       غير متصل
     </span>
@@ -70,8 +70,8 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
         )}
         {mobileBrand && <div className="lg:hidden min-w-0 flex-1">{mobileBrand}</div>}
         <div className={cx("flex flex-col gap-0.5 min-w-0", Boolean(mobileBrand) && "hidden lg:flex")}>
-          <span className="text-[13px] text-ink-3">{dateLabel}</span>
-          {season && <span className="text-[15px] font-semibold">الموسم الدراسي {season}</span>}
+          <span className="text-small text-ink-3">{dateLabel}</span>
+          {season && <span className="text-body font-semibold">الموسم الدراسي {season}</span>}
         </div>
       </div>
       <div className={cx("flex items-center gap-2.5 shrink-0", !compact && "flex-wrap")}>
@@ -86,7 +86,7 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
         >
           <Bell className="w-5 h-5" strokeWidth={1.75} aria-hidden="true" />
           {unread > 0 && (
-            <span className="absolute -top-1.5 -start-1.5 min-w-[22px] h-[22px] px-1.5 box-border rounded-full bg-danger text-white text-[11.5px] font-bold inline-flex items-center justify-center tabular-nums border-2 border-surface">
+            <span className="absolute -top-1.5 -start-1.5 min-w-[22px] h-[22px] px-1.5 box-border rounded-full bg-danger text-white text-caption font-bold inline-flex items-center justify-center tabular-nums border-2 border-surface">
               {unread}
             </span>
           )}
@@ -101,8 +101,8 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
         >
           <InitialAvatar name={userName} tone="night" size={40} />
           <span className="hidden md:flex flex-col leading-[1.3] min-w-0">
-            <span className="text-[12.5px] text-ink-3">{userRole}</span>
-            <span className="text-[14.5px] font-semibold text-ink max-w-[16rem] truncate">{userName}</span>
+            <span className="text-small text-ink-3">{userRole}</span>
+            <span className="text-body font-semibold text-ink max-w-[16rem] truncate">{userName}</span>
           </span>
         </button>
         {!compact && (
@@ -110,7 +110,7 @@ export function Topbar({ dateLabel, season, sync, unread, onBell, userName, user
             type="button"
             onClick={onLogout}
             aria-label="خروج"
-            className="inline-flex items-center gap-2 h-11 px-3 sm:px-3.5 rounded-xl border border-line bg-transparent text-ink-2 text-[14px] font-semibold cursor-pointer hover:bg-white hover:text-danger hover:border-danger-200 transition-colors"
+            className="inline-flex items-center gap-2 h-11 px-3 sm:px-3.5 rounded-xl border border-line bg-transparent text-ink-2 text-body font-semibold cursor-pointer hover:bg-white hover:text-danger hover:border-danger-200 transition-colors"
           >
             <LogOut className="w-[18px] h-[18px] -scale-x-100" strokeWidth={1.75} aria-hidden="true" />
             <span className="hidden sm:inline">خروج</span>

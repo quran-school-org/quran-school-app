@@ -24,7 +24,7 @@ export default function QuotaBanner() {
       >
         قاعدة البيانات السحابية تجاوزت حصة الاستخدام المسموح بها لهذا اليوم. <strong>بياناتك آمنة ومحفوظة محلياً</strong> في متصفحك:
         يمكنك متابعة العمل، وستتم مزامنة التغييرات تلقائياً عند إعادة تعيين الحصة أو ترقية الخطة.
-        <span className="block mt-1 text-[12.5px] font-semibold" dir="ltr">Project: {firebaseWebConfig.projectId} · Database: {firestoreDatabaseId}</span>
+        <span className="block mt-1 text-small font-semibold" dir="ltr">Project: {firebaseWebConfig.projectId} · Database: {firestoreDatabaseId}</span>
       </ActionAlert>
     </div>
   );

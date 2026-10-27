@@ -29,13 +29,13 @@ export default function LoginScreen() {
         <GeometricPattern opacity={0.16} fade="bottom" />
         <div className="relative flex items-center gap-3">
           <Emblem size={48} />
-          <span className="font-display font-semibold text-[22px] text-white">{schoolName}</span>
+          <span className="font-display font-semibold text-title text-white">{schoolName}</span>
         </div>
         <div className="relative flex flex-col gap-4 max-w-md">
-          <p className="m-0 font-quran text-[30px] leading-[1.9] text-gold-100">«خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ»</p>
-          <p className="m-0 text-[15px] text-night-muted leading-relaxed">منظومة موحدة لمتابعة الحفظ والتجويد، الحضور، الرسوم والأنشطة في الكتّاب.</p>
+          <p className="m-0 font-quran text-heading leading-[1.9] text-gold-100">«خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ»</p>
+          <p className="m-0 text-body text-night-muted leading-relaxed">منظومة موحدة لمتابعة الحفظ والتجويد، الحضور، الرسوم والأنشطة في الكتّاب.</p>
         </div>
-        <span className="relative text-[13px] text-night-muted">نظام إدارة حلقات تحفيظ القرآن الكريم</span>
+        <span className="relative text-small text-night-muted">نظام إدارة حلقات تحفيظ القرآن الكريم</span>
       </aside>
 
       <main className="flex items-center justify-center p-4 sm:p-8">
@@ -49,8 +49,8 @@ export default function LoginScreen() {
                 <img src="/logo.svg" alt="" className="w-full h-full object-contain" />
               )}
             </div>
-            <h1 className="m-0 font-display font-bold text-[28px] sm:text-[32px] leading-tight text-primary">{schoolName}</h1>
-            <p className="m-0 text-[14.5px] text-ink-2">بوابة الدخول الموحدة لإدارة شؤون حفظ وتجويد القرآن الكريم</p>
+            <h1 className="m-0 font-display font-bold text-heading sm:text-heading leading-tight text-primary">{schoolName}</h1>
+            <p className="m-0 text-body text-ink-2">بوابة الدخول الموحدة لإدارة شؤون حفظ وتجويد القرآن الكريم</p>
           </div>
 
           <div className="rounded-3xl border border-line bg-surface p-5 sm:p-7 flex flex-col gap-4">

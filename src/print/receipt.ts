@@ -3,7 +3,7 @@
  * paramètres de l'école (nom, logo, cachet). Toute donnée est échappée (C-01).
  */
 import { escapeHtml } from "../security/html";
-import { formatMoney } from "../utils/format";
+import { formatMoney } from "../format/money";
 import type { Payment, Student, SystemSettings } from "../types";
 import { EMBLEM_SVG } from "./docStyles";
 

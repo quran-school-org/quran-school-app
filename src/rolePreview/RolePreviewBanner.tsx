@@ -14,7 +14,7 @@ export default function RolePreviewBanner() {
   return (
     <div className="px-4 sm:px-8 pt-3 max-w-[1240px] w-full box-border" data-role-preview="banner">
       <div role="status" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-xl border border-gold bg-gold-100 px-3.5 py-2 text-gold-800">
-        <span className="flex items-start gap-2 min-w-0 text-[13.5px] font-semibold leading-relaxed">
+        <span className="flex items-start gap-2 min-w-0 text-small font-semibold leading-relaxed">
           <FlaskConical className="w-4 h-4 mt-1 shrink-0" strokeWidth={1.75} aria-hidden="true" />
           <span className="min-w-0 break-words" data-role-preview-text="">{bannerText}</span>
         </span>
@@ -22,7 +22,7 @@ export default function RolePreviewBanner() {
           العودة إلى مدير
         </Button>
       </div>
-      {error && <p role="alert" className="m-0 mt-1.5 text-[12.5px] font-semibold text-danger">{error}</p>}
+      {error && <p role="alert" className="m-0 mt-1.5 text-small font-semibold text-danger">{error}</p>}
     </div>
   );
 }

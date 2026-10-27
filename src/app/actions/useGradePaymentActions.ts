@@ -8,7 +8,7 @@ import { getYearAndMonthFromDate } from "../helpers";
 import type { DerivedScope } from "../scope";
 import { csvCell } from "../../utils/csv";
 import { parseGrade } from "../../utils/gradeMention";
-import { formatMoney } from "../../utils/format";
+import { formatMoney } from "../../format/money";
 import { useConfirm, useToast } from "../../ui";
 
 export function useGradePaymentActions(s: DerivedScope) {

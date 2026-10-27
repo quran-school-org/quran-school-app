@@ -5,7 +5,7 @@
 import { Plus, Printer } from "lucide-react";
 import { useFinance } from "./FinanceContext";
 import { Button, KpiGrid, KpiTile, PageHeader } from "../../ui";
-import { formatNumber } from "../../utils/format";
+import { formatNumber } from "../../format/money";
 
 const fmt = (n: number) => formatNumber(n);
 
@@ -55,7 +55,7 @@ export default function FinanceHeader() {
           hintTone={netBalance >= 0 ? "success" : "danger"}
         />
         <KpiTile size="md" label="توزيع الأرصدة الحالية">
-          <dl className="m-0 mt-1 flex flex-col gap-1 text-[14px]">
+          <dl className="m-0 mt-1 flex flex-col gap-1 text-body">
             <div className="flex justify-between gap-3"><dt className="text-ink-2">الصندوق</dt><dd className="m-0 font-semibold tabular-nums"><bdi>{fmt(cashBoxNetBalance)}</bdi> د.م</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-ink-2">البنك</dt><dd className="m-0 font-semibold tabular-nums"><bdi>{fmt(bankAccountNetBalance)}</bdi> د.م</dd></div>
           </dl>

@@ -26,7 +26,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
             {...(o.attrs || {})}
             className={cx(
               "inline-flex items-center justify-center gap-1.5 border-0 rounded-lg font-semibold cursor-pointer transition-colors",
-              size === "md" ? "min-h-[38px] px-3.5 text-[13.5px]" : "min-h-8 px-2.5 text-[12.5px]",
+              size === "md" ? "min-h-[38px] px-3.5 text-small touch-target" : "min-h-8 px-2.5 text-small touch-target",
               on ? "bg-white text-primary shadow-[0_1px_2px_color-mix(in_srgb,var(--color-night)_8%,transparent)]" : "bg-transparent text-ink-2 hover:text-ink",
             )}
           >
@@ -52,7 +52,7 @@ export function FilterChips<T extends string>({ options, value, onChange, label,
             onClick={() => onChange(o.value)}
             {...(o.attrs || {})}
             className={cx(
-              "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-full border text-[13.5px] font-semibold cursor-pointer transition-colors",
+              "inline-flex items-center gap-1.5 min-h-9 px-3 rounded-full border text-small font-semibold cursor-pointer transition-colors touch-target",
               on ? "bg-primary text-white border-primary" : "bg-surface text-ink border-line-strong hover:bg-surface-2",
             )}
           >

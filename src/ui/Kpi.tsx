@@ -38,15 +38,15 @@ const HINT = {
 export function KpiTile({ label, value, unit, hint, hintTone = "muted", children, className, size = "lg" }: KpiTileProps) {
   return (
     <div className={cx("bg-surface px-[22px] py-5 flex flex-col gap-1.5 min-w-0", className)}>
-      <span className="text-[14px] text-ink-2">{label}</span>
+      <span className="text-body text-ink-2">{label}</span>
       {value !== undefined && (
-        <span className={cx("font-bold leading-[1.1] tabular-nums text-ink", size === "lg" ? "text-[38px]" : "text-[28px]")}>
+        <span className={cx("font-bold leading-[1.1] tabular-nums text-ink", size === "lg" ? "text-display" : "text-heading")}>
           {value}
-          {unit && <span className="text-[18px] font-semibold text-ink-2 ms-1.5">{unit}</span>}
+          {unit && <span className="text-lead font-semibold text-ink-2 ms-1.5">{unit}</span>}
         </span>
       )}
       {children}
-      {hint && <span className={cx("text-[13.5px]", HINT[hintTone])}>{hint}</span>}
+      {hint && <span className={cx("text-small", HINT[hintTone])}>{hint}</span>}
     </div>
   );
 }

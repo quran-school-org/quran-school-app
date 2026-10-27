@@ -105,8 +105,8 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
           <div className="flex items-center gap-3 min-w-0">
             {icon && <span aria-hidden="true" className={cx("inline-flex shrink-0", tone === "night" ? "text-gold" : "text-gold-700")}>{icon}</span>}
             <div className="min-w-0">
-              <h2 id={titleId} className={cx("m-0 font-sans font-semibold text-[20px] sm:text-[22px] leading-snug", tone === "night" ? "text-gold-100" : "text-primary")}>{title}</h2>
-              {subtitle && <p className={cx("m-0 mt-0.5 text-[13.5px]", tone === "night" ? "text-night-muted" : "text-ink-2")}>{subtitle}</p>}
+              <h2 id={titleId} className={cx("m-0 font-sans font-semibold text-title sm:text-title leading-snug", tone === "night" ? "text-gold-100" : "text-primary")}>{title}</h2>
+              {subtitle && <p className={cx("m-0 mt-0.5 text-small", tone === "night" ? "text-night-muted" : "text-ink-2")}>{subtitle}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -118,7 +118,7 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
                 onClick={onClose}
                 aria-label="إغلاق"
                 title="إغلاق"
-                className={cx("w-10 h-10 inline-flex items-center justify-center rounded-xl border cursor-pointer transition-colors", tone === "night" ? "border-night-line text-night-text hover:bg-white/10" : "border-line bg-white text-ink-2 hover:border-primary hover:text-primary")}
+                className={cx("touch-target w-10 h-10 inline-flex items-center justify-center rounded-xl border cursor-pointer transition-colors", tone === "night" ? "border-night-line text-night-text hover:bg-white/10" : "border-line bg-white text-ink-2 hover:border-primary hover:text-primary")}
               >
                 <X className="w-5 h-5" strokeWidth={1.75} />
               </button>

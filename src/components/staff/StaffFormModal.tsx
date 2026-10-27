@@ -105,11 +105,11 @@ export default function StaffFormModal() {
       subtitle="أدخل المعلومات الإدارية والمهنية وتفاصيل التعاقد"
       onClose={close}
       onSubmit={handleSubmit}
-      bodyClassName="space-y-4 text-[13px]"
+      bodyClassName="space-y-4 text-small"
       footer={
         <>
           <Button onClick={close}>إلغاء</Button>
-          <Button type="submit" variant="primary">{editingTeacher ? "حفظ التغييرات" : "تسجيل الكادر"}</Button>
+          <Button type="submit" variant="primary">{editingTeacher ? "حفظ التغييرات" : "إضافة الكادر"}</Button>
         </>
       }
     >
@@ -117,9 +117,9 @@ export default function StaffFormModal() {
       {editingTeacher?.isFromSettings && (
         <div className="bg-primary-50 border border-primary-200 rounded-xl p-3.5 flex items-start gap-3 text-primary-900">
           <Sparkles className="w-5 h-5 text-primary-600 shrink-0 mt-0.5" />
-          <div className="text-[13px] space-y-1">
+          <div className="text-small space-y-1">
             <p className="font-bold">منصب قيادي مربوط تلقائياً من وثيقة الإعدادات</p>
-            <p className="text-[12.5px] text-primary-700 leading-relaxed">
+            <p className="text-small text-primary-700 leading-relaxed">
               هذا المنصب ({editingTeacher.roleTitle}) يتم استيراد اسمه وصلاحياته مباشرة من صفحة <strong>إعدادات الجمعية والمدرسة</strong>. يمكنك هنا استكمال وتعديل رقم الهاتف، بطاقة التعريف، الصورة، وباقي البيانات الإدارية.
             </p>
           </div>
@@ -128,7 +128,7 @@ export default function StaffFormModal() {
 
       {/* Category Selector Tabs inside modal */}
       <div role="group" aria-labelledby={categoryLabelId} className="space-y-1.5">
-        <span id={categoryLabelId} className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
+        <span id={categoryLabelId} className="block text-small font-semibold text-ink-2 mb-1.5">
           فئة الكادر / نوع الوظيفة <span className="text-danger-500">*</span>
         </span>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -141,14 +141,14 @@ export default function StaffFormModal() {
                 key={cat}
                 aria-pressed={isSel}
                 onClick={() => pickCategory(cat)}
-                className={`p-2.5 rounded-xl border text-right transition flex items-center gap-2 ${
+                className={`p-2.5 rounded-xl border text-start transition flex items-center gap-2 ${
                   isSel
                     ? `${cfg.bg} ${cfg.border} border-2 shadow-2xs font-bold ${cfg.text}`
                     : "border-line bg-white hover:bg-sand-50 text-ink-2"
                 }`}
               >
                 <span className="text-base">{cfg.icon}</span>
-                <span className="text-[13px]">{cat}</span>
+                <span className="text-small">{cat}</span>
               </button>
             );
           })}
@@ -169,7 +169,7 @@ export default function StaffFormModal() {
               <button
                 type="button"
                 onClick={() => setFormPhoto("")}
-                className="absolute -top-1 -right-1 bg-danger-600 text-white rounded-full p-0.5 hover:bg-danger-700 shadow"
+                className="absolute -top-1 -start-1 bg-danger-600 text-white rounded-full p-0.5 hover:bg-danger-700 shadow"
                 title="إزالة الصورة"
                 aria-label="إزالة الصورة"
               >
@@ -196,8 +196,8 @@ export default function StaffFormModal() {
                 className="hidden"
               />
               <label htmlFor="staff-photo-upload" className="cursor-pointer block">
-                <p className="font-bold text-ink-2 text-[13px]">اسحب صورة هنا أو انقر لاختيارها</p>
-                <p className="text-[11.5px] text-ink-3 mt-0.5">JPG, PNG (الحد الأقصى 2 ميغابايت)</p>
+                <p className="font-bold text-ink-2 text-small">اسحب صورة هنا أو انقر لاختيارها</p>
+                <p className="text-caption text-ink-3 mt-0.5">JPG, PNG (الحد الأقصى 2 ميغابايت)</p>
               </label>
             </div>
 
@@ -218,7 +218,7 @@ export default function StaffFormModal() {
         {/* Full Name */}
         <FormField
           label={<>الاسم الكامل <span className="text-danger-500">*</span></>}
-          hint={editingTeacher?.isFromSettings ? <span className="text-[11.5px] text-primary-700 font-medium">مستورد من الإعدادات</span> : undefined}
+          hint={editingTeacher?.isFromSettings ? <span className="text-caption text-primary-700 font-medium">مستورد من الإعدادات</span> : undefined}
         >
           {(id) => <Input id={id} type="text" required value={formFullName} onChange={(e) => setFormFullName(e.target.value)} placeholder="مثال: عبد الرحيم السملالي" />}
         </FormField>
@@ -305,7 +305,7 @@ export default function StaffFormModal() {
       {/* Assigned Classes (Only for Teachers / Mentors) */}
       {(formCategory === "أستاذ / محفظ" || formCategory === "مؤطر / مشرف تربوي") && (
         <div role="group" aria-labelledby={classesLabelId} className="space-y-2 bg-primary-50/40 p-3.5 rounded-xl border border-primary-100">
-          <span id={classesLabelId} className="block text-[13.5px] font-semibold text-ink-2 mb-1.5">
+          <span id={classesLabelId} className="block text-small font-semibold text-ink-2 mb-1.5">
             الفصول والحلقات الدراسية المسندة:
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-36 overflow-y-auto">
@@ -326,11 +326,11 @@ export default function StaffFormModal() {
                     }}
                     className="rounded border-line-strong text-primary-600 focus:ring-primary-500 w-4 h-4 mt-0.5"
                   />
-                  <div className="text-right">
-                    <p className="font-bold text-ink-2 text-[13px]">{c.name}</p>
-                    <p className="text-[12.5px] text-ink-3 font-mono">{c.schedule}</p>
+                  <div className="text-start">
+                    <p className="font-bold text-ink-2 text-small">{c.name}</p>
+                    <p className="text-small text-ink-3 font-mono">{c.schedule}</p>
                     {isAssignedToOther && (
-                      <span className="inline-block text-[11.5px] bg-gold-50 text-gold-700 px-1 rounded mt-0.5">
+                      <span className="inline-block text-caption bg-gold-50 text-gold-700 px-1 rounded mt-0.5">
                         مسند لمعلم آخر
                       </span>
                     )}

@@ -17,7 +17,7 @@ export default function ThemePicker() {
           <Palette className="w-4 h-4 text-primary-600" aria-hidden="true" />
           <span>ألوان التطبيق</span>
         </h3>
-        <p className="m-0 mt-1 text-[12.5px] text-ink-3">
+        <p className="m-0 mt-1 text-small text-ink-3">
           {canUpdate
             ? "تظهر الألوان المختارة لجميع مستخدمي هذه المدرسة. المعاينة فورية، ولا يُعتمد الاختيار إلا بعد الحفظ."
             : "تظهر هذه الألوان لجميع مستخدمي هذه المدرسة. تغييرها من صلاحيات مدير المدرسة."}
@@ -56,7 +56,7 @@ export default function ThemePicker() {
                 </span>
               </span>
               <span className="flex items-center justify-between gap-2 min-h-6">
-                <span className="text-[13px] font-semibold text-ink leading-tight">{t.name}</span>
+                <span className="text-small font-semibold text-ink leading-tight">{t.name}</span>
                 {on && (
                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white shrink-0" aria-hidden="true">
                     <Check className="w-3.5 h-3.5" strokeWidth={2.5} />

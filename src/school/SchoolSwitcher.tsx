@@ -34,7 +34,7 @@ export default function SchoolSwitcher({ block }: { block?: boolean } = {}) {
         {options.map((s) => (
           <option key={s.id} value={s.id}>{s.name || s.id}</option>
         ))}
-        <option value={PICKER_VALUE}>{isSuperAdmin ? "كل المدارس…" : "اختيار مدرسة…"}</option>
+        <option value={PICKER_VALUE}>{isSuperAdmin ? "كل المدارس..." : "اختيار مدرسة..."}</option>
       </Select>
     </label>
   );

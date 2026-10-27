@@ -166,7 +166,7 @@ export function ActionMenu({ label, items, className, "data-menu": dataMenu }: {
                 data-action={it.action}
                 onClick={() => { close(true); it.onClick(); }}
                 className={cx(
-                  "w-full flex items-center gap-2.5 min-h-11 px-4 text-start text-[14px] bg-transparent border-0 cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                  "w-full flex items-center gap-2.5 min-h-11 px-4 text-start text-body bg-transparent border-0 cursor-pointer hover:bg-surface-2 focus-visible:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed",
                   it.tone === "danger" ? "text-danger" : "text-ink",
                 )}
               >
