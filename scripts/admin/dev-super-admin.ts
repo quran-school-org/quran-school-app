@@ -42,7 +42,7 @@
  *
  * Usage (émulateurs) :
  *   firebase emulators:exec --only firestore,auth --project demo-quran-school \
- *     "npx tsx scripts/admin/dev-super-admin.ts --project=demo-quran-school --username=superadmin_melik --apply"
+ *     "npx tsx scripts/admin/dev-super-admin.ts --project=demo-quran-school --username=superadmin_demo --apply"
  * Projet de dev : uniquement par le workflow ops.yml (action dev-super-admin, D80).
  */
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -64,7 +64,7 @@ import { NEW_ACCOUNTS_EMAIL_DOMAIN, isValidUsername, loginEmailCandidates, norma
 export const FORBIDDEN_PROJECT_IDS = ["gen-lang-client-0481880143"];
 
 /** Nom complet par défaut (compte du propriétaire sur le dev, D80). */
-export const DEFAULT_FULL_NAME = "Melik Zaanouni";
+export const DEFAULT_FULL_NAME = "مشرف عام تجريبي";
 /** 4 groupes de 4 caractères : 19 caractères (≥ 16 exigés). */
 export const SUPER_ADMIN_PASSWORD_GROUPS = 4;
 const SOURCE = "dev-super-admin";

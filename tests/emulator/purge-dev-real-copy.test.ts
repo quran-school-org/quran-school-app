@@ -86,7 +86,7 @@ beforeAll(async () => {
   await admin.db.doc("schools/test1234").set({ name: "école de test (fixtures)", slug: "test1234", status: "active" });
   await admin.db.doc("schools/test1234/students/DEMO-1").set({ schoolId: "test1234", fullName: "طالب تجريبي", demoData: true });
   await extraAccount("test_admin", { schools: ["test1234"], lastSchoolId: "test1234" });
-  await extraAccount("superadmin_melik", { claim: true });
+  await extraAccount("superadmin_demo", { claim: true });
   await extraAccount("super_alfajr", { claim: true, schools: [PURGE_SCHOOL_ID], lastSchoolId: PURGE_SCHOOL_ID });
   await extraAccount("orphan_auth", { usersDoc: false, registry: false });
   await extraAccount("orphan_doc", { auth: false });
@@ -180,7 +180,7 @@ describe("purge", () => {
     // Rapport : resume.json seul, sans mot de passe ni nom.
     const dir = join(out, readdirSync(out)[0]);
     expect(readdirSync(dir)).toEqual(["resume.json"]);
-    expect(readFileSync(join(dir, "resume.json"), "utf8")).not.toMatch(/orphan_|khalid|superadmin_melik/);
+    expect(readFileSync(join(dir, "resume.json"), "utf8")).not.toMatch(/orphan_|khalid|superadmin_demo/);
     expect(TENANT_COLLECTIONS.every((c) => LEGACY_ROOT_COLLECTIONS.includes(c))).toBe(true);
   });
 
@@ -189,10 +189,10 @@ describe("purge", () => {
     test1234Before = await dump(admin.db.doc("schools/test1234"));
     usersBefore = (await admin.db.collection("users").get()).size;
     const all = (await admin.auth.listUsers(1000)).users.map((u) => u.uid);
-    kept = [uidOf.superadmin_melik, uidOf.super_alfajr, uidOf.test_admin, await authUid("khalid_tazi"), await authUid("dir_annour"), await authUid("prof_annour")];
+    kept = [uidOf.superadmin_demo, uidOf.super_alfajr, uidOf.test_admin, await authUid("khalid_tazi"), await authUid("dir_annour"), await authUid("prof_annour")];
     removed = all.filter((u) => !kept.includes(u));
     expect(removed.length).toBeGreaterThan(3);
-    const registryKeptBefore = await Promise.all(["khalid_tazi", "dir_annour", "prof_annour", "test_admin", "superadmin_melik", "super_alfajr"].map(async (n) => JSON.stringify((await admin.db.doc(`usernames/${n}`).get()).data())));
+    const registryKeptBefore = await Promise.all(["khalid_tazi", "dir_annour", "prof_annour", "test_admin", "superadmin_demo", "super_alfajr"].map(async (n) => JSON.stringify((await admin.db.doc(`usernames/${n}`).get()).data())));
 
     const out = mkdtempSync(join(tmpdir(), "purge-apply-"));
     const { summary } = await runPurgeDevRealCopy(admin.db, admin.auth, { apply: true, outDir: out });
@@ -222,14 +222,14 @@ describe("purge", () => {
       expect(await authExists(uid), uid).toBe(false);
       expect((await admin.db.doc(`users/${uid}`).get()).exists, uid).toBe(false);
     }
-    expect((await admin.auth.getUser(uidOf.superadmin_melik)).customClaims).toEqual({ superAdmin: true });
+    expect((await admin.auth.getUser(uidOf.superadmin_demo)).customClaims).toEqual({ superAdmin: true });
     expect((await admin.auth.getUser(uidOf.super_alfajr)).customClaims).toEqual({ superAdmin: true });
     const regs = (await admin.db.collection("usernames").get()).docs;
     expect(regs.map((d) => d.data().uid).sort()).toEqual([...kept].sort());
     expect((await admin.db.doc("usernames/orphan_doc").get()).exists).toBe(false);
     expect((await admin.db.collection("users").get()).size).toBe(kept.length);
     expect(usersBefore).toBeGreaterThan(kept.length);
-    expect(await Promise.all(["khalid_tazi", "dir_annour", "prof_annour", "test_admin", "superadmin_melik", "super_alfajr"].map(async (n) => JSON.stringify((await admin.db.doc(`usernames/${n}`).get()).data())))).toEqual(registryKeptBefore);
+    expect(await Promise.all(["khalid_tazi", "dir_annour", "prof_annour", "test_admin", "superadmin_demo", "super_alfajr"].map(async (n) => JSON.stringify((await admin.db.doc(`usernames/${n}`).get()).data())))).toEqual(registryKeptBefore);
 
     // Membre d'une autre école : seul alfajr disparaît de son profil.
     const khalid = (await admin.db.doc(`users/${await authUid("khalid_tazi")}`).get()).data()!;
@@ -239,11 +239,11 @@ describe("purge", () => {
     expect((await admin.db.doc(`schools/annour/members/${await authUid("khalid_tazi")}`).get()).exists).toBe(true);
     // Super-admin membre d'alfajr : conservé, sans référence à l'école supprimée.
     expect((await admin.db.doc(`users/${uidOf.super_alfajr}`).get()).data()).toMatchObject({ schoolIds: [], lastSchoolId: null });
-    expect((await admin.db.doc(`users/${uidOf.superadmin_melik}`).get()).data()).toMatchObject({ schoolIds: [] });
+    expect((await admin.db.doc(`users/${uidOf.superadmin_demo}`).get()).data()).toMatchObject({ schoolIds: [] });
 
     const dir = join(out, readdirSync(out)[0]);
     expect(readdirSync(dir)).toEqual(["resume.json"]);
-    expect(readFileSync(join(dir, "resume.json"), "utf8")).not.toMatch(/orphan_|khalid|superadmin_melik|test_admin/);
+    expect(readFileSync(join(dir, "resume.json"), "utf8")).not.toMatch(/orphan_|khalid|superadmin_demo|test_admin/);
   });
 
   it("relance : plus rien à supprimer, rien ne change", async () => {
