@@ -47,8 +47,8 @@ export default function StudentDossier({ classes }: { classes: Class[] }) {
             <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />
           </span>
           <div className="min-w-0">
-            <p className="m-0 font-display font-semibold text-[22px] leading-snug text-ink">{st.fullName}</p>
-            <p className="m-0 text-[14px] text-ink-2">{classes.find((c) => c.id === st.classId)?.name || "فصل غير معين"}</p>
+            <p className="m-0 font-display font-semibold text-title leading-snug text-ink">{st.fullName}</p>
+            <p className="m-0 text-body text-ink-2">{classes.find((c) => c.id === st.classId)?.name || "فصل غير معين"}</p>
           </div>
         </div>
         <dl className="m-0 bg-surface-2 rounded-xl px-4 py-1.5">
@@ -74,10 +74,10 @@ export default function StudentDossier({ classes }: { classes: Class[] }) {
           </Button>
         )}
         <div className="flex flex-col gap-2 border-t border-line-soft pt-4">
-          <p className="m-0 text-[14px] font-semibold text-ink">الوثائق والملفات الإدارية المقدمة</p>
+          <p className="m-0 text-body font-semibold text-ink">الوثائق والملفات الإدارية المقدمة</p>
           <ul className="m-0 p-0 list-none flex flex-col gap-1.5">
             {docs.map((d) => (
-              <li key={d.label} className="flex items-center gap-2.5 px-3 min-h-10 rounded-[10px] bg-surface-2 text-[14px]">
+              <li key={d.label} className="flex items-center gap-2.5 px-3 min-h-10 rounded-[10px] bg-surface-2 text-body">
                 {d.ok ? <Check className="w-4 h-4 text-success-700 shrink-0" strokeWidth={2} aria-hidden="true" /> : <X className="w-4 h-4 text-danger shrink-0" strokeWidth={2} aria-hidden="true" />}
                 <span>{d.label}</span>
                 <span className="sr-only">{d.ok ? "مقدّمة" : "ناقصة"}</span>

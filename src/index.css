@@ -16,6 +16,20 @@
   --font-quran: "Amiri", "Traditional Arabic", serif;
   --font-mono: "IBM Plex Sans Arabic", ui-monospace, monospace;
 
+  /*
+   * Échelle typographique (D101) : 7 pas qui remplacent les 23 tailles `text-[Npx]`
+   * (arrondi au pas le plus proche : 0,5 px d'écart pour l'essentiel, 1 px au plus
+   * jusqu'à 22 px, 4 px au plus pour les titres d'affichage). Pas de hauteur de ligne
+   * imposée : chaque écran garde la sienne (`leading-*`).
+   */
+  --text-caption: 11.5px;
+  --text-small: 13px;
+  --text-body: 14.5px;
+  --text-lead: 17px;
+  --text-title: 21px;
+  --text-heading: 30px;
+  --text-display: 40px;
+
   /* Fonds, surfaces, texte, bordures (valeurs exactes de la maquette) */
   --color-app: #ECEDE6;
   --color-surface: #F8F8F3;

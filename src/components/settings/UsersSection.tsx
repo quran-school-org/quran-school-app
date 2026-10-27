@@ -5,7 +5,7 @@
 import { Shield, UserPlus, Edit2, Trash2, Check, X, Search, Users, RefreshCw, LayoutGrid, List, CheckCircle2, XCircle, Clock, ShieldCheck, Filter, KeyRound } from "lucide-react";
 import { isPrimaryDirector } from "./shared";
 import { useSettings } from "./SettingsContext";
-import { DataTable, IconButton, Pill, Select, useConfirm, type PillTone } from "../../ui";
+import { DataTable, IconButton, Pill, Select, useConfirm, type PillTone, SectionHeader } from "../../ui";
 import type { AppUser } from "../../types";
 
 const GOLD_ROLES = ["مدير", "مؤطر", "متطوع"];
@@ -43,13 +43,13 @@ export default function UsersSection() {
   const nameBlock = (user: AppUser) => {
     const isAutoSynced = user.id.startsWith("t_") || user.id.startsWith("p_") || user.id.startsWith("s_");
     return (
-      <span className="font-bold text-ink text-[13px] flex items-center gap-1.5 flex-wrap min-w-0">
+      <span className="font-bold text-ink text-small flex items-center gap-1.5 flex-wrap min-w-0">
         <span className={user.isArchived ? "line-through text-ink-3" : ""}>{accountName(user)}</span>
         {isAutoSynced && (
-          <span className="text-[12.5px] bg-primary-50 text-primary-700 border border-primary-200 px-1.5 rounded-md font-normal" title="حساب مزامن تلقائياً">مزامنة</span>
+          <span className="text-small bg-primary-50 text-primary-700 border border-primary-200 px-1.5 rounded-md font-normal" title="حساب مزامن تلقائياً">مزامنة</span>
         )}
         {user.isArchived && (
-          <span className="text-[12.5px] bg-danger-50 text-danger-700 border border-danger-200 px-1.5 rounded-md font-bold" title="شخص مؤرشف في المنظومة">مؤرشف</span>
+          <span className="text-small bg-danger-50 text-danger-700 border border-danger-200 px-1.5 rounded-md font-bold" title="شخص مؤرشف في المنظومة">مؤرشف</span>
         )}
       </span>
     );
@@ -62,18 +62,18 @@ export default function UsersSection() {
         <div className="space-y-5" dir="rtl">
           {/* Header Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-5 rounded-3xl border border-sand-200/80">
-            <div>
-              <h3 className="text-base font-bold text-primary flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-primary-700" />
-                <span>إدارة حسابات المستخدمين والصلاحيات</span>
-              </h3>
-              <p className="text-[13px] text-ink-3 mt-1">إضافة وإدارة حسابات المعلمين والمدراء والطلاب وأولياء الأمور مع التحكم الدقيق في مستويات الوصول.</p>
-            </div>
+            <SectionHeader
+              level={3}
+              size="md"
+              icon={<ShieldCheck className="w-5 h-5 text-primary-700" />}
+              title="إدارة حسابات المستخدمين والصلاحيات"
+              subtitle="إضافة وإدارة حسابات المعلمين والمدراء والطلاب وأولياء الأمور مع التحكم الدقيق في مستويات الوصول."
+            />
             {canCreateAccounts && (
               <button
                 data-action="open-user-form"
                 onClick={() => openUserModal()}
-                className="bg-night hover:from-primary-800 hover:to-primary-900 text-white font-bold text-[13px] px-5 py-3 rounded-2xl flex items-center justify-center gap-2 transition hover:shadow-primary-900/20 active:scale-95 cursor-pointer shrink-0"
+                className="bg-night hover:from-primary-800 hover:to-primary-900 text-white font-bold text-small px-5 py-3 rounded-2xl flex items-center justify-center gap-2 transition hover:shadow-primary-900/20 active:scale-95 cursor-pointer shrink-0"
                 id="btn-add-new-user"
               >
                 <UserPlus className="w-4 h-4 text-gold-300" />
@@ -89,7 +89,7 @@ export default function UsersSection() {
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[12.5px] font-bold text-ink-3">إجمالي الحسابات</p>
+                <p className="text-small font-bold text-ink-3">إجمالي الحسابات</p>
                 <p className="text-lg font-bold text-ink">{appUsers.length}</p>
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function UsersSection() {
                 <CheckCircle2 className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[12.5px] font-bold text-ink-3">الحسابات النشطة</p>
+                <p className="text-small font-bold text-ink-3">الحسابات النشطة</p>
                 <p className="text-lg font-bold text-primary-700">{appUsers.filter(u => u.isActive).length}</p>
               </div>
             </div>
@@ -109,7 +109,7 @@ export default function UsersSection() {
                 <XCircle className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[12.5px] font-bold text-ink-3">الحسابات الموقوفة</p>
+                <p className="text-small font-bold text-ink-3">الحسابات الموقوفة</p>
                 <p className="text-lg font-bold text-danger-600">{appUsers.filter(u => !u.isActive).length}</p>
               </div>
             </div>
@@ -119,14 +119,14 @@ export default function UsersSection() {
                 <Shield className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[12.5px] font-bold text-ink-3">المدراء والمسيرون</p>
+                <p className="text-small font-bold text-ink-3">المدراء والمسيرون</p>
                 <p className="text-lg font-bold text-gold-700">{appUsers.filter(u => u.role === "مدير" || u.role === "إداري").length}</p>
               </div>
             </div>
           </div>
 
           {/* Sync Notice Banner & Action */}
-          <div className="bg-primary-50/80 border border-primary-200/80 text-primary-900 p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px]">
+          <div className="bg-primary-50/80 border border-primary-200/80 text-primary-900 p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-small">
             <div className="flex items-start gap-3">
               <span aria-hidden="true" className="p-1.5 bg-primary-100 text-primary rounded-xl flex items-center justify-center w-8 h-8 shrink-0"><RefreshCw className="w-4 h-4" strokeWidth={1.75} /></span>
               <div>
@@ -140,7 +140,7 @@ export default function UsersSection() {
               type="button"
               onClick={handleTriggerSync}
               disabled={isSyncing}
-              className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-[14px] font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5 shrink-0"
+              className="inline-flex items-center justify-center gap-2 min-h-11 px-4 rounded-[10px] bg-primary hover:bg-primary-hover text-white text-body font-semibold transition-colors cursor-pointer disabled:opacity-55 gap-1.5 shrink-0"
               title="مزامنة فورية وتحديث الأدوار مع شؤون العاملين والطلاب"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin" : ""}`} />
@@ -149,7 +149,7 @@ export default function UsersSection() {
           </div>
 
           {syncSuccessMsg && (
-            <div className="bg-primary-100/80 border border-primary-300 text-primary-900 px-4 py-2.5 rounded-xl text-[13px] font-bold flex items-center gap-2 animate-fade-in">
+            <div className="bg-primary-100/80 border border-primary-300 text-primary-900 px-4 py-2.5 rounded-xl text-small font-bold flex items-center gap-2 animate-fade-in">
               <CheckCircle2 className="w-4 h-4 text-primary-700 shrink-0" />
               <span>{syncSuccessMsg}</span>
             </div>
@@ -168,7 +168,7 @@ export default function UsersSection() {
                 placeholder="البحث باسم المستخدم أو الاسم الكامل..."
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
-                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-[14px] focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
+                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
               />
               {userSearchQuery && (
                 <button
@@ -226,7 +226,7 @@ export default function UsersSection() {
                 <button
                   type="button"
                   onClick={() => setUserViewMode("cards")}
-                  className={`px-3 py-1.5 rounded-lg text-[13px] font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-small font-bold flex items-center gap-1.5 transition cursor-pointer ${
                     userViewMode === "cards"
                       ? "bg-primary-950 text-primary-300 border border-primary-500/80"
                       : "text-night-muted hover:text-night-text hover:bg-night-2"
@@ -240,7 +240,7 @@ export default function UsersSection() {
                 <button
                   type="button"
                   onClick={() => setUserViewMode("table")}
-                  className={`px-3 py-1.5 rounded-lg text-[13px] font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-small font-bold flex items-center gap-1.5 transition cursor-pointer ${
                     userViewMode === "table"
                       ? "bg-primary-950 text-primary-300 border border-primary-500/80"
                       : "text-night-muted hover:text-night-text hover:bg-night-2"
@@ -256,7 +256,7 @@ export default function UsersSection() {
 
           {/* MAIN CONTENT AREA */}
           {filteredUsers.length === 0 ? (
-            <div className="bg-surface border border-line rounded-2xl p-12 text-center text-ink-3 text-[13px] font-bold">
+            <div className="bg-surface border border-line rounded-2xl p-12 text-center text-ink-3 text-small font-bold">
               <Users className="w-10 h-10 text-sand-400 mx-auto mb-3" />
               <p className="text-sm text-ink-2 font-bold">لا توجد حسابات مطابقة لخيارات البحث أو التصفية الحالية.</p>
               <p className="text-ink-3 mt-1">جرّب تغيير كلمات البحث أو إعادة ضبط التصفية.</p>
@@ -276,7 +276,7 @@ export default function UsersSection() {
                     card: "title",
                     cell: (user) => (
                       <div className="flex items-center gap-2.5">
-                        <span className="w-8 h-8 rounded-full font-bold flex items-center justify-center text-[13px] shrink-0 bg-primary-100 text-primary-800 border border-primary-200" aria-hidden="true">
+                        <span className="w-8 h-8 rounded-full font-bold flex items-center justify-center text-small shrink-0 bg-primary-100 text-primary-800 border border-primary-200" aria-hidden="true">
                           {accountName(user).substring(0, 1)}
                         </span>
                         {nameBlock(user)}
@@ -289,10 +289,10 @@ export default function UsersSection() {
                     header: "اسم المستخدم",
                     card: "field",
                     cell: (user) => (
-                      <span className="inline-flex items-center gap-2 font-mono text-[12.5px]">
+                      <span className="inline-flex items-center gap-2 font-mono text-small">
                         <bdi dir="ltr" className="bg-sunken px-2 py-0.5 rounded-lg border border-line font-semibold text-ink-2">@{user.username}</bdi>
                         {user.mustChangePassword && (
-                          <span className="text-gold-700 font-bold font-sans text-[11.5px]" title="يجب على المستخدم تغيير كلمة المرور عند الدخول">تغيير إلزامي</span>
+                          <span className="text-gold-700 font-bold font-sans text-caption" title="يجب على المستخدم تغيير كلمة المرور عند الدخول">تغيير إلزامي</span>
                         )}
                       </span>
                     ),
@@ -305,7 +305,7 @@ export default function UsersSection() {
                       <div className="flex flex-col items-start gap-1">
                         <Pill tone={roleTone(user.role)}>{user.role}</Pill>
                         {user.roleTitle && user.roleTitle !== user.role && (
-                          <span className="text-[11.5px] text-ink-3 font-medium" title="المسمى الوظيفي المسند في شؤون العاملين">{user.roleTitle}</span>
+                          <span className="text-caption text-ink-3 font-medium" title="المسمى الوظيفي المسند في شؤون العاملين">{user.roleTitle}</span>
                         )}
                       </div>
                     ),
@@ -322,7 +322,7 @@ export default function UsersSection() {
                     card: "field",
                     cardLabel: "آخر دخول",
                     cell: (user) => (
-                      <span className="inline-flex items-center gap-1.5 text-[12.5px]">
+                      <span className="inline-flex items-center gap-1.5 text-small">
                         <Clock className="w-3.5 h-3.5 text-ink-3 shrink-0" aria-hidden="true" />
                         <span className={user.lastLogin ? "font-semibold text-ink-2" : "text-ink-3 italic"}>{formatLastLogin(user.lastLogin)}</span>
                       </span>
@@ -334,7 +334,7 @@ export default function UsersSection() {
                     cell: (user) => (
                       <div className="flex flex-wrap gap-1">
                         {user.role === "مدير" ? (
-                          <span className="bg-gold-100/80 text-gold-900 border border-gold-300 px-2 py-0.5 rounded text-[11.5px] font-bold">كامل الصلاحيات</span>
+                          <span className="bg-gold-100/80 text-gold-900 border border-gold-300 px-2 py-0.5 rounded text-caption font-bold">كامل الصلاحيات</span>
                         ) : (
                           [
                             ["الطلاب", user.canEditStudents],
@@ -342,7 +342,7 @@ export default function UsersSection() {
                             ["الدرجات", user.canEditGrades],
                             ["المالية", user.canEditPayments],
                           ].map(([label, on]) => (
-                            <span key={label as string} className={`px-1.5 py-0.5 rounded text-[12px] border ${on ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>{label as string}</span>
+                            <span key={label as string} className={`px-1.5 py-0.5 rounded text-caption border ${on ? "bg-primary-50 text-primary-800 border-primary-200" : "bg-transparent text-ink-3 border-dashed border-line-strong line-through"}`}>{label as string}</span>
                           ))
                         )}
                       </div>
@@ -385,7 +385,7 @@ export default function UsersSection() {
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className={`text-[11.5px] px-2.5 py-0.5 rounded-full font-bold border ${
+                      <span className={`text-caption px-2.5 py-0.5 rounded-full font-bold border ${
                         user.role === "مدير"
                           ? "bg-gold-100 text-gold-800 border-gold-200"
                           : user.role === "إداري"
@@ -406,7 +406,7 @@ export default function UsersSection() {
                       }`}>
                         {user.role}
                       </span>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
+                      <span className={`text-caption font-bold px-2 py-0.5 rounded border ${
                         user.isActive ? "bg-primary-50 text-primary-600 border-primary-200" : "bg-danger-50 text-danger-600 border-danger-200"
                       }`}>
                         {user.isActive ? "نشط" : user.isArchived ? "موقوف (مؤرشف)" : "موقوف"}
@@ -417,11 +417,11 @@ export default function UsersSection() {
                       {isPrimaryDirector(user) && directorName ? directorName : user.fullName}
                     </h4>
                     {user.roleTitle && user.roleTitle !== user.role && (
-                      <p className="text-[12.5px] text-ink-3 font-medium mb-1">{user.roleTitle}</p>
+                      <p className="text-small text-ink-3 font-medium mb-1">{user.roleTitle}</p>
                     )}
                     <div className="flex items-center gap-2 mb-2">
-                      <p className="text-[13px] text-ink-3 font-mono">@{user.username}</p>
-                      <div className="flex items-center gap-1 bg-sand-100 px-2 py-0.5 rounded-md font-mono text-[11.5px]">
+                      <p className="text-small text-ink-3 font-mono">@{user.username}</p>
+                      <div className="flex items-center gap-1 bg-sand-100 px-2 py-0.5 rounded-md font-mono text-caption">
                         <span className={`font-bold ${user.mustChangePassword ? "text-gold-700" : "text-ink-2"}`}>
                           {user.mustChangePassword ? "تغيير إلزامي" : "••••••••"}
                         </span>
@@ -439,20 +439,20 @@ export default function UsersSection() {
                     </div>
 
                     {/* Last login date info */}
-                    <div className="mb-3 flex items-center gap-1.5 text-[12.5px] text-ink-3 bg-sand-50 p-2 rounded-xl border border-line-soft">
+                    <div className="mb-3 flex items-center gap-1.5 text-small text-ink-3 bg-sand-50 p-2 rounded-xl border border-line-soft">
                       <Clock className="w-3.5 h-3.5 text-ink-3" />
                       <span>آخر دخول:</span>
                       <span className="font-bold text-ink-2">{formatLastLogin(user.lastLogin)}</span>
                     </div>
 
                     {(user.id.startsWith("t_") || user.id.startsWith("p_") || user.id.startsWith("s_")) && (
-                      <div className="mb-3 flex items-center gap-1 bg-primary-50 text-primary-800 border border-primary-100 rounded-lg px-2 py-1.5 text-[11.5px] font-bold" dir="rtl">
+                      <div className="mb-3 flex items-center gap-1 bg-primary-50 text-primary-800 border border-primary-100 rounded-lg px-2 py-1.5 text-caption font-bold" dir="rtl">
                         <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.75} aria-hidden="true" />
                         <span>مزامنة تلقائية من سجلات {user.role}</span>
                       </div>
                     )}
 
-                    <div className="space-y-1.5 border-t border-line-soft pt-3 mt-2 text-[12.5px] text-ink-2">
+                    <div className="space-y-1.5 border-t border-line-soft pt-3 mt-2 text-small text-ink-2">
                       <div className="flex items-center justify-between">
                         <span>تعديل الطلاب:</span>
                         {user.canEditStudents ? <Check className="w-4 h-4 text-primary-600" /> : <X className="w-4 h-4 text-danger-500" />}

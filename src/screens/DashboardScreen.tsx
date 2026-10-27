@@ -64,13 +64,13 @@ export default function DashboardScreen() {
           unit={canSeeFees ? currencyShort : undefined}
         >
           {!canSeeFees ? (
-            <span className="text-[13.5px] text-ink-3">غير متاحة لهذا الحساب</span>
+            <span className="text-small text-ink-3">غير متاحة لهذا الحساب</span>
           ) : totalUnpaidCount > 0 ? (
-            <span className="text-[13.5px] font-semibold text-danger">
+            <span className="text-small font-semibold text-danger">
               {canGo("payments") ? <TextAction onClick={() => go("payments")}>{totalUnpaidCount} دفعات غير مسدّدة</TextAction> : `${totalUnpaidCount} دفعات غير مسدّدة`}
             </span>
           ) : (
-            <span className="text-[13.5px] font-semibold text-success-700">لا دفعات متأخرة</span>
+            <span className="text-small font-semibold text-success-700">لا دفعات متأخرة</span>
           )}
         </KpiTile>
         <KpiTile label="مستوى التجويد">

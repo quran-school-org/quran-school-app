@@ -10,7 +10,7 @@ import { checkUserPermission, type Student } from "../types";
 import { isFamilyRole } from "../security/access";
 import { StudentAvatar } from "../utils/studentAvatar";
 import { useApp } from "../app/AppContext";
-import { Button, Card, DataTable, DropdownMenu, EmptyState, FilterChips, IconButton, Ltr, PAGE_SIZES, PageHeader, Pagination, Pill, SearchInput, Select, cx, pageOfIndex, usePagination, type DataColumn } from "../ui";
+import { Button, Card, DataTable, DropdownMenu, EmptyState, FilterChips, IconButton, Ltr, PAGE_SIZES, PageHeader, Pagination, Pill, SearchInput, Select, SectionHeader, cx, pageOfIndex, usePagination, type DataColumn } from "../ui";
 import { navLabel } from "../shell/navModel";
 import StudentDossier from "./students/StudentDossier";
 import { tajweedTone } from "./students/tajweed";
@@ -20,7 +20,7 @@ const ic = (C: any, cls = "w-4 h-4") => <C className={cls} strokeWidth={1.75} />
 
 function DocBadge({ ok, label, full }: { ok: boolean; label: string; full: string }) {
   return (
-    <span title={`${full} : ${ok ? "مقدّمة" : "ناقصة"}`} className={cx("inline-flex items-center justify-center h-6 px-1.5 rounded-md text-[11.5px] font-semibold", ok ? "bg-success-100 text-success-700" : "bg-sunken text-ink-3 line-through decoration-ink-4")}>
+    <span title={`${full} : ${ok ? "مقدّمة" : "ناقصة"}`} className={cx("inline-flex items-center justify-center h-6 px-1.5 rounded-md text-caption font-semibold", ok ? "bg-success-100 text-success-700" : "bg-sunken text-ink-3 line-through decoration-ink-4")}>
       {label}
       <span className="sr-only">{ok ? " (مقدّمة)" : " (ناقصة)"}</span>
     </span>
@@ -31,10 +31,10 @@ function DocBadge({ ok, label, full }: { ok: boolean; label: string; full: strin
 const nameBlock = (st: Student) => (
   <span className="flex flex-col min-w-0">
     <span className="flex flex-wrap items-center gap-1.5">
-      <span className={cx("font-semibold text-[14.5px]", st.isArchived ? "text-ink-3 line-through" : "text-ink")}>{st.fullName}</span>
+      <span className={cx("font-semibold text-body", st.isArchived ? "text-ink-3 line-through" : "text-ink")}>{st.fullName}</span>
       {st.isArchived && <Pill tone="neutral">مؤرشف</Pill>}
     </span>
-    <span className="text-[12.5px] text-ink-3">ازدياد: {formatDateAr(st.birthDate)}</span>
+    <span className="text-small text-ink-3">ازدياد: {formatDateAr(st.birthDate)}</span>
   </span>
 );
 
@@ -87,7 +87,7 @@ export default function StudentsScreen() {
       cell: (st) => (
         <>
           <span className="block text-ink-2">{st.parentName}</span>
-          <span className="flex items-center gap-1 text-[12.5px] text-ink-3">{ic(Phone, "w-3.5 h-3.5")}<Ltr className="whitespace-nowrap">{st.parentPhone}</Ltr></span>
+          <span className="flex items-center gap-1 text-small text-ink-3">{ic(Phone, "w-3.5 h-3.5")}<Ltr className="whitespace-nowrap">{st.parentPhone}</Ltr></span>
         </>
       ),
     },
@@ -97,7 +97,7 @@ export default function StudentsScreen() {
       cardLabel: "الحفظ",
       card: "field",
       className: "text-center whitespace-nowrap",
-      cell: (st) => <><strong className="tabular-nums">{st.hizbCount}</strong> <span className="text-ink-3 text-[13px]">حزب</span></>,
+      cell: (st) => <><strong className="tabular-nums">{st.hizbCount}</strong> <span className="text-ink-3 text-small">حزب</span></>,
     },
     {
       id: "tajweed",
@@ -192,10 +192,12 @@ export default function StudentsScreen() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         <Card padded={false} className="xl:col-span-2 overflow-hidden" aria-labelledby="students-list-title">
-          <div className="flex flex-wrap justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
-            <h2 id="students-list-title" className="m-0 font-display font-semibold text-[20px] text-primary">قائمة طلاب النادي</h2>
-            <span className="text-[13.5px] text-ink-2">تم العثور على <strong className="text-ink tabular-nums">{filteredStudents.length}</strong> طالب</span>
-          </div>
+          <SectionHeader
+            id="students-list-title"
+            title="قائمة طلاب النادي"
+            actions={<span className="text-small text-ink-2">تم العثور على <strong className="text-ink tabular-nums">{filteredStudents.length}</strong> طالب</span>}
+            className="flex-wrap items-center gap-2 px-5 py-4 border-b border-line-soft"
+          />
           {filteredStudents.length === 0 ? (
             <div className="p-5">
               <EmptyState icon={ic(Users, "w-8 h-8")} title="لا نتائج">لا يوجد طلاب مسجلون يطابقون خيارات البحث الحالية.</EmptyState>
@@ -233,7 +235,7 @@ export default function StudentsScreen() {
                 summary={`الطلاب ${pg.start}–${pg.end} من ${pg.total}`}
               />
               {selectedPage > 0 && selectedPage !== pg.page && (
-                <button type="button" data-action="show-selected-student-page" onClick={() => pg.setPage(selectedPage)} className="self-start bg-transparent border-0 p-0 min-h-8 text-[13px] font-semibold text-primary underline underline-offset-2 cursor-pointer hover:text-primary-hover">
+                <button type="button" data-action="show-selected-student-page" onClick={() => pg.setPage(selectedPage)} className="self-start bg-transparent border-0 p-0 min-h-8 text-small font-semibold text-primary underline underline-offset-2 cursor-pointer hover:text-primary-hover">
                   {`عرض صفحة الطالب المحدد (${selectedPage})`}
                 </button>
               )}

@@ -17,11 +17,11 @@ export default function RolePreviewControl() {
   if (!available) return null;
   return (
     <section data-role-preview="control" aria-labelledby={labelId} className="flex flex-col gap-2.5 rounded-xl border border-line-soft bg-surface-2 p-3.5">
-      <h3 id={labelId} className="m-0 flex items-center gap-2 text-[13.5px] font-semibold text-ink-2">
+      <h3 id={labelId} className="m-0 flex items-center gap-2 text-small font-semibold text-ink-2">
         <FlaskConical className="w-4 h-4" strokeWidth={1.75} aria-hidden="true" />
         معاينة كدور
       </h3>
-      <p id={hintId} className="m-0 text-[12.5px] leading-relaxed text-ink-3">
+      <p id={hintId} className="m-0 text-small leading-relaxed text-ink-3">
         للاختبار في هذه المدرسة التجريبية فقط: يتغير دورك فعلياً في هذه المدرسة (وليس محاكاة)، فتطبَّق عليك صلاحيات الدور وقواعد قاعدة البيانات كما لأي مستخدم حقيقي.
       </p>
       <Select
@@ -34,7 +34,7 @@ export default function RolePreviewControl() {
       >
         {PREVIEW_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
       </Select>
-      {busy && <p role="status" className="m-0 text-[13px] text-ink-2">جاري تغيير الدور...</p>}
+      {busy && <p role="status" className="m-0 text-small text-ink-2">جاري تغيير الدور...</p>}
       {error && (
         <ActionAlert role="alert" tone="danger" title="تعذر تغيير الدور">
           {error}

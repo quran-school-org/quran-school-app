@@ -33,15 +33,15 @@ function FoldableText({ title, text, attr }: { title: string; text: string; attr
   const long = isLongText(text);
   return (
     <section data-activity-text={attr} aria-labelledby={`${id}-t`} className="flex flex-col gap-1">
-      <h3 id={`${id}-t`} className="m-0 text-[13px] font-semibold text-ink-2">{title}</h3>
-      <p id={`${id}-p`} className={`m-0 text-[14px] leading-relaxed text-ink whitespace-pre-line break-words ${long && !open ? "line-clamp-4" : ""}`}>{text}</p>
+      <h3 id={`${id}-t`} className="m-0 text-small font-semibold text-ink-2">{title}</h3>
+      <p id={`${id}-p`} className={`m-0 text-body leading-relaxed text-ink whitespace-pre-line break-words ${long && !open ? "line-clamp-4" : ""}`}>{text}</p>
       {long && (
         <button
           type="button"
           aria-expanded={open}
           aria-controls={`${id}-p`}
           onClick={() => setOpen((v) => !v)}
-          className="self-start inline-flex items-center gap-1 min-h-11 -my-2 px-1 bg-transparent border-0 text-primary text-[13.5px] font-semibold cursor-pointer hover:underline focus-visible:outline-2 focus-visible:outline-primary rounded-md"
+          className="self-start inline-flex items-center gap-1 min-h-11 -my-2 px-1 bg-transparent border-0 text-primary text-small font-semibold cursor-pointer hover:underline focus-visible:outline-2 focus-visible:outline-primary rounded-md"
         >
           <span>{open ? "عرض أقل" : "عرض المزيد"}</span>
           <ChevronDown className={`w-4 h-4 transition-transform ${open ? "rotate-180" : ""}`} strokeWidth={1.75} aria-hidden="true" />
@@ -55,7 +55,7 @@ function ChildState({ participants, activityId, child }: { participants: Activit
   const s = childActivityState(participants, activityId, child.id);
   return (
     <li data-child-state={child.id} data-registered={s.kind === "registered" ? "yes" : "no"} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 py-2.5 border-t border-line-faint first:border-t-0">
-      <span className="font-semibold text-[14.5px] text-ink min-w-0">{child.fullName}</span>
+      <span className="font-semibold text-body text-ink min-w-0">{child.fullName}</span>
       {s.kind === "none" ? (
         <Pill tone="neutral">غير مسجّل</Pill>
       ) : (
@@ -66,7 +66,7 @@ function ChildState({ participants, activityId, child }: { participants: Activit
           {s.payment === "unpaid" && <Pill tone="danger">غير مدفوع</Pill>}
           {s.payment === "partial" && <Pill tone="warn">مدفوع جزئياً</Pill>}
           {(s.payment === "partial" || s.payment === "unpaid") && (
-            <span className="text-[13px] text-ink-2">
+            <span className="text-small text-ink-2">
               {s.payment === "partial" && <>المدفوع: <strong className="text-ink tabular-nums">{formatMoney(s.paid)}</strong> · </>}
               المتبقي: <strong className="text-ink tabular-nums">{formatMoney(s.remaining)}</strong>
             </span>
@@ -101,7 +101,7 @@ export default function FamilyActivities({ activities, participants, children, i
             <option value="all">كل الحالات</option>
             {STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
           </Select>
-          <p role="status" className="m-0 text-[13px] text-ink-2">{shown.length} من {sorted.length}</p>
+          <p role="status" className="m-0 text-small text-ink-2">{shown.length} من {sorted.length}</p>
         </div>
       )}
 
@@ -121,9 +121,9 @@ export default function FamilyActivities({ activities, participants, children, i
                     <Pill tone="primary" className="max-w-full whitespace-normal! text-start">{a.type}</Pill>
                     <Pill tone={STATUS_TONE[a.status] || "neutral"} className="max-w-full whitespace-normal! text-start">{a.status}</Pill>
                   </span>
-                  <h2 id={`act-${a.id}`} className="m-0 font-display font-semibold text-[20px] leading-snug text-primary">{a.title}</h2>
+                  <h2 id={`act-${a.id}`} className="m-0 font-display font-semibold text-title leading-snug text-primary">{a.title}</h2>
                 </header>
-                <dl className="m-0 flex flex-wrap gap-x-5 gap-y-1.5 text-[13.5px] text-ink-2">
+                <dl className="m-0 flex flex-wrap gap-x-5 gap-y-1.5 text-small text-ink-2">
                   <div className="flex items-center gap-1.5">
                     <dt className="sr-only">التاريخ</dt>
                     {ic(Calendar)}

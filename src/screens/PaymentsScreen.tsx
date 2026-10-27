@@ -13,7 +13,7 @@ import { formatMoney, formatNumber } from "../format/money";
 import { fromPeriodFilter, periodYears, toPeriodFilter } from "../utils/paymentPeriod";
 import { useApp } from "../app/AppContext";
 import {
-  Button, Card, CardHeader, EmptyState, FormField, IconButton, KpiGrid, KpiTile, Legend, Ltr, PageHeader, Pill,
+  Button, Card, CardHeader, EmptyState, FormField, IconButton, KpiGrid, KpiTile, Legend, Ltr, PageHeader, Pill, SectionHeader,
   SearchInput, Select, Table, TableWrap, Td, Th, Tr, WhatsAppIcon,
 } from "../ui";
 import { formatDateAr } from "../format/date";
@@ -156,13 +156,17 @@ export default function PaymentsScreen() {
       </div>
 
       <Card padded={false} className="overflow-hidden" aria-labelledby="ledger-title">
-        <div className="flex flex-wrap justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
-          <h2 id="ledger-title" className="m-0 font-display font-semibold text-[20px] text-primary">سجل المعاملات والمدفوعات <span className="font-sans text-[14px] text-ink-2 font-normal">({sortedPayments.length} سجل مطابق)</span></h2>
-          <span className="text-[13px] text-ink-3">
-            مبلغ الاشتراك الأساسي: <strong className="text-ink">{formatMoney(getSubscriptionAmount("", 0))}</strong> / شهر
-            {overrides.length > 0 ? ` (تعريفات خاصة: ${overrides.map((o) => `${o.month} ${o.year}: ${formatMoney(o.amount)}`).join("، ")})` : ""}
-          </span>
-        </div>
+        <SectionHeader
+          id="ledger-title"
+          title={<>سجل المعاملات والمدفوعات <span className="font-sans text-body text-ink-2 font-normal">({sortedPayments.length} سجل مطابق)</span></>}
+          actions={
+            <span className="text-small text-ink-3">
+              مبلغ الاشتراك الأساسي: <strong className="text-ink">{formatMoney(getSubscriptionAmount("", 0))}</strong> / شهر
+              {overrides.length > 0 ? ` (تعريفات خاصة: ${overrides.map((o) => `${o.month} ${o.year}: ${formatMoney(o.amount)}`).join("، ")})` : ""}
+            </span>
+          }
+          className="flex-wrap items-center gap-2 px-5 py-4 border-b border-line-soft"
+        />
         {sortedPayments.length === 0 ? (
           <div className="p-5">
             {isFamily ? (
@@ -217,7 +221,7 @@ export default function PaymentsScreen() {
                           </span>
                           <span className="flex flex-col">
                             <span className="font-semibold">{stud?.fullName || "طالب مجهول"}</span>
-                            <span className="text-[12.5px] text-ink-3">ولي الأمر: {stud?.parentName || "—"} • <Ltr>{stud?.parentPhone || "—"}</Ltr></span>
+                            <span className="text-small text-ink-3">ولي الأمر: {stud?.parentName || "—"} • <Ltr>{stud?.parentPhone || "—"}</Ltr></span>
                           </span>
                         </div>
                       </Td>
@@ -226,15 +230,15 @@ export default function PaymentsScreen() {
                       <Td>
                         {paid ? (
                           <span className="flex flex-col gap-1">
-                            <span className="text-[12.5px] text-ink-2">تاريخ الدفع: <span className="text-ink">{formatDateAr(p.paymentDate)}</span></span>
+                            <span className="text-small text-ink-2">تاريخ الدفع: <span className="text-ink">{formatDateAr(p.paymentDate)}</span></span>
                             <Pill tone="primary" className="self-start">{p.paymentMethod || "نقداً"}</Pill>
                           </span>
                         ) : (
-                          <span className="text-[12.5px] text-ink-3">بانتظار سداد رسوم الشهر</span>
+                          <span className="text-small text-ink-3">بانتظار سداد رسوم الشهر</span>
                         )}
-                        {p.notes && <p className="m-0 mt-1.5 text-[12.5px] bg-gold-100 text-gold-800 px-2 py-1 rounded-lg max-w-xs leading-relaxed">{p.notes}</p>}
+                        {p.notes && <p className="m-0 mt-1.5 text-small bg-gold-100 text-gold-800 px-2 py-1 rounded-lg max-w-xs leading-relaxed">{p.notes}</p>}
                       </Td>
-                      <Td><Ltr className="text-[12.5px] font-semibold text-ink-2">{p.receiptNo || "—"}</Ltr></Td>
+                      <Td><Ltr className="text-small font-semibold text-ink-2">{p.receiptNo || "—"}</Ltr></Td>
                       <Td className="text-center"><Pill tone={paid ? "success" : "danger"} dot>{paid ? "مكتمل السداد" : "معلق / غير مدفوع"}</Pill></Td>
                       <Td>
                         <div className="flex items-center justify-center gap-1.5">

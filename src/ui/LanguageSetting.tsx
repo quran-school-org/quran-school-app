@@ -16,7 +16,7 @@ export function LanguageSetting({ className }: { className?: string }) {
   const id = useId();
   return (
     <div data-language-setting className={cx("flex flex-col gap-1.5 min-w-0", className)}>
-      <span id={id} className="text-[13.5px] font-semibold text-ink-2">{LABEL}</span>
+      <span id={id} className="text-small font-semibold text-ink-2">{LABEL}</span>
       <SegmentedControl<Lang>
         label={LABEL}
         value={lang}

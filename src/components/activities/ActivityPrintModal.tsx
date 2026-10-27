@@ -48,7 +48,7 @@ export default function ActivityPrintModal() {
         <>
           <Button onClick={close}>إغلاق</Button>
           <div className="flex items-center gap-3">
-            <span className="text-[13px] text-ink-3 hidden sm:inline">
+            <span className="text-small text-ink-3 hidden sm:inline">
               ملاحظة: اضغط على طباعة لفتح نافذة الطابعة بحجم A4 المعتمد
             </span>
             <Button variant="primary" onClick={() => window.print()} icon={<Printer className="w-4 h-4" />}>طباعة الوثيقة الآن</Button>
@@ -68,14 +68,14 @@ export default function ActivityPrintModal() {
           <div className="flex items-start justify-between gap-4">
             {/* Right Header Section */}
             <div className="text-right space-y-1">
-              <div className="text-[13px] font-bold text-ink-3 tracking-wider">المملكة المغربية</div>
+              <div className="text-small font-bold text-ink-3 tracking-wider">المملكة المغربية</div>
               <h2 className="text-base font-bold text-primary leading-snug">
                 {systemSettings?.associationName || ""}
               </h2>
-              <p className="text-[12.5px] text-ink-2 font-medium">
+              <p className="text-small text-ink-2 font-medium">
                 {systemSettings?.associationAddress || "مقر الجمعية الرئيسي"}
               </p>
-              <p className="text-[12.5px] text-ink-2 font-mono">
+              <p className="text-small text-ink-2 font-mono">
                 الهاتف: {systemSettings?.associationPhone || "—"} {systemSettings?.associationEmail ? ` | البريد: ${systemSettings.associationEmail}` : ""}
               </p>
             </div>
@@ -94,23 +94,23 @@ export default function ActivityPrintModal() {
                   <Compass className="w-8 h-8" />
                 </div>
               )}
-              <span className="text-[11.5px] font-bold text-ink-3">
+              <span className="text-caption font-bold text-ink-3">
                 إدارة الأنشطة والرحلات المعتمدة
               </span>
             </div>
 
             {/* Left Header Section: Date, Season & Serial Reference */}
             <div className="text-left space-y-1">
-              <div className="inline-block bg-sand-900 text-white text-[12.5px] font-bold px-3 py-1 rounded-md">
+              <div className="inline-block bg-sand-900 text-white text-small font-bold px-3 py-1 rounded-md">
                 وثيقة إدارية رسمية
               </div>
-              <div className="text-[13px] text-ink-2 font-medium mt-1">
+              <div className="text-small text-ink-2 font-medium mt-1">
                 التاريخ: <span className="font-mono font-bold">{new Date().toLocaleDateString('ar-MA')}</span>
               </div>
-              <div className="text-[13px] text-ink-2 font-medium">
+              <div className="text-small text-ink-2 font-medium">
                 الموسم: <span className="font-bold">{systemSettings?.activeAcademicSeason || ""}</span>
               </div>
-              <div className="text-[12.5px] text-ink-3 font-mono">
+              <div className="text-small text-ink-3 font-mono">
                 المرجع: ACT-{currentActivity.id.slice(-6).toUpperCase()}
               </div>
             </div>
@@ -127,7 +127,7 @@ export default function ActivityPrintModal() {
             </h1>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[13px] pt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-small pt-1">
             <div>
               <span className="text-ink-3 font-medium block">اسم النشاط:</span>
               <span className="font-bold text-ink">{currentActivity.title}</span>
@@ -147,7 +147,7 @@ export default function ActivityPrintModal() {
           </div>
 
           {currentActivity.leaderIds && currentActivity.leaderIds.length > 0 && (
-            <div className="pt-2 border-t border-line text-[13px]">
+            <div className="pt-2 border-t border-line text-small">
               <span className="text-ink-3 font-medium">المؤطرون والمشرفون المعتمدون: </span>
               <span className="font-bold text-ink">
                 {allStaff.filter(t => currentActivity.leaderIds.includes(t.id)).map(t => `${t.fullName} (${t.roleTitle || t.category || "مؤطر"})`).join(" • ") || "الإدارة التربوية"}
@@ -162,7 +162,7 @@ export default function ActivityPrintModal() {
         {printType === "participants-list" && (
           <div className="space-y-4">
             <div className="overflow-x-auto">
-              <table className="w-full text-right text-[13px] border border-sand-400">
+              <table className="w-full text-right text-small border border-sand-400">
                 <thead>
                   <tr className="bg-sand-100 text-ink font-bold border-b border-sand-400">
                     <th className="p-2.5 border border-sand-400 text-center w-10">#</th>
@@ -225,7 +225,7 @@ export default function ActivityPrintModal() {
                       <td className="p-2.5 border border-sand-400 text-center font-mono text-primary-900 font-bold">
                         {formatMoney(printableParticipants.reduce((sum, p) => sum + resolveParticipantPaid(p), 0))}
                       </td>
-                      <td colSpan={3} className="p-2.5 border border-sand-400 text-center text-[12.5px] text-ink-2 font-semibold">
+                      <td colSpan={3} className="p-2.5 border border-sand-400 text-center text-small text-ink-2 font-semibold">
                         {(() => {
                           const paidCount = printableParticipants.filter(p => resolvePaymentStatusInfo(p).status === "مدفوع").length;
                           const partialCount = printableParticipants.filter(p => resolvePaymentStatusInfo(p).status === "مدفوع جزئياً").length;
@@ -256,27 +256,27 @@ export default function ActivityPrintModal() {
             {/* Financial Balance Summary Cards */}
             <div className="grid grid-cols-3 gap-4 text-center break-inside-avoid">
               <div className="border border-primary-300 p-3.5 rounded-xl bg-primary-50/70">
-                <div className="text-[13px] font-bold text-primary-900">إجمالي المداخيل المحصلة</div>
+                <div className="text-small font-bold text-primary-900">إجمالي المداخيل المحصلة</div>
                 <div className="text-xl font-bold text-primary-800 mt-1 font-mono">
                   {formatMoney(currentFinances.totalCollected)}
                 </div>
-                <div className="text-[11.5px] text-primary-700 mt-0.5 font-medium">مساهمات المشاركين المسجلة</div>
+                <div className="text-caption text-primary-700 mt-0.5 font-medium">مساهمات المشاركين المسجلة</div>
               </div>
 
               <div className="border border-danger-300 p-3.5 rounded-xl bg-danger-50/70">
-                <div className="text-[13px] font-bold text-danger-900">إجمالي المصاريف والنفقات</div>
+                <div className="text-small font-bold text-danger-900">إجمالي المصاريف والنفقات</div>
                 <div className="text-xl font-bold text-danger-800 mt-1 font-mono">
                   {formatMoney(currentFinances.totalSpent)}
                 </div>
-                <div className="text-[11.5px] text-danger-700 mt-0.5 font-medium">جميع فواتير وأوصال الصرف</div>
+                <div className="text-caption text-danger-700 mt-0.5 font-medium">جميع فواتير وأوصال الصرف</div>
               </div>
 
               <div className={`border p-3.5 rounded-xl ${currentFinances.netBalance >= 0 ? "border-primary-300 bg-primary-50/40" : "border-gold-300 bg-gold-50/40"}`}>
-                <div className="text-[13px] font-bold text-ink">الصافي المالي للنشاط</div>
+                <div className="text-small font-bold text-ink">الصافي المالي للنشاط</div>
                 <div className={`text-xl font-bold mt-1 font-mono ${currentFinances.netBalance >= 0 ? "text-primary-800" : "text-gold-800"}`}>
                   <Ltr>{formatNumber(currentFinances.netBalance, { signed: true })}</Ltr> د.م
                 </div>
-                <div className="text-[11.5px] text-ink-2 mt-0.5 font-medium">
+                <div className="text-caption text-ink-2 mt-0.5 font-medium">
                   {currentFinances.netBalance >= 0 ? "فائض مالي يُرحّل للخزينة" : "عجز مالي مغطى من صندوق الجمعية"}
                 </div>
               </div>
@@ -284,8 +284,8 @@ export default function ActivityPrintModal() {
 
             {/* Detailed Expenses Table */}
             <div className="space-y-2">
-              <div className="text-[13px] font-bold text-ink">تفاصيل بنود المصاريف والنفقات المنفذة:</div>
-              <table className="w-full text-right text-[13px] border border-sand-400">
+              <div className="text-small font-bold text-ink">تفاصيل بنود المصاريف والنفقات المنفذة:</div>
+              <table className="w-full text-right text-small border border-sand-400">
                 <thead>
                   <tr className="bg-sand-100 text-ink font-bold border-b border-sand-400">
                     <th className="p-2.5 border border-sand-400 text-center w-10">#</th>
@@ -327,7 +327,7 @@ export default function ActivityPrintModal() {
                       <td className="p-2.5 border border-sand-400 text-center font-mono text-danger-900 font-bold">
                         {formatMoney(currentFinances.totalSpent)}
                       </td>
-                      <td colSpan={3} className="p-2.5 border border-sand-400 text-center text-[12.5px] text-ink-2">
+                      <td colSpan={3} className="p-2.5 border border-sand-400 text-center text-small text-ink-2">
                         عدد فواتير وأوصال المصاريف: {currentExpenses.length}
                       </td>
                     </tr>
@@ -337,7 +337,7 @@ export default function ActivityPrintModal() {
             </div>
 
             {/* Accounting Statement Note */}
-            <div className="bg-sand-50 border border-line rounded-xl p-3.5 text-[13px] text-ink-2 leading-relaxed break-inside-avoid">
+            <div className="bg-sand-50 border border-line rounded-xl p-3.5 text-small text-ink-2 leading-relaxed break-inside-avoid">
               <span className="font-bold text-ink block mb-1">إشهاد ومصادقة محاسبية:</span>
               يشهد المكتب التنفيذي للجمعية أن جميع المداخيل والمصاريف المذكورة أعلاه صحيحة ومدعمة بالوثائق الإثباتية والفواتير القانونية، وتم تقييد الصافي المالي ضمن الحسابات الجمعوية المعتمدة.
             </div>
@@ -349,7 +349,7 @@ export default function ActivityPrintModal() {
           <div className="border-2 border-sand-900 rounded-2xl p-6 bg-sand-50 text-right space-y-4 max-w-md mx-auto break-inside-avoid">
             <div className="flex items-center justify-between border-b-2 border-sand-900 pb-3">
               <div>
-                <span className="bg-primary-700 text-white text-[12.5px] font-bold px-3 py-1 rounded-full">
+                <span className="bg-primary-700 text-white text-small font-bold px-3 py-1 rounded-full">
                   شارة مشارك معتمدة
                 </span>
                 <h3 className="text-lg font-bold text-primary mt-2">{selectedParticipantForTicket.fullName}</h3>
@@ -359,7 +359,7 @@ export default function ActivityPrintModal() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 text-[13px]">
+            <div className="grid grid-cols-2 gap-3 text-small">
               <div>
                 <span className="text-ink-3 font-medium block">الصفة / المسمى الوظيفي:</span>
                 <span className="font-bold text-ink">{getParticipantRole(selectedParticipantForTicket)}</span>
@@ -386,11 +386,11 @@ export default function ActivityPrintModal() {
               </div>
             </div>
 
-            <div className="pt-3 border-t border-line-strong flex items-center justify-between text-[12.5px] text-ink-2">
+            <div className="pt-3 border-t border-line-strong flex items-center justify-between text-small text-ink-2">
               <span>خاتم وتأشيرة الإدارة:</span>
               <span className="font-mono">{new Date().toLocaleDateString('ar-MA')}</span>
             </div>
-            <div className="h-12 border border-dashed border-line-strong rounded-lg flex items-center justify-center text-[12.5px] text-ink-3">
+            <div className="h-12 border border-dashed border-line-strong rounded-lg flex items-center justify-center text-small text-ink-3">
               موضع خاتم وتأشيرة المشرف العام
             </div>
           </div>
@@ -399,38 +399,38 @@ export default function ActivityPrintModal() {
         {/* 4. Official Signatures & Seal Section */}
         <div className="pt-8 border-t-2 border-sand-900 grid grid-cols-3 gap-6 text-center break-inside-avoid">
           <div className="space-y-1">
-            <div className="text-[13px] font-bold text-ink">المشرف العام / الكاتب العام</div>
-            <div className="text-[12.5px] text-ink-2 font-medium">
+            <div className="text-small font-bold text-ink">المشرف العام / الكاتب العام</div>
+            <div className="text-small text-ink-2 font-medium">
               {systemSettings?.generalSupervisorName || systemSettings?.secretaryGeneralName || "...................."}
             </div>
             <div className="h-16 border-b border-dashed border-line-strong flex items-end justify-center pb-1">
-              <span className="text-[11.5px] text-ink-3">توقيع المشرف</span>
+              <span className="text-caption text-ink-3">توقيع المشرف</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-[13px] font-bold text-ink">أمين مال الجمعية</div>
-            <div className="text-[12.5px] text-ink-2 font-medium">
+            <div className="text-small font-bold text-ink">أمين مال الجمعية</div>
+            <div className="text-small text-ink-2 font-medium">
               {systemSettings?.treasurerName || "...................."}
             </div>
             <div className="h-16 border-b border-dashed border-line-strong flex items-end justify-center pb-1">
-              <span className="text-[11.5px] text-ink-3">توقيع أمين المال</span>
+              <span className="text-caption text-ink-3">توقيع أمين المال</span>
             </div>
           </div>
 
           <div className="space-y-1">
-            <div className="text-[13px] font-bold text-ink">رئيس الجمعية</div>
-            <div className="text-[12.5px] text-ink-2 font-medium">
+            <div className="text-small font-bold text-ink">رئيس الجمعية</div>
+            <div className="text-small text-ink-2 font-medium">
               {systemSettings?.presidentName || "...................."}
             </div>
             <div className="h-16 border border-dashed border-sand-400 rounded-lg flex items-center justify-center">
-              <span className="text-[11.5px] text-ink-3">الخاتم الرسمي والتوقيع</span>
+              <span className="text-caption text-ink-3">الخاتم الرسمي والتوقيع</span>
             </div>
           </div>
         </div>
 
         {/* 5. Document Micro Footer */}
-        <div className="pt-3 border-t border-line text-center text-[11.5px] text-ink-3 break-inside-avoid">
+        <div className="pt-3 border-t border-line text-center text-caption text-ink-3 break-inside-avoid">
           وثيقة إدارية ومحاسبية رسمية صادرة عن منظومة الجمعية • {systemSettings?.associationName || ""} • صفحة معتمدة
         </div>
       </div>

@@ -44,15 +44,15 @@ export function SideNav({ brand, groups, active, onSelect, footer, navId, classN
       </div>
       {groups.filter((g) => g.items.length > 0).map((g) => (
         <div key={g.label} className="relative flex flex-col gap-1">
-          <span className="text-[12px] font-semibold text-night-label px-3 pb-1.5 [@media(max-height:900px)]:pb-0.5">{g.label}</span>
+          <span className="text-caption font-semibold text-night-label px-3 pb-1.5 [@media(max-height:900px)]:pb-0.5">{g.label}</span>
           {g.items.map((it) => {
             const on = it.id === active;
             if (it.disabled) {
               return (
-                <span key={it.id} aria-disabled="true" className="flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-[15px] font-medium text-night-dim">
+                <span key={it.id} aria-disabled="true" className="flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-body font-medium text-night-dim">
                   <span aria-hidden="true" className="inline-flex">{it.icon}</span>
                   <span className="flex-1">{it.label}</span>
-                  {it.disabledLabel && <span className="text-[11px] font-semibold text-night-soft border border-night-line-2 rounded-full px-2 py-0.5">{it.disabledLabel}</span>}
+                  {it.disabledLabel && <span className="text-caption font-semibold text-night-soft border border-night-line-2 rounded-full px-2 py-0.5">{it.disabledLabel}</span>}
                 </span>
               );
             }
@@ -64,14 +64,14 @@ export function SideNav({ brand, groups, active, onSelect, footer, navId, classN
                 aria-current={on ? "page" : undefined}
                 onClick={() => onSelect(it.id)}
                 className={cx(
-                  "flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-[15px] font-medium text-start border-0 cursor-pointer transition-colors w-full",
+                  "flex items-center gap-3 min-h-11 [@media(max-height:900px)]:min-h-9 px-3 rounded-[10px] text-body font-medium text-start border-0 cursor-pointer transition-colors w-full",
                   on ? "bg-gold/[0.16] text-gold-glow" : "bg-transparent text-night-link hover:bg-white/[0.08]",
                 )}
               >
                 <span aria-hidden="true" className="inline-flex shrink-0">{it.icon}</span>
                 <span className="flex-1 min-w-0">{it.label}</span>
                 {it.badge !== undefined && it.badge > 0 ? (
-                  <span className="text-[12px] font-bold tabular-nums bg-gold text-night rounded-full px-2 py-px">{it.badge}</span>
+                  <span className="text-caption font-bold tabular-nums bg-gold text-night rounded-full px-2 py-px">{it.badge}</span>
                 ) : (
                   <span aria-hidden="true" className={cx("w-1.5 h-1.5 rounded-full shrink-0", on ? "bg-gold" : "bg-transparent")} />
                 )}
@@ -91,8 +91,8 @@ export function NavBrand({ logo, name, subtitle, onClick }: { logo: React.ReactN
     <button type="button" onClick={onClick} className="flex items-center gap-3 text-start text-white px-1.5 bg-transparent border-0 cursor-pointer min-w-0">
       <span className="shrink-0 inline-flex">{logo}</span>
       <span className="flex flex-col gap-0.5 min-w-0">
-        <span data-active-school className="font-display font-bold text-[19px] leading-[1.2] break-words">{name}</span>
-        {subtitle && <span className="text-[12.5px] text-gold font-semibold">{subtitle}</span>}
+        <span data-active-school className="font-display font-bold text-lead leading-[1.2] break-words">{name}</span>
+        {subtitle && <span className="text-small text-gold font-semibold">{subtitle}</span>}
       </span>
     </button>
   );

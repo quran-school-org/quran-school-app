@@ -10,7 +10,7 @@ import { checkUserPermission } from "../types";
 import { useApp } from "../app/AppContext";
 import { isFamilyRole } from "../security/access";
 import { navLabel } from "../shell/navModel";
-import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, usePagination, useToast } from "../ui";
+import { Button, Card, EmptyState, GeometricPattern, IconButton, KpiGrid, KpiTile, PAGE_SIZES, PageHeader, Pagination, Pill, ProgressBar, SearchInput, Select, SectionHeader, usePagination, useToast } from "../ui";
 import { ALL, EMPTY_GRADE_FILTERS, OVERALL_GRADES, filterGrades, isFiltered, periodOptions, type GradeFilters } from "./grades/gradeFilters";
 import { formatDateAr } from "../format/date";
 
@@ -71,10 +71,12 @@ export default function GradesScreen() {
       <div className={family ? "grid grid-cols-1 gap-6 items-start" : "grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"}>
         <Card padded={false} className={family ? "overflow-hidden" : "lg:col-span-2 overflow-hidden"} aria-labelledby="grades-title">
           <div className="flex flex-col gap-3 px-5 py-4 border-b border-line-soft">
-            <div className="flex flex-wrap justify-between items-center gap-2">
-              <h2 id="grades-title" className="m-0 font-display font-semibold text-[20px] text-primary">قائمة شهادات الاختبار المعتمدة</h2>
-              <span className="text-[13.5px] text-ink-2">النتائج: <strong className="text-ink tabular-nums">{visible.length}</strong></span>
-            </div>
+            <SectionHeader
+              id="grades-title"
+              title="قائمة شهادات الاختبار المعتمدة"
+              actions={<span className="text-small text-ink-2">النتائج: <strong className="text-ink tabular-nums">{visible.length}</strong></span>}
+              className="flex-wrap items-center gap-2"
+            />
             {grades.length > 0 && showFilters && (
               <div data-grade-filters="" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <SearchInput
@@ -115,25 +117,25 @@ export default function GradesScreen() {
                   <li key={gr.id} data-grade={gr.id} data-exam-date={gr.examDate} className="px-5 py-4 flex flex-col md:flex-row justify-between gap-4 hover:bg-surface-2">
                     <div className="flex flex-col gap-2.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="m-0 font-sans font-semibold text-[15px] text-ink">{stud?.fullName || "طالب مجهول"}</h3>
+                        <h3 className="m-0 font-sans font-semibold text-body text-ink">{stud?.fullName || "طالب مجهول"}</h3>
                         <Pill tone={OVERALL_TONE[gr.overallGrade] || "neutral"}>{gr.overallGrade}</Pill>
                       </div>
-                      <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-ink-3">
+                      <div className="flex flex-wrap gap-x-5 gap-y-1 text-small text-ink-3">
                         <span>الامتحان: <strong className="font-semibold text-ink-2">{gr.testedPortion}</strong></span>
                         <span>تاريخ الاختبار: <span className="text-ink-2">{formatDateAr(gr.examDate)}</span></span>
                         {teacher && <span>الممتحن: <span className="text-ink-2">{teacher.fullName}</span></span>}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-lg">
                         <div className="flex flex-col gap-1">
-                          <span className="flex justify-between text-[12.5px] text-ink-2"><span>درجة الحفظ</span><strong className="tabular-nums text-primary">{gr.memorizationGrade}/20</strong></span>
+                          <span className="flex justify-between text-small text-ink-2"><span>درجة الحفظ</span><strong className="tabular-nums text-primary">{gr.memorizationGrade}/20</strong></span>
                           <ProgressBar value={Number(gr.memorizationGrade) || 0} max={20} height={6} className="flex-none" label={`درجة الحفظ ${gr.memorizationGrade} من 20`} />
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="flex justify-between text-[12.5px] text-ink-2"><span>درجة التجويد</span><strong className="tabular-nums text-primary">{gr.tajweedGrade}/20</strong></span>
+                          <span className="flex justify-between text-small text-ink-2"><span>درجة التجويد</span><strong className="tabular-nums text-primary">{gr.tajweedGrade}/20</strong></span>
                           <ProgressBar value={Number(gr.tajweedGrade) || 0} max={20} height={6} tone="gold" className="flex-none" label={`درجة التجويد ${gr.tajweedGrade} من 20`} />
                         </div>
                       </div>
-                      {gr.notes && <p className="m-0 text-[13px] bg-surface-2 border border-line-soft rounded-lg px-3 py-2 text-ink-2">«{gr.notes}»</p>}
+                      {gr.notes && <p className="m-0 text-small bg-surface-2 border border-line-soft rounded-lg px-3 py-2 text-ink-2">«{gr.notes}»</p>}
                     </div>
                     <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
                       {can("print") && (
@@ -166,15 +168,15 @@ export default function GradesScreen() {
           <GeometricPattern opacity={0.18} />
           <div className="relative flex flex-col items-center gap-3 rounded-xl border border-gold/40 p-5">
             <span className="w-12 h-12 rounded-full bg-gold/15 text-gold flex items-center justify-center">{ic(Award, "w-6 h-6")}</span>
-            <h2 className="m-0 font-display font-semibold text-[20px] text-gold-100">شهادة حفظ وتميز تجويدي</h2>
-            <p className="m-0 font-quran text-[17px] leading-loose text-night-text">
+            <h2 className="m-0 font-display font-semibold text-title text-gold-100">شهادة حفظ وتميز تجويدي</h2>
+            <p className="m-0 font-quran text-lead leading-loose text-night-text">
               قال رسول الله صلى الله عليه وسلم:<br />
               «الْمَاهِرُ بِالْقُرْآنِ مَعَ السَّفَرَةِ الْكِرَامِ الْبَرَرَةِ»
             </p>
             <span aria-hidden="true" className="block h-px w-2/3 bg-gradient-to-l from-transparent via-gold to-transparent" />
-            <p className="m-0 text-[13.5px] text-night-muted leading-relaxed">يصدر النادي شهادات معتمدة مع طباعة أوتوماتيكية للطلاب المتميزين تشجيعاً لهم في مسيرتهم التعليمية مع كتاب الله.</p>
+            <p className="m-0 text-small text-night-muted leading-relaxed">يصدر النادي شهادات معتمدة مع طباعة أوتوماتيكية للطلاب المتميزين تشجيعاً لهم في مسيرتهم التعليمية مع كتاب الله.</p>
           </div>
-          <p className="relative m-0 text-[12.5px] font-semibold text-gold">بإشراف {schoolName}</p>
+          <p className="relative m-0 text-small font-semibold text-gold">بإشراف {schoolName}</p>
         </aside>}
       </div>
     </div>

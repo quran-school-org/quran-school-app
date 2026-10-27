@@ -38,7 +38,7 @@ export default function StudentFormModal() {
     >
       <div className="flex flex-col gap-5">
         <fieldset className="m-0 p-4 rounded-xl border border-line bg-surface-2 flex flex-col gap-3">
-          <legend className="px-1 text-[14px] font-semibold text-ink">صورة الطالب الشخصية</legend>
+          <legend className="px-1 text-body font-semibold text-ink">صورة الطالب الشخصية</legend>
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             <div className="relative w-[72px] h-[72px] rounded-full border-2 border-gold overflow-hidden shrink-0 bg-sunken flex items-center justify-center">
               <StudentAvatar
@@ -60,8 +60,8 @@ export default function StudentFormModal() {
               >
                 <input type="file" id="student-photo-upload" accept="image/*" onChange={handleStudentPhotoUpload} className="sr-only" />
                 <label htmlFor="student-photo-upload" className="cursor-pointer flex flex-col items-center gap-1 min-h-11 justify-center">
-                  <span className="flex items-center gap-2 font-semibold text-[14px] text-ink"><ImagePlus className="w-4 h-4 text-primary" strokeWidth={1.75} aria-hidden="true" />اسحب صورة هنا أو انقر لاختيارها</span>
-                  <span className="text-[12.5px] text-ink-3">JPG، PNG (الحد الأقصى 2 ميغابايت)</span>
+                  <span className="flex items-center gap-2 font-semibold text-body text-ink"><ImagePlus className="w-4 h-4 text-primary" strokeWidth={1.75} aria-hidden="true" />اسحب صورة هنا أو انقر لاختيارها</span>
+                  <span className="text-small text-ink-3">JPG، PNG (الحد الأقصى 2 ميغابايت)</span>
                 </label>
               </div>
             </div>
@@ -104,7 +104,7 @@ export default function StudentFormModal() {
         </div>
 
         <fieldset className="m-0 p-0 border-0 border-t border-line-soft pt-4 flex flex-col gap-2">
-          <legend className="text-[14px] font-semibold text-ink mb-2">الأوراق والمستندات الإدارية المتوفرة</legend>
+          <legend className="text-body font-semibold text-ink mb-2">الأوراق والمستندات الإدارية المتوفرة</legend>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
             <CheckboxRow checked={formDocParentId} onChange={setFormDocParentId}>فوتوكوبي بطاقة ولي الأمر</CheckboxRow>
             <CheckboxRow checked={formDocBirthCert} onChange={setFormDocBirthCert}>عقد ازدياد الطالب</CheckboxRow>
@@ -115,9 +115,9 @@ export default function StudentFormModal() {
         <FormField label="ملاحظات توجيهية إضافية">{(id) => <Textarea id={id} rows={3} value={formNotes} onChange={(e: any) => setFormNotes(e.target.value)} placeholder="مستوى الذكاء، سرعة الحفظ، الالتزام بالآداب الإسلامية..." className="resize-none" />}</FormField>
 
         <div className="p-4 rounded-xl border border-line bg-surface-2 flex flex-col gap-2">
-          <p className="m-0 text-[14px] font-semibold text-ink">حالة الطالب بالنادي (نشط / مؤرشف)</p>
+          <p className="m-0 text-body font-semibold text-ink">حالة الطالب بالنادي (نشط / مؤرشف)</p>
           <CheckboxRow checked={formIsArchived} onChange={setFormIsArchived}>أرشفة هذا الطالب (تغيير حالته إلى غير نشط)</CheckboxRow>
-          <p className="m-0 text-[12.5px] text-ink-3">الطالب المؤرشف لن يظهر في القائمة الافتراضية للطلاب النشطين، ولن يطالب بسداد الرسوم الجديدة.</p>
+          <p className="m-0 text-small text-ink-3">الطالب المؤرشف لن يظهر في القائمة الافتراضية للطلاب النشطين، ولن يطالب بسداد الرسوم الجديدة.</p>
         </div>
       </div>
     </Modal>

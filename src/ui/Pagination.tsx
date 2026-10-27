@@ -26,7 +26,7 @@ export interface PaginationProps {
   [key: `data-${string}`]: string | undefined;
 }
 
-const btn = "inline-flex items-center justify-center min-w-10 h-10 sm:min-w-9 sm:h-9 px-2 rounded-[10px] border text-[14px] font-semibold tabular-nums cursor-pointer transition-colors disabled:opacity-45 disabled:cursor-not-allowed";
+const btn = "inline-flex items-center justify-center min-w-10 h-10 sm:min-w-9 sm:h-9 px-2 rounded-[10px] border text-body font-semibold tabular-nums cursor-pointer transition-colors disabled:opacity-45 disabled:cursor-not-allowed";
 
 export function Pagination({ page, pageCount, onPageChange, label, summary, className, ...rest }: PaginationProps) {
   const navRef = useRef<HTMLElement>(null);
@@ -71,7 +71,7 @@ export function Pagination({ page, pageCount, onPageChange, label, summary, clas
 
   return (
     <nav ref={navRef} aria-label={label} className={cx("flex flex-wrap items-center justify-between gap-x-4 gap-y-2", className)} {...rest}>
-      {summary && <p className="m-0 text-[13.5px] text-ink-2 tabular-nums" aria-live="polite">{summary}</p>}
+      {summary && <p className="m-0 text-small text-ink-2 tabular-nums" aria-live="polite">{summary}</p>}
       {pageCount > 1 && (
         <>
           {items(pageWindow(p, pageCount, 0), "flex sm:hidden")}

@@ -7,7 +7,7 @@ import { AlertTriangle, Bell, Camera, CheckCheck, CheckCircle2, Clock3, FileText
 import { StudentAvatar } from "../utils/studentAvatar";
 import { useApp } from "../app/AppContext";
 import {
-  ActionAlert, Button, Card, CardHeader, EmptyState, FormField, IconButton, Ltr, PageHeader, Pill,
+  ActionAlert, Button, Card, CardHeader, EmptyState, FormField, IconButton, Ltr, PageHeader, Pill, SectionHeader,
   SearchInput, SegmentedControl, Select, WhatsAppIcon, cx,
 } from "../ui";
 import { localIsoDate, pickTeacherClass, previousSessionDate, studentsToMarkPresent } from "../app/attendanceSessions";
@@ -138,8 +138,8 @@ export default function AttendanceScreen() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
             <div className="md:col-span-7 flex flex-col gap-3">
               {isScanning ? (
-                <div className="rounded-xl bg-primary-50 border border-primary-100 p-4 text-[13.5px] flex flex-col gap-1.5">
-                  <h3 className="m-0 font-semibold text-[14.5px] text-primary">طريقة الاستخدام (المسح بالكاميرا)</h3>
+                <div className="rounded-xl bg-primary-50 border border-primary-100 p-4 text-small flex flex-col gap-1.5">
+                  <h3 className="m-0 font-semibold text-body text-primary">طريقة الاستخدام (المسح بالكاميرا)</h3>
                   <ul className="m-0 list-disc ps-5 flex flex-col gap-1 text-ink-2 leading-relaxed">
                     <li>وجّه الكاميرا الخلفية لجهازك نحو كود الاستجابة السريعة (QR) أو الباركود الموجود خلف بطاقة الطالب.</li>
                     <li>حافظ على ثبات يدك في مكان مضاء جيداً لثانية واحدة.</li>
@@ -147,9 +147,9 @@ export default function AttendanceScreen() {
                   </ul>
                 </div>
               ) : (
-                <div className="rounded-xl bg-surface-2 border border-line-soft p-4 text-[13.5px] flex flex-col gap-3">
+                <div className="rounded-xl bg-surface-2 border border-line-soft p-4 text-small flex flex-col gap-3">
                   <div>
-                    <h3 className="m-0 font-semibold text-[14.5px] text-primary">طريقة الاستخدام (القارئ اليدوي / الخارجي)</h3>
+                    <h3 className="m-0 font-semibold text-body text-primary">طريقة الاستخدام (القارئ اليدوي / الخارجي)</h3>
                     <p className="m-0 mt-1 text-ink-2 leading-relaxed">
                       استخدم هذه الميزة عند ربط لابتوب/جهاز تابلت بـ <strong>مسدس قارئ باركود أو QR خارجي (USB / Bluetooth)</strong>، أو لإدخال رمز الطالب يدوياً.
                     </p>
@@ -177,11 +177,11 @@ export default function AttendanceScreen() {
                     />
                     <Button type="submit" variant="primary" className="shrink-0">إدخال</Button>
                   </form>
-                  <p className="m-0 text-[12.5px] text-ink-3">نصيحة: عند استخدام مسدس الباركود الخارجي، ستقوم الأداة بمجرد المسح بإرسال الرمز تلقائياً دون الحاجة للنقر على أي زر.</p>
+                  <p className="m-0 text-small text-ink-3">نصيحة: عند استخدام مسدس الباركود الخارجي، ستقوم الأداة بمجرد المسح بإرسال الرمز تلقائياً دون الحاجة للنقر على أي زر.</p>
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] text-ink-2 rounded-xl border border-line-soft bg-white px-3 py-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-small text-ink-2 rounded-xl border border-line-soft bg-white px-3 py-2">
                 <span className="flex items-center gap-1.5">{ic(Volume2, "w-4 h-4 text-primary")}مكبر الصوت ومؤشرات الصوت مفعلة تلقائياً للتنبيه.</span>
                 <Button size="xs" onClick={() => playBeep("success")} icon={ic(Bell, "w-3.5 h-3.5")}>اختبار نغمة الرنين</Button>
               </div>
@@ -215,8 +215,8 @@ export default function AttendanceScreen() {
                 <div className="aspect-square w-full max-w-[240px] rounded-2xl bg-sunken border-[1.5px] border-dashed border-line-strong flex flex-col items-center justify-center gap-3 p-6 text-center">
                   <span className="w-12 h-12 rounded-full bg-quiet flex items-center justify-center text-ink-3">{ic(Camera, "w-6 h-6")}</span>
                   <div>
-                    <p className="m-0 font-semibold text-[14px] text-ink-2">الكاميرا معطلة حالياً</p>
-                    <p className="m-0 mt-1 text-[12.5px] text-ink-3">انقر على زر الكاميرا بالأعلى لتفعيل التعرف البصري الفوري.</p>
+                    <p className="m-0 font-semibold text-body text-ink-2">الكاميرا معطلة حالياً</p>
+                    <p className="m-0 mt-1 text-small text-ink-3">انقر على زر الكاميرا بالأعلى لتفعيل التعرف البصري الفوري.</p>
                   </div>
                   <Button variant="primary" onClick={() => setIsScanning(true)}>تفعيل البصريات</Button>
                 </div>
@@ -231,7 +231,7 @@ export default function AttendanceScreen() {
         role="status"
         aria-label="ملخص رصد اليوم"
         data-attendance-summary
-        className="sticky top-0 z-20 -mx-4 sm:mx-0 px-4 sm:px-4 py-2.5 sm:rounded-xl bg-surface border-y sm:border border-line flex flex-wrap items-center gap-x-4 gap-y-1 text-[14px] text-ink-2"
+        className="sticky top-0 z-20 -mx-4 sm:mx-0 px-4 sm:px-4 py-2.5 sm:rounded-xl bg-surface border-y sm:border border-line flex flex-wrap items-center gap-x-4 gap-y-1 text-body text-ink-2"
       >
         <span className="font-semibold text-ink">{dateLabel(attendanceDate)}</span>
         {SUMMARY.map((x) => (
@@ -243,12 +243,12 @@ export default function AttendanceScreen() {
       </div>
 
       <Card padded={false} className="overflow-hidden" aria-labelledby="roll-title">
-        <div className="flex flex-wrap justify-between items-center gap-2 px-5 py-4 border-b border-line-soft">
-          <h2 id="roll-title" className="m-0 font-display font-semibold text-[20px] text-primary">
-            {selectedClassId === "all" ? "جميع طلاب حلقات التحفيظ" : `طلاب ${classes.find((c) => c.id === selectedClassId)?.name || ""}`}
-          </h2>
-          <Button variant="success" data-action="mark-all-present" disabled={toMark.length === 0} onClick={markAllPresent} icon={ic(CheckCheck, "w-5 h-5")}>تسجيل الجميع حاضرين</Button>
-        </div>
+        <SectionHeader
+          id="roll-title"
+          title={selectedClassId === "all" ? "جميع طلاب حلقات التحفيظ" : `طلاب ${classes.find((c) => c.id === selectedClassId)?.name || ""}`}
+          actions={<Button variant="success" data-action="mark-all-present" disabled={toMark.length === 0} onClick={markAllPresent} icon={ic(CheckCheck, "w-5 h-5")}>تسجيل الجميع حاضرين</Button>}
+          className="flex-wrap items-center gap-2 px-5 py-4 border-b border-line-soft"
+        />
         {filtered.length === 0 ? (
           <div className="p-5"><EmptyState title="لا طلاب">لا يوجد طلاب مسجلون في هذا الفصل حالياً.</EmptyState></div>
         ) : (
@@ -270,7 +270,7 @@ export default function AttendanceScreen() {
                           type="button"
                           data-action="open-monthly-report"
                           onClick={() => openReport(st)}
-                          className={cx("bg-transparent border-0 p-0 cursor-pointer font-semibold text-[14.5px] text-start hover:text-primary hover:underline flex items-center gap-1 min-h-8", st.isArchived ? "text-ink-3 line-through" : "text-ink")}
+                          className={cx("bg-transparent border-0 p-0 cursor-pointer font-semibold text-body text-start hover:text-primary hover:underline flex items-center gap-1 min-h-8", st.isArchived ? "text-ink-3 line-through" : "text-ink")}
                           title="عرض كشف حضور الطالب الشهري"
                         >
                           <span>{st.fullName}</span>
@@ -279,7 +279,7 @@ export default function AttendanceScreen() {
                         {st.isArchived && <Pill tone="neutral">مؤرشف</Pill>}
                         {selectedClassId === "all" && studentClass && <Pill tone="primary">{studentClass.name}</Pill>}
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[12.5px] text-ink-3">
+                      <div className="flex flex-wrap items-center gap-2 text-small text-ink-3">
                         <span className={cx(status !== "غائب" && "hidden sm:inline")}>ولي الأمر: {st.parentName}{st.parentPhone ? <> (<Ltr>{st.parentPhone}</Ltr>)</> : null}</span>
                         {absences >= 3 && <Pill tone="danger" dot>غائب لـ {absences} حصص متتالية</Pill>}
                         {record?.notes && <Pill tone="warn">{record.notes}</Pill>}
@@ -302,7 +302,7 @@ export default function AttendanceScreen() {
                             type="button"
                             aria-pressed={on}
                             onClick={() => handleToggleAttendance(st.id, b.value)}
-                            className={cx("inline-flex items-center justify-center gap-1.5 min-h-11 px-3 rounded-[10px] border text-[13.5px] font-semibold cursor-pointer transition-colors", on ? b.on : "bg-white border-line text-ink-2 hover:border-ink-4")}
+                            className={cx("inline-flex items-center justify-center gap-1.5 min-h-11 px-3 rounded-[10px] border text-small font-semibold cursor-pointer transition-colors", on ? b.on : "bg-white border-line text-ink-2 hover:border-ink-4")}
                           >
                             {ic(b.icon, "w-4 h-4")}{b.value}
                           </button>
@@ -319,19 +319,19 @@ export default function AttendanceScreen() {
 
       {urgent.length > 0 && (
         <section id="urgent-attendance-alerts" aria-labelledby="urgent-title" className="rounded-2xl bg-danger-100 border border-danger-200 p-5 flex flex-col gap-3">
-          <h2 id="urgent-title" className="m-0 flex items-center gap-2 font-display font-semibold text-[18px] text-danger-800">
+          <h2 id="urgent-title" className="m-0 flex items-center gap-2 font-display font-semibold text-lead text-danger-800">
             {ic(AlertTriangle, "w-5 h-5")}إنذارات الغياب المتكرر العاجلة (3 غيابات متتالية أو أكثر)
           </h2>
-          <p className="m-0 text-[13.5px] text-danger-900 leading-relaxed">
+          <p className="m-0 text-small text-danger-900 leading-relaxed">
             تم رصد طلاب متغيبين لثلاث حصص متتالية أو أكثر. يرجى الضغط على زر "إرسال إنذار غياب" للتواصل الفوري مع أولياء الأمور وتنبيههم لتبرير الغياب.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {urgent.map(({ student, count }) => (
               <div key={student.id} data-absence-alert={student.id} className="bg-surface border border-danger-200 rounded-xl p-3 flex flex-col items-start gap-2.5 min-w-0">
                 <div className="flex flex-col gap-1 min-w-0 max-w-full">
-                  <span className="font-semibold text-[14px] text-ink">{student.fullName}</span>
+                  <span className="font-semibold text-body text-ink">{student.fullName}</span>
                   <Pill tone="danger" className="self-start max-w-full whitespace-normal! text-start">متغيب لـ {count} حصص متتالية</Pill>
-                  <span className="text-[12.5px] text-ink-3">ولي الأمر: {student.parentName} (<Ltr>{student.parentPhone}</Ltr>)</span>
+                  <span className="text-small text-ink-3">ولي الأمر: {student.parentName} (<Ltr>{student.parentPhone}</Ltr>)</span>
                 </div>
                 <Button size="sm" variant="danger-solid" className="max-w-full whitespace-normal text-start" onClick={() => handleSendAbsenceWarning(student)} icon={<WhatsAppIcon className="w-3.5 h-3.5" />}>إرسال إنذار غياب</Button>
               </div>

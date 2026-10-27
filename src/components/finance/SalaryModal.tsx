@@ -86,7 +86,7 @@ export default function SalaryModal() {
       </div>
 
       {teachers.length > 0 ? (
-        <FormField label="اختر من لائحة الأطر والعاملين المسجلين" hint={<span className="text-[11.5px] text-primary-700 font-bold">يتم ملء الصفة والمبلغ تلقائياً</span>}>
+        <FormField label="اختر من لائحة الأطر والعاملين المسجلين" hint={<span className="text-caption text-primary-700 font-bold">يتم ملء الصفة والمبلغ تلقائياً</span>}>
           {(id) => (
             <Select
               id={id}

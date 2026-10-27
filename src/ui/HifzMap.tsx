@@ -65,19 +65,19 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
       <GeometricPattern size={64} opacity={0.09} />
       <div className="relative flex flex-wrap justify-between items-start gap-x-8 gap-y-4">
         <div className="flex flex-col gap-1.5 max-w-[56ch]">
-          <h2 id="hifz-map-title" className="m-0 font-display font-semibold text-[24px] sm:text-[28px] text-gold-100">{title}</h2>
-          <p className="m-0 text-[15px] text-night-muted leading-[1.7]">
+          <h2 id="hifz-map-title" className="m-0 font-display font-semibold text-title sm:text-heading text-gold-100">{title}</h2>
+          <p className="m-0 text-body text-night-muted leading-[1.7]">
             {description || "موقع كل طالب على الأحزاب الستين. كل نقطة طالب. اختر حزباً لعرض أسماء طلابه."}
           </p>
         </div>
         <div className="flex gap-7">
           <div className="flex flex-col">
-            <span className="text-[34px] font-bold text-white tabular-nums leading-[1.1]">{onMap}</span>
-            <span className="text-[13px] text-night-muted">طالباً على الخريطة</span>
+            <span className="text-heading font-bold text-white tabular-nums leading-[1.1]">{onMap}</span>
+            <span className="text-small text-night-muted">طالباً على الخريطة</span>
           </div>
           <div className="flex flex-col">
-            <span className="text-[34px] font-bold text-gold tabular-nums leading-[1.1]">{furthest}</span>
-            <span className="text-[13px] text-night-muted">أبعد حزب بلغه طالب</span>
+            <span className="text-heading font-bold text-gold tabular-nums leading-[1.1]">{furthest}</span>
+            <span className="text-small text-night-muted">أبعد حزب بلغه طالب</span>
           </div>
         </div>
       </div>
@@ -114,7 +114,7 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
               return (
                 <span key={n} className="flex flex-col items-center gap-1 min-w-0">
                   <span className="w-px" style={{ height: major ? 10 : 4, background: major ? "var(--color-gold)" : "var(--color-night-tick)" }} />
-                  <span className="text-[11.5px] text-night-muted tabular-nums h-[15px] whitespace-nowrap">{major ? n : ""}</span>
+                  <span className="text-caption text-night-muted tabular-nums h-[15px] whitespace-nowrap">{major ? n : ""}</span>
                 </span>
               );
             })}
@@ -123,11 +123,11 @@ export function HifzMap({ students, selected, onSelect, title = "خريطة ال
       </div>
 
       <div aria-live="polite" className="relative mt-[18px] flex flex-wrap items-center gap-x-3.5 gap-y-2.5 px-4 py-3.5 rounded-[14px] bg-white/[0.06] border border-night-line">
-        <span className="font-display text-[18px] text-gold-100">{`الحزب ${selected}`}</span>
-        <span className="text-[14px] text-night-muted">{selCount}</span>
+        <span className="font-display text-lead text-gold-100">{`الحزب ${selected}`}</span>
+        <span className="text-body text-night-muted">{selCount}</span>
         <span className="flex flex-wrap gap-1.5">
           {selList.map((s) => (
-            <span key={s.id} className="text-[13.5px] px-2.5 py-1 rounded-full bg-gold/[0.16] text-gold-pale">{s.name}</span>
+            <span key={s.id} className="text-small px-2.5 py-1 rounded-full bg-gold/[0.16] text-gold-pale">{s.name}</span>
           ))}
         </span>
       </div>

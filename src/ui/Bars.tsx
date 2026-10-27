@@ -48,7 +48,7 @@ export function StackedBar({ segments, label, height = 14, className }: { segmen
 
 export function Legend({ items, columns = 2 }: { items: { label: React.ReactNode; color: string }[]; columns?: number }) {
   return (
-    <div className="grid gap-x-3 gap-y-1 text-[13px] text-ink-2" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+    <div className="grid gap-x-3 gap-y-1 text-small text-ink-2" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
       {items.map((it, i) => (
         <span key={i} className="flex items-center gap-1.5">
           <span aria-hidden="true" className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: it.color }} />

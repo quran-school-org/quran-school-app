@@ -15,12 +15,12 @@ export function TableWrap({ children, className, label }: { children: React.Reac
 }
 
 export function Table({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <table className={cx("w-full border-collapse text-[14px] text-ink", className)}>{children}</table>;
+  return <table className={cx("w-full border-collapse text-body text-ink", className)}>{children}</table>;
 }
 
 export function Th({ children, className, ...rest }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <th scope="col" className={cx("px-3 py-3 text-start text-[13px] font-semibold text-ink-2 bg-surface-2 border-b border-line whitespace-nowrap", className)} {...rest}>
+    <th scope="col" className={cx("px-3 py-3 text-start text-small font-semibold text-ink-2 bg-surface-2 border-b border-line whitespace-nowrap", className)} {...rest}>
       {children}
     </th>
   );
@@ -137,8 +137,8 @@ export function DataTable<T>({ rows, rowKey, columns, label, actions, actionsHea
               <dl className="m-0 px-3.5 pb-3.5 grid grid-cols-2 gap-x-4 gap-y-2.5">
                 {fields.map((c) => (
                   <div key={c.id} className={cx("min-w-0", c.cardWide && "col-span-2")}>
-                    <dt className="text-[12.5px] text-ink-3">{c.cardLabel ?? c.header}</dt>
-                    <dd className="m-0 text-[14px] text-ink break-words">{(c.cardCell ?? c.cell)(row)}</dd>
+                    <dt className="text-small text-ink-3">{c.cardLabel ?? c.header}</dt>
+                    <dd className="m-0 text-body text-ink break-words">{(c.cardCell ?? c.cell)(row)}</dd>
                   </div>
                 ))}
               </dl>

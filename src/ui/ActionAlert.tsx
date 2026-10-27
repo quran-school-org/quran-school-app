@@ -28,9 +28,9 @@ export function ActionAlert({ tone = "neutral", icon, title, children, action, c
     <div role={role} className={cx("flex gap-3 p-3.5 rounded-xl", t.box, className)}>
       {icon && <span aria-hidden="true" className={cx("shrink-0 mt-0.5 inline-flex", t.icon)}>{icon}</span>}
       <div className="flex flex-col gap-1 min-w-0">
-        <span className={cx("font-semibold text-[14.5px]", t.title)}>{title}</span>
-        {children && <span className={cx("text-[13.5px] leading-relaxed", t.body)}>{children}</span>}
-        {action && <span className={cx("text-[13.5px] font-semibold", t.title)}>{action}</span>}
+        <span className={cx("font-semibold text-body", t.title)}>{title}</span>
+        {children && <span className={cx("text-small leading-relaxed", t.body)}>{children}</span>}
+        {action && <span className={cx("text-small font-semibold", t.title)}>{action}</span>}
       </div>
     </div>
   );

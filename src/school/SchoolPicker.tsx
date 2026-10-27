@@ -48,15 +48,15 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
       <div className="w-full max-w-lg flex flex-col gap-5">
         <div className="flex flex-col items-center text-center gap-3">
           <Emblem size={56} />
-          <h1 className="m-0 font-display font-bold text-[28px] sm:text-[32px] text-primary">اختيار المدرسة</h1>
-          <p className="m-0 text-[14.5px] text-ink-2">مرحباً {userName}، اختر المدرسة التي تريد الدخول إليها.</p>
+          <h1 className="m-0 font-display font-bold text-heading sm:text-heading text-primary">اختيار المدرسة</h1>
+          <p className="m-0 text-body text-ink-2">مرحباً {userName}، اختر المدرسة التي تريد الدخول إليها.</p>
         </div>
 
         <div className="rounded-3xl border border-line bg-surface p-5 sm:p-6 flex flex-col gap-4">
           {error && <ActionAlert role="alert" tone="danger" icon={<ShieldAlert className="w-5 h-5" strokeWidth={1.75} />} title={error} />}
 
           <div className="flex flex-col gap-2" id="school-picker-list">
-            {schools.length === 0 && <p className="m-0 text-[14px] text-ink-3 text-center py-4">لا توجد مدرسة مرتبطة بحسابك حالياً.</p>}
+            {schools.length === 0 && <p className="m-0 text-body text-ink-3 text-center py-4">لا توجد مدرسة مرتبطة بحسابك حالياً.</p>}
             {schools.map((school) => {
               const isMember = memberSchoolIds.includes(school.id);
               return (
@@ -69,9 +69,9 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <span aria-hidden="true" className="w-9 h-9 rounded-lg bg-night text-gold inline-flex items-center justify-center shrink-0"><Building className="w-4 h-4" strokeWidth={1.75} /></span>
-                    <span className="text-[15px] font-semibold text-ink truncate" title={school.name || school.id}>{school.name || school.id}</span>
+                    <span className="text-body font-semibold text-ink truncate" title={school.name || school.id}>{school.name || school.id}</span>
                   </span>
-                  <span className="text-[12.5px] text-ink-3 shrink-0" dir="ltr">{isMember ? school.id : `${school.id} • لست عضواً`}</span>
+                  <span className="text-small text-ink-3 shrink-0" dir="ltr">{isMember ? school.id : `${school.id} • لست عضواً`}</span>
                 </button>
               );
             })}
@@ -79,10 +79,10 @@ export default function SchoolPicker({ schools, memberSchoolIds, isSuperAdmin, u
 
           {isSuperAdmin && (
             <form onSubmit={handleCreate} className="border-t border-line-soft pt-4 flex flex-col gap-3" id="create-school-form">
-              <h2 className="m-0 flex items-center gap-1.5 font-sans font-semibold text-[15px] text-primary">
+              <h2 className="m-0 flex items-center gap-1.5 font-sans font-semibold text-body text-primary">
                 <Plus className="w-4 h-4 text-gold-700" strokeWidth={1.75} aria-hidden="true" />إنشاء مدرسة جديدة (المشرف العام)
               </h2>
-              {formError && <p role="alert" className="m-0 text-[13px] text-danger font-semibold">{formError}</p>}
+              {formError && <p role="alert" className="m-0 text-small text-danger font-semibold">{formError}</p>}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField label="اسم المدرسة">
                   {(id) => <Input id={id} type="text" value={newName} onChange={(e: any) => setNewName(e.target.value)} placeholder="اسم المدرسة" />}

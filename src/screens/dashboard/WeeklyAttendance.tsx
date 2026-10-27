@@ -45,7 +45,7 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
         title="الحضور هذا الأسبوع"
         description="نسبة الحضور اليومية مقارنة بالأسبوع الماضي."
         actions={
-          <label className="flex items-center gap-2 text-[14px] text-ink-2">
+          <label className="flex items-center gap-2 text-body text-ink-2">
             الحلقة
             <Select aria-label="الحلقة" value={classId} onChange={(v) => setClassId(v)} size="sm" className="w-auto">
               <option value="all">جميع الحلقات</option>
@@ -54,11 +54,11 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
           </label>
         }
       />
-      <div className="flex flex-wrap gap-x-8 gap-y-2 text-[14px] text-ink-2">
+      <div className="flex flex-wrap gap-x-8 gap-y-2 text-body text-ink-2">
         <span>هذا الأسبوع <strong className="text-ink tabular-nums">{pct(w.thisAvg)}</strong></span>
         <span>الأسبوع الماضي <strong className="text-ink tabular-nums">{pct(w.lastAvg)}</strong></span>
         {!empty && (
-          <span className="flex items-center gap-4 text-[13px]">
+          <span className="flex items-center gap-4 text-small">
             <span className="flex items-center gap-1.5"><span aria-hidden="true" className="w-2.5 h-2.5 rounded-[2px] bg-primary" />هذا الأسبوع</span>
             <span className="flex items-center gap-1.5"><span aria-hidden="true" className="w-2.5 h-2.5 rounded-[2px] bg-primary-200" />الأسبوع الماضي</span>
           </span>
@@ -66,23 +66,23 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
       </div>
 
       {empty || shown.length === 0 ? (
-        <p data-weekly="empty" className="m-0 text-center text-[14.5px] leading-[1.7] text-ink-2 bg-surface-2 px-4.5 py-6 rounded-xl border-[1.5px] border-dashed border-line-strong">{emptyLines.map((line, i) => <span key={i}>{i > 0 && " "}{line}</span>)}</p>
+        <p data-weekly="empty" className="m-0 text-center text-body leading-[1.7] text-ink-2 bg-surface-2 px-4.5 py-6 rounded-xl border-[1.5px] border-dashed border-line-strong">{emptyLines.map((line, i) => <span key={i}>{i > 0 && " "}{line}</span>)}</p>
       ) : (
         <>
           {/* Téléphone : une barre horizontale par jour de séance. */}
           <ul data-weekly="rows" className="sm:hidden m-0 p-0 list-none flex flex-col gap-3">
             {shown.map(({ d, last }) => (
               <li key={d.date} role="img" aria-label={aria(d.day, d.rate, last.rate, d.date)} className="flex items-center gap-3">
-                <span className="w-[4.5rem] shrink-0 text-[13px] text-ink-3">{d.day}</span>
+                <span className="w-[4.5rem] shrink-0 text-small text-ink-3">{d.day}</span>
                 {pendingDay(d.date, d.rate) ? (
-                  <span className="flex-1 text-[13.5px] font-semibold text-ink-2">{pendingLabel}</span>
+                  <span className="flex-1 text-small font-semibold text-ink-2">{pendingLabel}</span>
                 ) : (
                   <>
                     <span aria-hidden="true" className="flex-1 flex flex-col gap-1">
                       <span className="block h-3 rounded-full bg-primary" style={{ width: `${d.rate ?? 0}%`, minWidth: d.rate ? undefined : 0 }} />
                       <span className="block h-2 rounded-full bg-primary-200" style={{ width: `${last.rate ?? 0}%` }} />
                     </span>
-                    <span className="w-12 shrink-0 text-end text-[13px] font-bold text-ink tabular-nums">{d.rate === null ? "—" : <Ltr>{d.rate}%</Ltr>}</span>
+                    <span className="w-12 shrink-0 text-end text-small font-bold text-ink tabular-nums">{d.rate === null ? "—" : <Ltr>{d.rate}%</Ltr>}</span>
                   </>
                 )}
               </li>
@@ -93,16 +93,16 @@ export default function WeeklyAttendance({ attendance, classes, students }: { at
             {shown.map(({ d, last }) => (
               <div key={d.date} className="flex flex-col items-center gap-2">
                 {pendingDay(d.date, d.rate) ? (
-                  <div role="img" aria-label={aria(d.day, d.rate, last.rate, d.date)} className="w-full h-[130px] rounded-[10px] border-[1.5px] border-dashed border-line-strong bg-surface-2 flex items-center justify-center text-center px-2 text-[13.5px] font-semibold text-ink-2">{pendingLabel}</div>
+                  <div role="img" aria-label={aria(d.day, d.rate, last.rate, d.date)} className="w-full h-[130px] rounded-[10px] border-[1.5px] border-dashed border-line-strong bg-surface-2 flex items-center justify-center text-center px-2 text-small font-semibold text-ink-2">{pendingLabel}</div>
                 ) : (
                   <div role="img" aria-label={aria(d.day, d.rate, last.rate, d.date)} className="w-full h-[130px] rounded-[10px] bg-surface-2 border border-line-soft flex items-end justify-center gap-1.5 px-2 pt-6 pb-1.5">
                     <span className="w-1/3 rounded-t-[4px] bg-primary-200" style={{ height: `${last.rate ?? 0}%` }} />
                     <span className="w-1/3 rounded-t-[4px] bg-primary relative" style={{ height: `${d.rate ?? 0}%` }}>
-                      {d.rate !== null && <span className="absolute -top-5 inset-x-[-12px] text-center text-[11.5px] font-bold text-ink tabular-nums"><Ltr>{d.rate}%</Ltr></span>}
+                      {d.rate !== null && <span className="absolute -top-5 inset-x-[-12px] text-center text-caption font-bold text-ink tabular-nums"><Ltr>{d.rate}%</Ltr></span>}
                     </span>
                   </div>
                 )}
-                <span className="text-[13px] text-ink-3">{d.day}</span>
+                <span className="text-small text-ink-3">{d.day}</span>
               </div>
             ))}
           </div>

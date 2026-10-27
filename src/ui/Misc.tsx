@@ -43,7 +43,7 @@ export function DropdownMenu({ label, icon, items, buttonId, menuId, align = "en
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-2 min-h-11 px-4 rounded-[10px] border border-line-strong bg-surface text-ink text-[14.5px] font-semibold cursor-pointer hover:bg-surface-2"
+        className="inline-flex items-center gap-2 min-h-11 px-4 rounded-[10px] border border-line-strong bg-surface text-ink text-body font-semibold cursor-pointer hover:bg-surface-2"
       >
         {icon && <span aria-hidden="true" className="inline-flex">{icon}</span>}
         {label}
@@ -58,7 +58,7 @@ export function DropdownMenu({ label, icon, items, buttonId, menuId, align = "en
               role="menuitem"
               id={it.id}
               onClick={() => { setOpen(false); it.onClick(); }}
-              className="w-full flex items-center gap-2.5 min-h-11 px-4 text-start text-[14px] text-ink bg-transparent border-0 cursor-pointer hover:bg-surface-2"
+              className="w-full flex items-center gap-2.5 min-h-11 px-4 text-start text-body text-ink bg-transparent border-0 cursor-pointer hover:bg-surface-2"
             >
               {it.icon && <span aria-hidden="true" className="inline-flex text-ink-3">{it.icon}</span>}
               {it.label}
@@ -74,8 +74,8 @@ export function DropdownMenu({ label, icon, items, buttonId, menuId, align = "en
 export function InfoRow({ label, children, strong }: { label: React.ReactNode; children: React.ReactNode; strong?: boolean }) {
   return (
     <div className="flex justify-between items-baseline gap-3 py-2 border-b border-line-faint last:border-b-0">
-      <dt className="text-[13.5px] text-ink-2 shrink-0">{label}</dt>
-      <dd className={cx("m-0 text-[14px] text-end min-w-0 break-words", strong ? "font-bold text-primary" : "font-semibold text-ink")}>{children}</dd>
+      <dt className="text-small text-ink-2 shrink-0">{label}</dt>
+      <dd className={cx("m-0 text-body text-end min-w-0 break-words", strong ? "font-bold text-primary" : "font-semibold text-ink")}>{children}</dd>
     </div>
   );
 }

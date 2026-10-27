@@ -17,7 +17,7 @@ const TONES: Record<PillTone, string> = {
 
 export function Pill({ tone = "neutral", children, className, dot, title }: { tone?: PillTone; children: React.ReactNode; className?: string; dot?: boolean; title?: string }) {
   return (
-    <span title={title} className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12.5px] font-semibold whitespace-nowrap leading-6", TONES[tone], className)}>
+    <span title={title} className={cx("inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-small font-semibold whitespace-nowrap leading-6", TONES[tone], className)}>
       {dot && <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-current" />}
       {children}
     </span>
@@ -27,7 +27,7 @@ export function Pill({ tone = "neutral", children, className, dot, title }: { to
 /** Pastille numérique (compteur) dorée de la maquette. */
 export function CountBadge({ value, tone = "gold", className }: { value: number; tone?: "gold" | "danger"; className?: string }) {
   return (
-    <span className={cx("inline-flex items-center justify-center rounded-full px-2 text-[12px] font-bold tabular-nums min-w-6 h-[22px]", tone === "gold" ? "bg-gold text-night" : "bg-danger text-white", className)}>
+    <span className={cx("inline-flex items-center justify-center rounded-full px-2 text-caption font-bold tabular-nums min-w-6 h-[22px]", tone === "gold" ? "bg-gold text-night" : "bg-danger text-white", className)}>
       {value}
     </span>
   );

@@ -35,11 +35,11 @@ export function CardHeader({ title, description, actions, id, icon, className, l
   return (
     <div className={cx("flex flex-wrap justify-between items-start gap-x-5 gap-y-3", className)}>
       <div className="flex flex-col gap-1 min-w-0 max-w-[60ch]">
-        <H id={id} className={cx("m-0 font-sans font-semibold text-primary flex items-center gap-2", level === 2 ? "text-[22px] leading-snug" : "text-[18px] leading-snug")}>
+        <H id={id} className={cx("m-0 font-sans font-semibold text-primary flex items-center gap-2", level === 2 ? "text-title leading-snug" : "text-lead leading-snug")}>
           {icon && <span aria-hidden="true" className="inline-flex text-gold-700">{icon}</span>}
           {title}
         </H>
-        {description && <p className="m-0 text-[14px] text-ink-2 leading-relaxed">{description}</p>}
+        {description && <p className="m-0 text-body text-ink-2 leading-relaxed">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>

@@ -93,7 +93,7 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
-            className="inline-flex items-center justify-center gap-2 h-11 px-3.5 rounded-xl border border-night-line-2 bg-transparent text-night-link text-[14px] font-semibold cursor-pointer hover:bg-white/[0.08] transition-colors"
+            className="inline-flex items-center justify-center gap-2 h-11 px-3.5 rounded-xl border border-night-line-2 bg-transparent text-night-link text-body font-semibold cursor-pointer hover:bg-white/[0.08] transition-colors"
           >
             <LogOut className="w-[18px] h-[18px] -scale-x-100" strokeWidth={1.75} aria-hidden="true" />
             <span>خروج</span>
@@ -106,18 +106,18 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
         title={currentRole === "طالب" ? "الانتقال إلى ملف الحفظ والتجويد الشخصي" : "استعراض الإحصائيات"}
         className="text-start border border-night-line-2 rounded-[14px] p-3.5 flex flex-col gap-1.5 bg-night/85 hover:bg-white/[0.06] cursor-pointer transition-colors text-night-text"
       >
-        <span className="text-[12.5px] text-night-soft">{statsLabel}</span>
+        <span className="text-small text-night-soft">{statsLabel}</span>
         {isParent ? (
           <ul className="m-0 p-0 list-none flex flex-col gap-1.5" data-family-sidebar={family.kind}>
             {family.lines.map((l) => (
               <li key={l.id} className="flex items-baseline justify-between gap-3" data-family-sidebar-child={l.id}>
-                <span className={`font-semibold text-white min-w-0 truncate ${family.kind === "one" ? "text-[17px]" : "text-[14px]"}`} title={l.name}>{l.name}</span>
-                <span className="text-[12.5px] text-night-muted shrink-0">الحزب الحالي : <span className="font-semibold text-gold tabular-nums text-[14px]">{l.hizb}</span></span>
+                <span className={`font-semibold text-white min-w-0 truncate ${family.kind === "one" ? "text-lead" : "text-body"}`} title={l.name}>{l.name}</span>
+                <span className="text-small text-night-muted shrink-0">الحزب الحالي : <span className="font-semibold text-gold tabular-nums text-body">{l.hizb}</span></span>
               </li>
             ))}
-            {family.kind === "none" && <li className="text-[12.5px] text-night-muted">لا يوجد أبناء مرتبطون بحسابك</li>}
+            {family.kind === "none" && <li className="text-small text-night-muted">لا يوجد أبناء مرتبطون بحسابك</li>}
             {family.extra > 0 && (
-              <li className="text-[12.5px] text-night-muted" data-family-sidebar-extra>
+              <li className="text-small text-night-muted" data-family-sidebar-extra>
                 <span aria-hidden="true" className="tabular-nums">+{family.extra}</span>
                 <span className="sr-only">{extraChildrenLabel(family.extra)}</span>
               </li>
@@ -126,18 +126,18 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
         ) : (
           <span className="flex items-end justify-between gap-3">
             <span className="flex items-baseline gap-1.5">
-              <span className="text-[24px] font-bold tabular-nums text-white leading-none">{statsValue}</span>
-              <span className="text-[12.5px] text-night-muted">{statsUnit}</span>
+              <span className="text-title font-bold tabular-nums text-white leading-none">{statsValue}</span>
+              <span className="text-small text-night-muted">{statsUnit}</span>
             </span>
             <span className="flex flex-col items-end">
-              <span className="text-[14px] font-semibold text-gold tabular-nums">{statsSecond}</span>
-              <span className="text-[11.5px] text-night-muted">{statsSecondLabel}</span>
+              <span className="text-body font-semibold text-gold tabular-nums">{statsSecond}</span>
+              <span className="text-caption text-night-muted">{statsSecondLabel}</span>
             </span>
           </span>
         )}
       </button>
       {syncError && (
-        <div className="flex items-center gap-2.5 px-1.5 text-[12.5px] text-night-soft" role="status" data-sync-error>
+        <div className="flex items-center gap-2.5 px-1.5 text-small text-night-soft" role="status" data-sync-error>
           <span aria-hidden="true" className="w-2 h-2 rounded-full shrink-0 bg-danger" />
           <span>تعذّر الاتصال بقاعدة البيانات، العمل على النسخة المحلية</span>
         </div>
@@ -171,14 +171,14 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
           menuOpen={isMobileMenuOpen}
           mobileBrand={
             <span className="flex items-center gap-2 min-w-0">
-              <span className="font-display font-bold text-[17px] text-primary truncate" data-active-school-mobile title={schoolName}>{schoolName}</span>
+              <span className="font-display font-bold text-lead text-primary truncate" data-active-school-mobile title={schoolName}>{schoolName}</span>
             </span>
           }
         />
       }
       banner={<>{firestoreQuotaExceeded ? <QuotaBanner /> : null}<RolePreviewBannerSlot /></>}
       footer={
-        <footer className="px-4 sm:px-8 pb-6 flex flex-wrap items-center justify-between gap-2 text-[12.5px] text-ink-3 max-w-[1240px] print:hidden">
+        <footer className="px-4 sm:px-8 pb-6 flex flex-wrap items-center justify-between gap-2 text-small text-ink-3 max-w-[1240px] print:hidden">
           <span>نظام إدارة حلقات تحفيظ القرآن الكريم • {schoolName}</span>
           <span>جميع الحقوق محفوظة © {new Date().getFullYear()}</span>
         </footer>

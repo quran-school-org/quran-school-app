@@ -38,13 +38,13 @@ export default function StaffDirectoryModal() {
     >
       {/* Official Document Header */}
       <div className="text-center pb-4 border-b border-line space-y-1">
-        <div className="text-[13px] text-ink-3">{systemSettings?.associationName || ""}</div>
+        <div className="text-small text-ink-3">{systemSettings?.associationName || ""}</div>
         <h3 className="text-lg font-bold text-primary">سجل وحصر شؤون العاملين والأطر</h3>
-        <p className="text-[13px] text-ink-3">الموسم الدراسي: {systemSettings?.activeAcademicSeason || ""}</p>
+        <p className="text-small text-ink-3">الموسم الدراسي: {systemSettings?.activeAcademicSeason || ""}</p>
       </div>
 
       {/* Table */}
-      <table className="w-full text-right text-[13px] border border-line">
+      <table className="w-full text-right text-small border border-line">
         <thead className="bg-sand-100 border-b border-line text-ink font-bold">
           <tr>
             <th className="p-2 border-l border-line">#</th>
@@ -76,18 +76,18 @@ export default function StaffDirectoryModal() {
       </table>
 
       {/* Signatures */}
-      <div className="grid grid-cols-3 gap-6 pt-6 border-t border-line text-center text-[13px]">
+      <div className="grid grid-cols-3 gap-6 pt-6 border-t border-line text-center text-small">
         <div>
           <p className="font-bold text-ink-2">توقيع الكاتب العام</p>
-          <p className="text-[11.5px] text-ink-3 mt-8">{systemSettings?.secretaryGeneralName || "........................"}</p>
+          <p className="text-caption text-ink-3 mt-8">{systemSettings?.secretaryGeneralName || "........................"}</p>
         </div>
         <div>
           <p className="font-bold text-ink-2">أمين المال</p>
-          <p className="text-[11.5px] text-ink-3 mt-8">{systemSettings?.treasurerName || "........................"}</p>
+          <p className="text-caption text-ink-3 mt-8">{systemSettings?.treasurerName || "........................"}</p>
         </div>
         <div>
           <p className="font-bold text-ink-2">رئيس الجمعية</p>
-          <p className="text-[11.5px] text-ink-3 mt-8">{systemSettings?.presidentName || "........................"}</p>
+          <p className="text-caption text-ink-3 mt-8">{systemSettings?.presidentName || "........................"}</p>
         </div>
       </div>
     </Modal>

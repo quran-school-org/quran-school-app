@@ -76,7 +76,7 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: (id: number)
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
-      className={cx("pointer-events-auto flex items-start gap-2.5 ps-4 pe-2 py-2.5 rounded-xl text-[14px] leading-relaxed shadow-toast animate-fadeIn font-sans", st.box)}
+      className={cx("pointer-events-auto flex items-start gap-2.5 ps-4 pe-2 py-2.5 rounded-xl text-body leading-relaxed shadow-toast animate-fadeIn font-sans", st.box)}
     >
       <span className="mt-[3px] shrink-0">{st.icon}</span>
       <span className="flex-1 min-w-0 py-1 whitespace-pre-line break-words">{toast.message}</span>

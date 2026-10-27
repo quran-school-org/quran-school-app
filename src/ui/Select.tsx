@@ -407,8 +407,8 @@ export function Select(props: SelectProps) {
         className={cx(
           "w-full inline-flex items-center gap-2 text-start cursor-pointer select-none",
           variant === "field"
-            ? cx(fieldClass, size === "sm" ? "min-h-9 text-[13.5px] px-2.5" : "", open && "border-gold ring-2 ring-gold/25")
-            : "min-h-10 px-1 bg-transparent border-0 text-[14px] font-semibold text-ink rounded-lg focus:outline-none disabled:cursor-not-allowed disabled:text-ink-3",
+            ? cx(fieldClass, size === "sm" ? "min-h-9 text-small px-2.5" : "", open && "border-gold ring-2 ring-gold/25")
+            : "min-h-10 px-1 bg-transparent border-0 text-body font-semibold text-ink rounded-lg focus:outline-none disabled:cursor-not-allowed disabled:text-ink-3",
           triggerClassName,
         )}
       >
@@ -459,7 +459,7 @@ export function Select(props: SelectProps) {
                     aria-autocomplete="list"
                     aria-activedescendant={active >= 0 ? optId(active) : undefined}
                     autoComplete="off"
-                    className={cx(fieldClass, "w-full min-h-10 ps-9 text-[16px] sm:text-[14px]")}
+                    className={cx(fieldClass, "w-full min-h-10 ps-9 text-lead sm:text-body")}
                   />
                 </div>
               </div>
@@ -492,7 +492,7 @@ export function Select(props: SelectProps) {
                     onClick={() => choose(i)}
                     className={cx(
                       hide ? "hidden" : "flex",
-                      "items-center gap-2 min-h-11 px-3 py-2 rounded-lg text-[14px] leading-snug cursor-pointer",
+                      "items-center gap-2 min-h-11 px-3 py-2 rounded-lg text-body leading-snug cursor-pointer",
                       i === active && "bg-primary-50",
                       isSel ? "font-semibold text-primary" : "text-ink",
                       o.disabled && "opacity-50 cursor-not-allowed",
@@ -503,7 +503,7 @@ export function Select(props: SelectProps) {
                   </li>
                 );
               })}
-              {noMatch && <li role="presentation" className="px-3 py-3 text-[13.5px] text-ink-3">لا توجد نتائج مطابقة</li>}
+              {noMatch && <li role="presentation" className="px-3 py-3 text-small text-ink-3">لا توجد نتائج مطابقة</li>}
             </ul>
           </div>,
           document.body,

@@ -81,4 +81,16 @@ describe("interface : valeurs codées en dur retirées", () => {
     expect(hits(/["'>`](إنشاء (الحلقة|النشاط)|تسجيل (الكادر|المصروف)|تأكيد التسجيل|إتمام التسجيل والبدء)["'<`]/)).toEqual([]);
     expect(hits(/["'>`]جارٍ /)).toEqual([]);
   });
+  it("tailles de texte : échelle `text-caption … text-display` de src/index.css, plus de `text-[Npx]` (D101)", () => {
+    // Exceptions : impressions et aperçus de cartes (src/print/, tailles calées sur le papier), et le « +N » de
+    // la carte du hifz (9 px dans une colonne de 20 px : aucun pas de l'échelle n'y tient).
+    const allowed = ["src/ui/HifzMap.tsx"];
+    const hits = all
+      .filter(([f]) => !f.startsWith("src/print/") && !allowed.includes(f.split("\\").join("/")))
+      .filter(([, src]) => /text-\[\d+(\.\d+)?px\]/.test(src));
+    expect(hits.map(([f]) => f)).toEqual([]);
+    const css = readFileSync("src/index.css", "utf8");
+    const steps = [...css.matchAll(/--text-([a-z]+):\s*([\d.]+)px;/g)].map((m) => m[1]);
+    expect(steps).toEqual(["caption", "small", "body", "lead", "title", "heading", "display"]);
+  });
 });
