@@ -39,7 +39,7 @@ export function ActionAlert({ tone = "neutral", icon, title, children, action, c
 /** Lien d'action en forme de texte souligné (dans les alertes). */
 export function TextAction({ onClick, children, className }: { onClick: () => void; children: React.ReactNode; className?: string }) {
   return (
-    <button type="button" onClick={onClick} className={cx("p-0 bg-transparent border-0 underline underline-offset-4 font-semibold cursor-pointer text-current text-start min-h-6", className)}>
+    <button type="button" onClick={onClick} className={cx("touch-target p-0 bg-transparent border-0 underline underline-offset-4 font-semibold cursor-pointer text-current text-start min-h-6", className)}>
       {children}
     </button>
   );

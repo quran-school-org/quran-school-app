@@ -320,7 +320,7 @@ export default function ClassManagement({
                                 onSwitchTab("students");
                               }
                             }}
-                            className="min-h-8 px-2.5 rounded-full border border-line bg-white text-small text-ink-2 cursor-pointer hover:border-primary hover:text-primary transition-colors"
+                            className="touch-target min-h-8 px-2.5 rounded-full border border-line bg-white text-small text-ink-2 cursor-pointer hover:border-primary hover:text-primary transition-colors"
                             title="انقر لعرض تفاصيل الطالب"
                           >
                             {st.fullName}

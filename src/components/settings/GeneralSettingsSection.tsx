@@ -388,7 +388,7 @@ export default function GeneralSettingsSection() {
                   <button
                     type="button"
                     onClick={() => setFeeOverrides((prev) => [...prev, { year: new Date().getFullYear(), month: MONTHS_AR[new Date().getMonth()], amount: Number(subscriptionFee) || 0 }])}
-                    className="text-caption text-primary-700 hover:text-primary-900 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-2 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer"
+                    className="touch-target text-caption text-primary-700 hover:text-primary-900 bg-primary-50 hover:bg-primary-100 border border-primary-200 px-2 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer"
                   >
                     <Plus className="w-3 h-3" />
                     <span>إضافة تعريفة خاصة</span>
@@ -487,7 +487,7 @@ export default function GeneralSettingsSection() {
                     role="switch"
                     aria-checked={allowSelfRegistration}
                     aria-label="السماح بالتسجيل الذاتي للطلاب الجدد"
-                    className="text-primary-600 hover:text-primary-700 transition"
+                    className="touch-target text-primary-600 hover:text-primary-700 transition"
                   >
                     {allowSelfRegistration ? (
                       <ToggleRight className="w-9 h-9" />
@@ -508,7 +508,7 @@ export default function GeneralSettingsSection() {
                     role="switch"
                     aria-checked={showStampOnReceipts}
                     aria-label="إظهار خاتم وتوقيع الإدارة على وصولات الدفع"
-                    className="text-primary-600 hover:text-primary-700 transition"
+                    className="touch-target text-primary-600 hover:text-primary-700 transition"
                   >
                     {showStampOnReceipts ? (
                       <ToggleRight className="w-9 h-9" />

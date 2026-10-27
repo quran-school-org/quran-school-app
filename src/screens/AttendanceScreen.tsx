@@ -270,7 +270,7 @@ export default function AttendanceScreen() {
                           type="button"
                           data-action="open-monthly-report"
                           onClick={() => openReport(st)}
-                          className={cx("bg-transparent border-0 p-0 cursor-pointer font-semibold text-body text-start hover:text-primary hover:underline flex items-center gap-1 min-h-8", st.isArchived ? "text-ink-3 line-through" : "text-ink")}
+                          className={cx("touch-target bg-transparent border-0 p-0 cursor-pointer font-semibold text-body text-start hover:text-primary hover:underline flex items-center gap-1 min-h-8", st.isArchived ? "text-ink-3 line-through" : "text-ink")}
                           title="عرض كشف حضور الطالب الشهري"
                         >
                           <span>{st.fullName}</span>

@@ -53,33 +53,33 @@ export default function RevenuesSection() {
   };
 
   const sortIncome = (label: string, key: string) =>
-    renderSortableHeader(label, key, incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir));
+    ({ header: renderSortableHeader(label, key, incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir)), cardLabel: label });
   const sortStudentPay = (label: string, key: string) =>
-    renderSortableHeader(label, key, studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir));
+    ({ header: renderSortableHeader(label, key, studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir)), cardLabel: label });
 
   const incomeColumns: DataColumn<OtherIncome>[] = [
     {
-      id: "title", header: sortIncome("عنوان الدخل / التبرع", "title"), card: "title", className: "font-bold text-ink",
+      id: "title", ...sortIncome("عنوان الدخل / التبرع", "title"), card: "title", className: "font-bold text-ink",
       cell: (inc) => (<>{inc.title}{inc.notes && <p className="m-0 text-caption text-ink-3 font-normal">{inc.notes}</p>}</>),
     },
     {
-      id: "category", header: sortIncome("نوع الدخل", "category"), card: "field",
+      id: "category", ...sortIncome("نوع الدخل", "category"), card: "field",
       cell: (inc) => (
         <span className="bg-primary-50 text-primary-800 font-semibold px-2.5 py-1 rounded-full text-caption border border-primary-200">{inc.category}</span>
       ),
     },
-    { id: "amount", header: sortIncome("المبلغ", "amount"), card: "field", className: "font-bold text-primary-800", cell: (inc) => formatMoney(inc.amount) },
-    { id: "donorName", header: sortIncome("المتبرع / الجهة", "donorName"), className: "font-medium text-ink-2", cell: (inc) => inc.donorName || "فاعل خير" },
+    { id: "amount", ...sortIncome("المبلغ", "amount"), card: "field", className: "font-bold text-primary-800", cell: (inc) => formatMoney(inc.amount) },
+    { id: "donorName", ...sortIncome("المتبرع / الجهة", "donorName"), className: "font-medium text-ink-2", cell: (inc) => inc.donorName || "فاعل خير" },
     {
-      id: "source", header: sortIncome("مكان الإيداع", "source"), card: "field",
+      id: "source", ...sortIncome("مكان الإيداع", "source"), card: "field",
       cell: (inc) => (
         <span className={`px-2.5 py-1 rounded-full text-caption font-bold ${
           inc.source === "حساب الجمعية البنكي" ? "bg-primary-50 text-primary-800 border border-primary-200" : "bg-gold-50 text-gold-800 border border-gold-200"
         }`}>{inc.source}</span>
       ),
     },
-    { id: "date", header: sortIncome("تاريخ الاستلام", "date"), card: "field", className: "text-ink-3", cell: (inc) => formatDateAr(inc.date) },
-    { id: "receiptNo", header: sortIncome("رقم الإيصال", "receiptNo"), className: "text-ink-3 font-mono", cell: (inc) => inc.receiptNo || "—" },
+    { id: "date", ...sortIncome("تاريخ الاستلام", "date"), card: "field", className: "text-ink-3", cell: (inc) => formatDateAr(inc.date) },
+    { id: "receiptNo", ...sortIncome("رقم الإيصال", "receiptNo"), className: "text-ink-3 font-mono", cell: (inc) => inc.receiptNo || "—" },
   ];
 
   const participantColumns: DataColumn<ActivityParticipant>[] = [
@@ -144,19 +144,19 @@ export default function RevenuesSection() {
 
   const studentPayColumns: DataColumn<Payment>[] = [
     {
-      id: "student", header: sortStudentPay("الطالب / المكتتب", "studentName"), card: "title", className: "font-bold text-ink",
+      id: "student", ...sortStudentPay("الطالب / المكتتب", "studentName"), card: "title", className: "font-bold text-ink",
       cell: (p) => { const student = students.find((s) => s.id === p.studentId); return student ? student.fullName : `طالب #${p.studentId}`; },
     },
-    { id: "period", header: sortStudentPay("الشهر / السنة", "monthYear"), card: "field", className: "font-semibold text-ink-2", cell: (p) => `${p.month} ${p.year}` },
-    { id: "amount", header: sortStudentPay("المبلغ المدفوع", "amount"), card: "field", className: "font-bold text-primary-800", cell: (p) => formatMoney(p.amount) },
+    { id: "period", ...sortStudentPay("الشهر / السنة", "monthYear"), card: "field", className: "font-semibold text-ink-2", cell: (p) => `${p.month} ${p.year}` },
+    { id: "amount", ...sortStudentPay("المبلغ المدفوع", "amount"), card: "field", className: "font-bold text-primary-800", cell: (p) => formatMoney(p.amount) },
     {
-      id: "method", header: sortStudentPay("طريقة الأداء", "paymentMethod"), className: "text-ink-2",
+      id: "method", ...sortStudentPay("طريقة الأداء", "paymentMethod"), className: "text-ink-2",
       cell: (p) => <span className="bg-sand-100 px-2.5 py-1 rounded-full text-small border border-line">{p.paymentMethod || "نقداً"}</span>,
     },
-    { id: "receiptNo", header: sortStudentPay("رقم الإيصال", "receiptNo"), className: "text-ink-3 font-mono", cell: (p) => p.receiptNo || "—" },
-    { id: "date", header: sortStudentPay("تاريخ التسديد", "paymentDate"), className: "text-ink-3", cell: (p) => formatDateAr(p.paymentDate) },
+    { id: "receiptNo", ...sortStudentPay("رقم الإيصال", "receiptNo"), className: "text-ink-3 font-mono", cell: (p) => p.receiptNo || "—" },
+    { id: "date", ...sortStudentPay("تاريخ التسديد", "paymentDate"), className: "text-ink-3", cell: (p) => formatDateAr(p.paymentDate) },
     {
-      id: "status", header: sortStudentPay("الحالة", "status"), card: "field",
+      id: "status", ...sortStudentPay("الحالة", "status"), card: "field",
       cell: () => (
         <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full">
           <CheckCircle className="w-3 h-3" />

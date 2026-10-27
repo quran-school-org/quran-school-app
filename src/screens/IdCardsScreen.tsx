@@ -272,7 +272,7 @@ export default function IdCardsScreen() {
                       {/* 2. Print Front Only */}
                       <button
                         onClick={() => handlePrintLabCard("front")}
-                        className="bg-white hover:bg-primary-50 text-primary-700 border border-primary-300 font-bold text-small px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
+                        className="touch-target bg-white hover:bg-primary-50 text-primary-700 border border-primary-300 font-bold text-small px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
                         title="طباعة الجهة الأمامية للبطاقة فقط"
                       >
                         <FileText className="w-3.5 h-3.5 text-primary-600" />
@@ -286,7 +286,7 @@ export default function IdCardsScreen() {
                       {/* 3. Print Back Only */}
                       <button
                         onClick={() => handlePrintLabCard("back")}
-                        className="bg-white hover:bg-gold-50 text-gold-700 border border-gold-300 font-bold text-small px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
+                        className="touch-target bg-white hover:bg-gold-50 text-gold-700 border border-gold-300 font-bold text-small px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition hover:shadow-md"
                         title="طباعة الجهة الخلفية للبطاقة فقط"
                       >
                         <FileText className="w-3.5 h-3.5 text-gold-600" />
@@ -334,7 +334,7 @@ export default function IdCardsScreen() {
                         <button
                           key={preset.val}
                           onClick={() => setLabScale(preset.val)}
-                          className={`text-caption font-bold px-2.5 py-1.5 rounded-lg border transition ${
+                          className={`touch-target text-caption font-bold px-2.5 py-1.5 rounded-lg border transition ${
                             Math.abs(labScale - preset.val) < 0.01
                               ? "bg-primary-600 text-white border-primary-600"
                               : "bg-sand-50 hover:bg-sand-100 border-line text-ink-2"
@@ -357,7 +357,7 @@ export default function IdCardsScreen() {
                               setLabViewMode("both");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labViewMode === "both" && labDisplayType === "print" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -368,7 +368,7 @@ export default function IdCardsScreen() {
                               setLabViewMode("front");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labViewMode === "front" && labDisplayType === "print" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -379,7 +379,7 @@ export default function IdCardsScreen() {
                               setLabViewMode("back");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labViewMode === "back" && labDisplayType === "print" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -394,7 +394,7 @@ export default function IdCardsScreen() {
                         <div className="grid grid-cols-2 gap-1 bg-sand-100 p-1 rounded-xl border border-line text-caption">
                           <button
                             onClick={() => setLabPrintMode("single")}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labPrintMode === "single" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >
@@ -408,7 +408,7 @@ export default function IdCardsScreen() {
                               setLabPrintMode("bulk");
                               setLabDisplayType("print");
                             }}
-                            className={`py-1.5 rounded-lg font-bold transition text-center ${
+                            className={`touch-target py-1.5 rounded-lg font-bold transition text-center ${
                               labPrintMode === "bulk" ? "bg-white text-primary-800" : "text-ink-3 hover:text-ink"
                             }`}
                           >

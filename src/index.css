@@ -142,6 +142,24 @@
   --shadow-pop: 0 12px 32px rgba(16, 36, 70, 0.16);
 }
 
+/*
+ * Zone de toucher d'au moins 44 px (D101) autour d'un contrôle plus petit, sans changer son dessin
+ * ni la mise en page : pseudo-élément transparent centré sur le contrôle (même technique que
+ * `IconButton size="sm"`). À poser sur un contrôle statique (le pseudo-élément le suppose `relative`).
+ */
+@utility touch-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    translate: -50% -50%;
+  }
+}
+
 @layer base {
   /* Tableaux dans une zone défilante : largeur minimale lisible sur mobile
      (défilement horizontal dans la carte, jamais de la page). */

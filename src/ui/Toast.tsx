@@ -85,7 +85,7 @@ function ToastCard({ toast, onClose }: { toast: ToastItem; onClose: (id: number)
         onClick={() => onClose(toast.id)}
         aria-label={st.closeLabel}
         title={st.closeLabel}
-        className="w-9 h-9 shrink-0 inline-flex items-center justify-center rounded-lg text-white/85 hover:text-white hover:bg-white/15 cursor-pointer transition-colors"
+        className="touch-target w-9 h-9 shrink-0 inline-flex items-center justify-center rounded-lg text-white/85 hover:text-white hover:bg-white/15 cursor-pointer transition-colors"
       >
         <X className="w-4 h-4" strokeWidth={2} aria-hidden="true" />
       </button>

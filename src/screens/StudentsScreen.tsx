@@ -235,7 +235,7 @@ export default function StudentsScreen() {
                 summary={`الطلاب ${pg.start}–${pg.end} من ${pg.total}`}
               />
               {selectedPage > 0 && selectedPage !== pg.page && (
-                <button type="button" data-action="show-selected-student-page" onClick={() => pg.setPage(selectedPage)} className="self-start bg-transparent border-0 p-0 min-h-8 text-small font-semibold text-primary underline underline-offset-2 cursor-pointer hover:text-primary-hover">
+                <button type="button" data-action="show-selected-student-page" onClick={() => pg.setPage(selectedPage)} className="touch-target self-start bg-transparent border-0 p-0 min-h-8 text-small font-semibold text-primary underline underline-offset-2 cursor-pointer hover:text-primary-hover">
                   {`عرض صفحة الطالب المحدد (${selectedPage})`}
                 </button>
               )}

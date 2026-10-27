@@ -32,34 +32,34 @@ export default function SalariesSection() {
   } = useFinance();
 
   const sortHeader = (label: string, key: string) =>
-    renderSortableHeader(label, key, salarySortKey, salarySortDir, (k) => handleToggleSort(k, salarySortKey, salarySortDir, setSalarySortKey, setSalarySortDir));
+    ({ header: renderSortableHeader(label, key, salarySortKey, salarySortDir, (k) => handleToggleSort(k, salarySortKey, salarySortDir, setSalarySortKey, setSalarySortDir)), cardLabel: label });
   const columns: DataColumn<SalaryPayment>[] = [
     {
-      id: "personName", header: sortHeader("اسم المستفيد", "personName"), card: "title", className: "font-bold text-ink",
+      id: "personName", ...sortHeader("اسم المستفيد", "personName"), card: "title", className: "font-bold text-ink",
       cell: (s) => (<>{s.personName}{s.receiptNo && <p className="m-0 text-caption text-ink-3 font-mono font-normal">وصل: {s.receiptNo}</p>}</>),
     },
     {
-      id: "personType", header: sortHeader("الفئة والصفة", "personType"),
+      id: "personType", ...sortHeader("الفئة والصفة", "personType"),
       cell: (s) => (
         <span className="bg-sand-100 text-ink-2 font-medium px-2.5 py-1 rounded-full text-caption border border-line">
           {s.personType} {s.roleTitle ? `— ${s.roleTitle}` : ""}
         </span>
       ),
     },
-    { id: "monthYear", header: sortHeader("الشهر / السنة", "monthYear"), card: "field", className: "font-semibold text-ink-2", cell: (s) => `${s.month} ${s.year}` },
-    { id: "amount", header: sortHeader("المبلغ (د.م)", "amount"), card: "field", className: "font-bold text-ink", cell: (s) => formatMoney(s.amount) },
+    { id: "monthYear", ...sortHeader("الشهر / السنة", "monthYear"), card: "field", className: "font-semibold text-ink-2", cell: (s) => `${s.month} ${s.year}` },
+    { id: "amount", ...sortHeader("المبلغ (د.م)", "amount"), card: "field", className: "font-bold text-ink", cell: (s) => formatMoney(s.amount) },
     {
-      id: "paymentSource", header: sortHeader("مصدر الصرف", "paymentSource"),
+      id: "paymentSource", ...sortHeader("مصدر الصرف", "paymentSource"),
       cell: (s) => (
         <span className={`px-2.5 py-1 rounded-full text-caption font-bold ${
           s.paymentSource === "حساب الجمعية البنكي" ? "bg-primary-50 text-primary-800 border border-primary-200" : "bg-gold-50 text-gold-800 border border-gold-200"
         }`}>{s.paymentSource}</span>
       ),
     },
-    { id: "paymentMethod", header: sortHeader("طريقة الصرف", "paymentMethod"), className: "text-ink-2", cell: (s) => s.paymentMethod },
-    { id: "paymentDate", header: sortHeader("تاريخ الصرف", "paymentDate"), card: "field", className: "text-ink-3", cell: (s) => formatDateAr(s.paymentDate) },
+    { id: "paymentMethod", ...sortHeader("طريقة الصرف", "paymentMethod"), className: "text-ink-2", cell: (s) => s.paymentMethod },
+    { id: "paymentDate", ...sortHeader("تاريخ الصرف", "paymentDate"), card: "field", className: "text-ink-3", cell: (s) => formatDateAr(s.paymentDate) },
     {
-      id: "status", header: sortHeader("الحالة", "status"), card: "field",
+      id: "status", ...sortHeader("الحالة", "status"), card: "field",
       cell: (s) => s.status === "تم الصرف" ? (
         <span className="inline-flex items-center gap-1 bg-primary-100 text-primary-800 font-bold text-caption px-2.5 py-1 rounded-full">
           <CheckCircle className="w-3 h-3" />
@@ -138,7 +138,7 @@ export default function SalariesSection() {
                 {canCreate && (
                   <button
                     onClick={handleAutoGenerateTeacherSalaries}
-                    className="bg-gold-100 hover:bg-gold-200 text-gold-900 font-bold px-3.5 py-2 rounded-xl text-small transition flex items-center gap-1.5 border border-gold-300"
+                    className="touch-target bg-gold-100 hover:bg-gold-200 text-gold-900 font-bold px-3.5 py-2 rounded-xl text-small transition flex items-center gap-1.5 border border-gold-300"
                     title="توليد مستحقات جميع الأساتذة لشهر محدد تلقائياً"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />

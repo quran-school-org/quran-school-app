@@ -99,7 +99,7 @@ export function useFinanceForms(props: FinanceManagementProps) {
       <button
         type="button"
         onClick={() => onSort(key)}
-        className="inline-flex items-center gap-1.5 bg-transparent border-0 p-0 font-[inherit] text-[length:inherit] text-inherit cursor-pointer select-none hover:text-ink transition-colors"
+        className="touch-target inline-flex items-center gap-1.5 bg-transparent border-0 p-0 font-[inherit] text-[length:inherit] text-inherit cursor-pointer select-none hover:text-ink transition-colors"
         title={`ترتيب حسب ${label} (من الأصغر للأكبر أو العكس)`}
       >
         <span>{label}</span>

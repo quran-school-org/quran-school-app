@@ -118,7 +118,7 @@ export function Modal({ title, subtitle, icon, onClose, children, footer, size =
                 onClick={onClose}
                 aria-label="إغلاق"
                 title="إغلاق"
-                className={cx("w-10 h-10 inline-flex items-center justify-center rounded-xl border cursor-pointer transition-colors", tone === "night" ? "border-night-line text-night-text hover:bg-white/10" : "border-line bg-white text-ink-2 hover:border-primary hover:text-primary")}
+                className={cx("touch-target w-10 h-10 inline-flex items-center justify-center rounded-xl border cursor-pointer transition-colors", tone === "night" ? "border-night-line text-night-text hover:bg-white/10" : "border-line bg-white text-ink-2 hover:border-primary hover:text-primary")}
               >
                 <X className="w-5 h-5" strokeWidth={1.75} />
               </button>

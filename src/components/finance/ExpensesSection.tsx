@@ -31,30 +31,30 @@ export default function ExpensesSection() {
   } = useFinance();
 
   const sortHeader = (label: string, key: string) =>
-    renderSortableHeader(label, key, expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir));
+    ({ header: renderSortableHeader(label, key, expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir)), cardLabel: label });
   const columns: DataColumn<Expense>[] = [
     {
-      id: "title", header: sortHeader("بيان النفقة / المشتريات", "title"), card: "title", className: "font-bold text-ink",
+      id: "title", ...sortHeader("بيان النفقة / المشتريات", "title"), card: "title", className: "font-bold text-ink",
       cell: (exp) => (<>{exp.title}{exp.notes && <p className="m-0 text-caption text-ink-3 font-normal">{exp.notes}</p>}</>),
     },
     {
-      id: "category", header: sortHeader("نوع النفقة", "category"), card: "field",
+      id: "category", ...sortHeader("نوع النفقة", "category"), card: "field",
       cell: (exp) => (
         <span className="bg-sand-100 text-ink font-semibold px-2.5 py-1 rounded-full text-caption border border-line">{exp.category}</span>
       ),
     },
-    { id: "amount", header: sortHeader("المبلغ", "amount"), card: "field", className: "font-bold text-danger-700", cell: (exp) => formatMoney(exp.amount) },
+    { id: "amount", ...sortHeader("المبلغ", "amount"), card: "field", className: "font-bold text-danger-700", cell: (exp) => formatMoney(exp.amount) },
     {
-      id: "source", header: sortHeader("المصدر المالي", "source"), card: "field",
+      id: "source", ...sortHeader("المصدر المالي", "source"), card: "field",
       cell: (exp) => (
         <span className={`px-2.5 py-1 rounded-full text-caption font-bold ${
           exp.source === "حساب الجمعية البنكي" ? "bg-primary-50 text-primary-800 border border-primary-200" : "bg-gold-50 text-gold-800 border border-gold-200"
         }`}>{exp.source}</span>
       ),
     },
-    { id: "supplier", header: sortHeader("المورد / المتاجر", "supplier"), className: "font-medium text-ink-2", cell: (exp) => exp.supplier || "—" },
-    { id: "invoiceNo", header: sortHeader("رقم الفاتورة", "invoiceNo"), className: "text-ink-3 font-mono", cell: (exp) => exp.invoiceNo || "—" },
-    { id: "date", header: sortHeader("التاريخ", "date"), card: "field", className: "text-ink-3", cell: (exp) => formatDateAr(exp.date) },
+    { id: "supplier", ...sortHeader("المورد / المتاجر", "supplier"), className: "font-medium text-ink-2", cell: (exp) => exp.supplier || "—" },
+    { id: "invoiceNo", ...sortHeader("رقم الفاتورة", "invoiceNo"), className: "text-ink-3 font-mono", cell: (exp) => exp.invoiceNo || "—" },
+    { id: "date", ...sortHeader("التاريخ", "date"), card: "field", className: "text-ink-3", cell: (exp) => formatDateAr(exp.date) },
   ];
 
   return (

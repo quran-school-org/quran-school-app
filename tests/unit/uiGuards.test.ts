@@ -123,4 +123,16 @@ describe("interface : valeurs codées en dur retirées", () => {
       });
     expect(offenders).toEqual([]);
   });
+  it("cibles tactiles : Button sm/xs, pastilles, boutons segmentés, pagination, fermeture de fenêtre et de message ont une zone de 44 px (touch-target, D101)", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/@utility touch-target \{[\s\S]*max\(100%, 44px\)[\s\S]*max\(100%, 44px\)/);
+    const has = (file: string, near: RegExp) => expect(readFileSync(file, "utf8").split("\n").some((l) => near.test(l) && l.includes("touch-target")), `${file} : ${near}`).toBe(true);
+    has("src/ui/Button.tsx", /\bsm:/);
+    has("src/ui/Button.tsx", /\bxs:/);
+    has("src/ui/SegmentedControl.tsx", /min-h-9 px-3 rounded-full/);
+    has("src/ui/SegmentedControl.tsx", /min-h-\[38px\]/);
+    has("src/ui/Pagination.tsx", /const btn/);
+    has("src/ui/Modal.tsx", /w-10 h-10 inline-flex/);
+    has("src/ui/Toast.tsx", /w-9 h-9 shrink-0/);
+  });
 });

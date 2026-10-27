@@ -68,14 +68,14 @@ export default function ActivityWorkspace() {
   } = useActivities();
 
   const sortPart = (label: string, key: string) =>
-    renderSortableHeader(label, key, partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir));
+    ({ header: renderSortableHeader(label, key, partSortKey, partSortDir, (k) => handleToggleSort(k, partSortKey, partSortDir, setPartSortKey, setPartSortDir)), cardLabel: label });
   const sortExp = (label: string, key: string) =>
-    renderSortableHeader(label, key, expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir));
+    ({ header: renderSortableHeader(label, key, expSortKey, expSortDir, (k) => handleToggleSort(k, expSortKey, expSortDir, setExpSortKey, setExpSortDir)), cardLabel: label });
 
   const participantColumns: DataColumn<ActivityParticipant>[] = [
     { id: "n", header: "#", className: "text-ink-3 font-mono text-center", cell: (part) => filteredParticipants.indexOf(part) + 1 },
     {
-      id: "fullName", header: sortPart("المشارك", "fullName"), card: "title", className: "font-bold text-ink",
+      id: "fullName", ...sortPart("المشارك", "fullName"), card: "title", className: "font-bold text-ink",
       cell: (part) => (
         <>
           {part.fullName}
@@ -88,43 +88,43 @@ export default function ActivityWorkspace() {
       ),
     },
     {
-      id: "role", header: sortPart("الصفة", "participantType"), card: "field",
+      id: "role", ...sortPart("الصفة", "participantType"), card: "field",
       cell: (part) => {
         const role = getParticipantRole(part);
         return <span className={`px-2.5 py-1 rounded-lg font-bold text-small inline-flex items-center gap-1 ${getRoleBadgeStyle(role)}`}>{role}</span>;
       },
     },
-    { id: "phone", header: sortPart("الهاتف", "phone"), className: "font-mono text-ink-2", cell: (part) => part.phone || "—" },
+    { id: "phone", ...sortPart("الهاتف", "phone"), className: "font-mono text-ink-2", cell: (part) => part.phone || "—" },
     {
-      id: "fee", header: sortPart("الواجب", "fee"), className: "font-semibold text-ink-2",
+      id: "fee", ...sortPart("الواجب", "fee"), className: "font-semibold text-ink-2",
       cell: (part) => {
         const feeVal = resolveParticipantFee(part);
         if (resolvePaymentStatusInfo(part).status === "معفى" && feeVal === 0) return <span className="text-primary-700 font-bold">معفى (0 د.م)</span>;
         return <span>{formatMoney(feeVal)}</span>;
       },
     },
-    { id: "paid", header: sortPart("المدفوع", "paidAmount"), card: "field", className: "font-bold text-primary-700", cell: (part) => formatMoney(resolveParticipantPaid(part)) },
+    { id: "paid", ...sortPart("المدفوع", "paidAmount"), card: "field", className: "font-bold text-primary-700", cell: (part) => formatMoney(resolveParticipantPaid(part)) },
     {
-      id: "status", header: sortPart("حالة الأداء", "paymentStatus"), card: "field",
+      id: "status", ...sortPart("حالة الأداء", "paymentStatus"), card: "field",
       cell: (part) => {
         const statusInfo = resolvePaymentStatusInfo(part);
         return <span className={`px-2.5 py-1 rounded-full font-bold text-caption inline-flex items-center gap-1 ${statusInfo.badgeClass}`}>{statusInfo.label}</span>;
       },
     },
-    { id: "receiptNo", header: sortPart("رقم الوصل", "receiptNo"), className: "font-mono text-ink-3", cell: (part) => part.receiptNo || "—" },
+    { id: "receiptNo", ...sortPart("رقم الوصل", "receiptNo"), className: "font-mono text-ink-3", cell: (part) => part.receiptNo || "—" },
   ];
 
   const expenseColumns: DataColumn<ActivityExpense>[] = [
     { id: "n", header: "#", className: "text-ink-3 font-mono text-center", cell: (exp) => filteredExpenses.indexOf(exp) + 1 },
-    { id: "title", header: sortExp("بيان المصروف", "title"), card: "title", className: "font-bold text-ink", cell: (exp) => exp.title },
+    { id: "title", ...sortExp("بيان المصروف", "title"), card: "title", className: "font-bold text-ink", cell: (exp) => exp.title },
     {
-      id: "category", header: sortExp("الفئة / الصنف", "category"), card: "field",
+      id: "category", ...sortExp("الفئة / الصنف", "category"), card: "field",
       cell: (exp) => <span className="bg-sand-100 text-ink-2 px-2 py-0.5 rounded-md font-semibold text-caption">{exp.category}</span>,
     },
-    { id: "amount", header: sortExp("المبلغ", "amount"), card: "field", className: "font-bold text-danger-700", cell: (exp) => formatMoney(exp.amount) },
-    { id: "date", header: sortExp("التاريخ", "date"), card: "field", className: "text-ink-2", cell: (exp) => formatDateAr(exp.date) },
-    { id: "supplier", header: sortExp("المورد / الجهة", "supplier"), className: "text-ink-2", cell: (exp) => exp.supplier || "—" },
-    { id: "receipt", header: sortExp("رقم الفاتورة/الوصل", "receiptOrInvoiceNo"), className: "font-mono text-ink-3", cell: (exp) => exp.receiptOrInvoiceNo || "—" },
+    { id: "amount", ...sortExp("المبلغ", "amount"), card: "field", className: "font-bold text-danger-700", cell: (exp) => formatMoney(exp.amount) },
+    { id: "date", ...sortExp("التاريخ", "date"), card: "field", className: "text-ink-2", cell: (exp) => formatDateAr(exp.date) },
+    { id: "supplier", ...sortExp("المورد / الجهة", "supplier"), className: "text-ink-2", cell: (exp) => exp.supplier || "—" },
+    { id: "receipt", ...sortExp("رقم الفاتورة/الوصل", "receiptOrInvoiceNo"), className: "font-mono text-ink-3", cell: (exp) => exp.receiptOrInvoiceNo || "—" },
   ];
 
   return (

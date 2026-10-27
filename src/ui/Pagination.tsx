@@ -26,7 +26,7 @@ export interface PaginationProps {
   [key: `data-${string}`]: string | undefined;
 }
 
-const btn = "inline-flex items-center justify-center min-w-10 h-10 sm:min-w-9 sm:h-9 px-2 rounded-[10px] border text-body font-semibold tabular-nums cursor-pointer transition-colors disabled:opacity-45 disabled:cursor-not-allowed";
+const btn = "touch-target inline-flex items-center justify-center min-w-10 h-10 sm:min-w-9 sm:h-9 px-2 rounded-[10px] border text-body font-semibold tabular-nums cursor-pointer transition-colors disabled:opacity-45 disabled:cursor-not-allowed";
 
 export function Pagination({ page, pageCount, onPageChange, label, summary, className, ...rest }: PaginationProps) {
   const navRef = useRef<HTMLElement>(null);

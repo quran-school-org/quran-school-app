@@ -2720,3 +2720,65 @@ là-bas (R-06).
 - **Retour arrière** : `git revert` des commits de D100 (aucune donnée ni règle touchée). Séparément : remettre les
   deux boutons dans `PageHeader` de `DashboardScreen`, retirer `urgent` de `DashboardScreen`, rétablir `h-[236px]` dans
   `HifzMap`, ou appeler `setDoc` directement dans `firebase.ts` sans `serializeWrites`.
+
+### D101. Audit UX/UI, lot L6 : système (jetons, libellés, typographie, RTL logique, tableaux, cibles tactiles)
+- **Contexte** : l'audit UX/UI du 26/10/2026 (constats 14 à 19 et 24, cosmétiques) a relevé des écarts de cohérence
+  qui ne se voient pas un à un : gris du texte non thématisés, classes sur jetons inexistants, deux écritures de la
+  devise et des verbes d'action, 23 tailles `text-[Npx]`, ~130 classes physiques (gauche/droite) dans une interface
+  RTL qui devient LTR en français, tableaux bruts sans mode cartes, contrôles de 32 à 40 px au toucher.
+  Principe de ce lot : **aucun changement visuel perceptible, sauf correction d'un défaut** ; captures avant/après à
+  390 et 1 440 px (tableau de bord, élèves, comptabilité ×4, présence, notes, activités, personnel, paramètres,
+  accueil parent), comparées à l'œil et par différence de pixels, non commitées.
+- **Décision** :
+  - **Jetons** : `ink`, `ink-2`, `ink-3` et `sand-500…950` (9 jetons, non redéfinis jusque-là : 31 jetons thématisés
+    sur 86, 40 maintenant) dérivent de la couleur de la barre latérale de chaque thème (`tintGray` dans
+    `theme/color.ts`, déclarés dans `TOKENS` de `palettes.ts`, `themes.css` régénéré). Même luminosité et même chroma
+    qu'en bleu nuit (donc mêmes contrastes), seule la teinte suit le thème ; bleu nuit inchangé au pixel près ; garde
+    de 4,5:1 sur le fond du thème et sur `surface`, `surface-2`, `sunken`, `quiet`. `ink-4` et `sand-50…400` sont des
+    gris chauds, communs à tous les thèmes. Les feuilles des aperçus d'impression (rapport financier, fiche d'activité)
+    posent `data-theme="bleu-nuit"` (l'impression reste bleu nuit, comme le badge du personnel) ; leur cadre (`Modal`)
+    suit le thème. `text-primary-2` → `text-primary-800` (le titre prenait la couleur héritée), `border-sand-150` →
+    `border-line-soft` (même rendu). Hexadécimaux : `#5C4A1E` → `--color-gold-ink`, `#CFD2C4` → `--color-line-dashed`,
+    `#B9BDAF` → `--color-line-hover`, `#F8F8F3` → `surface` ; restent `QrCode` (noir sur blanc voulu, recopié dans des
+    fenêtres d'impression) et la feuille d'impression de la comptabilité (`#fff`).
+  - **Libellés et montants** : formats de montants dans `src/format/money.ts` (à côté de `date.ts`, ex-`utils/format.ts`),
+    devise « د.م » toujours après le nombre ; fin des « درهم » affichés (alerte des cotisations, accueil famille), du
+    `toLocaleString("en-US")` du tableau de bord, du montant brut de l'annuaire du personnel. Verbes : « حفظ التغييرات »
+    (plus de « حفظ التعديلات »), « إضافة » pour toute création de ligne (halaqa, personnel, activité, dépense, participant,
+    élève), « جاري … » et trois points ASCII (formes majoritaires). Laissés : l'export CSV, les messages WhatsApp, l'en-tête
+    de colonne du rapport imprimable (« بالدرهم (MAD) »), le nom de la devise des paramètres, « إنشاء المدرسة »
+    (création d'un locataire, pas d'une ligne), « تسجيل وإصدار الشهادة » (autre action).
+  - **Typographie** : échelle de 7 pas dans le `@theme` (`--text-caption 11,5`, `small 13`, `body 14,5`, `lead 17`,
+    `title 21`, `heading 30`, `display 40` px) qui remplace 702 `text-[Npx]` (23 valeurs) par arrondi au pas le plus
+    proche : 0,5 px d'écart pour l'essentiel, 1 px au plus jusqu'à 22 px ; **écarts plus grands sur les titres
+    d'affichage** (24 → 21, 34 → 30, 44 → 40 : 13 usages, titre de page et chiffres des KPI). Exceptions : `src/print/`
+    et le « +N » de la carte du ḥifẓ (9 px dans une colonne de 20 px). `SectionHeader` (`src/ui`) remplace les titres de
+    section recopiés (listes d'élèves, de notes, de paiements, de présence, d'activités ; cartes de halaqa ; blocs de la
+    comptabilité, des comptes et des activités) : `size="lg"` (`text-title`) ou `md` (`text-lead`), toujours en 600.
+    Les classes Tailwind d'origine (`text-sm`, `text-base`…, ~80 usages) ne sont pas converties (elles posent aussi la
+    hauteur de ligne).
+  - **RTL logique** : `ml/mr`, `pl/pr`, `left/right`, `text-left/right`, `border-l/r` → `me/ms`, `pe/ps`, `end/start`,
+    `text-end/start`, `border-e/s` (72 occurrences, 17 fichiers) ; en RTL la droite est le début, donc `mr` → `ms`,
+    `right-3` → `start-3` : rendu arabe identique, rendu français corrigé. Exceptions (garde-fou
+    `tests/unit/uiGuards.test.ts`, chacune motivée) : aperçus de feuilles imprimées, zone d'impression du badge, coins du
+    viseur du scanner, champs latins (`dir="ltr"`, identifiants, courriels). La rustine `.text-right` de `fr.css` reste
+    nécessaire pour ces exceptions.
+  - **Tableaux** : 8 tableaux de 5 fichiers (recettes ×3, salaires, dépenses, participants et dépenses d'une activité,
+    liste du personnel) passent sur `DataTable` (cartes sous 768 px, nom accessible, `EmptyState` à la place de la ligne
+    vide). Colonnes, tris (maintenant de vrais boutons dans l'en-tête, libellé simple sur la carte), actions et repères
+    `data-*` conservés ; actions de ligne en `IconButton size="sm"`. `DataTable` gagne `dense` (texte 13 px).
+    **Laissés** : matrice des droits (grille de cases, pas une liste), rapport financier, fiche d'activité, liste du
+    personnel et relevé mensuel (documents imprimables à grille propre).
+  - **Cibles tactiles** : utilitaire `touch-target` (pseudo-élément transparent d'au moins 44 px centré sur le contrôle,
+    comme `IconButton sm`) posé sur `Button sm/xs`, pastilles de filtre, boutons segmentés, pagination, fermeture des
+    fenêtres et des messages, liens d'alerte, en-têtes triables, et quelques boutons des paramètres, des cartes
+    d'identité et de la comptabilité. Mesure à 390 px sur 14 écrans et une fenêtre : 196 contrôles sous 44 px avant,
+    46 après (5 familles). **Laissés** : les colonnes du ḥifẓ (22 px, contiguës, zone de défilement voulue), les noms
+    d'élèves de deux listes (texte tronqué : `overflow` coupe le pseudo-élément), l'avatar redondant de la présence (le
+    nom ouvre le même relevé), la ligne de sélection des cartes (43 px), un filtre bare (40 px).
+  - Tests : `themes.test.ts` (gris dans chaque thème, fonds neutres, hexadécimaux, classes de jetons inconnues),
+    `uiGuards.test.ts` (devise, locales, verbes, tailles, classes physiques, `touch-target`), dictionnaire FR mis à jour.
+- **Retour arrière** : `git revert` des commits de D101 (aucune donnée ni règle touchée), un sous-lot à la fois :
+  jetons (retirer les lignes `tint` de `TOKENS` et régénérer `themes.css`), libellés (inverser les chaînes et `fr.ts`),
+  échelle (remettre les `text-[Npx]` : table du mapping ci-dessus), RTL (table `mr → ms`… inversée), tableaux (un
+  fichier à la fois), `touch-target` (retirer la classe).
