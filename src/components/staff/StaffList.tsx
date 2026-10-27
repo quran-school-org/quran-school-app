@@ -237,7 +237,7 @@ export default function StaffList() {
         ) : (
           /* Table Roster View */
           <div className="bg-surface rounded-2xl border border-line overflow-x-auto">
-            <table className="w-full text-right text-small">
+            <table className="w-full text-start text-small">
               <thead className="bg-sand-50 border-b border-line text-ink-2 font-bold">
                 <tr>
                   <th className="p-3.5">الكادر / العامل</th>

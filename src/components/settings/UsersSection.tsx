@@ -159,7 +159,7 @@ export default function UsersSection() {
           <div className="bg-surface border border-sand-200/80 rounded-2xl p-3.5 flex flex-col md:flex-row gap-3 items-center justify-between">
             {/* Search Input */}
             <div className="relative w-full md:w-80">
-              <span className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-ink-3">
+              <span className="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-ink-3">
                 <Search className="w-4 h-4" />
               </span>
               <input
@@ -168,7 +168,7 @@ export default function UsersSection() {
                 placeholder="البحث باسم المستخدم أو الاسم الكامل..."
                 value={userSearchQuery}
                 onChange={(e) => setUserSearchQuery(e.target.value)}
-                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
+                className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-9 pe-3"
               />
               {userSearchQuery && (
                 <button
@@ -176,7 +176,7 @@ export default function UsersSection() {
                   onClick={() => setUserSearchQuery("")}
                   aria-label="مسح البحث"
                   title="مسح البحث"
-                  className="absolute inset-y-0 left-0 pl-3 flex items-center text-ink-3 hover:text-ink-2"
+                  className="absolute inset-y-0 end-0 pe-3 flex items-center text-ink-3 hover:text-ink-2"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

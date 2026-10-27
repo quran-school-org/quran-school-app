@@ -265,7 +265,7 @@ export default function UserFormModal() {
           {!formAttachExisting && (<>
           <label htmlFor={passwordId} className="block text-small font-semibold text-ink-2 mb-1.5">كلمة المرور المؤقتة <span className="text-danger-500">*</span></label>
           <div className="relative">
-            <span className="absolute right-3 top-3 text-ink-3 pointer-events-none"><Lock className="w-3.5 h-3.5" /></span>
+            <span className="absolute start-3 top-3 text-ink-3 pointer-events-none"><Lock className="w-3.5 h-3.5" /></span>
             <Input
               id={passwordId}
               type={showFormPassword ? "text" : "password"}
@@ -275,12 +275,12 @@ export default function UserFormModal() {
               value={formPassword}
               onChange={(e) => setFormPassword(e.target.value)}
               placeholder="••••••••"
-              className="pr-9 pl-9 font-mono text-left"
+              className="ps-9 pe-9 font-mono text-left"
             />
             <button
               type="button"
               onClick={() => setShowFormPassword(!showFormPassword)}
-              className="absolute left-2.5 top-2.5 p-1 text-ink-3 hover:text-primary-700 hover:bg-sand-100 rounded-lg transition cursor-pointer"
+              className="absolute end-2.5 top-2.5 p-1 text-ink-3 hover:text-primary-700 hover:bg-sand-100 rounded-lg transition cursor-pointer"
               title={showFormPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
               aria-label={showFormPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
             >
@@ -385,7 +385,7 @@ export default function UserFormModal() {
                     />
                     <span className="font-bold text-ink-2">{st.fullName}</span>
                     <span className="text-ink-3">— {st.parentName} {st.parentPhone}</span>
-                    <span className="text-sand-400 font-mono mr-auto">{st.id}</span>
+                    <span className="text-sand-400 font-mono ms-auto">{st.id}</span>
                   </label>
                 ))}
             </div>
@@ -405,7 +405,7 @@ export default function UserFormModal() {
       </div>
 
       {/* Odoo CRUD Permission Matrix */}
-      <div className="border-t pt-4 text-right" dir="rtl">
+      <div className="border-t pt-4 text-start" dir="rtl">
         <PermissionMatrixEditor
           permissions={formPermissions}
           onChange={setFormPermissions}

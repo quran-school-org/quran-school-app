@@ -114,7 +114,7 @@ export default function RevenuesSection() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-right text-small">
+              <table className="w-full text-start text-small">
                 <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
                   <tr>
                     {renderSortableHeader("عنوان الدخل / التبرع", "title", incomeSortKey, incomeSortDir, (k) => handleToggleSort(k, incomeSortKey, incomeSortDir, setIncomeSortKey, setIncomeSortDir))}
@@ -233,7 +233,7 @@ export default function RevenuesSection() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-right text-small">
+              <table className="w-full text-start text-small">
                 <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
                   <tr>
                     <th className="p-3">النشاط / الرحلة</th>
@@ -359,7 +359,7 @@ export default function RevenuesSection() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-right text-small">
+              <table className="w-full text-start text-small">
                 <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
                   <tr>
                     {renderSortableHeader("الطالب / المكتتب", "studentName", studentPaySortKey, studentPaySortDir, (k) => handleToggleSort(k, studentPaySortKey, studentPaySortDir, setStudentPaySortKey, setStudentPaySortDir))}

@@ -271,13 +271,13 @@ export default function ActivityWorkspace() {
                 {/* Participants Filter and Sort Bar */}
                 <div className="bg-sand-50 p-3 rounded-xl border border-line flex flex-wrap items-center justify-between gap-2.5">
                   <div className="relative flex-[1_1_16rem] min-w-0">
-                    <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                    <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-ink-3" />
                     <input
                       type="text"
                       value={partSearchQuery}
                       onChange={(e) => setPartSearchQuery(e.target.value)}
                       placeholder="بحث بالاسم، رقم الهاتف، أو رقم الوصل..."
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pl-3 pr-9"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pe-3 ps-9"
                     />
                   </div>
 
@@ -339,7 +339,7 @@ export default function ActivityWorkspace() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto border border-line rounded-xl">
-                    <table className="w-full text-right text-small">
+                    <table className="w-full text-start text-small">
                       <thead className="bg-sand-50 text-ink-2 font-bold border-b border-line">
                         <tr>
                           <th className="p-3 text-center">#</th>
@@ -465,13 +465,13 @@ export default function ActivityWorkspace() {
                 {/* Expenses Filter Bar */}
                 <div className="bg-sand-50 p-3 rounded-xl border border-line flex flex-wrap items-center justify-between gap-2.5">
                   <div className="relative flex-[1_1_16rem] min-w-0">
-                    <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-ink-3" />
+                    <Search className="w-4 h-4 absolute start-3 top-1/2 -translate-y-1/2 text-ink-3" />
                     <input
                       type="text"
                       value={expSearchQuery}
                       onChange={(e) => setExpSearchQuery(e.target.value)}
                       placeholder="بحث ببيان المصروف، المورد، أو رقم الفاتورة..."
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pl-3 pr-9"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pe-3 ps-9"
                     />
                   </div>
 
@@ -517,7 +517,7 @@ export default function ActivityWorkspace() {
                   </div>
                 ) : (
                   <div className="overflow-x-auto border border-line rounded-xl">
-                    <table className="w-full text-right text-small">
+                    <table className="w-full text-start text-small">
                       <thead className="bg-sand-50 text-ink-2 font-bold border-b border-line">
                         <tr>
                           <th className="p-3 text-center">#</th>

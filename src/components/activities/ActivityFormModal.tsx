@@ -146,7 +146,7 @@ export default function ActivityFormModal() {
             </datalist>
 
             <div className="flex flex-wrap items-center gap-1 pt-0.5">
-              <span className="text-caption text-ink-3 font-medium ml-1">خيارات سريعة:</span>
+              <span className="text-caption text-ink-3 font-medium me-1">خيارات سريعة:</span>
               {["الطالبات فقط", "الطلاب فقط", "الجميع (طلاب، أطر، أولياء أمور)", "الكوادر والمدرسين فقط", "أولياء الأمور"].map(tag => (
                 <button
                   key={tag}

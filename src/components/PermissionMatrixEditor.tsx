@@ -155,10 +155,10 @@ export const PermissionMatrixEditor: React.FC<PermissionMatrixEditorProps> = ({
       </div>
 
       <div className="overflow-x-auto border border-line rounded-2xl bg-surface">
-        <table className="w-full text-right text-small border-collapse">
+        <table className="w-full text-start text-small border-collapse">
           <thead>
             <tr className="bg-sand-100/90 text-ink-2 border-b border-line font-bold">
-              <th className="p-3 text-right font-bold min-w-[220px]">اسم القسم / الصفحة</th>
+              <th className="p-3 text-start font-bold min-w-[220px]">اسم القسم / الصفحة</th>
               
               {/* Column Read */}
               <th className="p-2 text-center w-28">

@@ -44,29 +44,29 @@ export default function StaffDirectoryModal() {
       </div>
 
       {/* Table */}
-      <table className="w-full text-right text-small border border-line">
+      <table className="w-full text-start text-small border border-line">
         <thead className="bg-sand-100 border-b border-line text-ink font-bold">
           <tr>
-            <th className="p-2 border-l border-line">#</th>
-            <th className="p-2 border-l border-line">الاسم الكامل</th>
-            <th className="p-2 border-l border-line">الفئة</th>
-            <th className="p-2 border-l border-line">المسمى والمهام</th>
-            <th className="p-2 border-l border-line">CIN</th>
-            <th className="p-2 border-l border-line">الهاتف</th>
-            <th className="p-2 border-l border-line">نوع العقد</th>
+            <th className="p-2 border-e border-line">#</th>
+            <th className="p-2 border-e border-line">الاسم الكامل</th>
+            <th className="p-2 border-e border-line">الفئة</th>
+            <th className="p-2 border-e border-line">المسمى والمهام</th>
+            <th className="p-2 border-e border-line">CIN</th>
+            <th className="p-2 border-e border-line">الهاتف</th>
+            <th className="p-2 border-e border-line">نوع العقد</th>
             <th className="p-2">المكافأة</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line-soft">
           {allStaff.filter(t => !t.isArchived).map((staff, idx) => (
             <tr key={staff.id} className="hover:bg-sand-50">
-              <td className="p-2 font-mono text-center border-l border-line">{idx + 1}</td>
-              <td className="p-2 font-bold text-ink border-l border-line">{staff.fullName}</td>
-              <td className="p-2 border-l border-line">{staff.category || "أستاذ / محفظ"}</td>
-              <td className="p-2 border-l border-line">{staff.roleTitle || staff.specialty}</td>
-              <td className="p-2 font-mono border-l border-line">{staff.cinNumber || "-"}</td>
-              <td className="p-2 font-mono border-l border-line">{staff.phone}</td>
-              <td className="p-2 border-l border-line">{staff.contractType || "مكافأة شهرية"}</td>
+              <td className="p-2 font-mono text-center border-e border-line">{idx + 1}</td>
+              <td className="p-2 font-bold text-ink border-e border-line">{staff.fullName}</td>
+              <td className="p-2 border-e border-line">{staff.category || "أستاذ / محفظ"}</td>
+              <td className="p-2 border-e border-line">{staff.roleTitle || staff.specialty}</td>
+              <td className="p-2 font-mono border-e border-line">{staff.cinNumber || "-"}</td>
+              <td className="p-2 font-mono border-e border-line">{staff.phone}</td>
+              <td className="p-2 border-e border-line">{staff.contractType || "مكافأة شهرية"}</td>
               <td className="p-2 font-mono font-bold text-primary-800">
                 {staff.monthlySalary ? formatMoney(staff.monthlySalary) : "-"}
               </td>

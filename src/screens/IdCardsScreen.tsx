@@ -91,7 +91,7 @@ export default function IdCardsScreen() {
 
           {/* Search Input */}
           <div className="relative">
-            <span className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-ink-3">
+            <span className="absolute inset-y-0 start-3 flex items-center pointer-events-none text-ink-3">
               <Search className="w-4 h-4 text-primary-600" />
             </span>
             <input
@@ -100,7 +100,7 @@ export default function IdCardsScreen() {
               onChange={(e) => setSearchLabQuery(e.target.value)}
               placeholder="ابحث باسم الطالب أو الرقم التعريفي..."
               aria-label="ابحث باسم الطالب أو الرقم التعريفي..."
-              className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-9 pl-3"
+              className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-9 pe-3"
             />
           </div>
 
@@ -176,7 +176,7 @@ export default function IdCardsScreen() {
           })()}
 
           {/* Student list container */}
-          <div className="max-h-[520px] overflow-y-auto divide-y divide-line-faint pr-1 space-y-1.5">
+          <div className="max-h-[520px] overflow-y-auto divide-y divide-line-faint ps-1 space-y-1.5">
             {students.filter(s => {
               const normSearch = searchLabQuery.toLowerCase().trim();
               if (!normSearch) return !s.isArchived;
@@ -216,7 +216,7 @@ export default function IdCardsScreen() {
                       setSelectedLabStudentId(st.id);
                       setLabFlip(false);
                     }}
-                    className="flex-1 flex items-center gap-2.5 text-right overflow-hidden"
+                    className="flex-1 flex items-center gap-2.5 text-start overflow-hidden"
                   >
                     <div className="w-9 h-9 rounded-full overflow-hidden bg-sand-100 border border-line flex items-center justify-center shrink-0">
                       <StudentAvatar student={st} alt={st.fullName} className="w-full h-full object-cover" />

@@ -129,14 +129,14 @@ export default function GeneralSettingsSection() {
                 <div className="space-y-1">
                   <label htmlFor="gs-associationPhone" className="block text-small font-semibold text-ink-2 mb-1.5">رقم الهاتف <span className="text-danger-500">*</span></label>
                   <div className="relative">
-                    <span className="absolute right-3 top-3 text-ink-3"><Phone className="w-4 h-4" /></span>
+                    <span className="absolute start-3 top-3 text-ink-3"><Phone className="w-4 h-4" /></span>
                     <input
                       id="gs-associationPhone"
                       type="text"
                       required
                       value={associationPhone}
                       onChange={(e) => setAssociationPhone(e.target.value)}
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10 font-mono"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10 font-mono"
                     />
                   </div>
                 </div>
@@ -144,14 +144,14 @@ export default function GeneralSettingsSection() {
                 <div className="space-y-1">
                   <label htmlFor="gs-associationEmail" className="block text-small font-semibold text-ink-2 mb-1.5">البريد الإلكتروني <span className="text-danger-500">*</span></label>
                   <div className="relative">
-                    <span className="absolute right-3 top-3 text-ink-3"><Mail className="w-4 h-4" /></span>
+                    <span className="absolute start-3 top-3 text-ink-3"><Mail className="w-4 h-4" /></span>
                     <input
                       id="gs-associationEmail"
                       type="email"
                       required
                       value={associationEmail}
                       onChange={(e) => setAssociationEmail(e.target.value)}
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10 font-mono text-left"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10 font-mono text-left"
                     />
                   </div>
                 </div>
@@ -160,14 +160,14 @@ export default function GeneralSettingsSection() {
               <div className="space-y-1">
                 <label htmlFor="gs-associationAddress" className="block text-small font-semibold text-ink-2 mb-1.5">العنوان الجغرافي المقر الرسمي <span className="text-danger-500">*</span></label>
                 <div className="relative">
-                  <span className="absolute right-3 top-3 text-ink-3"><MapPin className="w-4 h-4" /></span>
+                  <span className="absolute start-3 top-3 text-ink-3"><MapPin className="w-4 h-4" /></span>
                   <textarea
                     id="gs-associationAddress"
                     required
                     rows={2}
                     value={associationAddress}
                     onChange={(e) => setAssociationAddress(e.target.value)}
-                    className="py-2.5 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10"
+                    className="py-2.5 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10"
                   />
                 </div>
               </div>
@@ -243,14 +243,14 @@ export default function GeneralSettingsSection() {
                 <div className="space-y-1">
                   <label htmlFor="gs-foundingDate" className="block text-small font-semibold text-ink-2 mb-1.5">سنة / تاريخ التأسيس</label>
                   <div className="relative">
-                    <span className="absolute right-3 top-3 text-ink-3"><Calendar className="w-4 h-4" /></span>
+                    <span className="absolute start-3 top-3 text-ink-3"><Calendar className="w-4 h-4" /></span>
                     <input
                       id="gs-foundingDate"
                       type="text"
                       value={foundingDate}
                       onChange={(e) => setFoundingDate(e.target.value)}
                       placeholder="مثال: 2018-05-15 أو 2018"
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10 font-mono"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10 font-mono"
                     />
                   </div>
                 </div>
@@ -258,14 +258,14 @@ export default function GeneralSettingsSection() {
                 <div className="space-y-1">
                   <label htmlFor="gs-licenseNumber" className="block text-small font-semibold text-ink-2 mb-1.5">رقم الترخيص / وصل الإيداع القانوني</label>
                   <div className="relative">
-                    <span className="absolute right-3 top-3 text-ink-3"><FileCheck className="w-4 h-4" /></span>
+                    <span className="absolute start-3 top-3 text-ink-3"><FileCheck className="w-4 h-4" /></span>
                     <input
                       id="gs-licenseNumber"
                       type="text"
                       value={licenseNumber}
                       onChange={(e) => setLicenseNumber(e.target.value)}
                       placeholder="مثال: وصل إيداع نهائي رقم 1422 / سلا"
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10"
                     />
                   </div>
                 </div>
@@ -274,14 +274,14 @@ export default function GeneralSettingsSection() {
               <div className="space-y-1">
                 <label htmlFor="gs-bankRIB" className="block text-small font-semibold text-ink-2 mb-1.5">الحساب البنكي للجمعية (RIB)</label>
                 <div className="relative">
-                  <span className="absolute right-3 top-3 text-ink-3"><CreditCard className="w-4 h-4" /></span>
+                  <span className="absolute start-3 top-3 text-ink-3"><CreditCard className="w-4 h-4" /></span>
                   <input
                     id="gs-bankRIB"
                     type="text"
                     value={bankRIB}
                     onChange={(e) => setBankRIB(e.target.value)}
                     placeholder="مثال: 230 780 0001234567890123 45 (البنك)"
-                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10 font-mono text-left"
+                    className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10 font-mono text-left"
                     dir="ltr"
                   />
                 </div>
@@ -408,7 +408,7 @@ export default function GeneralSettingsSection() {
                 <div className="space-y-1">
                   <label htmlFor="gs-activeAcademicSeason" className="block text-small font-semibold text-ink-2 mb-1.5">الموسم الدراسي النشط <span className="text-danger-500">*</span></label>
                   <div className="relative">
-                    <span className="absolute right-3 top-3 text-ink-3"><Tag className="w-4 h-4" /></span>
+                    <span className="absolute start-3 top-3 text-ink-3"><Tag className="w-4 h-4" /></span>
                     <input
                       id="gs-activeAcademicSeason"
                       type="text"
@@ -416,7 +416,7 @@ export default function GeneralSettingsSection() {
                       value={activeAcademicSeason}
                       onChange={(e) => setActiveAcademicSeason(e.target.value)}
                       placeholder="مثال: 2026/2027"
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10"
                     />
                   </div>
                 </div>
@@ -424,14 +424,14 @@ export default function GeneralSettingsSection() {
                 <div className="space-y-1">
                   <label htmlFor="gs-receiptPrefixFormat" className="block text-small font-semibold text-ink-2 mb-1.5">صيغة ترقيم الوصولات</label>
                   <div className="relative">
-                    <span className="absolute right-3 top-3 text-ink-3"><FileText className="w-4 h-4" /></span>
+                    <span className="absolute start-3 top-3 text-ink-3"><FileText className="w-4 h-4" /></span>
                     <input
                       id="gs-receiptPrefixFormat"
                       type="text"
                       value={receiptPrefixFormat}
                       onChange={(e) => setReceiptPrefixFormat(e.target.value)}
                       placeholder="مثال: REC-{YEAR}-{NO}"
-                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full pr-10 font-mono text-left"
+                      className="min-h-11 px-3 rounded-[10px] border border-line-strong bg-white text-ink text-body focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-full ps-10 font-mono text-left"
                       dir="ltr"
                     />
                   </div>

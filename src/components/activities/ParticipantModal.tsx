@@ -156,7 +156,7 @@ export default function ParticipantModal() {
                 placeholder="مثال: طالب / محفظ / مؤطر / متطوع / مشارك خارجي..."
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
-                <span className="text-small text-ink-3 font-bold self-center ml-1">اقتراحات سريعة:</span>
+                <span className="text-small text-ink-3 font-bold self-center me-1">اقتراحات سريعة:</span>
                 {[
                   "طالب",
                   "محفظ",

@@ -93,4 +93,34 @@ describe("interface : valeurs codées en dur retirées", () => {
     const steps = [...css.matchAll(/--text-([a-z]+):\s*([\d.]+)px;/g)].map((m) => m[1]);
     expect(steps).toEqual(["caption", "small", "body", "lead", "title", "heading", "display"]);
   });
+  it("RTL logique : plus de classe physique (ml/mr/pl/pr, left/right, text-left/right, border-l/r, rounded-l/r) hors exceptions (D101)", () => {
+    // L'interface est en RTL (le français bascule en LTR par `fr.css`) : `ms-`/`me-`, `ps-`/`pe-`, `start-`/`end-`,
+    // `text-start`/`text-end`, `border-s`/`border-e`, `rounded-s`/`rounded-e` suivent le sens de lecture.
+    // `mr-` (côté droit en RTL) devient `ms-`, `ml-` devient `me-`, `right-` devient `start-`, `text-left` devient `text-end`.
+    const PHYSICAL = /(?<![-\w/.])(?:[a-z0-9-]+:)*(?:-?(?:ml|mr|pl|pr|left|right)-(?=[\d[]|px\b|auto\b|full\b)|text-(?:left|right)\b|border-[lr](?![a-z])|rounded-(?:l|r|tl|tr|bl|br)(?![a-z]))/g;
+    // Exceptions, par fichier ("*" : toutes les classes physiques du fichier), toujours motivées :
+    const EXCEPTIONS: Record<string, RegExp | "*"> = {
+      "src/components/finance/PrintReportModal.tsx": "*", // aperçu d'une feuille imprimée : mise en page fixe (bleu nuit, arabe), comme src/print/
+      "src/components/activities/ActivityPrintModal.tsx": "*", // idem
+      "src/components/staff/StaffBadgeModal.tsx": /^text-right$/, // zone d'impression du badge : fixe
+      "src/screens/AttendanceScreen.tsx": "*", // quatre coins du viseur du scanner : symétriques, dessin indépendant du sens de lecture
+      "src/screens/LoginScreen.tsx": "*", // champ d'identifiant `dir="ltr"` : texte latin aligné à droite sous un libellé arabe
+      "src/screens/modals/ProfileModal.tsx": "*", // idem (champ `dir="ltr"`)
+      "src/components/settings/UserFormModal.tsx": /^text-left$/, // identifiant et mot de passe : codes latins alignés à gauche
+      "src/components/settings/GeneralSettingsSection.tsx": /^text-left$/, // courriel, site : texte latin aligné à gauche
+    };
+    const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    // Le garde-fou lui-même.
+    for (const bad of ["ml-2", "mr-auto", "pl-3", "pr-10", "right-3", "left-0", "-right-1", "text-left", "text-right", "border-l", "border-r-4", "rounded-tl-md", "sm:pr-4", "hover:text-left"]) expect(code(`className="x ${bad} y"`).match(PHYSICAL), bad).not.toBeNull();
+    for (const ok of ["ms-2", "me-auto", "ps-3", "pe-10", "start-3", "end-0", "text-start", "text-end", "border-s", "border-e-4", "rounded-ss-md", "border-line-soft", "text-center", "scroll-left", "pl", "right-aligned"]) expect(code(`className="x ${ok} y"`).match(PHYSICAL), ok).toBeNull();
+    const offenders = all
+      .filter(([f]) => !f.startsWith("src/print/") && !f.startsWith("src/i18n-test/"))
+      .flatMap(([f, src]) => {
+        const exception = EXCEPTIONS[f.split("\\").join("/")];
+        return (code(src).match(PHYSICAL) ?? [])
+          .filter((m) => exception !== "*" && !(exception && exception.test(m.replace(/^(?:[a-z0-9-]+:)*/, ""))))
+          .map((m) => `${f} : ${m}`);
+      });
+    expect(offenders).toEqual([]);
+  });
 });

@@ -91,7 +91,7 @@ export default function ExpensesSection() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-right text-small">
+              <table className="w-full text-start text-small">
                 <thead className="bg-sand-100 text-ink-2 font-bold border-b border-line">
                   <tr>
                     {renderSortableHeader("بيان النفقة / المشتريات", "title", expenseSortKey, expenseSortDir, (k) => handleToggleSort(k, expenseSortKey, expenseSortDir, setExpenseSortKey, setExpenseSortDir))}

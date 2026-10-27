@@ -141,7 +141,7 @@ export default function StaffFormModal() {
                 key={cat}
                 aria-pressed={isSel}
                 onClick={() => pickCategory(cat)}
-                className={`p-2.5 rounded-xl border text-right transition flex items-center gap-2 ${
+                className={`p-2.5 rounded-xl border text-start transition flex items-center gap-2 ${
                   isSel
                     ? `${cfg.bg} ${cfg.border} border-2 shadow-2xs font-bold ${cfg.text}`
                     : "border-line bg-white hover:bg-sand-50 text-ink-2"
@@ -169,7 +169,7 @@ export default function StaffFormModal() {
               <button
                 type="button"
                 onClick={() => setFormPhoto("")}
-                className="absolute -top-1 -right-1 bg-danger-600 text-white rounded-full p-0.5 hover:bg-danger-700 shadow"
+                className="absolute -top-1 -start-1 bg-danger-600 text-white rounded-full p-0.5 hover:bg-danger-700 shadow"
                 title="إزالة الصورة"
                 aria-label="إزالة الصورة"
               >
@@ -326,7 +326,7 @@ export default function StaffFormModal() {
                     }}
                     className="rounded border-line-strong text-primary-600 focus:ring-primary-500 w-4 h-4 mt-0.5"
                   />
-                  <div className="text-right">
+                  <div className="text-start">
                     <p className="font-bold text-ink-2 text-small">{c.name}</p>
                     <p className="text-small text-ink-3 font-mono">{c.schedule}</p>
                     {isAssignedToOther && (

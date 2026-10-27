@@ -90,7 +90,7 @@ export function useActivitiesForms(props: ActivitiesManagementProps) {
       <th
         onClick={() => onSort(key)}
         className={`p-3 cursor-pointer select-none hover:bg-sand-200/80 transition rounded-lg ${
-          align === "center" ? "text-center" : "text-right"
+          align === "center" ? "text-center" : "text-start"
         }`}
         title={`ترتيب حسب ${label} (انقر للتبديل بين التصاعدي والتنازلي)`}
       >
